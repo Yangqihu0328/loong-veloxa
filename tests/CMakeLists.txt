@@ -63,3 +63,10 @@ target_link_libraries(parser_test PRIVATE vx_core)
 
 vx_add_test(html_integration_test core/html/integration_test.cc)
 target_link_libraries(html_integration_test PRIVATE vx_core)
+
+# Core: CSS
+vx_add_test(css_property_test core/css/property_test.cc)
+target_link_libraries(css_property_test PRIVATE vx_core)
+
+vx_add_test(css_tokenizer_test core/css/tokenizer_test.cc)
+target_link_libraries(css_tokenizer_test PRIVATE vx_core)

@@ -9,8 +9,18 @@
 ## TASK-20260405-04：CSS 引擎
 
 ### 初始化 ✅
-- 环境检测通过：Linux WSL2, GCC 11.4.0, C++17
-- Sciter 源码分析完成：html-style.h, html-style-parser.h/cpp, html-style-enums.h, html-style-atts.h
-- DOM 系统可用：Node/Element/Document, TagId, HTML Parser
-- 403/403 既有测试全通过
-- 前置验证通过
+- 环境检测通过
+- Sciter 源码分析完成
+- 功能分支 `feature/TASK-20260405-04-css-engine` 创建
+
+### 规划 ✅
+- 头脑风暴完成（6 部分设计确认）
+- 设计规格文档保存
+- 实现计划文档保存（7 Phase，~109 测试）
+
+### 创意设计 ✅
+- CSS Tokenizer 状态机：方案 A（主分支子扫描器 + 注释分离 + 空白保留）
+- 颜色解析策略：方案 A（排序数组 + 二分查找，18 命名颜色）
+
+### 构建 ⏳
+- 等待用户启动 `/build`

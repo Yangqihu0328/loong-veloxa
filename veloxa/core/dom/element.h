@@ -33,6 +33,13 @@ class Element : public Node {
   void RemoveAttribute(InternedString name);
   const SmallVector<Attribute, 4>& attributes() const { return attributes_; }
 
+  InternedString id() const { return id_; }
+  void set_id(InternedString id) { id_ = id; }
+  const SmallVector<InternedString, 2>& classes() const { return classes_; }
+  void AddClass(InternedString cls);
+  void RemoveClass(InternedString cls);
+  bool HasClass(InternedString cls) const;
+
  protected:
   Element(TagId tag_id, NodeType node_type)
       : Node(node_type), tag_id_(tag_id) {}
@@ -43,6 +50,8 @@ class Element : public Node {
   Node* last_child_ = nullptr;
   u32 child_count_ = 0;
   SmallVector<Attribute, 4> attributes_;
+  InternedString id_;
+  SmallVector<InternedString, 2> classes_;
 };
 
 }  // namespace vx::dom
