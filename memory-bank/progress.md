@@ -2,7 +2,7 @@
 
 ## 当前任务：TASK-20260405-05
 
-### 构建完成
+### 回顾完成
 - 计划文档：`docs/plans/2026-04-05-tech-debt.md`
 - Phase 1: Document ArenaAllocator ✅
 - Phase 2: TagIdFromName/PropertyIdFromName HashMap O(1) ✅
