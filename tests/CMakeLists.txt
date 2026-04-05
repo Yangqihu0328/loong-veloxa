@@ -60,3 +60,6 @@ target_link_libraries(document_test PRIVATE vx_core)
 
 vx_add_test(parser_test core/html/parser_test.cc)
 target_link_libraries(parser_test PRIVATE vx_core)
+
+vx_add_test(html_integration_test core/html/integration_test.cc)
+target_link_libraries(html_integration_test PRIVATE vx_core)
