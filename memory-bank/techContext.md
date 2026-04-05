@@ -78,9 +78,31 @@
 - FetchContent 依赖网络可用性，离线环境应优先使用系统包
 - 系统 GTest v1.11.0 功能足够（`EXPECT_DEATH`、`TEST_F` 均可用），但缺少 v1.14+ 的 `EXPECT_THAT`
 
+## Graphics/Platform HAL 实现经验（2026-04-05）
+
+### 像素格式
+- RGBA32 格式统一为 R[0:7] | G[8:15] | B[16:23] | A[24:31]
+- 跨模块操作（渲染 → 存储 → 导出）必须引用同一格式定义
+- SavePPM 导出需按 R, G, B 顺序提取字节（bits 0-7, 8-15, 16-23）
+
+### 子代理协作约束
+- 涉及多模块数据交互的子代理 prompt 必须包含精确的数据格式规范
+- 不同子代理的像素格式假设可能矛盾，集成测试是唯一防线
+
+### 软件渲染器实现
+- 覆盖率光栅化使用中点近似（非解析面积），正确但 AA 质量有限
+- StrokePath 逐段独立渲染，无 join/cap 处理
+- PushClipPath 使用 bounds 近似替代真正的路径裁剪
+- `std::function<void()>` 用于 EventLoop::Task，嵌入式场景可能需要替换为轻量回调
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
 3. InternedString 全局表非线程安全
 4. BasicString 含 Alloc* 指针，sizeof 为 32 而非纯 24
 5. Status::message 使用 std::string，与自有 String 存在循环依赖
+6. Rasterizer 覆盖率算法待升级为解析面积计算（AA 质量）
+7. PushClipPath 仅用 bounds 近似，待实现真正路径裁剪
+8. StrokePath 无 join/cap 处理（当前 butt 端帽、无连接）
+9. PPM 测试使用硬编码 /tmp 路径，应改用 tmpfile()
+10. CMake: vx_graphics 链接 vx_platform 可能引入不必要耦合

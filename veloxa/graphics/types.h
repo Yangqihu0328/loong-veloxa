@@ -29,6 +29,8 @@ struct Color {
 
   constexpr bool operator!=(Color other) const { return !(*this == other); }
 
+  // Pixel memory layout: R in bits[0:7], G in bits[8:15], B in bits[16:23], A in bits[24:31].
+  // This is the canonical pixel format for all Veloxa rendering and storage.
   constexpr vx::u32 ToRGBA32() const {
     return static_cast<vx::u32>(r) | (static_cast<vx::u32>(g) << 8) |
            (static_cast<vx::u32>(b) << 16) | (static_cast<vx::u32>(a) << 24);
