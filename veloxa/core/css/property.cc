@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include "veloxa/foundation/containers/hash_map.h"
+
 namespace vx::css {
 
 namespace {
@@ -75,6 +77,34 @@ constexpr usize kPropertyTableSize =
 static_assert(kPropertyTableSize == static_cast<usize>(PropertyId::kMaxProperty),
               "Property table size must match PropertyId::kMaxProperty");
 
+struct StringViewHash {
+  usize operator()(StringView sv) const {
+    usize hash = 5381;
+    for (usize i = 0; i < sv.size(); ++i) {
+      hash = ((hash << 5) + hash) + static_cast<u8>(sv[i]);
+    }
+    return hash;
+  }
+};
+
+struct StringViewEq {
+  bool operator()(StringView a, StringView b) const { return a == b; }
+};
+
+using PropertyMap =
+    HashMap<StringView, PropertyId, StringViewHash, StringViewEq>;
+
+PropertyMap* BuildPropertyMap() {
+  auto* m = new PropertyMap();
+  m->reserve(kPropertyTableSize);
+  for (usize i = 1; i < kPropertyTableSize; ++i) {
+    m->Insert(StringView(kPropertyTable[i].name,
+                          std::strlen(kPropertyTable[i].name)),
+              kPropertyTable[i].id);
+  }
+  return m;
+}
+
 }  // namespace
 
 const PropertyInfo& GetPropertyInfo(PropertyId id) {
@@ -84,14 +114,10 @@ const PropertyInfo& GetPropertyInfo(PropertyId id) {
 }
 
 PropertyId PropertyIdFromName(StringView name) {
-  for (usize i = 1; i < kPropertyTableSize; ++i) {
-    if (name.size() == std::strlen(kPropertyTable[i].name) &&
-        name.compare(StringView(kPropertyTable[i].name,
-                                std::strlen(kPropertyTable[i].name))) == 0) {
-      return kPropertyTable[i].id;
-    }
-  }
-  return PropertyId::kUnknown;
+  static PropertyMap* map = BuildPropertyMap();
+
+  PropertyId* result = map->Find(name);
+  return result ? *result : PropertyId::kUnknown;
 }
 
 bool IsInheritedProperty(PropertyId id) {

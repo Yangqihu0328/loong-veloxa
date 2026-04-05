@@ -2,22 +2,11 @@
 
 #include <cstring>
 
+#include "veloxa/foundation/containers/hash_map.h"
+
 namespace vx::dom {
 
 namespace {
-
-bool CaseInsensitiveEqual(StringView a, const char* b) {
-  usize len = std::strlen(b);
-  if (a.size() != len) return false;
-  for (usize i = 0; i < len; ++i) {
-    char ca = a[i];
-    char cb = b[i];
-    if (ca >= 'A' && ca <= 'Z') ca += 32;
-    if (cb >= 'A' && cb <= 'Z') cb += 32;
-    if (ca != cb) return false;
-  }
-  return true;
-}
 
 // clang-format off
 constexpr TagInfo kTagTable[] = {
@@ -108,6 +97,31 @@ constexpr usize kTagTableSize = sizeof(kTagTable) / sizeof(kTagTable[0]);
 static_assert(kTagTableSize == static_cast<usize>(TagId::kMaxBuiltin),
               "Tag table size must match TagId::kMaxBuiltin");
 
+struct StringViewHash {
+  usize operator()(StringView sv) const {
+    usize hash = 5381;
+    for (usize i = 0; i < sv.size(); ++i) {
+      hash = ((hash << 5) + hash) + static_cast<u8>(sv[i]);
+    }
+    return hash;
+  }
+};
+
+struct StringViewEq {
+  bool operator()(StringView a, StringView b) const { return a == b; }
+};
+
+using TagMap = HashMap<StringView, TagId, StringViewHash, StringViewEq>;
+
+TagMap* BuildTagMap() {
+  auto* m = new TagMap();
+  m->reserve(kTagTableSize);
+  for (usize i = 1; i < kTagTableSize; ++i) {
+    m->Insert(StringView(kTagTable[i].name), kTagTable[i].id);
+  }
+  return m;
+}
+
 }  // namespace
 
 const TagInfo& GetTagInfo(TagId id) {
@@ -117,12 +131,18 @@ const TagInfo& GetTagInfo(TagId id) {
 }
 
 TagId TagIdFromName(StringView name) {
-  for (usize i = 1; i < kTagTableSize; ++i) {
-    if (CaseInsensitiveEqual(name, kTagTable[i].name)) {
-      return kTagTable[i].id;
-    }
+  static TagMap* map = BuildTagMap();
+
+  char buf[64];
+  usize len = name.size();
+  if (len == 0 || len >= sizeof(buf)) return TagId::kUnknown;
+  for (usize i = 0; i < len; ++i) {
+    char c = name[i];
+    buf[i] = (c >= 'A' && c <= 'Z') ? static_cast<char>(c + 32) : c;
   }
-  return TagId::kUnknown;
+
+  TagId* result = map->Find(StringView(buf, len));
+  return result ? *result : TagId::kUnknown;
 }
 
 bool IsVoidElement(TagId id) {

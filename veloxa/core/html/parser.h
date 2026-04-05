@@ -9,10 +9,11 @@ namespace vx::html {
 
 class Parser {
  public:
-  static dom::Document* Parse(StringView html);
+  static dom::Document* Parse(StringView html,
+                              Vector<ParseError>* errors = nullptr);
 
  private:
-  explicit Parser(StringView html);
+  Parser(StringView html, Vector<ParseError>* errors);
 
   dom::Document* DoParse();
   void ProcessStartTag(const Token& token);
@@ -26,6 +27,7 @@ class Parser {
   Tokenizer tokenizer_;
   dom::Document* doc_;
   Vector<dom::Element*> open_elements_;
+  Vector<ParseError>* errors_;
 };
 
 }  // namespace vx::html

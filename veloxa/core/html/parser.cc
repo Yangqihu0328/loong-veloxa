@@ -38,12 +38,13 @@ static constexpr ImplicitCloseRule kImplicitCloseRules[] = {
 
 }  // namespace
 
-dom::Document* Parser::Parse(StringView html) {
-  Parser parser(html);
+dom::Document* Parser::Parse(StringView html, Vector<ParseError>* errors) {
+  Parser parser(html, errors);
   return parser.DoParse();
 }
 
-Parser::Parser(StringView html) : tokenizer_(html), doc_(nullptr) {}
+Parser::Parser(StringView html, Vector<ParseError>* errors)
+    : tokenizer_(html), doc_(nullptr), errors_(errors) {}
 
 dom::Document* Parser::DoParse() {
   doc_ = new dom::Document();
@@ -69,6 +70,11 @@ dom::Document* Parser::DoParse() {
       case TokenType::kEof:
         return doc_;
       case TokenType::kError:
+        if (errors_) {
+          errors_->push_back(
+              ParseError{tokenizer_.line(), tokenizer_.column(), token.value});
+        }
+        break;
       case TokenType::kAttribute:
       case TokenType::kTagEnd:
         break;

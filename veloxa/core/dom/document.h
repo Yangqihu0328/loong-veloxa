@@ -5,17 +5,20 @@
 #include "veloxa/core/dom/element.h"
 #include "veloxa/core/dom/text.h"
 #include "veloxa/foundation/containers/vector.h"
+#include "veloxa/foundation/memory/arena_allocator.h"
 #include "veloxa/foundation/strings/string.h"
 
 namespace vx::dom {
 
 class Document : public Element {
  public:
-  Document() : Element(TagId::kUnknown, NodeType::kDocument) {}
+  explicit Document(usize arena_block_size = 4096)
+      : Element(TagId::kUnknown, NodeType::kDocument),
+        arena_(arena_block_size) {}
 
   ~Document() override {
     for (auto* node : owned_nodes_) {
-      delete node;
+      node->~Node();
     }
   }
 
@@ -23,7 +26,10 @@ class Document : public Element {
   Text* CreateText(String data);
   Comment* CreateComment(String data);
 
+  usize arena_bytes_allocated() const { return arena_.bytes_allocated(); }
+
  private:
+  ArenaAllocator arena_;
   Vector<Node*> owned_nodes_;
 };
 

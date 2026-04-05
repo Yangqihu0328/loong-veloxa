@@ -2,11 +2,20 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "gtest/gtest.h"
 
 namespace vx::platform {
 namespace {
+
+std::string TempPpmPath(const char* name) {
+  char buf[256];
+  std::snprintf(buf, sizeof(buf), "/tmp/veloxa_%s_%d.ppm", name, getpid());
+  return buf;
+}
 
 TEST(MemorySurfaceTest, ConstructionSetsCorrectDimensions) {
   MemorySurface surface(100, 200);
@@ -62,7 +71,7 @@ TEST(MemorySurfaceTest, ResizeZerosNewBuffer) {
 }
 
 TEST(MemorySurfaceTest, SavePPMWritesValidFile) {
-  const char* path = "/tmp/veloxa_test_surface.ppm";
+  std::string path = TempPpmPath("surface");
   MemorySurface surface(2, 2);
   {
     vx::u32* pixels = surface.Lock();
@@ -73,10 +82,10 @@ TEST(MemorySurfaceTest, SavePPMWritesValidFile) {
     surface.Unlock();
   }
 
-  vx::Status status = surface.SavePPM(path);
+  vx::Status status = surface.SavePPM(path.c_str());
   ASSERT_TRUE(status.ok()) << status.message();
 
-  std::FILE* f = std::fopen(path, "rb");
+  std::FILE* f = std::fopen(path.c_str(), "rb");
   ASSERT_NE(f, nullptr);
 
   char header[64];
@@ -106,7 +115,7 @@ TEST(MemorySurfaceTest, SavePPMWritesValidFile) {
   EXPECT_EQ(rgb[8], 0xFF);  // pixel 2 B
 
   std::fclose(f);
-  std::remove(path);
+  std::remove(path.c_str());
 }
 
 TEST(MemorySurfaceTest, ZeroSizeSurfaceDoesNotCrash) {
@@ -121,11 +130,11 @@ TEST(MemorySurfaceTest, ZeroSizeSurfaceDoesNotCrash) {
 }
 
 TEST(MemorySurfaceTest, ZeroSizeSavePPMSucceeds) {
-  const char* path = "/tmp/veloxa_test_surface_zero.ppm";
+  std::string path = TempPpmPath("surface_zero");
   MemorySurface surface(0, 0);
-  vx::Status status = surface.SavePPM(path);
+  vx::Status status = surface.SavePPM(path.c_str());
   EXPECT_TRUE(status.ok());
-  std::remove(path);
+  std::remove(path.c_str());
 }
 
 TEST(MemorySurfaceTest, SavePPMFailsOnInvalidPath) {

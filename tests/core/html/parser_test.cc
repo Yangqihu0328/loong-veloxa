@@ -306,5 +306,21 @@ TEST_F(ParserTest, UnmatchedEndTag) {
   EXPECT_EQ(doc_->first_child(), nullptr);
 }
 
+TEST_F(ParserTest, ErrorCollectionNoErrors) {
+  Vector<ParseError> errors;
+  doc_ = Parser::Parse("<div><p>hello</p></div>", &errors);
+  EXPECT_TRUE(errors.empty());
+}
+
+TEST_F(ParserTest, NullErrorsNoSegfault) {
+  doc_ = Parser::Parse("<div></div>", nullptr);
+  ASSERT_NE(doc_, nullptr);
+}
+
+TEST_F(ParserTest, ErrorCollectionDefaultParam) {
+  doc_ = Parser::Parse("<div></div>");
+  ASSERT_NE(doc_, nullptr);
+}
+
 }  // namespace
 }  // namespace vx::html
