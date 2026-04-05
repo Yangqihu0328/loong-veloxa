@@ -160,8 +160,36 @@ veloxa/
 - 效果：TASK-03 中 3 个子代理全部零返工
 - 已验证优于描述性文字的 prompt 方式
 
+## 已验证的模式（来自 CSS Engine 实现）
+
+### CSS 引擎解析管线模式
+- CSS text → CssTokenizer（零拷贝 StringView token）→ CssParser → Stylesheet（规则列表）
+- 与 HTML 解析管线完全同构：均为 Tokenizer → Parser → 结构化数据
+- Tokenizer 复用"主分支 + 子扫描器"模式（与 HTML Tokenizer 一致）
+
+### 枚举 + 元数据表驱动模式（第二次验证）
+- PropertyId 的设计与 TagId 完全同构：枚举索引 → 静态表 O(1) 查找 + 线性扫描名称查找
+- 该模式已在两个模块（DOM tag、CSS property）验证，确认为 Veloxa 标准 ID 系统模式
+- 扩展只需添加枚举值 + 表项，无需修改查找逻辑
+
+### 子代理合并 Phase 策略
+- 当两个 Phase 紧密耦合时（共享类型定义或 API），合并为一个子代理比分别启动更高效
+- Phase 1+2（属性系统 + Tokenizer 共享 Unit 枚举）和 Phase 4+6（Matcher + Resolver 共享 Selector 类型）合并效果好
+- 减少了 prompt 中重复的上下文传递，避免中间产物同步问题
+
+### CMake 存根预创建策略
+- 当 CMakeLists.txt 预列所有文件但并行构建时部分文件尚未创建，第一个子代理应负责创建空 .cc 存根
+- 避免后续子代理因 CMake 配置失败而报错
+- 存根内容：仅 include 对应头文件（如存在）或空文件
+
+### CSS 值类型混合策略（A+C）
+- 解析阶段使用 CssValue（8B tagged union）作为通用值容器
+- 计算阶段使用 ComputedStyle 直存具体类型（Display、LengthValue、u32 color 等）
+- ApplyDeclaration 负责 CssValue → 具体类型的转换（大 switch）
+- 与 Sciter 的 `style::resolve` 阶段对应
+
 ## 待定架构决策
-- [ ] CSS 支持的具体子集范围
+- [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持
 - [ ] 动画系统的实现策略（CSS Transitions/Animations vs 脚本驱动）
 - [ ] 资源加载策略（打包 vs 文件系统 vs 混合）
