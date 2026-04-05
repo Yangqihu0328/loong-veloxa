@@ -13,7 +13,8 @@ set(VX_LOG_LEVEL 0 CACHE STRING "Minimum log level (0=DEBUG,1=INFO,2=WARN,3=ERRO
 add_compile_definitions(VX_MIN_LOG_LEVEL=${VX_LOG_LEVEL})
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter)
+  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter
+                      -Wno-type-limits)
 endif()
 
 add_subdirectory(veloxa/foundation)
