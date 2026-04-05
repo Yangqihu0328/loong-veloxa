@@ -4,22 +4,25 @@
 
 | ID | 描述 | 状态 | 复杂度 | 创建日期 |
 |----|------|------|--------|---------|
-| TASK-20260405-05 | 消化技术债务（Arena 内存管理、ID 查找优化、测试修复、错误收集） | ✅ 已完成 | Level 2 | 2026-04-05 |
+| TASK-20260405-06 | 构建 Layout Engine 布局引擎 | 回顾完成 | Level 4 | 2026-04-05 |
 
 ## 任务详情
 
-### TASK-20260405-05
-- **描述**：消化四个任务积累的关键技术债务，为 Layout Engine 做准备
-- **复杂度**：Level 2（多文件修改，需求明确）
-- **标签**：[重构] [性能优化] [质量改进]
+### TASK-20260405-06
+- **描述**：构建布局引擎，支持 Block/Inline/Flex 三种布局模式和 CSS 定位系统
+- **复杂度**：Level 4（多个子系统，架构决策）
+- **标签**：[新功能] [核心引擎]
 - **代码规范**：Google C++ Style Guide
-- **工作流路径**：`/van` → `/plan` → `/build` → `/reflect` → `/archive`
+- **工作流路径**：`/van` → `/plan` → `/creative` → `/build` → `/reflect` → `/archive`
 
 ### 范围
-1. **#12 Document ArenaAllocator**：Document 节点分配从 new/delete 迁移到 ArenaAllocator
-2. **#11 TagIdFromName/PropertyIdFromName O(N) 优化**：线性扫描升级为 HashMap 或排序数组二分查找
-3. **#9 PPM 测试路径修复**：/tmp 硬编码改为 tmpfile() 或 std::filesystem::temp_directory_path
-4. **#13 Parser 错误收集**：HTML Parser 收集 kError token 信息（行号/列号/描述）
+1. LayoutBox 数据结构与布局树构建
+2. Box Model 计算（content/padding/border/margin，box-sizing）
+3. Block 布局算法（垂直流）
+4. Inline 布局（基础文本行，需文本测量抽象）
+5. Flex 布局算法（主轴/交叉轴、grow/shrink/basis、wrap）
+6. 定位系统（relative/absolute/fixed）
+7. DOM ↔ Layout 集成与全量测试
 
 ## 任务历史
 
@@ -29,3 +32,4 @@
 | TASK-20260405-02 | 构建 Graphics HAL 图形抽象层与 Platform HAL 平台抽象层 | ✅ 已完成 | 2026-04-05 |
 | TASK-20260405-03 | 构建 DOM 树 + HTML 解析器 | ✅ 已完成 | 2026-04-05 |
 | TASK-20260405-04 | 构建 CSS 引擎（Tokenizer/Parser/选择器/属性/层叠） | ✅ 已完成 | 2026-04-05 |
+| TASK-20260405-05 | 消化技术债务（Arena/HashMap/PPM/Parser Error） | ✅ 已完成 | 2026-04-05 |

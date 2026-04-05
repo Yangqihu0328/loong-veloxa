@@ -126,6 +126,26 @@
 - 10 个可继承属性：color, visibility, font-family/size/weight/style, line-height, text-align, white-space, letter-spacing
 - ComputedStyle ~200 字节，直存所有计算后的属性值
 
+## Layout Engine 实现经验（2026-04-05）
+
+### 布局架构
+- LayoutBox 扁平 struct + LayoutType 枚举，arena 分配（ArenaAllocator）
+- 独立布局树，通过 BuildTree 递归 DOM 树构建
+- ComputedStyle 在 BuildTree 阶段通过 StyleResolver::Resolve 即时计算，结果 arena 分配存入 LayoutBox
+- Block/Inline/Flex 三种布局模式 + relative/absolute 定位
+
+### 布局算法覆盖
+- **Block**：垂直堆叠、auto width/height、border-box、min/max 约束、auto margin 居中（无 margin collapsing）
+- **Flex**：CSS Flexbox Level 1 §9——grow/shrink/basis、justify-content 5 种、align-items/self、gap、wrap、reverse
+- **Inline**：简化文本行排列（水平堆叠+换行），无真正 line box 模型
+- **Positioning**：relative 偏移、absolute 定位+递归布局
+
+### 关键实现细节
+- `LayoutEngine::Layout` 使用 `static ArenaAllocator`（线程不安全，需重构）
+- BuildTree 过滤纯空白文本节点（缩进/换行），避免布局干扰
+- LayoutChild 对 kText 节点调用 TextShaper::Measure 测量尺寸
+- LayoutChild 分发：Block→LayoutBlock, Flex→LayoutFlex(自由函数), Inline→LayoutInline, Text→测量
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -145,3 +165,7 @@
 16. ApplyDeclaration switch 规模大（~55 case），可用宏或代码生成简化
 17. 选择器匹配 O(rules × elements) 全量遍历，大页面需哈希索引优化
 18. :hover/:active/:focus 伪类当前返回 false（stub），需事件系统回填
+19. LayoutEngine::Layout 的 static ArenaAllocator 线程不安全，需重构为调用者持有
+20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）
+21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）
+22. Arena 分配的 ComputedStyle 含 InternedString 成员，arena 释放不调用析构函数，可能泄露引用计数

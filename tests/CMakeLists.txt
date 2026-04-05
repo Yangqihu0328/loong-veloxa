@@ -82,3 +82,25 @@ target_link_libraries(css_style_resolver_test PRIVATE vx_core)
 
 vx_add_test(css_integration_test core/css/integration_test.cc)
 target_link_libraries(css_integration_test PRIVATE vx_core)
+
+# Core: Layout
+vx_add_test(layout_box_test core/layout/layout_box_test.cc)
+target_link_libraries(layout_box_test PRIVATE vx_core)
+
+vx_add_test(layout_utils_test core/layout/layout_utils_test.cc)
+target_link_libraries(layout_utils_test PRIVATE vx_core)
+
+vx_add_test(tree_builder_test core/layout/tree_builder_test.cc)
+target_link_libraries(tree_builder_test PRIVATE vx_core)
+
+vx_add_test(block_layout_test core/layout/block_layout_test.cc)
+target_link_libraries(block_layout_test PRIVATE vx_core)
+
+vx_add_test(flex_layout_test core/layout/flex_layout_test.cc)
+target_link_libraries(flex_layout_test PRIVATE vx_core)
+
+vx_add_test(inline_position_test core/layout/inline_position_test.cc)
+target_link_libraries(inline_position_test PRIVATE vx_core)
+
+vx_add_test(layout_integration_test core/layout/integration_test.cc)
+target_link_libraries(layout_integration_test PRIVATE vx_core)
