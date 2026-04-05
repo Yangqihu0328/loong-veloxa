@@ -66,11 +66,10 @@ TEST(MemorySurfaceTest, SavePPMWritesValidFile) {
   MemorySurface surface(2, 2);
   {
     vx::u32* pixels = surface.Lock();
-    // ARGB or RGBA depending on format — we pack as 0xAARRGGBB
-    pixels[0] = 0x00FF0000;  // R=255, G=0, B=0
-    pixels[1] = 0x0000FF00;  // R=0, G=255, B=0
-    pixels[2] = 0x000000FF;  // R=0, G=0, B=255
-    pixels[3] = 0x00FFFFFF;  // R=255, G=255, B=255
+    pixels[0] = 0xFF0000FF;  // R=255, G=0,   B=0,   A=255
+    pixels[1] = 0xFF00FF00;  // R=0,   G=255, B=0,   A=255
+    pixels[2] = 0xFFFF0000;  // R=0,   G=0,   B=255, A=255
+    pixels[3] = 0xFFFFFFFF;  // R=255, G=255, B=255, A=255
     surface.Unlock();
   }
 

@@ -70,11 +70,10 @@ vx::Status MemorySurface::SavePPM(const char* path) const {
   vx::usize total = static_cast<vx::usize>(width_) * height_;
   for (vx::usize i = 0; i < total; ++i) {
     vx::u32 pixel = pixels_[i];
-    // Pixel format: 0x00RRGGBB
     vx::u8 rgb[3];
-    rgb[0] = static_cast<vx::u8>((pixel >> 16) & 0xFF);
+    rgb[0] = static_cast<vx::u8>(pixel & 0xFF);
     rgb[1] = static_cast<vx::u8>((pixel >> 8) & 0xFF);
-    rgb[2] = static_cast<vx::u8>(pixel & 0xFF);
+    rgb[2] = static_cast<vx::u8>((pixel >> 16) & 0xFF);
     if (std::fwrite(rgb, 1, 3, f) != 3) {
       std::fclose(f);
       return vx::Status(vx::StatusCode::kInternal, "Failed to write pixel data");
