@@ -23,3 +23,12 @@ vx_add_test(utf_test foundation/strings/utf_test.cc)
 vx_add_test(string_test foundation/strings/string_test.cc)
 vx_add_test(interned_string_test foundation/strings/interned_string_test.cc)
 vx_add_test(integration_test foundation/integration_test.cc)
+
+vx_add_test(memory_surface_test platform/memory_surface_test.cc)
+target_link_libraries(memory_surface_test PRIVATE vx_platform)
+
+vx_add_test(event_loop_test platform/event_loop_test.cc)
+target_link_libraries(event_loop_test PRIVATE vx_platform)
+
+vx_add_test(gfx_types_test graphics/types_test.cc)
+target_link_libraries(gfx_types_test PRIVATE vx_graphics)
