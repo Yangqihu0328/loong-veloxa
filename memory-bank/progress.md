@@ -21,6 +21,14 @@
 - **提交**：3 次（Phase 1、Phase 2-5、Phase 6+修复）
 - **分支**：feature/TASK-20260405-06-layout-engine
 
+### 回顾完成
+- 回顾文档：`memory-bank/reflection/reflection-TASK-20260405-06.md`
+- 关键发现：集成测试暴露 2 个单元测试不可覆盖的 bug（空白文本节点 + Block 内文本测量）
+- 子代理表现：2 个并行子代理均零返工，精确签名 prompt 模式再次验证
+- 新增技术债：4 项（static arena 线程安全、margin collapsing、line box 模型、ComputedStyle 析构）
+- 新增架构模式：4 项（DOM-Layout 分离、空白过滤、TextShaper 接口、共享文件约束分组）
+- P1 改进建议：2 项（边界输入清单、集成测试用真实解析器）
+
 ## 已完成任务
 
 - TASK-20260405-01：Foundation 基础库 → 归档 `memory-bank/archive/archive-TASK-20260405-01.md`

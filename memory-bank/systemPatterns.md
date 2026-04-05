@@ -188,6 +188,29 @@ veloxa/
 - ApplyDeclaration 负责 CssValue → 具体类型的转换（大 switch）
 - 与 Sciter 的 `style::resolve` 阶段对应
 
+## 已验证的模式（来自 Layout Engine 实现）
+
+### DOM-Layout 完全分离 + 独立布局树模式
+- LayoutBox 扁平 struct（非继承层次），通过 LayoutType 枚举区分 Block/Inline/Flex/Text
+- 布局树独立于 DOM 树，LayoutBox 持有 Element*/Text* 反向引用但不耦合 DOM 结构
+- ComputedStyle 在 BuildTree 阶段通过 StyleResolver 即时计算，arena 分配后存入 LayoutBox
+- 与 Sciter 的差异：Sciter 将 layout 嵌入 DOM（element→block→block_vertical），Veloxa 彻底分离
+
+### 空白文本节点过滤模式
+- HTML 源码中的缩进/换行产生空白 Text 节点，必须在 BuildTree 阶段过滤
+- 不过滤会导致 Flex 容器子元素数错误、Block 布局出现额外间隙
+- 过滤逻辑：遍历字符检查是否全为 space/tab/newline/CR
+
+### TextShaper 纯虚接口模式
+- 文本测量通过 `TextShaper` 纯虚接口抽象，与具体字体引擎（FreeType/HarfBuzz）解耦
+- SimpleTextShaper 提供固定比例测量（0.6×font_size 每字符），足够支持布局测试
+- 后续集成真实字体引擎只需实现 TextShaper::Measure，布局代码零修改
+
+### 共享文件冲突约束子代理分组模式
+- 当多个 Phase 修改同一 .cc 文件时，必须合并为同一子代理
+- 本次 Phase 2+3+5 合并（共享 layout_engine.cc），Phase 4 独立（flex_layout.cc）
+- 分组策略：按"产出文件"而非"功能逻辑"划分子代理边界
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持
