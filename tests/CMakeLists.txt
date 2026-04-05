@@ -41,3 +41,7 @@ target_link_libraries(software_canvas_test PRIVATE vx_graphics)
 
 vx_add_test(gfx_integration_test graphics/integration_test.cc)
 target_link_libraries(gfx_integration_test PRIVATE vx_graphics vx_platform)
+
+# Core: DOM + HTML
+vx_add_test(tag_test core/dom/tag_test.cc)
+target_link_libraries(tag_test PRIVATE vx_core)
