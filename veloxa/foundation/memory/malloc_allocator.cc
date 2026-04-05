@@ -1,6 +1,1 @@
-// Placeholder — will be implemented in Phase 3.
-namespace vx {
-namespace {
-volatile int placeholder_malloc = 0;
-}
-}  // namespace vx
+// MallocAllocator is header-only. This file kept for build system compatibility.
