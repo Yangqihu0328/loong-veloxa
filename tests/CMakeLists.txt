@@ -45,3 +45,15 @@ target_link_libraries(gfx_integration_test PRIVATE vx_graphics vx_platform)
 # Core: DOM + HTML
 vx_add_test(tag_test core/dom/tag_test.cc)
 target_link_libraries(tag_test PRIVATE vx_core)
+
+vx_add_test(tokenizer_test core/html/tokenizer_test.cc)
+target_link_libraries(tokenizer_test PRIVATE vx_core)
+
+vx_add_test(node_test core/dom/node_test.cc)
+target_link_libraries(node_test PRIVATE vx_core)
+
+vx_add_test(element_test core/dom/element_test.cc)
+target_link_libraries(element_test PRIVATE vx_core)
+
+vx_add_test(document_test core/dom/document_test.cc)
+target_link_libraries(document_test PRIVATE vx_core)
