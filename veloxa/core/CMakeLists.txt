@@ -10,6 +10,10 @@ add_library(vx_core STATIC
   css/parser.cc
   css/selector_matcher.cc
   css/style_resolver.cc
+  layout/text_shaper.cc
+  layout/layout_utils.cc
+  layout/layout_engine.cc
+  layout/flex_layout.cc
 )
 
 target_include_directories(vx_core PUBLIC ${PROJECT_SOURCE_DIR})
