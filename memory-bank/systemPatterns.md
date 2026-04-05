@@ -135,6 +135,31 @@ veloxa/
 - VX_DCHECK 防止重复 Lock 和 Resize 冲突
 - Canvas 在 Lock 期间操作像素
 
+## 已验证的模式（来自 DOM/HTML Parser 实现）
+
+### 精简扁平 DOM 层次模式
+- Node → Element / Text / Comment / Document 四类
+- DOM 与 Layout 完全分离，DOM 不携带布局信息
+- 子节点使用双向链表（Node 的 next/prev sibling 指针），O(1) 追加/移除
+- 与 Sciter 的差异：Sciter 混合 DOM 和 Layout（element → block → block_vertical），Veloxa 彻底分离
+
+### 枚举 + 元数据表驱动模式
+- TagId 枚举索引 → TagInfo 静态表（O(1) 查找）
+- TagInfo 携带 TagType/ParseModel/ContentModel 三维元数据
+- 隐式关闭规则表（20 条 ImplicitCloseRule）实现数据与逻辑分离
+- 扩展新标签只需添加枚举值和表项
+
+### 混合状态机 Tokenizer 模式
+- 主循环处理顶层分支（text/tag/rawtext）
+- 复杂子逻辑提取为独立方法（ScanTag/ScanAttribute/ScanComment）
+- 基础操作复用（Peek/Advance/ScanName/SkipWhitespace）
+- Token 使用 StringView 零拷贝指向原始输入
+
+### 子代理精确签名 prompt 模式
+- 向子代理提供完整 API 签名（参数类型、返回类型、namespace、构造函数形式）
+- 效果：TASK-03 中 3 个子代理全部零返工
+- 已验证优于描述性文字的 prompt 方式
+
 ## 待定架构决策
 - [ ] CSS 支持的具体子集范围
 - [ ] 是否内置 SVG 支持

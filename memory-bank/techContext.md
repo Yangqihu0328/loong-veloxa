@@ -95,6 +95,19 @@
 - PushClipPath 使用 bounds 近似替代真正的路径裁剪
 - `std::function<void()>` 用于 EventLoop::Task，嵌入式场景可能需要替换为轻量回调
 
+## DOM/HTML Parser 实现经验（2026-04-05）
+
+### DOM 架构
+- 精简四类节点（Element/Text/Comment/Document），与 Layout 完全分离
+- Document 使用 `Vector<Node*> owned_nodes_` 管理节点生命周期（需升级为 Arena）
+- 子节点双向链表，属性 SmallVector<Attribute, 4>
+
+### HTML 解析管线
+- Tokenizer（混合状态机）→ Parser（DOM Builder）→ Document
+- Tokenizer 零拷贝：Token 的 name/value 是 StringView 指向原始输入
+- 实体解码延迟到 Parser 层（Token 的 has_entities 标志）
+- 隐式关闭使用 20 条数据驱动规则表
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -106,3 +119,7 @@
 8. StrokePath 无 join/cap 处理（当前 butt 端帽、无连接）
 9. PPM 测试使用硬编码 /tmp 路径，应改用 tmpfile()
 10. CMake: vx_graphics 链接 vx_platform 可能引入不必要耦合
+11. TagIdFromName O(N) 线性扫描（~70 标签），应升级为 HashMap 或完美哈希
+12. Document 节点管理用 Vector<Node*> + delete，应集成 ArenaAllocator
+13. Parser 静默忽略 kError token，应支持错误收集
+14. Serializer 不做空白规范化

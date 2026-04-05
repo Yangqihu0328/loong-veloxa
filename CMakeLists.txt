@@ -20,6 +20,7 @@ endif()
 add_subdirectory(veloxa/foundation)
 add_subdirectory(veloxa/platform)
 add_subdirectory(veloxa/graphics)
+add_subdirectory(veloxa/core)
 
 if(VX_BUILD_TESTS)
   enable_testing()
