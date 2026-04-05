@@ -13,3 +13,14 @@
 - Foundation 设施确认可用：InternedString, StringView, String, Vector, HashMap
 - 303/303 既有测试全通过
 - 前置验证通过
+
+### 规划 ✅
+- 设计文档：`docs/specs/2026-04-05-dom-html-parser-design.md`
+- 实现计划：`docs/plans/2026-04-05-dom-html-parser.md`
+- 7 Phase 结构，预估 ~4h，~85 测试
+- 需要 creative：Tokenizer 状态机、隐式关闭规则
+
+### 创意设计 ✅
+- Tokenizer：方案 C（混合方案）→ `memory-bank/creative/creative-html-tokenizer.md`
+- 隐式关闭：方案 B（数据驱动规则表）→ `memory-bank/creative/creative-implicit-close-rules.md`
+- 下一步：`/build`
