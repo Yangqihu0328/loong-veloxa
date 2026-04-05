@@ -24,9 +24,6 @@ class LayoutEngine {
   static void LayoutBlock(LayoutBox* box, f32 containing_width,
                           const LayoutContext& ctx);
 
-  static void LayoutFlex(LayoutBox* box, f32 containing_width,
-                         const LayoutContext& ctx);
-
   static void LayoutInline(LayoutBox* box, f32 containing_width,
                            const LayoutContext& ctx);
 
