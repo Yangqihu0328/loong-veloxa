@@ -79,3 +79,6 @@ target_link_libraries(css_selector_matcher_test PRIVATE vx_core)
 
 vx_add_test(css_style_resolver_test core/css/style_resolver_test.cc)
 target_link_libraries(css_style_resolver_test PRIVATE vx_core)
+
+vx_add_test(css_integration_test core/css/integration_test.cc)
+target_link_libraries(css_integration_test PRIVATE vx_core)
