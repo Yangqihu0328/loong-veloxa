@@ -1,6 +1,7 @@
-// Placeholder — will be implemented in Phase 6.
+#include "veloxa/foundation/strings/string.h"
+
 namespace vx {
-namespace {
-volatile int placeholder_string = 0;
-}
+
+template class BasicString<MallocAllocator>;
+
 }  // namespace vx

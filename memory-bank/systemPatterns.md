@@ -92,6 +92,25 @@ veloxa/
 └── tools/           # 资源打包、开发工具
 ```
 
+## 已验证的模式（来自 Foundation 实现）
+
+### Allocator 模板参数模式
+- 所有容器和 String 通过 `typename Alloc` 模板参数接受分配器
+- 默认使用 `MallocAllocator`，可替换为 `ArenaAllocator`（场景级批量释放）
+- 分配器通过指针传递（`Alloc*`），不拥有分配器生命周期
+
+### Header-Only 模板库模式
+- 容器和基础类型均为 header-only，减少链接复杂度
+- 仅有实现细节较多的模块使用 .cc 文件（UTF 编解码、日志后端、InternedString 全局表）
+
+### 编译时裁剪模式
+- 日志通过 `VX_MIN_LOG_LEVEL` 宏在编译时裁剪低级别日志
+- 宏展开为 `if (constexpr_level >= compile_level)` 模式，编译器优化器消除死代码
+
+### OOM 处理策略
+- 当前策略：分配失败直接 `std::abort()`（嵌入式场景，OOM = 不可恢复）
+- 待改进：可考虑 OOM 回调机制，允许宿主应用做清理
+
 ## 待定架构决策
 - [ ] CSS 支持的具体子集范围
 - [ ] 是否内置 SVG 支持
