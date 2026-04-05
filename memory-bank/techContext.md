@@ -99,7 +99,7 @@
 
 ### DOM 架构
 - 精简四类节点（Element/Text/Comment/Document），与 Layout 完全分离
-- Document 使用 `Vector<Node*> owned_nodes_` 管理节点生命周期（需升级为 Arena）
+- Document 使用 ArenaAllocator 分配节点（placement new），owned_nodes_ 追踪析构
 - 子节点双向链表，属性 SmallVector<Attribute, 4>
 
 ### HTML 解析管线
@@ -135,11 +135,11 @@
 6. Rasterizer 覆盖率算法待升级为解析面积计算（AA 质量）
 7. PushClipPath 仅用 bounds 近似，待实现真正路径裁剪
 8. StrokePath 无 join/cap 处理（当前 butt 端帽、无连接）
-9. PPM 测试使用硬编码 /tmp 路径，应改用 tmpfile()
+9. ~~PPM 测试使用硬编码 /tmp 路径~~ ✅ 已修复（TASK-05，PID 隔离）
 10. CMake: vx_graphics 链接 vx_platform 可能引入不必要耦合
-11. TagIdFromName/PropertyIdFromName 均为 O(N) 线性扫描，应升级为 HashMap 或完美哈希
-12. Document 节点管理用 Vector<Node*> + delete，应集成 ArenaAllocator
-13. Parser 静默忽略 kError token，应支持错误收集
+11. ~~TagIdFromName/PropertyIdFromName 均为 O(N) 线性扫描~~ ✅ 已优化为 HashMap O(1)（TASK-05）
+12. ~~Document 节点管理用 Vector<Node*> + delete~~ ✅ 已集成 ArenaAllocator（TASK-05）
+13. ~~Parser 静默忽略 kError token~~ ✅ 已支持错误收集（TASK-05）
 14. Serializer 不做空白规范化
 15. parser.cc 过大（1035 行），考虑拆分为 parser_selector.cc + parser_value.cc
 16. ApplyDeclaration switch 规模大（~55 case），可用宏或代码生成简化

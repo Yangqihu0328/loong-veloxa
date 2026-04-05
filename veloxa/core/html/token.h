@@ -29,6 +29,12 @@ struct Token {
   explicit Token(TokenType t) : type(t) {}
 };
 
+struct ParseError {
+  u32 line;
+  u32 column;
+  StringView description;
+};
+
 }  // namespace vx::html
 
 #endif  // VELOXA_CORE_HTML_TOKEN_H_

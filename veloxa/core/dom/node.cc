@@ -74,19 +74,22 @@ void Element::RemoveAttribute(InternedString name) {
 // --- Document ---
 
 Element* Document::CreateElement(TagId tag_id) {
-  auto* el = new Element(tag_id);
+  void* mem = arena_.Allocate(sizeof(Element), alignof(Element));
+  auto* el = new (mem) Element(tag_id);
   owned_nodes_.push_back(el);
   return el;
 }
 
 Text* Document::CreateText(String data) {
-  auto* text = new Text(std::move(data));
+  void* mem = arena_.Allocate(sizeof(Text), alignof(Text));
+  auto* text = new (mem) Text(std::move(data));
   owned_nodes_.push_back(text);
   return text;
 }
 
 Comment* Document::CreateComment(String data) {
-  auto* comment = new Comment(std::move(data));
+  void* mem = arena_.Allocate(sizeof(Comment), alignof(Comment));
+  auto* comment = new (mem) Comment(std::move(data));
   owned_nodes_.push_back(comment);
   return comment;
 }

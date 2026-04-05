@@ -49,6 +49,35 @@ TEST(DocumentTest, OwnershipCleanup) {
   // If ownership is broken, sanitizers (ASan/LSan) will catch the leak.
 }
 
+TEST(DocumentTest, ArenaAllocation) {
+  Document doc;
+  EXPECT_EQ(doc.arena_bytes_allocated(), 0u);
+  doc.CreateElement(TagId::kDiv);
+  EXPECT_GT(doc.arena_bytes_allocated(), 0u);
+}
+
+TEST(DocumentTest, ArenaMultipleNodes) {
+  Document doc;
+  usize prev = doc.arena_bytes_allocated();
+  doc.CreateElement(TagId::kDiv);
+  EXPECT_GT(doc.arena_bytes_allocated(), prev);
+  prev = doc.arena_bytes_allocated();
+  doc.CreateText(String("hello"));
+  EXPECT_GT(doc.arena_bytes_allocated(), prev);
+  prev = doc.arena_bytes_allocated();
+  doc.CreateComment(String("comment"));
+  EXPECT_GT(doc.arena_bytes_allocated(), prev);
+}
+
+TEST(DocumentTest, ArenaCleanupWithSanitizer) {
+  auto* doc = new Document();
+  for (int i = 0; i < 100; ++i) {
+    doc->CreateElement(TagId::kDiv);
+    doc->CreateText(String("text data that might heap allocate"));
+  }
+  delete doc;
+}
+
 TEST(DocumentTest, BuildTree) {
   Document doc;
   Element* body = doc.CreateElement(TagId::kBody);
