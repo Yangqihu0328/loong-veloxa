@@ -9,11 +9,11 @@
 - **复杂度**：Level 4
 - **代码规范**：Google C++ Style Guide
 
-## 焦点
-- DOM 节点类层次（Node → Element / Text / Document）
-- HTML Tokenizer（字节流 → Token 流）
-- HTML Parser + DOM Builder（Token 流 → DOM 树）
-- 车载 HMI 场景裁剪（去除桌面特有 DOM 功能）
+## 构建完成
+- 7 Phase 全部完成
+- 403/403 全量测试通过
+- 100 个新测试
+- 下一步：`/reflect`
 
 ## Sciter 参考要点
 - node 基类：NODE_TYPE、parent 指针、遍历、序列化

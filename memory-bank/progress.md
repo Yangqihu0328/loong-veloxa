@@ -23,4 +23,12 @@
 ### 创意设计 ✅
 - Tokenizer：方案 C（混合方案）→ `memory-bank/creative/creative-html-tokenizer.md`
 - 隐式关闭：方案 B（数据驱动规则表）→ `memory-bank/creative/creative-implicit-close-rules.md`
-- 下一步：`/build`
+
+### 构建 ✅
+- 7 Phase 全部完成，403/403 测试通过（含 303 既有 + 100 新增）
+- Phase 2 Tag 系统：12 测试
+- Phase 3 DOM 节点：31 测试
+- Phase 4 HTML Tokenizer：25 测试
+- Phase 5 HTML Parser：20 测试
+- Phase 6 集成测试 + 序列化：12 测试
+- 下一步：`/reflect`
