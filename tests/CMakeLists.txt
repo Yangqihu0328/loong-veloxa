@@ -70,3 +70,6 @@ target_link_libraries(css_property_test PRIVATE vx_core)
 
 vx_add_test(css_tokenizer_test core/css/tokenizer_test.cc)
 target_link_libraries(css_tokenizer_test PRIVATE vx_core)
+
+vx_add_test(css_parser_test core/css/parser_test.cc)
+target_link_libraries(css_parser_test PRIVATE vx_core)
