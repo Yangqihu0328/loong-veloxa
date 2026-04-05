@@ -32,3 +32,9 @@ target_link_libraries(event_loop_test PRIVATE vx_platform)
 
 vx_add_test(gfx_types_test graphics/types_test.cc)
 target_link_libraries(gfx_types_test PRIVATE vx_graphics)
+
+vx_add_test(software_path_test graphics/software_path_test.cc)
+target_link_libraries(software_path_test PRIVATE vx_graphics)
+
+vx_add_test(software_canvas_test graphics/software_canvas_test.cc)
+target_link_libraries(software_canvas_test PRIVATE vx_graphics)
