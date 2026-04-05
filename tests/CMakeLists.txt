@@ -73,3 +73,9 @@ target_link_libraries(css_tokenizer_test PRIVATE vx_core)
 
 vx_add_test(css_parser_test core/css/parser_test.cc)
 target_link_libraries(css_parser_test PRIVATE vx_core)
+
+vx_add_test(css_selector_matcher_test core/css/selector_matcher_test.cc)
+target_link_libraries(css_selector_matcher_test PRIVATE vx_core)
+
+vx_add_test(css_style_resolver_test core/css/style_resolver_test.cc)
+target_link_libraries(css_style_resolver_test PRIVATE vx_core)
