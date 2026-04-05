@@ -57,3 +57,6 @@ target_link_libraries(element_test PRIVATE vx_core)
 
 vx_add_test(document_test core/dom/document_test.cc)
 target_link_libraries(document_test PRIVATE vx_core)
+
+vx_add_test(parser_test core/html/parser_test.cc)
+target_link_libraries(parser_test PRIVATE vx_core)
