@@ -58,6 +58,15 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
     if (child->is_text()) {
       auto* text = static_cast<dom::Text*>(child);
       if (text->data().size() == 0) continue;
+      bool all_ws = true;
+      for (usize i = 0; i < text->data().size(); ++i) {
+        char c = text->data()[i];
+        if (c != ' ' && c != '\t' && c != '\n' && c != '\r') {
+          all_ws = false;
+          break;
+        }
+      }
+      if (all_ws) continue;
       LayoutBox* text_box = CreateBox(LayoutType::kText, arena);
       text_box->text_node = text;
       text_box->style = style_ptr;
@@ -97,6 +106,13 @@ void LayoutEngine::LayoutChild(LayoutBox* child, f32 containing_width,
       LayoutInline(child, containing_width, ctx);
       break;
     case LayoutType::kText:
+      if (child->text_node && ctx.text_shaper && child->style) {
+        f32 fs = ResolveFontSize(child->style, ctx);
+        TextMetrics m = ctx.text_shaper->Measure(
+            child->text_node->data(), fs, child->style->font_weight);
+        child->content_width = m.width;
+        child->content_height = m.height;
+      }
       break;
   }
 }
