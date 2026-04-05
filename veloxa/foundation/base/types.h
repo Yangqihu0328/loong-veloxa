@@ -1,0 +1,25 @@
+#ifndef VELOXA_FOUNDATION_BASE_TYPES_H_
+#define VELOXA_FOUNDATION_BASE_TYPES_H_
+
+#include <cstddef>
+#include <cstdint>
+
+namespace vx {
+
+using u8 = uint8_t;
+using u16 = uint16_t;
+using u32 = uint32_t;
+using u64 = uint64_t;
+using i8 = int8_t;
+using i16 = int16_t;
+using i32 = int32_t;
+using i64 = int64_t;
+using f32 = float;
+using f64 = double;
+using usize = size_t;
+using isize = ptrdiff_t;
+using byte = uint8_t;
+
+}  // namespace vx
+
+#endif  // VELOXA_FOUNDATION_BASE_TYPES_H_

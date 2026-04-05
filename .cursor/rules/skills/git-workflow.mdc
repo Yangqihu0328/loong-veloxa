@@ -1,0 +1,130 @@
+---
+description: Git 工作流 - 分支管理、开发隔离和完成开发分支的标准流程
+globs: []
+alwaysApply: false
+---
+
+# Git 工作流
+
+## 分支策略
+
+### 开始开发前
+
+**永远不要直接在 main/master 分支上开发**（除非用户明确同意或是 Level 1 的微小修复）。
+
+1. 确认当前分支状态：`git status`
+2. 确保在最新状态：`git pull`
+3. 创建功能分支：`git checkout -b feature/[task-id]-[short-description]`
+
+### 分支命名规范
+
+| 类型 | 格式 | 示例 |
+|------|------|------|
+| 功能 | `feature/TASK-YYYYMMDD-NN-description` | `feature/TASK-20260314-01-user-auth` |
+| 修复 | `fix/TASK-YYYYMMDD-NN-description` | `fix/TASK-20260314-02-login-bug` |
+| 重构 | `refactor/TASK-YYYYMMDD-NN-description` | `refactor/TASK-20260314-03-cleanup` |
+
+### 提交规范
+
+使用语义化提交消息：
+
+```
+<type>(<scope>): <description>
+
+类型：feat, fix, refactor, test, docs, chore
+范围：可选，指明影响区域
+描述：简洁的变更说明
+```
+
+示例：
+- `feat(auth): add JWT token validation`
+- `fix(api): handle empty response body`
+- `test(auth): add login failure test cases`
+- `refactor(db): extract connection pool logic`
+
+## 工作流产出物提交
+
+工作流命令（`/build`、`/reflect`、`/archive`）产生的 Memory Bank 和文档变更也需要提交，确保 git 历史完整反映工作流全生命周期。
+
+| 场景 | 提交消息格式 |
+|------|------------|
+| `/build` TDD 循环 | 代码 + MB 更新合并提交（使用常规 `feat`/`fix` 等类型） |
+| `/build` 收尾 | `chore(build): finalize [task_id] memory bank state` |
+| `/reflect` 产出物 | `docs(reflect): add reflection for [task_id]` |
+| `/archive` 产出物 | `docs(archive): add archive for [task_id]` |
+| `/archive` 最终重置 | `chore(workflow): complete [task_id] and reset to idle` |
+| `/van` 遗留清理 | `chore(workflow): commit residual artifacts from previous task` |
+
+**原则：** 每个工作流阶段结束时，working tree 应为干净状态。
+
+## 完成开发分支
+
+当所有任务完成并通过验证后：
+
+### 1. 最终验证
+
+- [ ] 所有测试通过
+- [ ] 没有 linter 错误
+- [ ] 代码审查完成
+- [ ] Memory Bank 已更新
+
+### 2. 选择完成方式
+
+向用户展示选项：
+
+| 选项 | 适用场景 | 操作 |
+|------|---------|------|
+| **合并到主分支** | 个人项目、确认可合并 | `git checkout main && git merge --no-ff feature/xxx` |
+| **创建 PR** | 团队项目、需要审查 | `git push -u origin HEAD` 然后创建 PR |
+| **保留分支** | 还需要更多工作 | 只 push 到远程 |
+| **放弃分支** | 方案被否决 | `git checkout main && git branch -D feature/xxx` |
+
+### 3. 执行用户选择
+
+根据用户选择执行对应操作，每步都需要验证。
+
+## 提交频率
+
+- **每完成一个计划任务后提交**（一个任务可能包含多个 TDD 循环）
+- 在提交前完成代码审查（`code-review.mdc`）
+- 不要积攒大量变更后一次性提交
+- 提交前运行完整测试套件确认通过
+
+**Level 4 子系统粒度提交（强制）：**
+- Level 4 任务**必须**至少按子系统分别提交，禁止将所有子系统合并为单次原子大提交
+- 每个子系统完成并通过测试后独立提交，便于 code review 逐子系统审查和 `git bisect` 精确定位回归
+- 提交消息应标注子系统编号和名称，例如 `feat(error-codes): add AEGIS-xxxx error code system (#1/5)`
+- 如果子系统之间存在强依赖，可在依赖方提交中合并少量基础设施变更，但应在提交消息中说明
+
+**提交流程：** TDD 循环（可多次）→ 代码审查 → 测试全部通过 → 提交
+
+## 与 Memory Bank 集成
+
+- 创建分支后 → 更新 `memory-bank/activeContext.md` 记录当前分支名
+- 每次提交后 → 更新 `memory-bank/progress.md` 记录提交信息
+- 完成分支操作后 → 更新 `memory-bank/tasks.md` 记录分支状态
+
+## 合并冲突处理
+
+如果在合并时遇到冲突：
+1. 列出所有冲突文件
+2. 逐文件分析冲突内容
+3. 与用户讨论每个冲突的解决方案
+4. 解决冲突后运行完整测试套件
+5. 确认所有测试通过后完成合并
+
+## 非 Git 项目处理
+
+如果项目不是 Git 仓库：
+- 在 `/van` 阶段询问用户是否需要 `git init`
+- 如果用户选择不使用 Git → 跳过所有 Git 相关步骤，在 `activeContext.md` 中记录"无 Git"
+- 跳过提交步骤，但仍执行 TDD 和代码审查
+
+## Level 适配
+
+| 级别 | 分支策略 |
+|------|---------|
+| Level 1 | 征求用户明确同意后，可以在当前分支直接修复 |
+| Level 2 | 创建功能分支 |
+| Level 3 | 创建功能分支，可能需要多次提交 |
+| Level 4 | 创建功能分支，**按子系统分提交**（强制），每个子系统独立 commit 便于 bisect |
