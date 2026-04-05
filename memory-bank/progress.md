@@ -2,9 +2,14 @@
 
 ## 当前任务：TASK-20260405-05
 
-### 规划完成
+### 构建完成
 - 计划文档：`docs/plans/2026-04-05-tech-debt.md`
-- 4 个 Phase，共 10 个文件变更，~9 个新增测试
+- Phase 1: Document ArenaAllocator ✅
+- Phase 2: TagIdFromName/PropertyIdFromName HashMap O(1) ✅
+- Phase 3: PPM 测试路径 PID 隔离 ✅
+- Phase 4: Parser 错误收集 ✅
+- 测试：534/534 通过（新增 6 个）
+- 提交：`3f6e550`
 
 ## 已完成任务
 
