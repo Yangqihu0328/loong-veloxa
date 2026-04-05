@@ -63,3 +63,22 @@ target_link_libraries(parser_test PRIVATE vx_core)
 
 vx_add_test(html_integration_test core/html/integration_test.cc)
 target_link_libraries(html_integration_test PRIVATE vx_core)
+
+# Core: CSS
+vx_add_test(css_property_test core/css/property_test.cc)
+target_link_libraries(css_property_test PRIVATE vx_core)
+
+vx_add_test(css_tokenizer_test core/css/tokenizer_test.cc)
+target_link_libraries(css_tokenizer_test PRIVATE vx_core)
+
+vx_add_test(css_parser_test core/css/parser_test.cc)
+target_link_libraries(css_parser_test PRIVATE vx_core)
+
+vx_add_test(css_selector_matcher_test core/css/selector_matcher_test.cc)
+target_link_libraries(css_selector_matcher_test PRIVATE vx_core)
+
+vx_add_test(css_style_resolver_test core/css/style_resolver_test.cc)
+target_link_libraries(css_style_resolver_test PRIVATE vx_core)
+
+vx_add_test(css_integration_test core/css/integration_test.cc)
+target_link_libraries(css_integration_test PRIVATE vx_core)

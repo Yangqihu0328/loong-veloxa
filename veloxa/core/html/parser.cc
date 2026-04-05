@@ -91,6 +91,33 @@ void Parser::ProcessStartTag(const Token& start_token) {
   }
   // token is now kTagEnd
 
+  static const InternedString kId = InternedString::Intern("id");
+  static const InternedString kClass = InternedString::Intern("class");
+
+  const String* id_val = el->GetAttribute(kId);
+  if (id_val != nullptr && !id_val->empty()) {
+    el->set_id(
+        InternedString::Intern(StringView(id_val->data(), id_val->size())));
+  }
+
+  const String* class_val = el->GetAttribute(kClass);
+  if (class_val != nullptr && !class_val->empty()) {
+    StringView sv(class_val->data(), class_val->size());
+    usize start = 0;
+    while (start < sv.size()) {
+      while (start < sv.size() &&
+             (sv[start] == ' ' || sv[start] == '\t' || sv[start] == '\n'))
+        ++start;
+      if (start >= sv.size()) break;
+      usize end = start;
+      while (end < sv.size() && sv[end] != ' ' && sv[end] != '\t' &&
+             sv[end] != '\n')
+        ++end;
+      el->AddClass(InternedString::Intern(sv.substr(start, end - start)));
+      start = end;
+    }
+  }
+
   CurrentElement()->AppendChild(el);
 
   if (!dom::IsVoidElement(tag_id) && !token.self_closing) {

@@ -108,6 +108,24 @@
 - 实体解码延迟到 Parser 层（Token 的 has_entities 标志）
 - 隐式关闭使用 20 条数据驱动规则表
 
+## CSS Engine 实现经验（2026-04-05）
+
+### CSS 解析管线
+- CssTokenizer：22 种 token 类型，主分支 + 子扫描器模式，零拷贝 StringView
+- CssParser：选择器解析（6 种简单选择器 + 2 种组合子）+ 声明解析 + 值类型分发
+- 颜色解析：#hex（3/6/8 位）、rgb()/rgba()、18 种命名颜色（排序数组 + 二分查找）
+- 简写展开：margin/padding（1-4 值）、border（width+style+color）
+
+### 选择器匹配
+- 选择器解析时从左到右，存储时反转为从右到左
+- 匹配时从 compounds[0]（最右端，目标元素）开始，根据 combinator 向上遍历
+- compounds[i].combinator 描述 compounds[i] 与 compounds[i-1] 之间的关系
+
+### 层叠与继承
+- 应用顺序：非 important 样式表 → 非 important 内联 → important 样式表 → important 内联
+- 10 个可继承属性：color, visibility, font-family/size/weight/style, line-height, text-align, white-space, letter-spacing
+- ComputedStyle ~200 字节，直存所有计算后的属性值
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -119,7 +137,11 @@
 8. StrokePath 无 join/cap 处理（当前 butt 端帽、无连接）
 9. PPM 测试使用硬编码 /tmp 路径，应改用 tmpfile()
 10. CMake: vx_graphics 链接 vx_platform 可能引入不必要耦合
-11. TagIdFromName O(N) 线性扫描（~70 标签），应升级为 HashMap 或完美哈希
+11. TagIdFromName/PropertyIdFromName 均为 O(N) 线性扫描，应升级为 HashMap 或完美哈希
 12. Document 节点管理用 Vector<Node*> + delete，应集成 ArenaAllocator
 13. Parser 静默忽略 kError token，应支持错误收集
 14. Serializer 不做空白规范化
+15. parser.cc 过大（1035 行），考虑拆分为 parser_selector.cc + parser_value.cc
+16. ApplyDeclaration switch 规模大（~55 case），可用宏或代码生成简化
+17. 选择器匹配 O(rules × elements) 全量遍历，大页面需哈希索引优化
+18. :hover/:active/:focus 伪类当前返回 false（stub），需事件系统回填
