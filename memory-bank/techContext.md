@@ -66,3 +66,21 @@
 - 内存池化与零拷贝设计
 - 帧缓冲直出（适配 DRM/KMS）
 - 车载特有：DPI 适配、多屏、触摸优先、旋钮/HUD 交互
+
+## Foundation 实现经验（2026-04-05）
+
+### 编译器约束
+- `-Wpedantic` 禁止 C99 柔性数组成员（`char data[]`），需用偏移计算替代
+- `-Wtype-limits` 与编译时常量比较冲突，需 `-Wno-type-limits` 豁免
+- GCC 11 对 C++17 支持完整，`if constexpr`、结构化绑定均可用
+
+### 依赖管理
+- FetchContent 依赖网络可用性，离线环境应优先使用系统包
+- 系统 GTest v1.11.0 功能足够（`EXPECT_DEATH`、`TEST_F` 均可用），但缺少 v1.14+ 的 `EXPECT_THAT`
+
+### 技术债务清单
+1. Benchmark 延期（需 google benchmark）
+2. HashMap SIMD Group 探测未实现（当前标量线性探测）
+3. InternedString 全局表非线程安全
+4. BasicString 含 Alloc* 指针，sizeof 为 32 而非纯 24
+5. Status::message 使用 std::string，与自有 String 存在循环依赖
