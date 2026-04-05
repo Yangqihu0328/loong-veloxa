@@ -111,6 +111,30 @@ veloxa/
 - 当前策略：分配失败直接 `std::abort()`（嵌入式场景，OOM = 不可恢复）
 - 待改进：可考虑 OOM 回调机制，允许宿主应用做清理
 
+## 已验证的模式（来自 Graphics/Platform HAL 实现）
+
+### 纯虚接口 + 具体后端模式
+- Canvas/Path/Surface/EventLoop 均为纯虚接口（`virtual ~T() = default`）
+- 具体实现（SoftwareCanvas、MemorySurface、HeadlessEventLoop）在子目录中
+- 上层代码仅依赖接口头文件，后端可编译时替换
+- 与 Sciter 的 `gool::graphics` 模式对齐
+
+### 覆盖率扫描线光栅化模式
+- 边生成 → 分桶 → 逐行覆盖率累加 → SrcOver 混合
+- 非零缠绕规则（CSS/SVG 兼容）
+- de Casteljau 贝塞尔曲线细分（阈值 0.25px，最大深度 16）
+- 描边转轮廓填充（逐段法线偏移）
+
+### 像素格式约定
+- 唯一格式：RGBA32 = R[0:7] | G[8:15] | B[16:23] | A[24:31]
+- 定义在 `Color::ToRGBA32()`，所有渲染和存储代码引用此格式
+- Surface::stride() 返回字节数（width * 4）
+
+### Lock/Unlock 资源访问模式
+- Surface 通过 Lock() 返回裸指针，Unlock() 释放
+- VX_DCHECK 防止重复 Lock 和 Resize 冲突
+- Canvas 在 Lock 期间操作像素
+
 ## 待定架构决策
 - [ ] CSS 支持的具体子集范围
 - [ ] 是否内置 SVG 支持
