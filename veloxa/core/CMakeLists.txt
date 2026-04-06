@@ -19,6 +19,7 @@ add_library(vx_core STATIC
   event/event_dispatcher.cc
   event/event_manager.cc
   update_manager.cc
+  application.cc
 )
 
 target_include_directories(vx_core PUBLIC ${PROJECT_SOURCE_DIR})

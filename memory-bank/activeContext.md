@@ -1,13 +1,33 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化
+构建中
 
 ## 当前任务
 - **ID**：TASK-20260405-10
 - **描述**：事件循环与应用壳（EventLoop / Application Shell）
 - **复杂度**：Level 3
 - **代码规范**：Google C++ Style Guide
+
+## 范围（Application Shell）
+1. Application 类 — 持有并连接 Document/Stylesheets/EventManager/UpdateManager/Canvas/Surface
+2. LoadHTML/LoadCSS — 解析 HTML/CSS 并初始化渲染管线
+3. 帧调度 — EventLoop 定时器驱动帧更新
+4. 输入注入 — InjectInput → EventManager → UpdateManager
+5. 生命周期 — Run/Quit
+6. 单元测试 + 集成测试
+
+## 设计文档
+- **设计规格**：`docs/specs/2026-04-05-app-shell-design.md`
+- **实现计划**：`docs/plans/2026-04-05-app-shell.md`
+
+## 实现计划概要
+- **Phase 1**：Application 类核心（头文件 + 实现 + 单元测试）
+- **Phase 2**：集成测试（全管线交互验证）
+- **预估新增测试**：~16 个
+
+## 不需要创意阶段
+3 个设计决策均有明确最优选项（核心拥有+外部注入 / 按需帧+心跳 / 持久 Lock），无需 /creative。
 
 ## 待处理事项
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
