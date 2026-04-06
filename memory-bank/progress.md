@@ -3,7 +3,15 @@
 ## 当前任务
 
 ### TASK-20260405-08 事件系统
-- **状态**：初始化
+- **状态**：构建完成
+- **设计文档**：`memory-bank/creative/creative-event-system.md`
+- **实现计划**：`docs/plans/2026-04-05-event-system.md`
+- **Phase 1**：基础设施（headers + stubs + CMake）— 8 个测试通过
+- **Phase 2**：Hit-Testing + EventDispatcher（子代理零返工）— 22 个测试通过
+- **Phase 3**：EventManager + CSS 伪类回填 — 14 个测试通过
+- **Phase 4**：集成测试（修正 inline style → 外部 CSS）— 8 个测试通过
+- **总测试**：702/702 通过（净增 52 个）
+- **关键修正**：集成测试不可使用 inline style（BuildTree 不解析），需用外部 CSS 选择器
 
 ## 已完成任务
 

@@ -15,6 +15,9 @@ add_library(vx_core STATIC
   layout/layout_engine.cc
   layout/flex_layout.cc
   render/renderer.cc
+  event/hit_test.cc
+  event/event_dispatcher.cc
+  event/event_manager.cc
 )
 
 target_include_directories(vx_core PUBLIC ${PROJECT_SOURCE_DIR})

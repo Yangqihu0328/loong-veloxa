@@ -172,6 +172,27 @@
 - SoftwareCanvas 实现：逐字符 FillRect（char_width = 0.6 × font_size, 空格跳过）
 - 后续集成 FreeType+HarfBuzz 后替换实现，上层代码零修改
 
+## Event System 实现经验（2026-04-05）
+
+### 事件系统架构
+- 两层事件模型：InputEvent（平台层）+ DOMEvent（DOM 分发上下文）
+- W3C DOM Events 三阶段分发：Capture → Target → Bubble
+- 中央 EventManager 管理 hover/active/focus 状态（3 指针，不侵入 Element）
+- HitTest 使用 LayoutBox 树后序遍历，共享渲染管线的 z-index 排序逻辑
+
+### CSS 伪类连接
+- SelectorMatcher::Matches 添加可选 `const EventManager* em = nullptr` 参数
+- :hover → em->IsHovered(el)（祖先链遍历）
+- :active → em->IsActive(el)（祖先链遍历）
+- :focus → em->IsFocused(el)（精确匹配）
+- em == nullptr 时保持原有行为（返回 false）
+
+### 集成测试约束（重要）
+- **LayoutEngine::BuildTree 不解析 HTML inline style**
+- BuildTree 调用 StyleResolver::Resolve 时 inline_decls 参数默认为 nullptr
+- 所有集成测试必须使用外部 CSS 选择器（`#id { ... }`），不可使用 `style="..."` 属性
+- 这是 API 能力假设错误第三次出现（TASK-02 像素格式、TASK-07 border box 坐标、TASK-08 inline style）
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -200,3 +221,8 @@
 25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处
 26. DisplayList 无 Dump() 调试方法
 27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
+28. LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）
+29. EventManager 无「状态变更→样式失效→重绘」触发机制（仅更新指针）
+30. EventDispatcher::listeners_ 元素销毁时需手动 RemoveEventListeners（无自动清理）
+31. HitTest z-index 排序每次调用重新排序（可缓存）
+32. EventDispatcher 使用 std::function 作为 handler（嵌入式场景可能需轻量替代）
