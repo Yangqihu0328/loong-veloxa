@@ -14,7 +14,8 @@ add_library(vx_core STATIC
   layout/layout_utils.cc
   layout/layout_engine.cc
   layout/flex_layout.cc
+  render/renderer.cc
 )
 
 target_include_directories(vx_core PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(vx_core PUBLIC vx_foundation)
+target_link_libraries(vx_core PUBLIC vx_foundation vx_graphics)

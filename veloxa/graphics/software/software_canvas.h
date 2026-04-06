@@ -33,6 +33,9 @@ class SoftwareCanvas : public Canvas {
   void StrokeLine(Point a, Point b, const Brush& brush,
                   vx::f32 width) override;
 
+  void DrawText(vx::StringView text, const Rect& bounds, vx::f32 font_size,
+                const Brush& brush) override;
+
   void PushClipRect(const Rect& rect) override;
   void PushClipPath(const Path& path) override;
   void PopClip() override;

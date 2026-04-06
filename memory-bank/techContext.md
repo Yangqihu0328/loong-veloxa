@@ -146,6 +146,32 @@
 - LayoutChild 对 kText 节点调用 TextShaper::Measure 测量尺寸
 - LayoutChild 分发：Block→LayoutBlock, Flex→LayoutFlex(自由函数), Inline→LayoutInline, Text→测量
 
+## Render Pipeline 实现经验（2026-04-05）
+
+### Display List 架构
+- PaintCommand 6 种类型（FillRect/DrawText/PushClipRect/PopClip/PushLayer/PopLayer）
+- Record 递归遍历 LayoutBox 树，生成有序 DisplayList
+- Replay 遍历 DisplayList，调用 Canvas 方法
+- Paint = Record + Replay 便捷入口
+
+### 跨模块颜色格式
+- CSS ComputedStyle: RRGGBBAA — `0xFF0000FF` = red opaque
+- gfx::Color::ToRGBA32(): R[0:7]G[8:15]B[16:23]A[24:31] — `0xFF0000FF` = red opaque（巧合）
+- **不可混用**：black 在 CSS 是 `0x000000FF`，在 gfx 是 `0xFF000000`
+- CssColorToGfx() 转换函数位于 render_utils.h
+- CSS 命名颜色 `green` = #008000 ≠ gfx::Color::Green() = #00FF00
+
+### LayoutBox 坐标语义
+- `x`, `y`：content area 原点（绝对坐标）
+- padding box 原点：`(x - padding[left], y - padding[top])`
+- border box 原点：`(x - padding[left] - border[left], y - padding[top] - border[top])`
+- 此语义对渲染、hit-testing 等所有坐标计算至关重要
+
+### Canvas::DrawText
+- 纯虚接口，参数：text (StringView), bounds (Rect), font_size (f32), brush (Brush)
+- SoftwareCanvas 实现：逐字符 FillRect（char_width = 0.6 × font_size, 空格跳过）
+- 后续集成 FreeType+HarfBuzz 后替换实现，上层代码零修改
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -169,3 +195,8 @@
 20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）
 21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）
 22. Arena 分配的 ComputedStyle 含 InternedString 成员，arena 释放不调用析构函数，可能泄露引用计数
+23. SoftwareCanvas::DrawText 是存根（逐字符 FillRect），需集成 FreeType+HarfBuzz
+24. border-radius 渲染未实现（ComputedStyle 有值但 renderer 忽略）
+25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处
+26. DisplayList 无 Dump() 调试方法
+27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
