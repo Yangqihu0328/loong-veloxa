@@ -18,6 +18,8 @@ class MemorySurface : public Surface {
   void Resize(vx::u32 width, vx::u32 height) override;
   vx::Status SavePPM(const char* path) const override;
 
+  const vx::u32* data() const { return pixels_; }
+
  private:
   vx::u32 width_;
   vx::u32 height_;

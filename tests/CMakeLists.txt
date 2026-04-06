@@ -144,3 +144,10 @@ target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform)
 
 vx_add_test(application_integration_test core/application_integration_test.cc)
 target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform)
+
+# API: C API
+vx_add_test(api_test api/api_test.cc)
+target_link_libraries(api_test PRIVATE vx_api vx_platform)
+
+vx_add_test(api_integration_test api/api_integration_test.cc)
+target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
