@@ -1,29 +1,10 @@
 # 活跃上下文
 
 ## 当前阶段
-回顾中
+空闲
 
 ## 当前任务
-- **ID**：TASK-20260405-08
-- **描述**：构建事件系统（Event System）
-- **复杂度**：Level 4
-- **代码规范**：Google C++ Style Guide
-
-## 范围（事件系统子系统）
-1. 输入事件类型定义（InputEvent：Touch/Pointer/Keyboard）
-2. Hit-Testing——给定 (x,y) 坐标，在 LayoutBox 树中找到目标元素
-3. DOM 事件分发模型——Capture（Sinking）→ Target → Bubble
-4. 元素交互状态管理——:hover / :active / :focus 状态跟踪
-5. CSS 伪类回填——连接 SelectorMatcher 到元素事件状态
-6. 平台输入抽象——扩展或新增输入事件源接口
-
-## 已有基础设施
-- **Platform HAL**：EventLoop（Run/Quit/PostTask/SetTimer/PollOnce）、HeadlessEventLoop
-- **DOM**：Element（属性、子节点、tag_id）、Document（ArenaAllocator）
-- **CSS**：SelectorMatcher 已解析 :hover/:active/:focus 但均返回 false（stub）
-- **Layout**：LayoutBox（x/y content origin, padding/border/margin, LayoutType）
-- **Render**：DisplayList + Paint 管线，已贯通 HTML→PPM
-- **注意**：Element 目前无交互状态字段；EventLoop 无输入事件类型
+无
 
 ## 待处理事项
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
