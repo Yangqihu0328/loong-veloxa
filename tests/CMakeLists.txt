@@ -104,3 +104,13 @@ target_link_libraries(inline_position_test PRIVATE vx_core)
 
 vx_add_test(layout_integration_test core/layout/integration_test.cc)
 target_link_libraries(layout_integration_test PRIVATE vx_core)
+
+# Core: Render
+vx_add_test(render_paint_command_test core/render/paint_command_test.cc)
+target_link_libraries(render_paint_command_test PRIVATE vx_core)
+
+vx_add_test(render_test core/render/renderer_test.cc)
+target_link_libraries(render_test PRIVATE vx_core vx_graphics vx_platform)
+
+vx_add_test(render_integration_test core/render/integration_test.cc)
+target_link_libraries(render_integration_test PRIVATE vx_core vx_graphics vx_platform)

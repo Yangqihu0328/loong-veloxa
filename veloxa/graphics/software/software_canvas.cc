@@ -111,6 +111,24 @@ void SoftwareCanvas::StrokeLine(Point a, Point b, const Brush& brush,
   rasterizer.StrokePath(path, brush, width, CurrentClip(), transform_);
 }
 
+void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
+                              vx::f32 font_size, const Brush& brush) {
+  f32 char_width = font_size * 0.6f;
+  f32 char_height = font_size;
+  f32 x = bounds.x;
+  f32 y = bounds.y;
+  for (usize i = 0; i < text.size(); ++i) {
+    if (text[i] == ' ') {
+      x += char_width;
+      continue;
+    }
+    if (x + char_width > bounds.right()) break;
+    if (y + char_height > bounds.bottom()) break;
+    FillRect({x, y, char_width - 1.0f, char_height}, brush);
+    x += char_width;
+  }
+}
+
 void SoftwareCanvas::PushClipRect(const Rect& rect) {
   Rect current = CurrentClip();
   clip_stack_.push_back(current.Intersect(rect));
