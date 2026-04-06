@@ -4,6 +4,8 @@
 
 #include "veloxa/core/css/parser.h"
 #include "veloxa/core/dom/document.h"
+#include "veloxa/core/event/event_manager.h"
+#include "veloxa/core/layout/layout_box.h"
 
 namespace vx::css {
 namespace {
@@ -181,6 +183,48 @@ TEST(StyleResolverTest, FontInheritance) {
   auto style = StyleResolver::Resolve(el, sheets, &parent);
   EXPECT_FLOAT_EQ(style.font_size.value, 20.0f);
   EXPECT_EQ(style.font_size.unit, Unit::kPx);
+}
+
+TEST(StyleResolverTest, HoverPseudoClassWithEventManager) {
+  dom::Document doc;
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  Vector<Stylesheet> sheets;
+  sheets.push_back(
+      CssParser::Parse(StringView("div:hover { background-color: #ff0000; }")));
+
+  ComputedStyle box_style;
+  layout::LayoutBox box;
+  box.element = div;
+  box.style = &box_style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  event::EventManager em;
+  event::InputEvent move{};
+  move.type = event::EventType::kPointerMove;
+  move.x = 50;
+  move.y = 50;
+  em.HandleInput(move, &box);
+
+  auto style = StyleResolver::Resolve(div, sheets, nullptr, nullptr, &em);
+  EXPECT_EQ(style.background_color, 0xFF0000FFu);
+}
+
+TEST(StyleResolverTest, NoPseudoMatchWithoutEventManager) {
+  dom::Document doc;
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  Vector<Stylesheet> sheets;
+  sheets.push_back(
+      CssParser::Parse(StringView("div:hover { background-color: #ff0000; }")));
+
+  auto style = StyleResolver::Resolve(div, sheets, nullptr);
+  EXPECT_EQ(style.background_color, 0x00000000u);
 }
 
 }  // namespace

@@ -193,6 +193,29 @@
 - 所有集成测试必须使用外部 CSS 选择器（`#id { ... }`），不可使用 `style="..."` 属性
 - 这是 API 能力假设错误第三次出现（TASK-02 像素格式、TASK-07 border box 坐标、TASK-08 inline style）
 
+### CSS 伪类透传链完整路径（TASK-09 修复）
+- 完整链路：LayoutContext.event_manager → BuildTree → StyleResolver::Resolve(em) → CollectMatchingRules(em) → SelectorMatcher::Matches(sel, el, em)
+- TASK-08 只修改了 SelectorMatcher，未更新上游 StyleResolver 调用链，导致 restyle 阶段伪类永远不匹配
+- 教训：跨模块参数透传修改必须端到端验证整条调用链
+
+## Update Manager 实现经验（2026-04-05）
+
+### 更新管线架构
+- UpdateManager 编排 Invalidate → Restyle → Relayout → DirtyRect → Repaint
+- 全量 restyle + relayout（HMI 树小，< 1ms），仅重绘阶段做脏区优化
+- 拥有 ArenaAllocator，每帧 Reset 释放旧 LayoutBox 树
+- LayoutEngine::Layout 新增 ArenaAllocator& 重载，旧签名（static arena）仍保留
+
+### 脏区计算
+- DisplayList 逐项对比（PaintCommand::operator==），差异项 rect 并集 = 脏区
+- 列表长度不同时回退全屏重绘
+- Canvas::PushClipRect 裁剪 + Clear + Replay 实现脏区重绘
+
+### SoftwareCanvas 构造 API
+- SoftwareCanvas 接受 `(u32* pixels, u32 width, u32 height, u32 stride)`
+- 不接受 Surface* 指针，需手动 Lock/Unlock Surface 获取 pixels
+- 写测试时应参考现有测试的构造方式，避免 API 假设错误
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -211,8 +234,8 @@
 15. parser.cc 过大（1035 行），考虑拆分为 parser_selector.cc + parser_value.cc
 16. ApplyDeclaration switch 规模大（~55 case），可用宏或代码生成简化
 17. 选择器匹配 O(rules × elements) 全量遍历，大页面需哈希索引优化
-18. :hover/:active/:focus 伪类当前返回 false（stub），需事件系统回填
-19. LayoutEngine::Layout 的 static ArenaAllocator 线程不安全，需重构为调用者持有
+18. ~~:hover/:active/:focus 伪类当前返回 false（stub）~~ ✅ 已回填（TASK-08 SelectorMatcher + TASK-09 StyleResolver 透传）
+19. LayoutEngine::Layout 的 static ArenaAllocator 线程不安全（旧签名仍存在，新签名接受外部 arena）
 20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）
 21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）
 22. Arena 分配的 ComputedStyle 含 InternedString 成员，arena 释放不调用析构函数，可能泄露引用计数
@@ -222,7 +245,10 @@
 26. DisplayList 无 Dump() 调试方法
 27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
 28. LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）
-29. EventManager 无「状态变更→样式失效→重绘」触发机制（仅更新指针）
+29. ~~EventManager 无「状态变更→样式失效→重绘」触发机制~~ ✅ 已实现（TASK-09 UpdateManager + InvalidationCallback）
 30. EventDispatcher::listeners_ 元素销毁时需手动 RemoveEventListeners（无自动清理）
 31. HitTest z-index 排序每次调用重新排序（可缓存）
 32. EventDispatcher 使用 std::function 作为 handler（嵌入式场景可能需轻量替代）
+33. UpdateManager::Update 中 canvas 操作（PushClipRect+Clear+Replay+PopClip）可提取为 RepaintDirtyRegion 辅助方法
+34. ComputeDirtyRect 仅支持 PaintCommand 逐项对比，不处理命令重排序（假设绘制顺序不变）
+35. UpdateManager 缺少 OnBeforeUpdate/OnAfterUpdate 钩子（宿主应用无法监听帧生命周期）

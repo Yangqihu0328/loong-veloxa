@@ -398,4 +398,94 @@ TEST_F(EventManagerTest, SelectorMatcherHoverIntegration) {
   EXPECT_FALSE(css::SelectorMatcher::Matches(sel, div, &em));
 }
 
+TEST_F(EventManagerTest, InvalidationCallbackOnHoverChange) {
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = div;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  EventManager em;
+  int callback_count = 0;
+  em.SetInvalidationCallback([&]() { ++callback_count; });
+
+  em.HandleInput(MakePointerMove(50, 50), &box);
+  EXPECT_EQ(callback_count, 1);
+}
+
+TEST_F(EventManagerTest, NoCallbackWhenHoverUnchanged) {
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = div;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  EventManager em;
+  int callback_count = 0;
+  em.SetInvalidationCallback([&]() { ++callback_count; });
+
+  em.HandleInput(MakePointerMove(50, 50), &box);
+  EXPECT_EQ(callback_count, 1);
+
+  em.HandleInput(MakePointerMove(60, 60), &box);
+  EXPECT_EQ(callback_count, 1);
+}
+
+TEST_F(EventManagerTest, CallbackOnPointerDown) {
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = div;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  EventManager em;
+  int callback_count = 0;
+  em.SetInvalidationCallback([&]() { ++callback_count; });
+
+  em.HandleInput(MakePointerDown(50, 50), &box);
+  EXPECT_EQ(callback_count, 1);
+}
+
+TEST_F(EventManagerTest, CallbackOnPointerUp) {
+  auto* div = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(div);
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = div;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  EventManager em;
+  int callback_count = 0;
+  em.SetInvalidationCallback([&]() { ++callback_count; });
+
+  em.HandleInput(MakePointerDown(50, 50), &box);
+  EXPECT_EQ(callback_count, 1);
+
+  em.HandleInput(MakePointerUp(50, 50), &box);
+  EXPECT_EQ(callback_count, 2);
+}
+
 }  // namespace

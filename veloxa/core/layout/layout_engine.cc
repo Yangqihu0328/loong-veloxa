@@ -29,8 +29,9 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
                                    const LayoutContext& ctx) {
   css::ComputedStyle resolved;
   if (ctx.stylesheets) {
-    resolved =
-        css::StyleResolver::Resolve(element, *ctx.stylesheets, parent_style);
+    resolved = css::StyleResolver::Resolve(element, *ctx.stylesheets,
+                                           parent_style, nullptr,
+                                           ctx.event_manager);
   } else if (parent_style) {
     resolved = *parent_style;
   }
@@ -84,8 +85,12 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
 LayoutBox* LayoutEngine::Layout(dom::Document* doc, const LayoutContext& ctx) {
   static ArenaAllocator layout_arena(8192);
   layout_arena.Reset();
+  return Layout(doc, ctx, layout_arena);
+}
 
-  LayoutBox* root = BuildTree(doc, nullptr, layout_arena, ctx);
+LayoutBox* LayoutEngine::Layout(dom::Document* doc, const LayoutContext& ctx,
+                                ArenaAllocator& arena) {
+  LayoutBox* root = BuildTree(doc, nullptr, arena, ctx);
   if (!root) return nullptr;
 
   LayoutBlock(root, ctx.viewport_width, ctx);

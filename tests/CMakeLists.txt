@@ -130,3 +130,10 @@ target_link_libraries(event_manager_test PRIVATE vx_core)
 
 vx_add_test(event_integration_test core/event/integration_test.cc)
 target_link_libraries(event_integration_test PRIVATE vx_core vx_graphics vx_platform)
+
+# Core: Update Manager
+vx_add_test(update_manager_test core/update_manager_test.cc)
+target_link_libraries(update_manager_test PRIVATE vx_core vx_graphics vx_platform)
+
+vx_add_test(update_integration_test core/update_integration_test.cc)
+target_link_libraries(update_integration_test PRIVATE vx_core vx_graphics vx_platform)

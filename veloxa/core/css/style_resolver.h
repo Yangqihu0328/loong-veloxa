@@ -6,6 +6,10 @@
 #include "veloxa/core/css/selector_matcher.h"
 #include "veloxa/core/dom/element.h"
 
+namespace vx::event {
+class EventManager;
+}
+
 namespace vx::css {
 
 class StyleResolver {
@@ -14,7 +18,8 @@ class StyleResolver {
       const dom::Element* element,
       const Vector<Stylesheet>& stylesheets,
       const ComputedStyle* parent_style,
-      const SmallVector<Declaration, 8>* inline_decls = nullptr);
+      const SmallVector<Declaration, 8>* inline_decls = nullptr,
+      const event::EventManager* em = nullptr);
 
  private:
   struct MatchedRule {
@@ -26,7 +31,8 @@ class StyleResolver {
   static void CollectMatchingRules(
       const dom::Element* element,
       const Vector<Stylesheet>& stylesheets,
-      Vector<MatchedRule>& matched);
+      Vector<MatchedRule>& matched,
+      const event::EventManager* em = nullptr);
 
   static void SortBySpecificity(Vector<MatchedRule>& rules);
 
