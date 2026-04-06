@@ -137,3 +137,10 @@ target_link_libraries(update_manager_test PRIVATE vx_core vx_graphics vx_platfor
 
 vx_add_test(update_integration_test core/update_integration_test.cc)
 target_link_libraries(update_integration_test PRIVATE vx_core vx_graphics vx_platform)
+
+# Core: Application
+vx_add_test(application_test core/application_test.cc)
+target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform)
+
+vx_add_test(application_integration_test core/application_integration_test.cc)
+target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform)

@@ -252,3 +252,6 @@
 33. UpdateManager::Update 中 canvas 操作（PushClipRect+Clear+Replay+PopClip）可提取为 RepaintDirtyRegion 辅助方法
 34. ComputeDirtyRect 仅支持 PaintCommand 逐项对比，不处理命令重排序（假设绘制顺序不变）
 35. UpdateManager 缺少 OnBeforeUpdate/OnAfterUpdate 钩子（宿主应用无法监听帧生命周期）
+36. Application 缺少 Resize 支持（需重建 Canvas + 更新 LayoutContext viewport）
+37. Application 缺少 HTML/CSS 解析错误回调
+38. Application::LoadHTML 使用裸 delete 管理 Document，可改用 unique_ptr
