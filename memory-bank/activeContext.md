@@ -1,10 +1,13 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+初始化
 
 ## 当前任务
-无
+- **ID**：TASK-20260405-10
+- **描述**：事件循环与应用壳（EventLoop / Application Shell）
+- **复杂度**：Level 3
+- **代码规范**：Google C++ Style Guide
 
 ## 待处理事项
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
