@@ -299,6 +299,19 @@ veloxa/
 - 本次 Application 实现仅 87 行，全部是模块连接代码
 - 此类任务可考虑评为 Level 2，跳过 /creative 评估
 
+## 已验证的模式（来自 C API 层实现）
+
+### 不透明指针 C ABI 桥接模式
+- C 公共头文件声明不透明 `typedef struct VxView VxView;`
+- C++ 实现中 `reinterpret_cast` 在不透明指针和 C++ 类之间转换
+- 每个 C 函数入口做 NULL 检查 → 返回枚举错误码
+- 符合 Vulkan/SDL 惯例，ABI 稳定（C++ 类变更不影响头文件）
+
+### 只读数据访问器补充排他锁模式
+- Lock/Unlock 排他模型适合写操作，但测试/调试需要只读访问
+- `data() const` 返回裸指针的只读视图，不影响 locked_ 互斥语义
+- 当 production 代码已持有 Lock 时，测试代码可通过 data() 安全读取
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持

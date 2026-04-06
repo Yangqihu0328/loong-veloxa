@@ -3,9 +3,14 @@
 ## 当前任务
 
 ### TASK-20260405-11 C API 层
-- **状态**：规划完成
+- **状态**：回顾完成
 - **设计文档**：`docs/specs/2026-04-05-c-api-design.md`
 - **实现计划**：`docs/plans/2026-04-05-c-api.md`
+- **回顾文档**：`memory-bank/reflection/reflection-TASK-20260405-11.md`
+- **分支**：`feature/TASK-20260405-11-c-api`
+- **测试**：763/763 通过（新增 16 个 C API 测试）
+- **提交**：`5e8161e` feat(api), `13ac7db` chore(build)
+- **偏差**：memory_surface.h 新增 data() 访问器（计划外），像素格式通道顺序二次出错
 
 ## 已完成任务
 
