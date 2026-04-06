@@ -13,6 +13,10 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas);
 
 void Paint(layout::LayoutBox* root, gfx::Canvas* canvas);
 
+gfx::Rect ComputeDirtyRect(const DisplayList& old_list,
+                            const DisplayList& new_list,
+                            f32 viewport_width, f32 viewport_height);
+
 }  // namespace vx::render
 
 #endif  // VELOXA_CORE_RENDER_RENDERER_H_

@@ -12,6 +12,9 @@ class LayoutEngine {
  public:
   static LayoutBox* Layout(dom::Document* doc,
                            const LayoutContext& ctx);
+  static LayoutBox* Layout(dom::Document* doc,
+                           const LayoutContext& ctx,
+                           ArenaAllocator& arena);
 
  private:
   static LayoutBox* BuildTree(dom::Element* element,

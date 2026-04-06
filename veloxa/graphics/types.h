@@ -96,6 +96,16 @@ struct Rect {
   constexpr bool operator!=(const Rect& other) const {
     return !(*this == other);
   }
+
+  static Rect Union(const Rect& a, const Rect& b) {
+    if (a.IsEmpty()) return b;
+    if (b.IsEmpty()) return a;
+    vx::f32 ux = std::min(a.x, b.x);
+    vx::f32 uy = std::min(a.y, b.y);
+    vx::f32 ur = std::max(a.right(), b.right());
+    vx::f32 ub = std::max(a.bottom(), b.bottom());
+    return {ux, uy, ur - ux, ub - uy};
+  }
 };
 
 struct Matrix3x2 {

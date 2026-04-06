@@ -157,4 +157,20 @@ void Paint(layout::LayoutBox* root, gfx::Canvas* canvas) {
   Replay(list, canvas);
 }
 
+gfx::Rect ComputeDirtyRect(const DisplayList& old_list,
+                            const DisplayList& new_list,
+                            f32 viewport_width, f32 viewport_height) {
+  if (old_list.size() != new_list.size()) {
+    return {0, 0, viewport_width, viewport_height};
+  }
+  gfx::Rect dirty{0, 0, 0, 0};
+  for (usize i = 0; i < old_list.size(); ++i) {
+    if (old_list[i] != new_list[i]) {
+      dirty = gfx::Rect::Union(dirty, old_list[i].rect);
+      dirty = gfx::Rect::Union(dirty, new_list[i].rect);
+    }
+  }
+  return dirty;
+}
+
 }  // namespace vx::render

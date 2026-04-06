@@ -10,7 +10,8 @@ ComputedStyle StyleResolver::Resolve(
     const dom::Element* element,
     const Vector<Stylesheet>& stylesheets,
     const ComputedStyle* parent_style,
-    const SmallVector<Declaration, 8>* inline_decls) {
+    const SmallVector<Declaration, 8>* inline_decls,
+    const event::EventManager* em) {
   ComputedStyle style;
 
   if (parent_style != nullptr) {
@@ -18,7 +19,7 @@ ComputedStyle StyleResolver::Resolve(
   }
 
   Vector<MatchedRule> matched;
-  CollectMatchingRules(element, stylesheets, matched);
+  CollectMatchingRules(element, stylesheets, matched, em);
   SortBySpecificity(matched);
 
   for (const auto& mr : matched) {
@@ -59,12 +60,13 @@ ComputedStyle StyleResolver::Resolve(
 void StyleResolver::CollectMatchingRules(
     const dom::Element* element,
     const Vector<Stylesheet>& stylesheets,
-    Vector<MatchedRule>& matched) {
+    Vector<MatchedRule>& matched,
+    const event::EventManager* em) {
   u32 order = 0;
   for (const auto& sheet : stylesheets) {
     for (const auto& rule : sheet.rules) {
       for (const auto& sel : rule.selectors) {
-        if (SelectorMatcher::Matches(sel, element)) {
+        if (SelectorMatcher::Matches(sel, element, em)) {
           matched.push_back({&rule, sel.specificity, order});
           ++order;
           break;

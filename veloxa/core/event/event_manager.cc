@@ -9,7 +9,9 @@ void EventManager::HandleInput(const InputEvent& input,
   switch (input.type) {
     case EventType::kPointerMove: {
       dom::Element* new_hover = HitTest(layout_root, input.x, input.y);
+      bool changed = (new_hover != hovered_);
       hovered_ = new_hover;
+      if (changed && invalidation_callback_) invalidation_callback_();
       if (new_hover) {
         DOMEvent event{};
         event.input = input;
@@ -21,10 +23,10 @@ void EventManager::HandleInput(const InputEvent& input,
 
     case EventType::kPointerDown: {
       dom::Element* target = HitTest(layout_root, input.x, input.y);
+      bool changed = (target != active_) || (target != focused_);
       active_ = target;
-      if (target != focused_) {
-        focused_ = target;
-      }
+      if (target != focused_) focused_ = target;
+      if (changed && invalidation_callback_) invalidation_callback_();
       if (target) {
         DOMEvent event{};
         event.input = input;
@@ -36,7 +38,9 @@ void EventManager::HandleInput(const InputEvent& input,
 
     case EventType::kPointerUp: {
       dom::Element* target = HitTest(layout_root, input.x, input.y);
+      bool changed = (active_ != nullptr);
       active_ = nullptr;
+      if (changed && invalidation_callback_) invalidation_callback_();
       if (target) {
         DOMEvent event{};
         event.input = input;
@@ -60,6 +64,10 @@ void EventManager::HandleInput(const InputEvent& input,
     default:
       break;
   }
+}
+
+void EventManager::SetInvalidationCallback(InvalidationCallback cb) {
+  invalidation_callback_ = std::move(cb);
 }
 
 bool EventManager::IsHovered(const dom::Element* el) const {

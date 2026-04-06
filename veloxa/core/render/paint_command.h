@@ -48,6 +48,14 @@ struct PaintCommand {
   static PaintCommand PopLayer() {
     return {Type::kPopLayer, {}, {}, 0, {}};
   }
+
+  bool operator==(const PaintCommand& other) const {
+    return type == other.type && rect == other.rect &&
+           color == other.color && param == other.param && text == other.text;
+  }
+  bool operator!=(const PaintCommand& other) const {
+    return !(*this == other);
+  }
 };
 
 using DisplayList = Vector<PaintCommand>;

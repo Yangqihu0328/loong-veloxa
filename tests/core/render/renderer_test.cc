@@ -530,5 +530,59 @@ TEST(RendererTest, ReplayClipRect) {
   EXPECT_EQ(PixelAt(19, 19), white);
 }
 
+TEST(ComputeDirtyRectTest, IdenticalListsReturnEmpty) {
+  DisplayList a;
+  a.push_back(PaintCommand::FillRect({10, 10, 50, 50}, gfx::Color::Red()));
+  DisplayList b = a;
+  gfx::Rect dirty = ComputeDirtyRect(a, b, 800, 600);
+  EXPECT_TRUE(dirty.IsEmpty());
+}
+
+TEST(ComputeDirtyRectTest, DifferentColorReturnsCmdRect) {
+  DisplayList a;
+  a.push_back(PaintCommand::FillRect({10, 20, 100, 50}, gfx::Color::Red()));
+  DisplayList b;
+  b.push_back(PaintCommand::FillRect({10, 20, 100, 50}, gfx::Color::Blue()));
+  gfx::Rect dirty = ComputeDirtyRect(a, b, 800, 600);
+  EXPECT_FLOAT_EQ(dirty.x, 10);
+  EXPECT_FLOAT_EQ(dirty.y, 20);
+  EXPECT_FLOAT_EQ(dirty.w, 100);
+  EXPECT_FLOAT_EQ(dirty.h, 50);
+}
+
+TEST(ComputeDirtyRectTest, DifferentLengthsReturnFullViewport) {
+  DisplayList a;
+  a.push_back(PaintCommand::FillRect({0, 0, 50, 50}, gfx::Color::Red()));
+  DisplayList b;
+  gfx::Rect dirty = ComputeDirtyRect(a, b, 800, 600);
+  EXPECT_FLOAT_EQ(dirty.x, 0);
+  EXPECT_FLOAT_EQ(dirty.y, 0);
+  EXPECT_FLOAT_EQ(dirty.w, 800);
+  EXPECT_FLOAT_EQ(dirty.h, 600);
+}
+
+TEST(ComputeDirtyRectTest, MultipleDiffsUnionRects) {
+  DisplayList a;
+  a.push_back(PaintCommand::FillRect({0, 0, 10, 10}, gfx::Color::Red()));
+  a.push_back(PaintCommand::FillRect({50, 50, 20, 20}, gfx::Color::Green()));
+  a.push_back(PaintCommand::FillRect({100, 100, 5, 5}, gfx::Color::Blue()));
+  DisplayList b;
+  b.push_back(PaintCommand::FillRect({0, 0, 10, 10}, gfx::Color::Blue()));
+  b.push_back(PaintCommand::FillRect({50, 50, 20, 20}, gfx::Color::Green()));
+  b.push_back(PaintCommand::FillRect({100, 100, 5, 5}, gfx::Color::Red()));
+  gfx::Rect dirty = ComputeDirtyRect(a, b, 800, 600);
+  EXPECT_FLOAT_EQ(dirty.x, 0);
+  EXPECT_FLOAT_EQ(dirty.y, 0);
+  EXPECT_FLOAT_EQ(dirty.w, 105);
+  EXPECT_FLOAT_EQ(dirty.h, 105);
+}
+
+TEST(ComputeDirtyRectTest, EmptyListsReturnEmpty) {
+  DisplayList a;
+  DisplayList b;
+  gfx::Rect dirty = ComputeDirtyRect(a, b, 800, 600);
+  EXPECT_TRUE(dirty.IsEmpty());
+}
+
 }  // namespace
 }  // namespace vx::render

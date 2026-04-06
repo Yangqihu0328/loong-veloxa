@@ -9,6 +9,8 @@ namespace vx::event {
 
 class EventManager {
  public:
+  using InvalidationCallback = std::function<void()>;
+
   EventManager() = default;
 
   void HandleInput(const InputEvent& input, layout::LayoutBox* layout_root);
@@ -21,6 +23,8 @@ class EventManager {
                         EventHandler handler, bool use_capture = false);
   void RemoveEventListeners(dom::Element* element);
 
+  void SetInvalidationCallback(InvalidationCallback cb);
+
   dom::Element* hovered_element() const { return hovered_; }
   dom::Element* active_element() const { return active_; }
   dom::Element* focused_element() const { return focused_; }
@@ -30,6 +34,7 @@ class EventManager {
   dom::Element* active_ = nullptr;
   dom::Element* focused_ = nullptr;
   EventDispatcher dispatcher_;
+  InvalidationCallback invalidation_callback_;
 };
 
 }  // namespace vx::event

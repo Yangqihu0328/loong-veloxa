@@ -2,7 +2,13 @@
 
 ## 当前任务
 
-无活跃任务。
+### TASK-20260405-09 脏区更新与重绘机制
+- **状态**：规划完成
+- **设计文档**：`docs/specs/2026-04-05-dirty-repaint-design.md`
+- **实现计划**：`docs/plans/2026-04-05-dirty-repaint.md`
+- **Phase 1**：API 管线扩展（LayoutContext + StyleResolver + LayoutEngine + EventManager）
+- **Phase 2**：UpdateManager + DirtyRect（新模块）
+- **Phase 3**：全管线集成测试
 
 ## 已完成任务
 
