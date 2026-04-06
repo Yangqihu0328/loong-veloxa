@@ -237,6 +237,27 @@ veloxa/
 - 精确像素：仅用于最简单的无嵌套场景
 - 避免硬编码像素坐标（受 HTML 隐式元素包裹影响）
 
+## 已验证的模式（来自 Event System 实现）
+
+### 两层事件模型模式（InputEvent + DOMEvent）
+- InputEvent 扁平 struct 无 DOM 依赖（平台层），DOMEvent 包装 InputEvent 附加分发上下文
+- 与 PaintCommand 的 Tagged Struct 模式一致
+- 平台层可独立使用（headless 测试、输入录制回放）
+
+### 中央状态指针模式
+- EventManager 持有 hovered_/active_/focused_ 三个指针（24 字节）
+- 不侵入 Element 类（DOM 层零修改）
+- IsHovered 通过祖先链遍历实现，O(depth) 对 HMI 场景完全可接受
+
+### 默认参数向后兼容注入模式
+- SelectorMatcher::Matches 添加 `const EventManager* em = nullptr` 第三参数
+- 现有 17 个 SelectorMatcher 测试 + StyleResolver 调用零修改通过
+- 适用于给已有接口注入可选依赖的场景
+
+### 并行子代理可行条件模式
+- 两个子代理可并行执行的充分条件：(1) 无共享 .cc 文件 (2) 共享的 .h 在 Phase 1 已创建 (3) CMakeLists.txt 在 Phase 1 已更新
+- TASK-08 首次验证：hit_test.cc + event_dispatcher.cc 并行，零冲突
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持
