@@ -11,6 +11,7 @@
 - **Phase 3**：全管线集成测试 — 8 个新测试通过
 - **总测试**：731/731 通过（净增 29 个）
 - **关键修复**：StyleResolver→SelectorMatcher 缺失 EventManager* 透传（伪类 restyle 断链）
+- **回顾完成**：`memory-bank/reflection/reflection-TASK-20260405-09.md`
 
 ## 已完成任务
 

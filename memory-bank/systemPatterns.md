@@ -258,6 +258,29 @@ veloxa/
 - 两个子代理可并行执行的充分条件：(1) 无共享 .cc 文件 (2) 共享的 .h 在 Phase 1 已创建 (3) CMakeLists.txt 在 Phase 1 已更新
 - TASK-08 首次验证：hit_test.cc + event_dispatcher.cc 并行，零冲突
 
+## 已验证的模式（来自 Update Manager 实现）
+
+### 中央管线编排器模式（UpdateManager）
+- 单一 UpdateManager 持有 Document/Stylesheets/LayoutContext/EventManager/Canvas 引用
+- 编排 Invalidate → Restyle → Relayout → DirtyRect → Repaint 全管线
+- 拥有 ArenaAllocator（LayoutBox 树生命周期管理），每帧 Reset
+- 与 Sciter 的 `update_queue` 脏区管理模式对应
+
+### Push 回调失效触发模式
+- EventManager 在 HandleInput 中检测状态实际变化（old != new）后调用 InvalidationCallback
+- UpdateManager 注册回调，设置 dirty_ 标记
+- 比 Pull 轮询更高效：无变化时零开销
+
+### DisplayList 逐项对比脏区计算模式
+- 新旧 DisplayList 同长度时逐项比较 PaintCommand（operator==），差异项的 rect 并集 = 脏区
+- 不同长度（display:none 切换等结构变化）回退全屏重绘
+- 对 hover/active/focus 变色场景最优：结构不变，仅颜色差异
+
+### 默认参数向后兼容注入模式（第二次验证）
+- StyleResolver::Resolve 和 CollectMatchingRules 添加 `const EventManager* em = nullptr`
+- 现有 15 个 StyleResolver 测试 + 所有 BuildTree 调用零修改通过
+- 该模式已在 TASK-08（SelectorMatcher）和 TASK-09（StyleResolver/LayoutEngine）两次验证
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持
