@@ -255,3 +255,5 @@
 36. Application 缺少 Resize 支持（需重建 Canvas + 更新 LayoutContext viewport）
 37. Application 缺少 HTML/CSS 解析错误回调
 38. Application::LoadHTML 使用裸 delete 管理 Document，可改用 unique_ptr
+39. 像素测试缺少标准化工具库（PixelR/G/B/A 提取函数），同类代码分散在多个测试文件中
+40. C API 缺少 vx_view_resize、vx_view_get_document、错误回调等扩展 API
