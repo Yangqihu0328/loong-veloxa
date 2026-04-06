@@ -281,6 +281,24 @@ veloxa/
 - 现有 15 个 StyleResolver 测试 + 所有 BuildTree 调用零修改通过
 - 该模式已在 TASK-08（SelectorMatcher）和 TASK-09（StyleResolver/LayoutEngine）两次验证
 
+## 已验证的模式（来自 Application Shell 实现）
+
+### 核心拥有 + 外部注入所有权模式
+- Application 拥有核心引擎模块（Document, Stylesheets, EventManager, UpdateManager, TextShaper, Canvas）
+- EventLoop 和 Surface 由外部注入（嵌入式场景宿主提供窗口/事件循环）
+- 匹配 Sciter 的 `SciterCreateWindow + SciterLoadFile` 模式
+
+### 延迟初始化编排器模式（EnsureUpdateManager）
+- UpdateManager 依赖 Document + Canvas，但 LoadHTML/LoadCSS 可以任意顺序调用
+- EnsureUpdateManager() 在首次 Update/InjectInput 时检查前置条件并创建
+- LoadHTML/LoadCSS 调用后 reset UpdateManager，下次 Update 自动重建
+- 解决了多模块初始化顺序依赖问题
+
+### 编排层复杂度降级模式
+- 当任务是纯编排层（连接已验证模块，无新算法/数据结构），实际复杂度低于 Level 3
+- 本次 Application 实现仅 87 行，全部是模块连接代码
+- 此类任务可考虑评为 Level 2，跳过 /creative 评估
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持
