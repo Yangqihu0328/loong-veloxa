@@ -114,3 +114,19 @@ target_link_libraries(render_test PRIVATE vx_core vx_graphics vx_platform)
 
 vx_add_test(render_integration_test core/render/integration_test.cc)
 target_link_libraries(render_integration_test PRIVATE vx_core vx_graphics vx_platform)
+
+# Core: Event
+vx_add_test(event_types_test core/event/event_types_test.cc)
+target_link_libraries(event_types_test PRIVATE vx_core)
+
+vx_add_test(hit_test_test core/event/hit_test_test.cc)
+target_link_libraries(hit_test_test PRIVATE vx_core)
+
+vx_add_test(event_dispatcher_test core/event/event_dispatcher_test.cc)
+target_link_libraries(event_dispatcher_test PRIVATE vx_core)
+
+vx_add_test(event_manager_test core/event/event_manager_test.cc)
+target_link_libraries(event_manager_test PRIVATE vx_core)
+
+vx_add_test(event_integration_test core/event/integration_test.cc)
+target_link_libraries(event_integration_test PRIVATE vx_core vx_graphics vx_platform)

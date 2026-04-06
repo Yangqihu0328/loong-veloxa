@@ -4,14 +4,16 @@
 #include <cstring>
 
 #include "veloxa/core/dom/tag.h"
+#include "veloxa/core/event/event_manager.h"
 
 namespace vx::css {
 
 bool SelectorMatcher::Matches(const Selector& selector,
-                               const dom::Element* element) {
+                               const dom::Element* element,
+                               const event::EventManager* em) {
   if (selector.compounds.empty() || element == nullptr) return false;
 
-  if (!MatchCompound(selector.compounds[0], element)) return false;
+  if (!MatchCompound(selector.compounds[0], element, em)) return false;
 
   const dom::Element* current = element;
   for (usize i = 1; i < selector.compounds.size(); ++i) {
@@ -19,12 +21,12 @@ bool SelectorMatcher::Matches(const Selector& selector,
     if (comb == Combinator::kChild) {
       current = current->parent();
       if (current == nullptr) return false;
-      if (!MatchCompound(selector.compounds[i], current)) return false;
+      if (!MatchCompound(selector.compounds[i], current, em)) return false;
     } else if (comb == Combinator::kDescendant) {
       bool found = false;
       const dom::Element* ancestor = current->parent();
       while (ancestor != nullptr) {
-        if (MatchCompound(selector.compounds[i], ancestor)) {
+        if (MatchCompound(selector.compounds[i], ancestor, em)) {
           current = ancestor;
           found = true;
           break;
@@ -40,15 +42,17 @@ bool SelectorMatcher::Matches(const Selector& selector,
 }
 
 bool SelectorMatcher::MatchCompound(const CompoundSelector& compound,
-                                     const dom::Element* element) {
+                                     const dom::Element* element,
+                                     const event::EventManager* em) {
   for (const auto& simple : compound.simple_selectors) {
-    if (!MatchSimple(simple, element)) return false;
+    if (!MatchSimple(simple, element, em)) return false;
   }
   return true;
 }
 
 bool SelectorMatcher::MatchSimple(const SimpleSelector& simple,
-                                   const dom::Element* element) {
+                                   const dom::Element* element,
+                                   const event::EventManager* em) {
   switch (simple.type) {
     case SimpleSelectorType::kUniversal:
       return true;
@@ -92,6 +96,15 @@ bool SelectorMatcher::MatchSimple(const SimpleSelector& simple,
       }
       if (name == StringView("last-child")) {
         return element->next_sibling() == nullptr;
+      }
+      if (name == StringView("hover")) {
+        return em != nullptr && em->IsHovered(element);
+      }
+      if (name == StringView("active")) {
+        return em != nullptr && em->IsActive(element);
+      }
+      if (name == StringView("focus")) {
+        return em != nullptr && em->IsFocused(element);
       }
       return false;
     }
