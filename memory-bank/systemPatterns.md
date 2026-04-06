@@ -211,6 +211,32 @@ veloxa/
 - 本次 Phase 2+3+5 合并（共享 layout_engine.cc），Phase 4 独立（flex_layout.cc）
 - 分组策略：按"产出文件"而非"功能逻辑"划分子代理边界
 
+## 已验证的模式（来自 Render Pipeline 实现）
+
+### Display List / 命令缓冲模式
+- 渲染分为 Record（生成 DisplayList）和 Replay（执行到 Canvas）两阶段
+- PaintCommand 使用扁平 struct + Type 枚举 + 工厂函数，避免继承层次
+- DisplayList 是 `Vector<PaintCommand>`，可序列化/缓存/diff
+- 与 Sciter 的 `update_queue` 脏区管理模式可以组合使用
+
+### Stacking Context 排序模式
+- 子元素按 z_index 做 stable_sort，相同 z_index 保持 DOM 源序
+- opacity < 1.0 创建 PushLayer/PopLayer 合成层
+- overflow:hidden 创建 PushClipRect/PopClip 裁剪层
+- 绘制顺序：背景 → 边框 → 文本 → 排序后的子元素
+
+### 跨层颜色格式桥接模式
+- CSS 层使用 u32 RRGGBBAA 格式
+- Graphics 层使用 gfx::Color 结构体 + ToRGBA32() 像素格式
+- 桥接函数 CssColorToGfx() 位于 render_utils.h（header-only）
+- CSS 命名颜色与代码颜色常量不一致，测试中必须通过桥接函数比较
+
+### 集成测试多策略验证模式
+- 结构验证：检查 DisplayList 命令类型/颜色/数量
+- 区域扫描：HasColorInRegion 检查像素是否存在于指定区域
+- 精确像素：仅用于最简单的无嵌套场景
+- 避免硬编码像素坐标（受 HTML 隐式元素包裹影响）
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
 - [ ] 是否内置 SVG 支持

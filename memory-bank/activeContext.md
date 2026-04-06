@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+回顾中
 
 ## 当前任务
 - **ID**：TASK-20260405-07
@@ -25,7 +25,7 @@
 - **CSS**：ComputedStyle（background_color, color, opacity, visibility, border_width[4], border_style[4], border_color[4], border_radius）
 - **注意**：Canvas 目前无 DrawText 方法，需决定文本渲染策略
 
-## 待处理事项（非本任务范围）
+## 待处理事项
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
 - **P1**：子代理 prompt 模板增加「跨模块数据格式」段（来源 TASK-02）— 已验证有效
 - **P1**：集成测试优先验证数据格式一致性（来源 TASK-02）
@@ -33,3 +33,6 @@
 - **P1**：合并 Phase 给子代理的策略固化到计划模板（来源 TASK-04）
 - **P1**：计划模板增加「边界输入清单」段——每个 Phase 列出非默认路径（来源 TASK-06，反复出现）
 - **P1**：集成测试必须使用真实 HTML/CSS 解析器，禁止仅用手动 DOM 构建（来源 TASK-06，反复出现）
+- **P1**：子代理 prompt 涉及 LayoutBox 坐标计算时须包含 x/y 语义定义（content origin vs border box origin）（来源 TASK-07）
+- **P1**：集成测试像素验证优先用 DisplayList 检查和区域扫描，避免硬编码坐标（来源 TASK-07）
+- **P1**：CSS 颜色测试禁止与 gfx::Color 编程常量直接比较，必须通过 CssColorToGfx 转换（来源 TASK-07）
