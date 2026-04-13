@@ -1,12 +1,10 @@
 # 活跃上下文
 
 ## 当前阶段
-回顾中
+空闲
 
 ## 当前任务
-- **ID：** TASK-20260413-01
-- **标题：** QuickJS 脚本引擎集成
-- **焦点：** 回顾已写入 `memory-bank/reflection/reflection-TASK-20260413-01.md`。下一步：`/archive` 归档并合并分支（若适用）。
+无
 
 ## 待处理事项
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）

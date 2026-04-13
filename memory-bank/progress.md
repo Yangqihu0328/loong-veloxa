@@ -2,20 +2,11 @@
 
 ## 当前任务
 
-**TASK-20260413-01** — QuickJS 脚本引擎集成（`/van` 2026-04-13）
-
-- 阶段：构建完成（2026-04-13，`/build`）
-- 实现：`veloxa/script/`（FetchContent quickjs-ng v0.14.0、`vx_script`、`QuickjsEngine::EvalGlobal`、256KiB 源码上限、32MiB `JS_SetMemoryLimit`、禁 `js_std_*`）；`tests/script/quickjs_engine_test.cc`（4 cases）
-- 构建注意：根目录 `add_compile_options` 改为仅 `$<COMPILE_LANGUAGE:CXX>`，否则 quickjs.c 在 `-Wpedantic -Werror` 下失败；首次拉取依赖需 Git 网络（WSL 无 DNS 时可经 HTTP 代理）
-- 验证：`cmake --build build -j4 && ctest` → **796 passed, 0 failed**
-
-### `/reflect`（2026-04-13）
-
-- 回顾文档：`memory-bank/reflection/reflection-TASK-20260413-01.md`
-- 要点：WSL DNS/代理、根 CMake CXX-only 告警与 FetchContent C 代码交互、QuickJS 异常须 `FreeValue` 再 `GetException`；P1 已写入 `activeContext`（计划 checklist + 代理文档）
+无活跃任务。等待新任务。
 
 ## 已完成任务
 
+- TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`
 - TASK-20260405-01：Foundation 基础库 → 归档 `memory-bank/archive/archive-TASK-20260405-01.md`
 - TASK-20260405-02：Graphics HAL + Platform HAL → 归档 `memory-bank/archive/archive-TASK-20260405-02.md`
 - TASK-20260405-03：DOM 树 + HTML 解析器 → 归档 `memory-bank/archive/archive-TASK-20260405-03.md`
