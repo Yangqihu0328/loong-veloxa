@@ -4,10 +4,10 @@
 
 **TASK-20260413-01** — QuickJS 脚本引擎集成（`/van` 2026-04-13）
 
-- 阶段：设计中（`/creative` 2026-04-13）
-- 产出：`memory-bank/creative/creative-quickjs-host.md`（中断分阶段、`qjs-libc` 不启 `js_std_*`、默认堆 + `JS_SetMemoryLimit`≈32MiB）；`tasks.md` 已吸收创意摘要
-- 先前：`docs/specs/`、`docs/plans/`（`/plan`）
-- 快照：源码树尚无 `veloxa/script/`（待 `/build`）
+- 阶段：构建完成（2026-04-13，`/build`）
+- 实现：`veloxa/script/`（FetchContent quickjs-ng v0.14.0、`vx_script`、`QuickjsEngine::EvalGlobal`、256KiB 源码上限、32MiB `JS_SetMemoryLimit`、禁 `js_std_*`）；`tests/script/quickjs_engine_test.cc`（4 cases）
+- 构建注意：根目录 `add_compile_options` 改为仅 `$<COMPILE_LANGUAGE:CXX>`，否则 quickjs.c 在 `-Wpedantic -Werror` 下失败；首次拉取依赖需 Git 网络（WSL 无 DNS 时可经 HTTP 代理）
+- 验证：`cmake --build build -j4 && ctest` → **796 passed, 0 failed**
 
 ## 已完成任务
 

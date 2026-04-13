@@ -1,12 +1,12 @@
 # 活跃上下文
 
 ## 当前阶段
-设计中
+待回顾
 
 ## 当前任务
 - **ID：** TASK-20260413-01
 - **标题：** QuickJS 脚本引擎集成
-- **焦点：** 创意已定稿（`memory-bank/creative/creative-quickjs-host.md`）。下一步 `/build`：对齐创意（`JS_SetMemoryLimit`、禁 `js_std_*`）；interrupt 留 Phase 2。严格按 `docs/plans/2026-04-13-quickjs-integration.md` 任务 1→6 实施。
+- **焦点：** 分支 `feature/TASK-20260413-01-quickjs-integration`：`vx_script` + quickjs-ng v0.14.0、`QuickjsEngine`、单测已通过（全量 `ctest` 796）。CMake 已将 `-Werror`/`-Wpedantic` **仅限 CXX**，避免污染 FetchContent 的 C 源码。Fetch 需网络时可设代理 `http_proxy`/`https_proxy`（例如 `192.168.101.217:7890`）。下一步：`/reflect` → `/archive`。
 
 ## 待处理事项
 - **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
