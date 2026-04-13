@@ -1,14 +1,16 @@
 # 活跃上下文
 
 ## 当前阶段
-待回顾
+回顾中
 
 ## 当前任务
 - **ID：** TASK-20260413-01
 - **标题：** QuickJS 脚本引擎集成
-- **焦点：** 分支 `feature/TASK-20260413-01-quickjs-integration`：`vx_script` + quickjs-ng v0.14.0、`QuickjsEngine`、单测已通过（全量 `ctest` 796）。CMake 已将 `-Werror`/`-Wpedantic` **仅限 CXX**，避免污染 FetchContent 的 C 源码。Fetch 需网络时可设代理 `http_proxy`/`https_proxy`（例如 `192.168.101.217:7890`）。下一步：`/reflect` → `/archive`。
+- **焦点：** 回顾已写入 `memory-bank/reflection/reflection-TASK-20260413-01.md`。下一步：`/archive` 归档并合并分支（若适用）。
 
 ## 待处理事项
+- **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
+- **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
 - **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）

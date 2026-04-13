@@ -9,6 +9,11 @@
 - 构建注意：根目录 `add_compile_options` 改为仅 `$<COMPILE_LANGUAGE:CXX>`，否则 quickjs.c 在 `-Wpedantic -Werror` 下失败；首次拉取依赖需 Git 网络（WSL 无 DNS 时可经 HTTP 代理）
 - 验证：`cmake --build build -j4 && ctest` → **796 passed, 0 failed**
 
+### `/reflect`（2026-04-13）
+
+- 回顾文档：`memory-bank/reflection/reflection-TASK-20260413-01.md`
+- 要点：WSL DNS/代理、根 CMake CXX-only 告警与 FetchContent C 代码交互、QuickJS 异常须 `FreeValue` 再 `GetException`；P1 已写入 `activeContext`（计划 checklist + 代理文档）
+
 ## 已完成任务
 
 - TASK-20260405-01：Foundation 基础库 → 归档 `memory-bank/archive/archive-TASK-20260405-01.md`
