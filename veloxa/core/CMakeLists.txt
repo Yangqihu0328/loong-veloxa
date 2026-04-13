@@ -10,6 +10,7 @@ add_library(vx_core STATIC
   css/parser.cc
   css/selector_matcher.cc
   css/style_resolver.cc
+  css/transition.cc
   layout/text_shaper.cc
   layout/layout_utils.cc
   layout/layout_engine.cc

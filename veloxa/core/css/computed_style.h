@@ -3,6 +3,7 @@
 
 #include "veloxa/core/css/css_value.h"
 #include "veloxa/core/css/enums.h"
+#include "veloxa/core/css/transition.h"
 #include "veloxa/foundation/strings/interned_string.h"
 
 namespace vx::css {
@@ -59,6 +60,8 @@ struct ComputedStyle {
   TextAlign text_align = TextAlign::kLeft;
   WhiteSpace white_space = WhiteSpace::kNormal;
   LengthValue letter_spacing;
+
+  SmallVector<TransitionSpec, 2> transitions;
 };
 
 }  // namespace vx::css

@@ -83,6 +83,16 @@ target_link_libraries(css_style_resolver_test PRIVATE vx_core)
 vx_add_test(css_integration_test core/css/integration_test.cc)
 target_link_libraries(css_integration_test PRIVATE vx_core)
 
+# Core: CSS Transitions
+vx_add_test(css_transition_test core/css/transition_test.cc)
+target_link_libraries(css_transition_test PRIVATE vx_core)
+
+vx_add_test(css_transition_parse_test core/css/transition_parse_test.cc)
+target_link_libraries(css_transition_parse_test PRIVATE vx_core)
+
+vx_add_test(transition_integration_test core/transition_integration_test.cc)
+target_link_libraries(transition_integration_test PRIVATE vx_core vx_graphics vx_platform)
+
 # Core: Layout
 vx_add_test(layout_box_test core/layout/layout_box_test.cc)
 target_link_libraries(layout_box_test PRIVATE vx_core)

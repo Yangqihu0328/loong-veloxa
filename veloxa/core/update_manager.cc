@@ -20,6 +20,8 @@ void UpdateManager::Update() {
   layout_root_ = layout::LayoutEngine::Layout(config_.document,
                                               config_.layout_context, arena_);
 
+  DetectAndApplyTransitions();
+
   render::DisplayList new_list;
   if (layout_root_) {
     new_list = render::Record(layout_root_);
@@ -39,6 +41,39 @@ void UpdateManager::Update() {
 
   display_list_ = std::move(new_list);
   dirty_ = false;
+
+  if (transition_mgr_.HasActive()) {
+    dirty_ = true;
+  }
+}
+
+void UpdateManager::DetectAndApplyTransitions() {
+  if (!layout_root_) return;
+  auto now = css::SteadyClock::now();
+  TraverseForTransitions(layout_root_, now);
+  transition_mgr_.Tick(now);
+}
+
+void UpdateManager::TraverseForTransitions(layout::LayoutBox* box,
+                                            css::SteadyTimePoint now) {
+  if (box->element && box->style) {
+    if (!box->style->transitions.empty()) {
+      const void* key = static_cast<const void*>(box->element);
+      const css::ComputedStyle* prev = prev_styles_.Find(key);
+      if (prev) {
+        transition_mgr_.OnStyleChange(box->element, *prev, *box->style, now);
+      }
+      prev_styles_.Insert(key, *box->style);
+    }
+
+    auto* mutable_style =
+        const_cast<css::ComputedStyle*>(box->style);
+    transition_mgr_.ApplyTo(box->element, *mutable_style);
+  }
+
+  for (auto* child = box->first_child; child; child = child->next_sibling) {
+    TraverseForTransitions(child, now);
+  }
 }
 
 }  // namespace vx
