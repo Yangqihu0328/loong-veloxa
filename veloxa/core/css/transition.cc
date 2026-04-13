@@ -374,7 +374,6 @@ void TransitionManager::OnStyleChange(const dom::Element* el,
         bool replaced = false;
         for (auto& tr : *existing) {
           if (tr.property == pid) {
-            if (tr.completed) ++active_count_;
             tr = at;
             replaced = true;
             break;
@@ -382,13 +381,11 @@ void TransitionManager::OnStyleChange(const dom::Element* el,
         }
         if (!replaced) {
           existing->push_back(at);
-          ++active_count_;
         }
       } else {
         Vector<ActiveTransition> vec;
         vec.push_back(at);
         transitions_.Insert(key, std::move(vec));
-        ++active_count_;
       }
     };
 
@@ -422,7 +419,6 @@ void TransitionManager::Tick(SteadyTimePoint now) {
         raw_progress = 1.0f;
         if (!tr.completed) {
           tr.completed = true;
-          if (active_count_ > 0) --active_count_;
         }
       }
       tr.progress = tr.bezier.Solve(raw_progress);
@@ -457,11 +453,17 @@ void TransitionManager::ApplyTo(const dom::Element* el,
   }
 }
 
-bool TransitionManager::HasActive() const { return active_count_ > 0; }
-
-void TransitionManager::Clear() {
-  transitions_ = {};
-  active_count_ = 0;
+bool TransitionManager::HasActive() const {
+  for (const auto& slot : transitions_) {
+    for (const auto& tr : slot.value) {
+      if (!tr.completed) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
+
+void TransitionManager::Clear() { transitions_ = {}; }
 
 }  // namespace vx::css

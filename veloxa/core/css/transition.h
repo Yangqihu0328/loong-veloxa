@@ -102,7 +102,6 @@ class TransitionManager {
   };
 
   HashMap<const void*, Vector<ActiveTransition>, PtrHash, PtrEq> transitions_;
-  usize active_count_ = 0;
 };
 
 }  // namespace vx::css
