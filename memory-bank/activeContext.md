@@ -1,10 +1,12 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+规划中
 
 ## 当前任务
-无
+- **ID：** TASK-20260413-02
+- **标题：** 消化技术债务（子集）
+- **焦点：** 审查 `docs/specs/2026-04-13-tech-debt-subset-design.md`；批准后 **`/build`** 按 `docs/plans/2026-04-13-tech-debt-subset.md`（任务 1→4）。建议分支 `feature/TASK-20260413-02-tech-debt`（自 `main`）。**无需 `/creative`。**
 
 ## 待处理事项
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
