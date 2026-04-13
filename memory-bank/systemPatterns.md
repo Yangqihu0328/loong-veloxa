@@ -338,10 +338,10 @@ veloxa/
 - const_cast LayoutBox.style 覆盖动画值，再 Record 产生带动画效果的 DisplayList
 - 妥协：const_cast 绕过了 const 语义，长期应引入可写样式覆盖层
 
-### active_count_ 计数器替代 const 遍历模式
-- 当容器缺少 const_iterator 且查询函数需要 const 时，用增减计数器跟踪状态
-- OnStyleChange +1，Tick 完成 -1，Clear 归零
-- 需注意"替换已有 transition"时的计数不变更正确性
+### HashMap const 迭代与 const 查询模式
+- `HashMap` 提供 `const_iterator`、`begin() const` / `end() const`、`cbegin()` / `cend()`，与 `iterator` 对称
+- `TransitionManager::HasActive() const` 在 const 上遍历 `transitions_`，查找是否存在 `!tr.completed` 的项（TASK-20260413-02）
+- 优先用容器语义表达状态，避免手写计数器与业务逻辑双轨维护
 
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性

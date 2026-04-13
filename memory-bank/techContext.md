@@ -259,9 +259,9 @@
 36. Application 缺少 Resize 支持（需重建 Canvas + 更新 LayoutContext viewport）
 37. Application 缺少 HTML/CSS 解析错误回调
 38. Application::LoadHTML 使用裸 delete 管理 Document，可改用 unique_ptr
-39. 像素测试缺少标准化工具库（PixelR/G/B/A 提取函数），同类代码分散在多个测试文件中
+39. ~~像素测试缺少标准化工具库（PixelR/G/B/A 提取函数），同类代码分散在多个测试文件中~~ ✅ 已提供 `tests/test_pixel_utils.h`（TASK-20260413-02，部分测试已迁移）
 40. C API 缺少 vx_view_resize、vx_view_get_document、错误回调等扩展 API
-41. HashMap 缺少 const_iterator / cbegin / cend，const 方法无法遍历（TASK-13 TransitionManager.HasActive 被迫用计数器绕开）
+41. ~~HashMap 缺少 const_iterator / cbegin / cend，const 方法无法遍历~~ ✅ 已实现（TASK-20260413-02）；`TransitionManager::HasActive` 已改为扫描
 42. transition shorthand 仅支持单条声明，不支持逗号分隔多条（如 `transition: bg 300ms, opacity 200ms`）
 43. LayoutBox.style 是 const 指针，动画覆盖需 const_cast，应考虑引入可写样式覆盖层或改为 non-const
 44. `vx_script`：`JS_SetInterruptHandler` / 执行预算未实现（见 `creative-quickjs-host.md` Phase 2）；`JSMallocFunctions` 与 Foundation 分配器未对齐

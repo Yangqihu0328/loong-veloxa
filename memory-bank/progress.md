@@ -4,9 +4,9 @@
 
 **TASK-20260413-02** — 消化技术债务（`/van` 2026-04-13）
 
-- 阶段：规划中（`/plan` 2026-04-13）
-- 锁定条目：**#41** HashMap const 迭代；**#39** `tests/test_pixel_utils.h` + 2 测迁移；移除 `TransitionManager::active_count_`
-- 产出：`docs/specs/2026-04-13-tech-debt-subset-design.md`、`docs/plans/2026-04-13-tech-debt-subset.md`；复杂度降为 **Level 2**；不需要 `/creative`
+- 阶段：构建完成（`/build` 2026-04-13，分支 `feature/TASK-20260413-02-tech-debt`）
+- 实现：`HashMap::const_iterator` / `cbegin`/`cend`；`TransitionManager::HasActive` 扫描；`tests/test_pixel_utils.h`；`api_integration_test` / `memory_surface_test` 迁移
+- 验证：`ctest` → **797 passed, 0 failed**
 
 ## 已完成任务
 
