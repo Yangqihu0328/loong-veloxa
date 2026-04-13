@@ -4,18 +4,11 @@
 
 #include <gtest/gtest.h>
 
+#include "tests/test_pixel_utils.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
 #include "veloxa/platform/headless/memory_surface.h"
 
 namespace {
-
-inline vx::u8 PixelR(vx::u32 px) { return static_cast<vx::u8>(px & 0xFF); }
-inline vx::u8 PixelG(vx::u32 px) {
-  return static_cast<vx::u8>((px >> 8) & 0xFF);
-}
-inline vx::u8 PixelB(vx::u32 px) {
-  return static_cast<vx::u8>((px >> 16) & 0xFF);
-}
 
 class CApiIntegrationTest : public ::testing::Test {
  protected:
@@ -54,9 +47,9 @@ TEST_F(CApiIntegrationTest, RenderRedBoxAndVerifyPixels) {
   const vx::u32* pixels = mem->data();
   vx::u32 center = pixels[25 * 200 + 25];
 
-  EXPECT_GT(PixelR(center), 200);
-  EXPECT_LT(PixelG(center), 50);
-  EXPECT_LT(PixelB(center), 50);
+  EXPECT_GT(vx::test::PixelR(center), 200);
+  EXPECT_LT(vx::test::PixelG(center), 50);
+  EXPECT_LT(vx::test::PixelB(center), 50);
 }
 
 TEST_F(CApiIntegrationTest, HoverChangesColor) {
@@ -72,7 +65,7 @@ TEST_F(CApiIntegrationTest, HoverChangesColor) {
       reinterpret_cast<vx::platform::MemorySurface*>(surface_);
   const vx::u32* pixels = mem->data();
   vx::u32 before = pixels[50 * 200 + 50];
-  EXPECT_GT(PixelB(before), 200);
+  EXPECT_GT(vx::test::PixelB(before), 200);
 
   VxInputEvent move{};
   move.type = VX_EVENT_POINTER_MOVE;
@@ -82,7 +75,7 @@ TEST_F(CApiIntegrationTest, HoverChangesColor) {
   vx_view_update(view_);
 
   vx::u32 after = pixels[50 * 200 + 50];
-  EXPECT_GT(PixelG(after), 100);
+  EXPECT_GT(vx::test::PixelG(after), 100);
 }
 
 TEST_F(CApiIntegrationTest, ReloadHTMLResetsRender) {
@@ -144,7 +137,7 @@ TEST_F(CApiIntegrationTest, MultipleInputEvents) {
       reinterpret_cast<vx::platform::MemorySurface*>(surface_);
   const vx::u32* pixels = mem->data();
   vx::u32 px = pixels[50 * 200 + 50];
-  EXPECT_GT(PixelR(px), 200);
+  EXPECT_GT(vx::test::PixelR(px), 200);
 }
 
 }  // namespace

@@ -1,3 +1,4 @@
+#include "tests/test_pixel_utils.h"
 #include "veloxa/platform/headless/memory_surface.h"
 
 #include <cstdio>
@@ -32,6 +33,15 @@ TEST(MemorySurfaceTest, LockReturnsValidPointer) {
   pixels[99] = 0x00FF00FF;
   EXPECT_EQ(pixels[0], 0xFF0000FFu);
   EXPECT_EQ(pixels[99], 0x00FF00FFu);
+  EXPECT_EQ(vx::test::PixelR(pixels[0]), 255u);
+  EXPECT_EQ(vx::test::PixelG(pixels[0]), 0u);
+  EXPECT_EQ(vx::test::PixelB(pixels[0]), 0u);
+  EXPECT_EQ(vx::test::PixelA(pixels[0]), 255u);
+  // 0x00FF00FF → R=255, G=0, B=255, A=0（RGBA32 位域约定）
+  EXPECT_EQ(vx::test::PixelR(pixels[99]), 255u);
+  EXPECT_EQ(vx::test::PixelG(pixels[99]), 0u);
+  EXPECT_EQ(vx::test::PixelB(pixels[99]), 255u);
+  EXPECT_EQ(vx::test::PixelA(pixels[99]), 0u);
   surface.Unlock();
 }
 
