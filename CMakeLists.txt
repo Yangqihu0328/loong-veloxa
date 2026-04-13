@@ -23,6 +23,8 @@ add_subdirectory(veloxa/graphics)
 add_subdirectory(veloxa/core)
 add_subdirectory(veloxa/api)
 
+add_subdirectory(examples)
+
 if(VX_BUILD_TESTS)
   enable_testing()
   find_package(GTest REQUIRED)
