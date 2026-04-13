@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化
+回顾中
 
 ## 当前任务
 - **ID**：TASK-20260405-13
@@ -30,3 +30,6 @@
 - **P1**：集成测试禁止使用 HTML inline style（BuildTree 不解析），必须用外部 CSS 选择器（来源 TASK-08，API 能力假设错误第三次出现）
 - **P1**：并行子代理可行条件：无共享 .cc + 共享 .h 已创建 + CMakeLists.txt 已更新（来源 TASK-08）
 - **P1**：跨模块参数透传修改时，计划模板增加「调用链端到端验证」段（来源 TASK-09）
+- **P1**：设计文档管线注入点须附代码级可行性验证（来源 TASK-13）
+- **P1**：HashMap 补充 const_iterator / cbegin / cend（来源 TASK-13，技术债 #41）
+- **P1**：集成测试模板增加 API 备忘清单：html::Parser / FindElement / HandleInput（来源 TASK-13，反复出现第 4 次）

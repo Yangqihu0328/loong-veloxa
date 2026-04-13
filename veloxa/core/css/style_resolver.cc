@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "veloxa/core/css/property.h"
+#include "veloxa/core/css/transition.h"
 
 namespace vx::css {
 
@@ -335,6 +336,37 @@ void StyleResolver::ApplyDeclaration(ComputedStyle& style,
       break;
     case PropertyId::kLetterSpacing:
       style.letter_spacing = ToLengthValue(decl.value);
+      break;
+    case PropertyId::kTransitionProperty:
+      if (decl.value.type == ValueType::kEnum) {
+        if (style.transitions.empty())
+          style.transitions.push_back(TransitionSpec{});
+        style.transitions[0].property =
+            static_cast<PropertyId>(decl.value.enum_value);
+      }
+      break;
+    case PropertyId::kTransitionDuration:
+      if (decl.value.type == ValueType::kNumber) {
+        if (style.transitions.empty())
+          style.transitions.push_back(TransitionSpec{});
+        style.transitions[0].duration_ms = decl.value.number;
+      }
+      break;
+    case PropertyId::kTransitionTimingFunction:
+      if (decl.value.type == ValueType::kEnum) {
+        if (style.transitions.empty())
+          style.transitions.push_back(TransitionSpec{});
+        auto tf = static_cast<TimingFunction>(decl.value.enum_value);
+        style.transitions[0].timing = tf;
+        style.transitions[0].bezier = CubicBezier::FromTiming(tf);
+      }
+      break;
+    case PropertyId::kTransitionDelay:
+      if (decl.value.type == ValueType::kNumber) {
+        if (style.transitions.empty())
+          style.transitions.push_back(TransitionSpec{});
+        style.transitions[0].delay_ms = decl.value.number;
+      }
       break;
     default:
       break;

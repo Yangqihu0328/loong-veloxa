@@ -68,6 +68,10 @@ constexpr PropertyInfo kPropertyTable[] = {
   {PropertyId::kTextAlign,         "text-align",         true},
   {PropertyId::kWhiteSpace,        "white-space",        true},
   {PropertyId::kLetterSpacing,     "letter-spacing",     true},
+  {PropertyId::kTransitionProperty,       "transition-property",        false},
+  {PropertyId::kTransitionDuration,       "transition-duration",        false},
+  {PropertyId::kTransitionTimingFunction, "transition-timing-function", false},
+  {PropertyId::kTransitionDelay,          "transition-delay",           false},
 };
 // clang-format on
 

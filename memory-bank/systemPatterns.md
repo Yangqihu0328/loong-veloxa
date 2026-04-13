@@ -312,9 +312,34 @@ veloxa/
 - `data() const` 返回裸指针的只读视图，不影响 locked_ 互斥语义
 - 当 production 代码已持有 Lock 时，测试代码可通过 data() 安全读取
 
+## 已验证的模式（来自 CSS Transitions 实现）
+
+### 前向声明打破循环依赖模式
+- transition.h 前向声明 `struct ComputedStyle`，computed_style.h include transition.h
+- ActiveTransition 存储 per-property from/to 值（u32/f32/LengthValue），避免引用完整 ComputedStyle
+- 函数签名中 `const ComputedStyle&` 参数仅需前向声明，实现在 .cc 中 include 完整头文件
+- 适用场景：两个头文件互相需要对方类型时，将其中一方的使用限于指针/引用
+
+### 简写展开 → longhand 累积存储模式
+- CSS transition 简写在 parser 中展开为 4 个 longhand Declaration（property/duration/timing/delay）
+- StyleResolver::ApplyDeclaration 对每个 longhand 做 `if (transitions.empty()) push_back(default); transitions[0].field = value`
+- 复用了 border/margin 简写展开的管线，无需新增 CssValue 类型或 Declaration 扩展
+- 缺点：仅支持单条 transition（`transitions[0]`），多条需扩展为 per-index 累积
+
+### 帧间样式快照 + const_cast 覆盖模式
+- UpdateManager 维护 `prev_styles_` HashMap 存储上帧每个元素的"静态样式"
+- Layout 后遍历 LayoutBox 树，对比 prev 和 new 检测变化，启动/更新过渡
+- const_cast LayoutBox.style 覆盖动画值，再 Record 产生带动画效果的 DisplayList
+- 妥协：const_cast 绕过了 const 语义，长期应引入可写样式覆盖层
+
+### active_count_ 计数器替代 const 遍历模式
+- 当容器缺少 const_iterator 且查询函数需要 const 时，用增减计数器跟踪状态
+- OnStyleChange +1，Tick 完成 -1，Clear 归零
+- 需注意"替换已有 transition"时的计数不变更正确性
+
 ## 待定架构决策
-- [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）
+- [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持
-- [ ] 动画系统的实现策略（CSS Transitions/Animations vs 脚本驱动）
+- [x] 动画系统的实现策略 → CSS Transitions 已实现（TASK-13），CSS Animations（@keyframes）待定
 - [ ] 资源加载策略（打包 vs 文件系统 vs 混合）
 - [ ] 多进程 vs 单进程架构

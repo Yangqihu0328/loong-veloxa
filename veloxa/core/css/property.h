@@ -65,6 +65,10 @@ enum class PropertyId : u8 {
   kTextAlign,
   kWhiteSpace,
   kLetterSpacing,
+  kTransitionProperty,
+  kTransitionDuration,
+  kTransitionTimingFunction,
+  kTransitionDelay,
   kMaxProperty,
 };
 

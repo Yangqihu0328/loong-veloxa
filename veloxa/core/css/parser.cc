@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "veloxa/core/css/enums.h"
+#include "veloxa/core/css/transition.h"
 
 namespace vx::css {
 
@@ -645,6 +646,114 @@ bool CssParser::ParseDeclaration(SmallVector<Declaration, 8>& out) {
       if (basis.type != ValueType::kNone) {
         out.push_back({PropertyId::kFlexBasis, basis, important});
       }
+      return true;
+    }
+
+    if (EqualsIgnoreCase(name, "transition")) {
+      CssToken colon = NextNonWS();
+      if (colon.type != CssTokenType::kColon) return false;
+
+      SkipWhitespace();
+      CssToken peek = tokenizer_.Peek();
+      if (peek.type == CssTokenType::kIdent &&
+          EqualsIgnoreCase(peek.value, "none")) {
+        tokenizer_.Next();
+        SkipWhitespace();
+        if (tokenizer_.Peek().type == CssTokenType::kSemicolon)
+          tokenizer_.Next();
+        return true;
+      }
+
+      CssValue prop_val = CssValue::None();
+      CssValue dur_val = CssValue::None();
+      CssValue timing_val = CssValue::Enum(
+          static_cast<u16>(css::TimingFunction::kEase));
+      CssValue delay_val = CssValue::Number(0.0f);
+
+      peek = tokenizer_.Peek();
+      if (peek.type == CssTokenType::kIdent) {
+        StringView pname = peek.value;
+        tokenizer_.Next();
+        if (EqualsIgnoreCase(pname, "all")) {
+          prop_val = CssValue::Enum(static_cast<u16>(PropertyId::kUnknown));
+        } else {
+          PropertyId pid = PropertyIdFromName(pname);
+          prop_val = CssValue::Enum(static_cast<u16>(pid));
+        }
+      }
+
+      SkipWhitespace();
+      peek = tokenizer_.Peek();
+      bool first_time = true;
+      while (peek.type == CssTokenType::kDimension ||
+             peek.type == CssTokenType::kNumber) {
+        f32 val = peek.number;
+        f32 ms = val;
+        if (peek.type == CssTokenType::kDimension) {
+          if (peek.unit == "s" || peek.unit == "S")
+            ms = val * 1000.0f;
+        }
+        tokenizer_.Next();
+        if (first_time) {
+          dur_val = CssValue::Number(ms);
+          first_time = false;
+        } else {
+          delay_val = CssValue::Number(ms);
+          break;
+        }
+
+        SkipWhitespace();
+        peek = tokenizer_.Peek();
+        if (peek.type == CssTokenType::kIdent) {
+          StringView tf = peek.value;
+          if (EqualsIgnoreCase(tf, "linear")) {
+            timing_val = CssValue::Enum(
+                static_cast<u16>(css::TimingFunction::kLinear));
+            tokenizer_.Next();
+          } else if (EqualsIgnoreCase(tf, "ease-in-out")) {
+            timing_val = CssValue::Enum(
+                static_cast<u16>(css::TimingFunction::kEaseInOut));
+            tokenizer_.Next();
+          } else if (EqualsIgnoreCase(tf, "ease-in")) {
+            timing_val = CssValue::Enum(
+                static_cast<u16>(css::TimingFunction::kEaseIn));
+            tokenizer_.Next();
+          } else if (EqualsIgnoreCase(tf, "ease-out")) {
+            timing_val = CssValue::Enum(
+                static_cast<u16>(css::TimingFunction::kEaseOut));
+            tokenizer_.Next();
+          } else if (EqualsIgnoreCase(tf, "ease")) {
+            timing_val = CssValue::Enum(
+                static_cast<u16>(css::TimingFunction::kEase));
+            tokenizer_.Next();
+          }
+          SkipWhitespace();
+          peek = tokenizer_.Peek();
+        }
+      }
+
+      bool important = false;
+      SkipWhitespace();
+      CssToken bang = tokenizer_.Peek();
+      if (bang.type == CssTokenType::kDelim && bang.value == "!") {
+        tokenizer_.Next();
+        CssToken imp = NextNonWS();
+        if (imp.type == CssTokenType::kIdent &&
+            EqualsIgnoreCase(imp.value, "important")) {
+          important = true;
+        }
+      }
+
+      SkipWhitespace();
+      if (tokenizer_.Peek().type == CssTokenType::kSemicolon)
+        tokenizer_.Next();
+
+      if (prop_val.type != ValueType::kNone)
+        out.push_back({PropertyId::kTransitionProperty, prop_val, important});
+      if (dur_val.type != ValueType::kNone)
+        out.push_back({PropertyId::kTransitionDuration, dur_val, important});
+      out.push_back({PropertyId::kTransitionTimingFunction, timing_val, important});
+      out.push_back({PropertyId::kTransitionDelay, delay_val, important});
       return true;
     }
 
