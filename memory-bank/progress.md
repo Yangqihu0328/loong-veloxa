@@ -3,7 +3,11 @@
 ## 当前任务
 
 ### TASK-20260405-12 示例应用
-- **状态**：初始化
+- **状态**：回顾完成
+- **分支**：`feature/TASK-20260405-12-examples`
+- **提交**：`27be8ac` feat(examples)
+- **产出**：`examples/hello.cc`（400×300 Flex 布局 demo → PPM 输出）
+- **回顾**：端到端管线一次性通过，零阻碍。CMakeLists 仅启用 CXX，用 .cc 后缀绕行。无新改进建议
 
 ## 已完成任务
 
