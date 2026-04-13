@@ -8,6 +8,11 @@
 - 实现：`HashMap::const_iterator` / `cbegin`/`cend`；`TransitionManager::HasActive` 扫描；`tests/test_pixel_utils.h`；`api_integration_test` / `memory_surface_test` 迁移
 - 验证：`ctest` → **797 passed, 0 failed**
 
+### `/reflect`（2026-04-13）
+
+- 回顾文档：`memory-bank/reflection/reflection-TASK-20260413-02.md`
+- 要点：迁移内联像素函数时注意 **全文替换**；hex 字面量旁建议写清 **RGBA 通道**；`HasActive` O(n) 扫描可接受当前规模
+
 ## 已完成任务
 
 - TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`

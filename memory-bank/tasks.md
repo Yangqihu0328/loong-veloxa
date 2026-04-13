@@ -8,8 +8,9 @@
 | **描述** | 消化技术债务子集：**#41** `HashMap` `const_iterator` / `cbegin` / `cend`；**#39** `tests/test_pixel_utils.h` + 2 处测试迁移；派生移除 `TransitionManager::active_count_`（依赖 #41）。 |
 | **复杂度** | Level 2 — 简单增强（范围已锁定，见计划） |
 | **安全** | 本迭代不涉及 `[安全相关]` 新增面 |
-| **状态** | 构建完成（待 `/reflect`） |
+| **状态** | 回顾完成（待 `/archive`） |
 | **创建日期** | 2026-04-13 |
+| **回顾** | `memory-bank/reflection/reflection-TASK-20260413-02.md`（2026-04-13） |
 
 ### 设计 / 实现文档
 

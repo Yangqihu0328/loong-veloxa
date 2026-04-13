@@ -1,18 +1,19 @@
 # 活跃上下文
 
 ## 当前阶段
-待回顾
+回顾中
 
 ## 当前任务
 - **ID：** TASK-20260413-02
 - **标题：** 消化技术债务（子集）
-- **焦点：** 实现已在分支 `feature/TASK-20260413-02-tech-debt`：`HashMap` const 迭代、`TransitionManager` 去 `active_count_`、`tests/test_pixel_utils.h` + 2 测迁移、Memory Bank 技术债注记。全量 `ctest` **797** 通过。下一步：`/reflect` → `/archive`。
+- **焦点：** 回顾见 `memory-bank/reflection/reflection-TASK-20260413-02.md`。下一步：`/archive`；合并 `feature/TASK-20260413-02-tech-debt` → `main`（若适用）。
 
 ## 待处理事项
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
 - **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
+- **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
 - **P1**：子代理 prompt 模板增加「跨模块数据格式」段（来源 TASK-02）— 已验证有效
 - **P1**：集成测试优先验证数据格式一致性（来源 TASK-02）
 - **P1**：存根文件预创建策略固化到子代理开发规则（来源 TASK-04）
