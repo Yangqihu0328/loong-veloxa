@@ -2,14 +2,11 @@
 
 ## 当前任务
 
-**TASK-20260413-02** — 消化技术债务（`/van` 2026-04-13）
-
-- 阶段：规划中（`/plan` 2026-04-13）
-- 锁定条目：**#41** HashMap const 迭代；**#39** `tests/test_pixel_utils.h` + 2 测迁移；移除 `TransitionManager::active_count_`
-- 产出：`docs/specs/2026-04-13-tech-debt-subset-design.md`、`docs/plans/2026-04-13-tech-debt-subset.md`；复杂度降为 **Level 2**；不需要 `/creative`
+（无 — 等待 `/van` 新任务。）
 
 ## 已完成任务
 
+- TASK-20260413-02：消化技术债务子集 → 归档 `memory-bank/archive/archive-TASK-20260413-02.md`
 - TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`
 - TASK-20260405-01：Foundation 基础库 → 归档 `memory-bank/archive/archive-TASK-20260405-01.md`
 - TASK-20260405-02：Graphics HAL + Platform HAL → 归档 `memory-bank/archive/archive-TASK-20260405-02.md`

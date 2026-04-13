@@ -216,5 +216,23 @@ TEST(HashMapTest, MoveConstructor) {
   EXPECT_EQ(m.size(), 0u);
 }
 
+TEST(HashMapTest, ConstIteration) {
+  HashMap<int, int> m;
+  m.Insert(1, 10);
+  m.Insert(2, 20);
+  const HashMap<int, int>& cm = m;
+  int sum = 0;
+  for (const auto& slot : cm) {
+    sum += slot.key + slot.value;
+  }
+  EXPECT_EQ(sum, 33);
+  int c = 0;
+  for (auto it = m.cbegin(); it != m.cend(); ++it) {
+    ++c;
+    EXPECT_TRUE(it->key == 1 || it->key == 2);
+  }
+  EXPECT_EQ(c, 2);
+}
+
 }  // namespace
 }  // namespace vx

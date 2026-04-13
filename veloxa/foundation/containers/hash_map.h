@@ -63,7 +63,51 @@ class HashMap {
     usize capacity_;
   };
 
+  class ConstIterator {
+   public:
+    ConstIterator(const u8* ctrl, const Slot* slots, usize index, usize capacity)
+        : ctrl_(ctrl), slots_(slots), index_(index), capacity_(capacity) {
+      AdvancePastEmptyOrDeleted();
+    }
+
+    const Slot& operator*() const { return slots_[index_]; }
+    const Slot* operator->() const { return &slots_[index_]; }
+
+    ConstIterator& operator++() {
+      ++index_;
+      AdvancePastEmptyOrDeleted();
+      return *this;
+    }
+
+    ConstIterator operator++(int) {
+      ConstIterator tmp = *this;
+      ++(*this);
+      return tmp;
+    }
+
+    bool operator==(const ConstIterator& other) const {
+      return index_ == other.index_;
+    }
+    bool operator!=(const ConstIterator& other) const {
+      return index_ != other.index_;
+    }
+
+   private:
+    void AdvancePastEmptyOrDeleted() {
+      while (index_ < capacity_ &&
+             (ctrl_[index_] == kEmpty || ctrl_[index_] == kDeleted)) {
+        ++index_;
+      }
+    }
+
+    const u8* ctrl_;
+    const Slot* slots_;
+    usize index_;
+    usize capacity_;
+  };
+
   using iterator = Iterator;
+  using const_iterator = ConstIterator;
 
   HashMap() : HashMap(&DefaultAllocator()) {}
 
@@ -236,6 +280,15 @@ class HashMap {
 
   iterator begin() { return iterator(ctrl_, slots_, 0, capacity_); }
   iterator end() { return iterator(ctrl_, slots_, capacity_, capacity_); }
+
+  const_iterator begin() const {
+    return const_iterator(ctrl_, slots_, 0, capacity_);
+  }
+  const_iterator end() const {
+    return const_iterator(ctrl_, slots_, capacity_, capacity_);
+  }
+  const_iterator cbegin() const { return begin(); }
+  const_iterator cend() const { return end(); }
 
  private:
   static u8 H2(usize hash) { return static_cast<u8>(hash & 0x7F); }

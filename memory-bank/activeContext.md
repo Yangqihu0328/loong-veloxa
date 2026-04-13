@@ -1,19 +1,18 @@
 # 活跃上下文
 
 ## 当前阶段
-规划中
+空闲
 
 ## 当前任务
-- **ID：** TASK-20260413-02
-- **标题：** 消化技术债务（子集）
-- **焦点：** 审查 `docs/specs/2026-04-13-tech-debt-subset-design.md`；批准后 **`/build`** 按 `docs/plans/2026-04-13-tech-debt-subset.md`（任务 1→4）。建议分支 `feature/TASK-20260413-02-tech-debt`（自 `main`）。**无需 `/creative`。**
+
+无。上一个任务 **TASK-20260413-02** 已归档：`memory-bank/archive/archive-TASK-20260413-02.md`。
 
 ## 待处理事项
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
 - **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
-- **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
+- **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
 - **P1**：子代理 prompt 模板增加「跨模块数据格式」段（来源 TASK-02）— 已验证有效
 - **P1**：集成测试优先验证数据格式一致性（来源 TASK-02）
 - **P1**：存根文件预创建策略固化到子代理开发规则（来源 TASK-04）
@@ -27,5 +26,4 @@
 - **P1**：并行子代理可行条件：无共享 .cc + 共享 .h 已创建 + CMakeLists.txt 已更新（来源 TASK-08）
 - **P1**：跨模块参数透传修改时，计划模板增加「调用链端到端验证」段（来源 TASK-09）
 - **P1**：设计文档管线注入点须附代码级可行性验证（来源 TASK-13）
-- **P1**：HashMap 补充 const_iterator / cbegin / cend（来源 TASK-13，技术债 #41）
 - **P1**：集成测试模板增加 API 备忘清单：html::Parser / FindElement / HandleInput（来源 TASK-13，反复出现第 4 次）
