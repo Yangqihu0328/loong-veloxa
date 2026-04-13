@@ -1,10 +1,12 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+设计中
 
 ## 当前任务
-无
+- **ID：** TASK-20260413-01
+- **标题：** QuickJS 脚本引擎集成
+- **焦点：** 创意已定稿（`memory-bank/creative/creative-quickjs-host.md`）。下一步 `/build`：对齐创意（`JS_SetMemoryLimit`、禁 `js_std_*`）；interrupt 留 Phase 2。严格按 `docs/plans/2026-04-13-quickjs-integration.md` 任务 1→6 实施。
 
 ## 待处理事项
 - **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
