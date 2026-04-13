@@ -1,14 +1,14 @@
 # 活跃上下文
 
 ## 当前阶段
-设计中
+空闲
 
 ## 当前任务
-- **ID：** TASK-20260413-01
-- **标题：** QuickJS 脚本引擎集成
-- **焦点：** 创意已定稿（`memory-bank/creative/creative-quickjs-host.md`）。下一步 `/build`：对齐创意（`JS_SetMemoryLimit`、禁 `js_std_*`）；interrupt 留 Phase 2。严格按 `docs/plans/2026-04-13-quickjs-integration.md` 任务 1→6 实施。
+无
 
 ## 待处理事项
+- **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
+- **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
 - **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）

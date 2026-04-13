@@ -111,6 +111,12 @@ veloxa/
 - 当前策略：分配失败直接 `std::abort()`（嵌入式场景，OOM = 不可恢复）
 - 待改进：可考虑 OOM 回调机制，允许宿主应用做清理
 
+### FetchContent / C 子项目与全局编译选项（TASK-20260413-01）
+- 根 `project(... LANGUAGES CXX)` 仍会在子目录中编译 **C** 依赖（如 quickjs-ng）
+- 若根 CMake 使用 **全局** `add_compile_options(-Wpedantic -Werror …)`，会作用于 **所有语言**，导致上游 C 库在 `-Werror=pedantic` 等规则下失败
+- **已验证做法：** 用生成表达式将严格告警限制为 C++，例如  
+  `"$<$<COMPILE_LANGUAGE:CXX>:-Werror>"` 等；或对自有目标使用 `target_compile_options` 而非全局注入
+
 ## 已验证的模式（来自 Graphics/Platform HAL 实现）
 
 ### 纯虚接口 + 具体后端模式

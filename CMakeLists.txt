@@ -12,15 +12,23 @@ set(VX_LOG_LEVEL 0 CACHE STRING "Minimum log level (0=DEBUG,1=INFO,2=WARN,3=ERRO
 
 add_compile_definitions(VX_MIN_LOG_LEVEL=${VX_LOG_LEVEL})
 
+# Apply strict warnings only to C++ — FetchContent C deps (e.g. QuickJS) are
+# not authored under Veloxa -Wpedantic -Werror.
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
-  add_compile_options(-Wall -Wextra -Wpedantic -Werror -Wno-unused-parameter
-                      -Wno-type-limits)
+  add_compile_options(
+    "$<$<COMPILE_LANGUAGE:CXX>:-Wall>"
+    "$<$<COMPILE_LANGUAGE:CXX>:-Wextra>"
+    "$<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>"
+    "$<$<COMPILE_LANGUAGE:CXX>:-Werror>"
+    "$<$<COMPILE_LANGUAGE:CXX>:-Wno-unused-parameter>"
+    "$<$<COMPILE_LANGUAGE:CXX>:-Wno-type-limits>")
 endif()
 
 add_subdirectory(veloxa/foundation)
 add_subdirectory(veloxa/platform)
 add_subdirectory(veloxa/graphics)
 add_subdirectory(veloxa/core)
+add_subdirectory(veloxa/script)
 add_subdirectory(veloxa/api)
 
 add_subdirectory(examples)

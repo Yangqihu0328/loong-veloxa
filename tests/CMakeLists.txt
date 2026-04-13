@@ -161,3 +161,6 @@ target_link_libraries(api_test PRIVATE vx_api vx_platform)
 
 vx_add_test(api_integration_test api/api_integration_test.cc)
 target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
+
+vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
+target_link_libraries(quickjs_engine_test PRIVATE vx_script)

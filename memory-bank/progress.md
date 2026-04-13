@@ -2,15 +2,11 @@
 
 ## 当前任务
 
-**TASK-20260413-01** — QuickJS 脚本引擎集成（`/van` 2026-04-13）
-
-- 阶段：设计中（`/creative` 2026-04-13）
-- 产出：`memory-bank/creative/creative-quickjs-host.md`（中断分阶段、`qjs-libc` 不启 `js_std_*`、默认堆 + `JS_SetMemoryLimit`≈32MiB）；`tasks.md` 已吸收创意摘要
-- 先前：`docs/specs/`、`docs/plans/`（`/plan`）
-- 快照：源码树尚无 `veloxa/script/`（待 `/build`）
+无活跃任务。等待新任务。
 
 ## 已完成任务
 
+- TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`
 - TASK-20260405-01：Foundation 基础库 → 归档 `memory-bank/archive/archive-TASK-20260405-01.md`
 - TASK-20260405-02：Graphics HAL + Platform HAL → 归档 `memory-bank/archive/archive-TASK-20260405-02.md`
 - TASK-20260405-03：DOM 树 + HTML 解析器 → 归档 `memory-bank/archive/archive-TASK-20260405-03.md`

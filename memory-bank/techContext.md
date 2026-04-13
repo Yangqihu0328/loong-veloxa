@@ -22,12 +22,16 @@
 - **Software Renderer** — 无 GPU 回退
 
 ### 脚本引擎
-- **QuickJS** — 轻量 ECMAScript 引擎（参考 Sciter 的选择）
+- **QuickJS（quickjs-ng）** — 轻量 ECMAScript 引擎；**已集成**（TASK-20260413-01）
+  - CMake：`veloxa/script/CMakeLists.txt` 使用 `FetchContent` 固定 **`v0.14.0`**，目标 `qjs` + `qjs-libc`
+  - 模块：静态库 **`vx_script`**，`vx::script::QuickjsEngine`（`Init` / `Shutdown` / `EvalGlobal`）
+  - 策略：`JS_SetMemoryLimit` 默认 **32MiB**/Runtime；**不**调用 `js_std_add_helpers`；源码 **256KiB** 上限；异常路径：`JS_FreeValue` → `JS_GetException`（见 `api-test.c`）
+  - 构建：根目录全局 `-Werror`/`-Wpedantic` 已限制为 **`$<COMPILE_LANGUAGE:CXX>`**，避免污染上游 C 源码；WSL 无 DNS 时需 **`http_proxy`/`https_proxy`**（或离线预置 `_deps`）以便首次 `FetchContent`
 
 ### 第三方依赖（规划）
 | 库 | 用途 | 备注 |
 |---|---|---|
-| QuickJS | JavaScript 引擎 | 嵌入式友好 |
+| quickjs-ng (QuickJS) | JavaScript 引擎 | **已接入** v0.14.0，FetchContent；周期性 CVE/发行说明对照（自动化工具缺位） |
 | FreeType + HarfBuzz | 字体渲染与文本整形 | 车载多语言支持 |
 | libpng / libjpeg / libwebp | 图片解码 | 按需裁剪 |
 | zlib | 压缩 | 资源打包 |
@@ -260,3 +264,4 @@
 41. HashMap 缺少 const_iterator / cbegin / cend，const 方法无法遍历（TASK-13 TransitionManager.HasActive 被迫用计数器绕开）
 42. transition shorthand 仅支持单条声明，不支持逗号分隔多条（如 `transition: bg 300ms, opacity 200ms`）
 43. LayoutBox.style 是 const 指针，动画覆盖需 const_cast，应考虑引入可写样式覆盖层或改为 non-const
+44. `vx_script`：`JS_SetInterruptHandler` / 执行预算未实现（见 `creative-quickjs-host.md` Phase 2）；`JSMallocFunctions` 与 Foundation 分配器未对齐
