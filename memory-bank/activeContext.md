@@ -1,10 +1,18 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+初始化
 
 ## 当前任务
-无
+- **ID**：TASK-20260405-13
+- **描述**：CSS 动画系统（CSS Transitions）
+- **复杂度**：Level 3
+
+## 现有基础设施（探索结果）
+- **动画相关代码**：无（零基础）
+- **可动画属性**：ComputedStyle 中的 LengthValue（width/height/margin/padding/inset）、u32 颜色（background_color/color/border_color）、f32（opacity/flex_grow/flex_shrink）
+- **帧循环**：Application 按 target_fps（默认 60）定时 SetTimer → OnFrame → Update()，dirty_ == false 时早退
+- **EventLoop timer**：`SetTimer(interval_ms, callback, repeat)` / `CancelTimer(id)`
 
 ## 待处理事项
 - **P1**：创建 `tests/test_pixel_utils.h` 标准化像素通道提取函数（来源 TASK-11）
