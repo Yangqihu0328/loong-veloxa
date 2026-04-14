@@ -25,12 +25,9 @@ class DomBindings {
   dom::Document* document() const { return doc_; }
 
  private:
-  struct Impl;
-
   JSContext* ctx_ = nullptr;
   dom::Document* doc_ = nullptr;
   event::EventManager* em_ = nullptr;
-  Impl* impl_ = nullptr;
 };
 
 }  // namespace vx::script
