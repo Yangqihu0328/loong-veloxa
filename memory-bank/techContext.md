@@ -28,14 +28,17 @@
   - 策略：`JS_SetMemoryLimit` 默认 **32MiB**/Runtime；**不**调用 `js_std_add_helpers`；源码 **256KiB** 上限；异常路径：`JS_FreeValue` → `JS_GetException`（见 `api-test.c`）
   - 构建：根目录全局 `-Werror`/`-Wpedantic` 已限制为 **`$<COMPILE_LANGUAGE:CXX>`**，避免污染上游 C 源码；WSL 无 DNS 时需 **`http_proxy`/`https_proxy`**（或离线预置 `_deps`）以便首次 `FetchContent`
 
-### 第三方依赖（规划）
+### 第三方依赖
 | 库 | 用途 | 备注 |
 |---|---|---|
 | quickjs-ng (QuickJS) | JavaScript 引擎 | **已接入** v0.14.0，FetchContent；周期性 CVE/发行说明对照（自动化工具缺位） |
-| FreeType + HarfBuzz | 字体渲染与文本整形 | 车载多语言支持 |
-| libpng / libjpeg / libwebp | 图片解码 | 按需裁剪 |
-| zlib | 压缩 | 资源打包 |
-| libuv | 异步 I/O | 事件循环 |
+| FreeType | 字体光栅化 | **已接入**（TASK-20260414-01），系统包 find_package(Freetype) |
+| HarfBuzz | 文本整形 | **已接入**（TASK-20260414-01），系统包 pkg_check_modules(HARFBUZZ) |
+| libpng | PNG 图片解码 | **已接入**（TASK-20260414-01），系统包 find_package(PNG) |
+| libjpeg-turbo | JPEG 图片解码 | **已接入**（TASK-20260414-01），系统包 find_package(JPEG) |
+| libwebp | WebP 图片解码 | 未接入（系统缺少 -dev 包），延期 |
+| zlib | 压缩 | 待接入（资源打包） |
+| libuv | 异步 I/O | 待接入（事件循环） |
 
 ## Sciter 架构分析摘要
 
@@ -173,8 +176,25 @@
 
 ### Canvas::DrawText
 - 纯虚接口，参数：text (StringView), bounds (Rect), font_size (f32), brush (Brush)
-- SoftwareCanvas 实现：逐字符 FillRect（char_width = 0.6 × font_size, 空格跳过）
-- 后续集成 FreeType+HarfBuzz 后替换实现，上层代码零修改
+- SoftwareCanvas 实现：有 FontManager* 时使用 FreeType+HarfBuzz 做真实字形渲染（HarfBuzz 塑形 → FreeType 光栅化 → GlyphCache 缓存 → SrcOver 混合）
+- 无 FontManager* 时退化为旧存根（逐字符 FillRect）
+
+### Canvas::DrawImage（TASK-20260414-01 新增）
+- 纯虚接口，参数：image (const Image&), src_rect (Rect), dst_rect (Rect)
+- SoftwareCanvas 实现：最近邻缩放 + SrcOver alpha 混合，裁剪到 canvas 边界
+
+### Image 解码管线（TASK-20260414-01 新增）
+- ImageDecoder：DecodeFromFile/DecodeFromMemory，magic bytes 自动检测 PNG/JPEG
+- PNG：libpng，png_set_expand + gray_to_rgb + add_alpha 确保 RGBA 输出
+- JPEG：libjpeg-turbo，RGB→RGBA（alpha=255）
+- ImageCache：路径去重缓存，handle-based 查找
+
+### QuickJS DOM 绑定（TASK-20260414-01 新增）
+- DomBindings::Bind(ctx, doc, em) 注册 document.getElementById + Element 类 + Style proxy
+- Element 属性：tagName（只读）、id（只读）、textContent（读写）、style（getter 返回 proxy）
+- Element 方法：getAttribute、setAttribute、addEventListener、removeEventListener
+- Style proxy：7 个 CSS 属性的 camelCase setter，通过 CssParser::ParseDeclarationList 解析
+- addEventListener 通过 JS_DupValue 保持 callback 引用，TrackedCallbacks 在 Unbind 时释放
 
 ## Event System 实现经验（2026-04-05）
 
@@ -265,3 +285,9 @@
 42. transition shorthand 仅支持单条声明，不支持逗号分隔多条（如 `transition: bg 300ms, opacity 200ms`）
 43. LayoutBox.style 是 const 指针，动画覆盖需 const_cast，应考虑引入可写样式覆盖层或改为 non-const
 44. `vx_script`：`JS_SetInterruptHandler` / 执行预算未实现（见 `creative-quickjs-host.md` Phase 2）；`JSMallocFunctions` 与 Foundation 分配器未对齐
+45. dom_bindings.cc 使用全局变量（g_bound_doc、g_element_class_id、g_tracked_callbacks），不支持多 Document/多线程
+46. StyleGetProp getter 始终返回空字符串——读路径未实现（写路径通过 CssParser 正常工作）
+47. removeEventListener 简化为移除元素所有监听器，未实现按 type+handler 精确移除
+48. SoftwareCanvas::DrawText 每次调用创建 hb_font_t——应缓存到 GlyphCache 或 FontManager 级别
+49. textContent setter 不处理无 Text 子节点的情况（不创建新 Text 节点，静默返回）
+50. addEventListener lambda 捕获 JSContext*，Unbind 应确保在 JS_FreeValue callbacks 之前先 RemoveEventListeners

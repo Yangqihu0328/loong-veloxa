@@ -125,6 +125,9 @@ target_link_libraries(render_test PRIVATE vx_core vx_graphics vx_platform)
 vx_add_test(render_integration_test core/render/integration_test.cc)
 target_link_libraries(render_integration_test PRIVATE vx_core vx_graphics vx_platform)
 
+vx_add_test(border_radius_test core/render/border_radius_test.cc)
+target_link_libraries(border_radius_test PRIVATE vx_core vx_graphics vx_platform)
+
 # Core: Event
 vx_add_test(event_types_test core/event/event_types_test.cc)
 target_link_libraries(event_types_test PRIVATE vx_core)
@@ -150,10 +153,10 @@ target_link_libraries(update_integration_test PRIVATE vx_core vx_graphics vx_pla
 
 # Core: Application
 vx_add_test(application_test core/application_test.cc)
-target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform)
+target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform vx_text vx_script)
 
 vx_add_test(application_integration_test core/application_integration_test.cc)
-target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform)
+target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
 # API: C API
 vx_add_test(api_test api/api_test.cc)
@@ -164,3 +167,24 @@ target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
+
+vx_add_test(dom_bindings_test script/dom_bindings_test.cc)
+target_link_libraries(dom_bindings_test PRIVATE vx_script vx_core)
+
+# Core: Image
+find_package(PNG REQUIRED)
+
+vx_add_test(image_decoder_test core/image/image_decoder_test.cc)
+target_link_libraries(image_decoder_test PRIVATE vx_core PNG::PNG)
+
+vx_add_test(image_cache_test core/image/image_cache_test.cc)
+target_link_libraries(image_cache_test PRIVATE vx_core PNG::PNG)
+
+vx_add_test(font_manager_test text/font_manager_test.cc)
+target_link_libraries(font_manager_test PRIVATE vx_text)
+
+vx_add_test(glyph_cache_test text/glyph_cache_test.cc)
+target_link_libraries(glyph_cache_test PRIVATE vx_text)
+
+vx_add_test(freetype_shaper_test text/freetype_shaper_test.cc)
+target_link_libraries(freetype_shaper_test PRIVATE vx_text)

@@ -1,6 +1,9 @@
 #ifndef VELOXA_CORE_DOM_ELEMENT_H_
 #define VELOXA_CORE_DOM_ELEMENT_H_
 
+#include "veloxa/core/css/css_value.h"
+#include "veloxa/core/css/property.h"
+#include "veloxa/core/css/selector.h"
 #include "veloxa/core/dom/attribute.h"
 #include "veloxa/core/dom/node.h"
 #include "veloxa/core/dom/tag.h"
@@ -40,6 +43,12 @@ class Element : public Node {
   void RemoveClass(InternedString cls);
   bool HasClass(InternedString cls) const;
 
+  const SmallVector<css::Declaration, 8>* inline_declarations() const {
+    return inline_decls_.empty() ? nullptr : &inline_decls_;
+  }
+  void SetInlineDeclaration(css::PropertyId prop, css::CssValue value);
+  void ClearInlineDeclarations() { inline_decls_.clear(); }
+
  protected:
   Element(TagId tag_id, NodeType node_type)
       : Node(node_type), tag_id_(tag_id) {}
@@ -52,6 +61,7 @@ class Element : public Node {
   SmallVector<Attribute, 4> attributes_;
   InternedString id_;
   SmallVector<InternedString, 2> classes_;
+  SmallVector<css::Declaration, 8> inline_decls_;
 };
 
 }  // namespace vx::dom

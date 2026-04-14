@@ -12,6 +12,7 @@ FetchContent_MakeAvailable(quickjsng)
 
 add_library(vx_script STATIC
   quickjs_engine.cc
+  dom_bindings.cc
 )
 target_include_directories(vx_script PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(vx_script PUBLIC vx_foundation)

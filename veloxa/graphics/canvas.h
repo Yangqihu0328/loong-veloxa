@@ -5,6 +5,7 @@
 
 #include "veloxa/foundation/strings/string_view.h"
 #include "veloxa/graphics/brush.h"
+#include "veloxa/graphics/image.h"
 #include "veloxa/graphics/path.h"
 #include "veloxa/graphics/types.h"
 
@@ -34,6 +35,9 @@ class Canvas {
 
   virtual void DrawText(vx::StringView text, const Rect& bounds,
                         vx::f32 font_size, const Brush& brush) = 0;
+
+  virtual void DrawImage(const Image& image, const Rect& src_rect,
+                         const Rect& dst_rect) = 0;
 
   virtual void PushClipRect(const Rect& rect) = 0;
   virtual void PushClipPath(const Path& path) = 0;

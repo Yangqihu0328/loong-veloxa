@@ -10,6 +10,10 @@ namespace vx::event {
 class EventManager;
 }
 
+namespace vx::image {
+class ImageCache;
+}
+
 namespace vx::layout {
 
 class TextShaper;
@@ -21,6 +25,7 @@ struct LayoutContext {
   f32 viewport_height = 0;
   f32 root_font_size = 16.0f;
   const event::EventManager* event_manager = nullptr;
+  image::ImageCache* image_cache = nullptr;
 };
 
 f32 ResolveLength(const css::LengthValue& len, f32 containing_size,

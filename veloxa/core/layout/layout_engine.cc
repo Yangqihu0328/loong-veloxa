@@ -4,6 +4,7 @@
 #include <new>
 
 #include "veloxa/core/css/style_resolver.h"
+#include "veloxa/core/image/image_cache.h"
 #include "veloxa/core/layout/flex_layout.h"
 #include "veloxa/core/layout/text_shaper.h"
 
@@ -30,7 +31,8 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
   css::ComputedStyle resolved;
   if (ctx.stylesheets) {
     resolved = css::StyleResolver::Resolve(element, *ctx.stylesheets,
-                                           parent_style, nullptr,
+                                           parent_style,
+                                           element->inline_declarations(),
                                            ctx.event_manager);
   } else if (parent_style) {
     resolved = *parent_style;
@@ -53,6 +55,27 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
   LayoutBox* box = CreateBox(type, arena);
   box->element = element;
   box->style = style_ptr;
+
+  if (element->tag_id() == dom::TagId::kImg && ctx.image_cache) {
+    auto* src_attr = element->GetAttribute(InternedString::Intern("src"));
+    if (src_attr) {
+      auto result = ctx.image_cache->Load(
+          StringView(src_attr->data(), src_attr->size()));
+      if (result.ok()) {
+        box->type = LayoutType::kReplaced;
+        box->image_handle = result.value();
+        auto* img = ctx.image_cache->Get(box->image_handle);
+        if (img && img->valid()) {
+          if (style_ptr->width.is_none() || style_ptr->width.is_auto()) {
+            box->content_width = static_cast<f32>(img->width());
+          }
+          if (style_ptr->height.is_none() || style_ptr->height.is_auto()) {
+            box->content_height = static_cast<f32>(img->height());
+          }
+        }
+      }
+    }
+  }
 
   for (dom::Node* child = element->first_child(); child;
        child = child->next_sibling()) {
@@ -118,6 +141,8 @@ void LayoutEngine::LayoutChild(LayoutBox* child, f32 containing_width,
         child->content_width = m.width;
         child->content_height = m.height;
       }
+      break;
+    case LayoutType::kReplaced:
       break;
   }
 }

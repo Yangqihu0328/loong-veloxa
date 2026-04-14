@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "veloxa/core/css/enums.h"
+#include "veloxa/core/image/image_cache.h"
 #include "veloxa/core/render/render_utils.h"
 #include "veloxa/foundation/containers/small_vector.h"
 
@@ -52,7 +53,8 @@ void PaintBorders(layout::LayoutBox* box, const css::ComputedStyle* style,
   }
 }
 
-void RecordBox(layout::LayoutBox* box, DisplayList& list) {
+void RecordBox(layout::LayoutBox* box, DisplayList& list,
+               image::ImageCache* image_cache) {
   const css::ComputedStyle* style = box->style;
   css::ComputedStyle default_style;
   if (!style) style = &default_style;
@@ -71,10 +73,32 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
   if (has_layer)
     list.push_back(PaintCommand::PushLayer(border_box, style->opacity));
 
-  gfx::Color bg = CssColorToGfx(style->background_color);
-  if (bg.a > 0) list.push_back(PaintCommand::FillRect(border_box, bg));
+  f32 radius = 0;
+  if (style->border_radius.unit == css::Unit::kPx)
+    radius = style->border_radius.value;
 
-  PaintBorders(box, style, list);
+  gfx::Color bg = CssColorToGfx(style->background_color);
+  if (bg.a > 0) {
+    if (radius > 0)
+      list.push_back(PaintCommand::FillRoundedRect(border_box, radius, bg));
+    else
+      list.push_back(PaintCommand::FillRect(border_box, bg));
+  }
+
+  if (radius > 0) {
+    f32 top_bw = box->border[layout::LayoutBox::kTop];
+    bool has_border = top_bw > 0 &&
+                      style->border_style[0] != css::BorderStyle::kNone;
+    if (has_border) {
+      f32 half = top_bw * 0.5f;
+      gfx::Rect inset_rect{bx + half, by + half, bbw - top_bw, bbh - top_bw};
+      gfx::Color border_color = CssColorToGfx(style->border_color[0]);
+      list.push_back(PaintCommand::StrokeRoundedRect(inset_rect, radius,
+                                                     border_color, top_bw));
+    }
+  } else {
+    PaintBorders(box, style, list);
+  }
 
   bool has_clip = style->overflow == css::Overflow::kHidden;
   if (has_clip) {
@@ -98,6 +122,12 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
     }
   }
 
+  if (box->type == layout::LayoutType::kReplaced && box->image_handle != 0) {
+    gfx::Rect content_rect{box->x, box->y, box->content_width,
+                            box->content_height};
+    list.push_back(PaintCommand::DrawImage(box->image_handle, content_rect));
+  }
+
   SmallVector<layout::LayoutBox*, 16> children;
   for (auto* child = box->first_child; child; child = child->next_sibling) {
     children.push_back(child);
@@ -110,7 +140,7 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
         return za < zb;
       });
   for (auto* child : children) {
-    RecordBox(child, list);
+    RecordBox(child, list, image_cache);
   }
 
   if (has_clip) list.push_back(PaintCommand::PopClip());
@@ -119,22 +149,42 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
 
 }  // namespace
 
-DisplayList Record(layout::LayoutBox* root) {
+DisplayList Record(layout::LayoutBox* root,
+                   image::ImageCache* image_cache) {
   DisplayList list;
   if (!root) return list;
-  RecordBox(root, list);
+  RecordBox(root, list, image_cache);
   return list;
 }
 
-void Replay(const DisplayList& list, gfx::Canvas* canvas) {
+void Replay(const DisplayList& list, gfx::Canvas* canvas,
+            image::ImageCache* image_cache) {
   for (const auto& cmd : list) {
     switch (cmd.type) {
       case PaintCommand::Type::kFillRect:
         canvas->FillRect(cmd.rect, gfx::Brush::Solid(cmd.color));
         break;
+      case PaintCommand::Type::kFillRoundedRect:
+        canvas->FillRoundedRect(cmd.rect, cmd.param,
+                                gfx::Brush::Solid(cmd.color));
+        break;
+      case PaintCommand::Type::kStrokeRoundedRect:
+        canvas->StrokeRoundedRect(cmd.rect, cmd.param,
+                                  gfx::Brush::Solid(cmd.color), cmd.param2);
+        break;
       case PaintCommand::Type::kDrawText:
         canvas->DrawText(cmd.text, cmd.rect, cmd.param,
                          gfx::Brush::Solid(cmd.color));
+        break;
+      case PaintCommand::Type::kDrawImage:
+        if (image_cache && cmd.image_handle != 0) {
+          const gfx::Image* img = image_cache->Get(cmd.image_handle);
+          if (img && img->valid()) {
+            gfx::Rect src{0, 0, static_cast<f32>(img->width()),
+                          static_cast<f32>(img->height())};
+            canvas->DrawImage(*img, src, cmd.rect);
+          }
+        }
         break;
       case PaintCommand::Type::kPushClipRect:
         canvas->PushClipRect(cmd.rect);
@@ -152,9 +202,10 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas) {
   }
 }
 
-void Paint(layout::LayoutBox* root, gfx::Canvas* canvas) {
-  DisplayList list = Record(root);
-  Replay(list, canvas);
+void Paint(layout::LayoutBox* root, gfx::Canvas* canvas,
+           image::ImageCache* image_cache) {
+  DisplayList list = Record(root, image_cache);
+  Replay(list, canvas, image_cache);
 }
 
 gfx::Rect ComputeDirtyRect(const DisplayList& old_list,

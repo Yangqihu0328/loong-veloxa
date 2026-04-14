@@ -2,9 +2,11 @@
 
 ## 当前任务
 
-（无 — 等待 `/van` 新任务。）
+无活跃任务。
 
 ## 已完成任务
+
+- TASK-20260414-01：功能补全 → 归档 `memory-bank/archive/archive-TASK-20260414-01.md`
 
 - TASK-20260413-02：消化技术债务子集 → 归档 `memory-bank/archive/archive-TASK-20260413-02.md`
 - TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`

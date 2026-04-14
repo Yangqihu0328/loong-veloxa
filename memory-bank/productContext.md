@@ -31,6 +31,24 @@
 4. 引擎在目标硬件上渲染 60fps 流畅界面
 5. 应用通过 API 与 UI 双向通信（数据绑定/事件回调）
 
+## 已实现的核心功能（截至 TASK-20260414-01）
+
+| 功能 | 状态 | 备注 |
+|------|------|------|
+| HTML 解析器 | ✅ | 子集 HTML5，隐式关闭规则 |
+| CSS 引擎（~45 属性） | ✅ | 选择器匹配、层叠、继承 |
+| Block/Inline/Flex 布局 | ✅ | CSS Flexbox Level 1 §9 |
+| 软件渲染器 | ✅ | 覆盖率光栅化、Display List |
+| 事件系统 | ✅ | W3C DOM Events 三阶段，:hover/:active/:focus |
+| 脏区更新 | ✅ | DisplayList diff |
+| CSS Transitions | ✅ | 单属性过渡 |
+| C API | ✅ | 不透明指针 ABI |
+| QuickJS 脚本引擎 | ✅ | EvalGlobal、32MiB 内存限制 |
+| border-radius 渲染 | ✅ | FillRoundedRect + StrokeRoundedRect |
+| FreeType + HarfBuzz 字体渲染 | ✅ | 真实字形光栅化、GlyphCache |
+| PNG/JPEG 图片支持 | ✅ | 解码 + 缓存 + DrawImage |
+| JS-DOM 绑定 | ✅ | getElementById、属性、style proxy、事件 |
+
 ## 非目标
 - 不做完整浏览器（不支持完整 HTML5 规范）
 - 不做通用桌面 UI 框架（焦点在嵌入式）

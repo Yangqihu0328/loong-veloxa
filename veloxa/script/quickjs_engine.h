@@ -27,6 +27,8 @@ class QuickjsEngine {
 
   StatusOr<std::string> EvalGlobal(StringView source, StringView filename);
 
+  JSContext* context() const { return ctx_; }
+
  private:
   JSRuntime* rt_ = nullptr;
   JSContext* ctx_ = nullptr;

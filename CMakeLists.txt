@@ -28,6 +28,7 @@ add_subdirectory(veloxa/foundation)
 add_subdirectory(veloxa/platform)
 add_subdirectory(veloxa/graphics)
 add_subdirectory(veloxa/core)
+add_subdirectory(veloxa/text)
 add_subdirectory(veloxa/script)
 add_subdirectory(veloxa/api)
 
