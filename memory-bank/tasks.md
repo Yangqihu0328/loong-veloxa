@@ -2,7 +2,48 @@
 
 ## 当前任务
 
-无。使用 `/van` 创建新任务。
+### TASK-20260414-01：功能补全（border-radius / 字体渲染 / 图片支持 / JS-DOM 绑定）
+
+- **状态：** 进行中（规划完成，待构建）
+- **复杂度：** Level 4（多子系统、架构决策、分阶段迭代）
+- **分支：** `feature/TASK-20260414-01-feature-completion`
+- **创建日期：** 2026-04-14
+
+**设计文档：** `docs/specs/2026-04-14-feature-completion-design.md`
+**实现计划：** `docs/plans/2026-04-14-feature-completion.md`
+
+**迭代分解：**
+
+#### Iteration 1：border-radius 渲染
+- [ ] Phase 1.1：PaintCommand 扩展（kFillRoundedRect, kStrokeRoundedRect）
+- [ ] Phase 1.2：Renderer Record/Replay 圆角支持
+
+#### Iteration 2：FreeType + HarfBuzz 字体渲染
+- [ ] Phase 2.1：CMake 基础设施 + FontHandle 类型
+- [ ] Phase 2.2：FontManager 实现
+- [ ] Phase 2.3：GlyphCache 实现
+- [ ] Phase 2.4：FreeTypeTextShaper 实现
+- [ ] Phase 2.5：Canvas::DrawText 签名变更 + SoftwareCanvas 实现
+- [ ] Phase 2.6：C API + Application 集成
+
+#### Iteration 3：图片支持
+- [ ] Phase 3.1：Image 类
+- [ ] Phase 3.2：ImageDecoder (PNG + JPEG)
+- [ ] Phase 3.3：ImageCache
+- [ ] Phase 3.4：Layout kReplaced + BuildTree 集成
+- [ ] Phase 3.5：Canvas::DrawImage + PaintCommand + Renderer
+- [ ] Phase 3.6：Application 集成 + 端到端测试
+
+#### Iteration 4：QuickJS DOM 绑定
+- [ ] Phase 4.1：CMake + Element inline_declarations
+- [ ] Phase 4.2：BuildTree inline style 集成（修复技术债 #28）
+- [ ] Phase 4.3：DomBindings — document.getElementById
+- [ ] Phase 4.4：Element 属性访问
+- [ ] Phase 4.5：style proxy
+- [ ] Phase 4.6：addEventListener / removeEventListener
+- [ ] Phase 4.7：QuickjsEngine + Application + C API 集成
+
+**需要创意阶段的组件：** 无
 
 ## 任务历史
 

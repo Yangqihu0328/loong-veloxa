@@ -2,7 +2,21 @@
 
 ## 当前任务
 
-（无 — 等待 `/van` 新任务。）
+### TASK-20260414-01：功能补全
+
+**阶段：** 规划完成 → 待进入 /build
+
+**里程碑：**
+- ✅ 初始化（/van）：环境检测、依赖验证、分支创建
+- ✅ 头脑风暴：3 个关键设计决策确认（字体加载/图片加载/DOM 绑定范围）
+- ✅ 设计规格保存：`docs/specs/2026-04-14-feature-completion-design.md`
+- ✅ 实现计划保存：`docs/plans/2026-04-14-feature-completion.md`
+- ⬜ 构建迭代 1：border-radius
+- ⬜ 构建迭代 2：FreeType + HarfBuzz
+- ⬜ 构建迭代 3：图片支持
+- ⬜ 构建迭代 4：QuickJS DOM 绑定
+
+**创意阶段需求：** 无（设计决策已在头脑风暴覆盖）
 
 ## 已完成任务
 
