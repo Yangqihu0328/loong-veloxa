@@ -4,19 +4,21 @@
 
 ### TASK-20260414-01：功能补全
 
-**阶段：** 规划完成 → 待进入 /build
+**阶段：** 构建完成 → 待 /reflect
 
 **里程碑：**
 - ✅ 初始化（/van）：环境检测、依赖验证、分支创建
 - ✅ 头脑风暴：3 个关键设计决策确认（字体加载/图片加载/DOM 绑定范围）
 - ✅ 设计规格保存：`docs/specs/2026-04-14-feature-completion-design.md`
 - ✅ 实现计划保存：`docs/plans/2026-04-14-feature-completion.md`
-- ⬜ 构建迭代 1：border-radius
-- ⬜ 构建迭代 2：FreeType + HarfBuzz
-- ⬜ 构建迭代 3：图片支持
-- ⬜ 构建迭代 4：QuickJS DOM 绑定
+- ✅ 构建迭代 1：border-radius（8 测试，PaintCommand + Renderer 圆角）
+- ✅ 构建迭代 2：FreeType + HarfBuzz（15 测试，FontManager + GlyphCache + FreeTypeTextShaper + Canvas 集成）
+- ✅ 构建迭代 3：图片支持（6 测试，ImageDecoder + ImageCache + Layout kReplaced + DrawImage）
+- ✅ 构建迭代 4：QuickJS DOM 绑定（12 测试，DomBindings + style proxy + events + Application.LoadScript）
 
-**创意阶段需求：** 无（设计决策已在头脑风暴覆盖）
+**最终验证：** 842/842 测试全部通过，0 失败，0 回归
+**提交数：** 7（含 1 个文档提交）
+**变更规模：** 52 文件，+3593/-40 行
 
 ## 已完成任务
 
