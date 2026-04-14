@@ -110,6 +110,15 @@ VxResult vx_view_inject_input(VxView* view, const VxInputEvent* event) {
   return VX_OK;
 }
 
+VxResult vx_view_load_font(VxView* view, const char* path,
+                           const char* family) {
+  if (!view || !path || !family) return VX_ERROR_NULL_PARAM;
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  auto status =
+      app->LoadFont(vx::StringView(path), vx::StringView(family));
+  return status.ok() ? VX_OK : VX_ERROR_INVALID_STATE;
+}
+
 VxResult vx_view_update(VxView* view) {
   if (!view) return VX_ERROR_NULL_PARAM;
   auto* app = reinterpret_cast<vx::Application*>(view);

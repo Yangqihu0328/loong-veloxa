@@ -81,6 +81,8 @@ VxResult vx_view_load_html(VxView* view, const char* html, uint32_t len);
 VxResult vx_view_load_css(VxView* view, const char* css, uint32_t len);
 VxResult vx_view_inject_input(VxView* view, const VxInputEvent* event);
 
+VxResult vx_view_load_font(VxView* view, const char* path, const char* family);
+
 VxResult vx_view_update(VxView* view);
 VxResult vx_view_run(VxView* view);
 VxResult vx_view_quit(VxView* view);

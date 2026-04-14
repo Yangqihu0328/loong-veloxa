@@ -13,6 +13,8 @@
 #include "veloxa/graphics/types.h"
 #include "veloxa/platform/event_loop.h"
 #include "veloxa/platform/surface.h"
+#include "veloxa/text/font_manager.h"
+#include "veloxa/text/glyph_cache.h"
 
 namespace vx {
 
@@ -33,6 +35,7 @@ class Application {
 
   void LoadHTML(StringView html);
   void LoadCSS(StringView css);
+  Status LoadFont(StringView path, StringView family);
   void InjectInput(const event::InputEvent& input);
 
   void Run();
@@ -51,7 +54,9 @@ class Application {
   dom::Document* document_ = nullptr;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
-  layout::SimpleTextShaper text_shaper_;
+  std::unique_ptr<layout::TextShaper> text_shaper_;
+  text::FontManager font_manager_;
+  text::GlyphCache glyph_cache_;
 
   u32* surface_pixels_ = nullptr;
   std::unique_ptr<gfx::Canvas> canvas_;

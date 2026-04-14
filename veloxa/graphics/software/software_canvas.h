@@ -8,12 +8,19 @@
 #include "veloxa/graphics/software/rasterizer.h"
 #include "veloxa/graphics/software/software_path.h"
 
+namespace vx::text {
+class FontManager;
+class GlyphCache;
+}  // namespace vx::text
+
 namespace vx::gfx::sw {
 
 class SoftwareCanvas : public Canvas {
  public:
   SoftwareCanvas(vx::u32* pixels, vx::u32 width, vx::u32 height,
-                 vx::u32 stride);
+                 vx::u32 stride,
+                 text::FontManager* font_manager = nullptr,
+                 text::GlyphCache* glyph_cache = nullptr);
 
   void Begin() override;
   void End() override;
@@ -64,6 +71,8 @@ class SoftwareCanvas : public Canvas {
   };
 
   Rect CurrentClip() const;
+  void DrawTextFallback(vx::StringView text, const Rect& bounds,
+                        vx::f32 font_size, const Brush& brush);
 
   vx::u32* pixels_;
   vx::u32 width_, height_, stride_;
@@ -72,6 +81,8 @@ class SoftwareCanvas : public Canvas {
   vx::Vector<Rect> clip_stack_;
   vx::Vector<LayerInfo> layer_stack_;
   bool active_;
+  text::FontManager* font_manager_ = nullptr;
+  text::GlyphCache* glyph_cache_ = nullptr;
 };
 
 }  // namespace vx::gfx::sw

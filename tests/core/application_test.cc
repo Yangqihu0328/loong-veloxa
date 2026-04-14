@@ -165,5 +165,28 @@ TEST_F(ApplicationTest, MultipleCSSSheets) {
   EXPECT_TRUE(found_blue);
 }
 
+TEST_F(ApplicationTest, LoadFontAndRenderText) {
+  Application app(MakeConfig());
+
+  auto status = app.LoadFont(
+      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "DejaVuSans");
+  ASSERT_TRUE(status.ok());
+
+  app.LoadHTML("<div id=\"msg\">Hello FreeType</div>");
+  app.LoadCSS("#msg { color: black; font-size: 20px; }");
+  app.Update();
+
+  const u32* data = surface_->data();
+  bool has_non_white = false;
+  u32 white = gfx::Color::White().ToRGBA32();
+  for (u32 i = 0; i < kW * kH; ++i) {
+    if (data[i] != white && data[i] != 0) {
+      has_non_white = true;
+      break;
+    }
+  }
+  EXPECT_TRUE(has_non_white) << "Expected text pixels after FreeType rendering";
+}
+
 }  // namespace
 }  // namespace vx

@@ -2,15 +2,18 @@
 
 #include "veloxa/core/html/parser.h"
 #include "veloxa/graphics/software/software_canvas.h"
+#include "veloxa/text/freetype_shaper.h"
 
 namespace vx {
 
 Application::Application(const Config& config) : config_(config) {
+  text_shaper_ = std::make_unique<layout::SimpleTextShaper>();
+  font_manager_.Init();
   if (config_.surface) {
     surface_pixels_ = config_.surface->Lock();
     canvas_ = std::make_unique<gfx::sw::SoftwareCanvas>(
         surface_pixels_, config_.surface->width(), config_.surface->height(),
-        config_.surface->stride());
+        config_.surface->stride(), &font_manager_, &glyph_cache_);
     canvas_->Begin();
     canvas_->Clear(config_.background_color);
   }
@@ -21,6 +24,7 @@ Application::~Application() {
     config_.surface->Unlock();
   }
   delete document_;
+  font_manager_.Shutdown();
 }
 
 void Application::LoadHTML(StringView html) {
@@ -32,6 +36,15 @@ void Application::LoadHTML(StringView html) {
 void Application::LoadCSS(StringView css) {
   stylesheets_.push_back(css::CssParser::Parse(css));
   update_manager_.reset();
+}
+
+Status Application::LoadFont(StringView path, StringView family) {
+  auto result = font_manager_.LoadFont(path, family);
+  if (!result.ok()) return result.status();
+  auto* ft_shaper = new text::FreeTypeTextShaper(&font_manager_);
+  ft_shaper->set_default_font(result.value());
+  text_shaper_.reset(ft_shaper);
+  return Status::Ok();
 }
 
 void Application::InjectInput(const event::InputEvent& input) {
@@ -74,7 +87,7 @@ void Application::EnsureUpdateManager() {
   UpdateManager::Config cfg;
   cfg.document = document_;
   cfg.stylesheets = &stylesheets_;
-  cfg.layout_context.text_shaper = &text_shaper_;
+  cfg.layout_context.text_shaper = text_shaper_.get();
   cfg.layout_context.viewport_width =
       config_.surface ? static_cast<f32>(config_.surface->width()) : 0;
   cfg.layout_context.viewport_height =
