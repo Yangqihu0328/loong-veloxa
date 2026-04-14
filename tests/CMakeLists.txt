@@ -125,6 +125,9 @@ target_link_libraries(render_test PRIVATE vx_core vx_graphics vx_platform)
 vx_add_test(render_integration_test core/render/integration_test.cc)
 target_link_libraries(render_integration_test PRIVATE vx_core vx_graphics vx_platform)
 
+vx_add_test(border_radius_test core/render/border_radius_test.cc)
+target_link_libraries(border_radius_test PRIVATE vx_core vx_graphics vx_platform)
+
 # Core: Event
 vx_add_test(event_types_test core/event/event_types_test.cc)
 target_link_libraries(event_types_test PRIVATE vx_core)

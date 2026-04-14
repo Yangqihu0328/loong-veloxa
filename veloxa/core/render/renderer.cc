@@ -71,10 +71,32 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
   if (has_layer)
     list.push_back(PaintCommand::PushLayer(border_box, style->opacity));
 
-  gfx::Color bg = CssColorToGfx(style->background_color);
-  if (bg.a > 0) list.push_back(PaintCommand::FillRect(border_box, bg));
+  f32 radius = 0;
+  if (style->border_radius.unit == css::Unit::kPx)
+    radius = style->border_radius.value;
 
-  PaintBorders(box, style, list);
+  gfx::Color bg = CssColorToGfx(style->background_color);
+  if (bg.a > 0) {
+    if (radius > 0)
+      list.push_back(PaintCommand::FillRoundedRect(border_box, radius, bg));
+    else
+      list.push_back(PaintCommand::FillRect(border_box, bg));
+  }
+
+  if (radius > 0) {
+    f32 top_bw = box->border[layout::LayoutBox::kTop];
+    bool has_border = top_bw > 0 &&
+                      style->border_style[0] != css::BorderStyle::kNone;
+    if (has_border) {
+      f32 half = top_bw * 0.5f;
+      gfx::Rect inset_rect{bx + half, by + half, bbw - top_bw, bbh - top_bw};
+      gfx::Color border_color = CssColorToGfx(style->border_color[0]);
+      list.push_back(PaintCommand::StrokeRoundedRect(inset_rect, radius,
+                                                     border_color, top_bw));
+    }
+  } else {
+    PaintBorders(box, style, list);
+  }
 
   bool has_clip = style->overflow == css::Overflow::kHidden;
   if (has_clip) {
@@ -131,6 +153,14 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas) {
     switch (cmd.type) {
       case PaintCommand::Type::kFillRect:
         canvas->FillRect(cmd.rect, gfx::Brush::Solid(cmd.color));
+        break;
+      case PaintCommand::Type::kFillRoundedRect:
+        canvas->FillRoundedRect(cmd.rect, cmd.param,
+                                gfx::Brush::Solid(cmd.color));
+        break;
+      case PaintCommand::Type::kStrokeRoundedRect:
+        canvas->StrokeRoundedRect(cmd.rect, cmd.param,
+                                  gfx::Brush::Solid(cmd.color), cmd.param2);
         break;
       case PaintCommand::Type::kDrawText:
         canvas->DrawText(cmd.text, cmd.rect, cmd.param,
