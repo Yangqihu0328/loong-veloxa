@@ -167,3 +167,12 @@ target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
+
+vx_add_test(font_manager_test text/font_manager_test.cc)
+target_link_libraries(font_manager_test PRIVATE vx_text)
+
+vx_add_test(glyph_cache_test text/glyph_cache_test.cc)
+target_link_libraries(glyph_cache_test PRIVATE vx_text)
+
+vx_add_test(freetype_shaper_test text/freetype_shaper_test.cc)
+target_link_libraries(freetype_shaper_test PRIVATE vx_text)
