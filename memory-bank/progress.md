@@ -2,31 +2,11 @@
 
 ## 当前任务
 
-### TASK-20260414-01：功能补全
-
-**阶段：** 构建完成 → 待 /reflect
-
-**里程碑：**
-- ✅ 初始化（/van）：环境检测、依赖验证、分支创建
-- ✅ 头脑风暴：3 个关键设计决策确认（字体加载/图片加载/DOM 绑定范围）
-- ✅ 设计规格保存：`docs/specs/2026-04-14-feature-completion-design.md`
-- ✅ 实现计划保存：`docs/plans/2026-04-14-feature-completion.md`
-- ✅ 构建迭代 1：border-radius（8 测试，PaintCommand + Renderer 圆角）
-- ✅ 构建迭代 2：FreeType + HarfBuzz（15 测试，FontManager + GlyphCache + FreeTypeTextShaper + Canvas 集成）
-- ✅ 构建迭代 3：图片支持（6 测试，ImageDecoder + ImageCache + Layout kReplaced + DrawImage）
-- ✅ 构建迭代 4：QuickJS DOM 绑定（12 测试，DomBindings + style proxy + events + Application.LoadScript）
-
-**最终验证：** 842/842 测试全部通过，0 失败，0 回归
-**提交数：** 8（含 1 个文档提交 + 1 个 MB 收尾提交）
-**变更规模：** 52 文件，+3593/-40 行
-
-**回顾完成：** `memory-bank/reflection/reflection-TASK-20260414-01.md`
-- 5 个子代理全部零返工
-- 3 处设计微调（Canvas 签名、CMake 循环、Renderer 参数）
-- 6 项新技术债记录（#45-#50）
-- 无严重安全发现
+无活跃任务。
 
 ## 已完成任务
+
+- TASK-20260414-01：功能补全 → 归档 `memory-bank/archive/archive-TASK-20260414-01.md`
 
 - TASK-20260413-02：消化技术债务子集 → 归档 `memory-bank/archive/archive-TASK-20260413-02.md`
 - TASK-20260413-01：QuickJS 脚本引擎集成 → 归档 `memory-bank/archive/archive-TASK-20260413-01.md`
