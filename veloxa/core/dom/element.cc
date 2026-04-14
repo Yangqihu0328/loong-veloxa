@@ -2,6 +2,16 @@
 
 namespace vx::dom {
 
+void Element::SetInlineDeclaration(css::PropertyId prop, css::CssValue value) {
+  for (auto& decl : inline_decls_) {
+    if (decl.property == prop) {
+      decl.value = value;
+      return;
+    }
+  }
+  inline_decls_.push_back(css::Declaration{prop, value, false});
+}
+
 void Element::AddClass(InternedString cls) {
   if (!HasClass(cls)) {
     classes_.push_back(cls);

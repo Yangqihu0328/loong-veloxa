@@ -168,6 +168,9 @@ target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 
+vx_add_test(dom_bindings_test script/dom_bindings_test.cc)
+target_link_libraries(dom_bindings_test PRIVATE vx_script vx_core)
+
 # Core: Image
 find_package(PNG REQUIRED)
 

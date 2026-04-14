@@ -31,7 +31,8 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
   css::ComputedStyle resolved;
   if (ctx.stylesheets) {
     resolved = css::StyleResolver::Resolve(element, *ctx.stylesheets,
-                                           parent_style, nullptr,
+                                           parent_style,
+                                           element->inline_declarations(),
                                            ctx.event_manager);
   } else if (parent_style) {
     resolved = *parent_style;
