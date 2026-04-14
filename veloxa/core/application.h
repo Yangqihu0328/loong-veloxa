@@ -17,6 +17,11 @@
 #include "veloxa/text/font_manager.h"
 #include "veloxa/text/glyph_cache.h"
 
+namespace vx::script {
+class QuickjsEngine;
+class DomBindings;
+}  // namespace vx::script
+
 namespace vx {
 
 class Application {
@@ -37,6 +42,7 @@ class Application {
   void LoadHTML(StringView html);
   void LoadCSS(StringView css);
   Status LoadFont(StringView path, StringView family);
+  Status LoadScript(StringView source);
   void InjectInput(const event::InputEvent& input);
 
   void Run();
@@ -63,6 +69,8 @@ class Application {
   u32* surface_pixels_ = nullptr;
   std::unique_ptr<gfx::Canvas> canvas_;
   std::unique_ptr<UpdateManager> update_manager_;
+  std::unique_ptr<script::QuickjsEngine> script_engine_;
+  std::unique_ptr<script::DomBindings> dom_bindings_;
   platform::EventLoop::TimerId frame_timer_id_ = 0;
 };
 

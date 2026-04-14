@@ -119,6 +119,14 @@ VxResult vx_view_load_font(VxView* view, const char* path,
   return status.ok() ? VX_OK : VX_ERROR_INVALID_STATE;
 }
 
+VxResult vx_view_load_script(VxView* view, const char* source, uint32_t len) {
+  if (!view || !source) return VX_ERROR_NULL_PARAM;
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  auto status =
+      app->LoadScript(vx::StringView(source, static_cast<vx::usize>(len)));
+  return status.ok() ? VX_OK : VX_ERROR_INVALID_STATE;
+}
+
 VxResult vx_view_update(VxView* view) {
   if (!view) return VX_ERROR_NULL_PARAM;
   auto* app = reinterpret_cast<vx::Application*>(view);

@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+#include "veloxa/core/dom/element.h"
+#include "veloxa/core/dom/text.h"
 #include "veloxa/core/render/render_utils.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
 #include "veloxa/platform/headless/memory_surface.h"
@@ -186,6 +188,51 @@ TEST_F(ApplicationTest, LoadFontAndRenderText) {
     }
   }
   EXPECT_TRUE(has_non_white) << "Expected text pixels after FreeType rendering";
+}
+
+TEST_F(ApplicationTest, LoadScriptWithoutDocumentFails) {
+  Application app(MakeConfig());
+  auto status = app.LoadScript("var x = 1");
+  EXPECT_FALSE(status.ok());
+}
+
+TEST_F(ApplicationTest, LoadScriptModifiesDOM) {
+  Application app(MakeConfig());
+  app.LoadHTML("<div id=\"msg\">Before</div>");
+  app.LoadCSS("#msg { color: black; }");
+
+  auto status = app.LoadScript(
+      "document.getElementById('msg').textContent = 'After'");
+  ASSERT_TRUE(status.ok());
+
+  auto* node = app.document()->first_child();
+  ASSERT_NE(node, nullptr);
+  ASSERT_TRUE(node->is_element());
+  auto* el = static_cast<dom::Element*>(node);
+  auto* child = el->first_child();
+  ASSERT_NE(child, nullptr);
+  ASSERT_TRUE(child->is_text());
+  auto* text = static_cast<dom::Text*>(child);
+  EXPECT_EQ(text->data(), "After");
+}
+
+TEST_F(ApplicationTest, LoadScriptMultipleCalls) {
+  Application app(MakeConfig());
+  app.LoadHTML("<div id=\"box\">X</div>");
+
+  auto s1 = app.LoadScript("var counter = 0");
+  ASSERT_TRUE(s1.ok());
+
+  auto s2 = app.LoadScript("counter = counter + 1");
+  ASSERT_TRUE(s2.ok());
+}
+
+TEST_F(ApplicationTest, LoadScriptInvalidSyntaxFails) {
+  Application app(MakeConfig());
+  app.LoadHTML("<div></div>");
+
+  auto status = app.LoadScript("function {{{");
+  EXPECT_FALSE(status.ok());
 }
 
 }  // namespace

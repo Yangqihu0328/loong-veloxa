@@ -2,6 +2,7 @@
 
 #include "veloxa/core/dom/document.h"
 #include "veloxa/core/dom/text.h"
+#include "veloxa/core/event/event_manager.h"
 #include "veloxa/foundation/strings/interned_string.h"
 #include "veloxa/foundation/strings/string.h"
 #include "veloxa/script/dom_bindings.h"
@@ -26,7 +27,7 @@ class DomBindingsTest : public ::testing::Test {
     span->AppendChild(text2);
     doc_.AppendChild(span);
 
-    bindings_.Bind(engine_.context(), &doc_);
+    bindings_.Bind(engine_.context(), &doc_, &em_);
   }
 
   void TearDown() override {
@@ -36,6 +37,7 @@ class DomBindingsTest : public ::testing::Test {
 
   QuickjsEngine engine_;
   dom::Document doc_;
+  event::EventManager em_;
   DomBindings bindings_;
 };
 
@@ -103,6 +105,48 @@ TEST_F(DomBindingsTest, StyleSetBackgroundColor) {
   auto* decls = div->inline_declarations();
   ASSERT_NE(decls, nullptr);
   EXPECT_GE(decls->size(), 1u);
+}
+
+TEST_F(DomBindingsTest, AddEventListenerRegisters) {
+  auto result = engine_.EvalGlobal(
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', function(e) {});"
+      "'ok'",
+      "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "ok");
+}
+
+TEST_F(DomBindingsTest, AddEventListenerInvalidTypeSilent) {
+  auto result = engine_.EvalGlobal(
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('nosuch', function(e) {});"
+      "'ok'",
+      "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "ok");
+}
+
+TEST_F(DomBindingsTest, RemoveEventListenerNoThrow) {
+  auto result = engine_.EvalGlobal(
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', function(e) {});"
+      "btn.removeEventListener('pointerdown');"
+      "'ok'",
+      "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "ok");
+}
+
+TEST_F(DomBindingsTest, AddEventListenerMultipleTypes) {
+  auto result = engine_.EvalGlobal(
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', function(e) {});"
+      "btn.addEventListener('keydown', function(e) {});"
+      "'ok'",
+      "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "ok");
 }
 
 }  // namespace vx::script

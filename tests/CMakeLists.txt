@@ -153,10 +153,10 @@ target_link_libraries(update_integration_test PRIVATE vx_core vx_graphics vx_pla
 
 # Core: Application
 vx_add_test(application_test core/application_test.cc)
-target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform vx_text)
+target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform vx_text vx_script)
 
 vx_add_test(application_integration_test core/application_integration_test.cc)
-target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform)
+target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
 # API: C API
 vx_add_test(api_test api/api_test.cc)

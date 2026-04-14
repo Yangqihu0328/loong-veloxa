@@ -2,6 +2,8 @@
 
 #include "veloxa/core/html/parser.h"
 #include "veloxa/graphics/software/software_canvas.h"
+#include "veloxa/script/dom_bindings.h"
+#include "veloxa/script/quickjs_engine.h"
 #include "veloxa/text/freetype_shaper.h"
 
 namespace vx {
@@ -20,6 +22,9 @@ Application::Application(const Config& config) : config_(config) {
 }
 
 Application::~Application() {
+  if (dom_bindings_) dom_bindings_->Unbind();
+  dom_bindings_.reset();
+  script_engine_.reset();
   if (config_.surface && surface_pixels_) {
     config_.surface->Unlock();
   }
@@ -44,6 +49,24 @@ Status Application::LoadFont(StringView path, StringView family) {
   auto* ft_shaper = new text::FreeTypeTextShaper(&font_manager_);
   ft_shaper->set_default_font(result.value());
   text_shaper_.reset(ft_shaper);
+  return Status::Ok();
+}
+
+Status Application::LoadScript(StringView source) {
+  if (!document_) {
+    return Status(StatusCode::kInvalidArgument, "No document loaded");
+  }
+  if (!script_engine_) {
+    script_engine_ = std::make_unique<script::QuickjsEngine>();
+    auto st = script_engine_->Init();
+    if (!st.ok()) return st;
+  }
+  if (!dom_bindings_) {
+    dom_bindings_ = std::make_unique<script::DomBindings>();
+    dom_bindings_->Bind(script_engine_->context(), document_, &event_manager_);
+  }
+  auto result = script_engine_->EvalGlobal(source, StringView("script"));
+  if (!result.ok()) return result.status();
   return Status::Ok();
 }
 

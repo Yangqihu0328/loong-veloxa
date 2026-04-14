@@ -16,6 +16,69 @@ namespace vx::script {
 
 namespace {
 
+DomBindings* GetBindings(JSContext* ctx) {
+  return static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+}
+
+event::EventManager* GetEventManager(JSContext* ctx) {
+  auto* b = GetBindings(ctx);
+  return b ? b->event_manager() : nullptr;
+}
+
+// ----- JS event name → EventType mapping -----
+
+bool MapJsEventName(const char* name, event::EventType* out) {
+  struct Mapping {
+    const char* js_name;
+    event::EventType type;
+  };
+  static const Mapping kMappings[] = {
+      {"pointerdown", event::EventType::kPointerDown},
+      {"pointerup", event::EventType::kPointerUp},
+      {"pointermove", event::EventType::kPointerMove},
+      {"keydown", event::EventType::kKeyDown},
+      {"keyup", event::EventType::kKeyUp},
+      {"touchstart", event::EventType::kTouchStart},
+      {"touchend", event::EventType::kTouchEnd},
+      {"touchmove", event::EventType::kTouchMove},
+      {"focusin", event::EventType::kFocusIn},
+      {"focusout", event::EventType::kFocusOut},
+  };
+  for (const auto& m : kMappings) {
+    if (std::strcmp(name, m.js_name) == 0) {
+      *out = m.type;
+      return true;
+    }
+  }
+  return false;
+}
+
+const char* EventTypeToString(event::EventType type) {
+  switch (type) {
+    case event::EventType::kPointerDown:
+      return "pointerdown";
+    case event::EventType::kPointerUp:
+      return "pointerup";
+    case event::EventType::kPointerMove:
+      return "pointermove";
+    case event::EventType::kKeyDown:
+      return "keydown";
+    case event::EventType::kKeyUp:
+      return "keyup";
+    case event::EventType::kTouchStart:
+      return "touchstart";
+    case event::EventType::kTouchEnd:
+      return "touchend";
+    case event::EventType::kTouchMove:
+      return "touchmove";
+    case event::EventType::kFocusIn:
+      return "focusin";
+    case event::EventType::kFocusOut:
+      return "focusout";
+  }
+  return "unknown";
+}
+
 // ----- Element JS class -----
 
 JSClassID g_element_class_id = 0;
@@ -205,6 +268,76 @@ JSValue ElementSetTextContent(JSContext* ctx, JSValueConst this_val,
   return JS_UNDEFINED;
 }
 
+// ----- Tracked JS callbacks for cleanup -----
+
+struct TrackedCallbacks {
+  JSContext* ctx = nullptr;
+  Vector<JSValue> callbacks;
+
+  void Track(JSValue cb) { callbacks.push_back(cb); }
+
+  void FreeAll() {
+    if (!ctx) return;
+    for (usize i = 0; i < callbacks.size(); ++i) {
+      JS_FreeValue(ctx, callbacks[i]);
+    }
+    callbacks.clear();
+    ctx = nullptr;
+  }
+};
+
+TrackedCallbacks g_tracked_callbacks;
+
+// ----- addEventListener / removeEventListener -----
+
+JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
+                                JSValueConst* argv) {
+  auto* el = GetElement(ctx, this_val);
+  if (!el || argc < 2) return JS_UNDEFINED;
+
+  const char* type_str = JS_ToCString(ctx, argv[0]);
+  if (!type_str) return JS_UNDEFINED;
+
+  event::EventType event_type;
+  bool valid = MapJsEventName(type_str, &event_type);
+  JS_FreeCString(ctx, type_str);
+  if (!valid) return JS_UNDEFINED;
+
+  JSValue callback = JS_DupValue(ctx, argv[1]);
+  auto* em = GetEventManager(ctx);
+  if (!em) {
+    JS_FreeValue(ctx, callback);
+    return JS_UNDEFINED;
+  }
+
+  g_tracked_callbacks.Track(callback);
+
+  JSContext* captured_ctx = ctx;
+  em->AddEventListener(
+      el, event_type,
+      [captured_ctx, callback](event::DOMEvent& event) mutable {
+        JSValue js_event = JS_NewObject(captured_ctx);
+        JS_SetPropertyStr(captured_ctx, js_event, "type",
+                          JS_NewString(captured_ctx,
+                                       EventTypeToString(event.input.type)));
+        JSValue ret =
+            JS_Call(captured_ctx, callback, JS_UNDEFINED, 1, &js_event);
+        JS_FreeValue(captured_ctx, ret);
+        JS_FreeValue(captured_ctx, js_event);
+      });
+
+  return JS_UNDEFINED;
+}
+
+JSValue ElementRemoveEventListener(JSContext* ctx, JSValueConst this_val,
+                                   int /*argc*/, JSValueConst* /*argv*/) {
+  auto* el = GetElement(ctx, this_val);
+  auto* em = GetEventManager(ctx);
+  if (!el || !em) return JS_UNDEFINED;
+  em->RemoveEventListeners(el);
+  return JS_UNDEFINED;
+}
+
 JSValue ElementGetStyle(JSContext* ctx, JSValueConst this_val) {
   auto* el = GetElement(ctx, this_val);
   if (!el) return JS_UNDEFINED;
@@ -334,6 +467,13 @@ void RegisterElementClass(JSContext* ctx) {
   JS_SetPropertyStr(
       ctx, proto, "setAttribute",
       JS_NewCFunction(ctx, ElementSetAttribute, "setAttribute", 2));
+  JS_SetPropertyStr(
+      ctx, proto, "addEventListener",
+      JS_NewCFunction(ctx, ElementAddEventListener, "addEventListener", 2));
+  JS_SetPropertyStr(
+      ctx, proto, "removeEventListener",
+      JS_NewCFunction(ctx, ElementRemoveEventListener, "removeEventListener",
+                      1));
 
   JSAtom tag_atom = JS_NewAtom(ctx, "tagName");
   JS_DefinePropertyGetSet(
@@ -391,13 +531,19 @@ void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
   doc_ = doc;
   em_ = em;
 
+  JS_SetContextOpaque(ctx, this);
+
+  g_tracked_callbacks.ctx = ctx;
+
   RegisterStyleClass(ctx);
   RegisterElementClass(ctx);
   RegisterDocumentObject(ctx, doc);
 }
 
 void DomBindings::Unbind() {
+  g_tracked_callbacks.FreeAll();
   if (ctx_) {
+    JS_SetContextOpaque(ctx_, nullptr);
     JSValue global = JS_GetGlobalObject(ctx_);
     JSAtom doc_atom = JS_NewAtom(ctx_, "document");
     JS_DeleteProperty(ctx_, global, doc_atom, 0);

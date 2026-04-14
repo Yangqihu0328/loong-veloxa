@@ -29,4 +29,4 @@ add_library(vx_core STATIC
 )
 
 target_include_directories(vx_core PUBLIC ${PROJECT_SOURCE_DIR})
-target_link_libraries(vx_core PUBLIC vx_foundation vx_graphics PRIVATE vx_text PNG::PNG JPEG::JPEG)
+target_link_libraries(vx_core PUBLIC vx_foundation vx_graphics PRIVATE vx_text vx_script PNG::PNG JPEG::JPEG)
