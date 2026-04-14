@@ -5,6 +5,7 @@ pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)
 add_library(vx_graphics STATIC)
 
 target_sources(vx_graphics PRIVATE
+  image.cc
   software/rasterizer.cc
   software/software_path.cc
   software/software_canvas.cc

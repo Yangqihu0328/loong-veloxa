@@ -6,6 +6,7 @@
 #include "veloxa/core/css/parser.h"
 #include "veloxa/core/dom/document.h"
 #include "veloxa/core/event/event_manager.h"
+#include "veloxa/core/image/image_cache.h"
 #include "veloxa/core/layout/text_shaper.h"
 #include "veloxa/core/update_manager.h"
 #include "veloxa/foundation/strings/string_view.h"
@@ -57,6 +58,7 @@ class Application {
   std::unique_ptr<layout::TextShaper> text_shaper_;
   text::FontManager font_manager_;
   text::GlyphCache glyph_cache_;
+  image::ImageCache image_cache_;
 
   u32* surface_pixels_ = nullptr;
   std::unique_ptr<gfx::Canvas> canvas_;

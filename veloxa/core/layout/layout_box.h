@@ -13,6 +13,7 @@ enum class LayoutType : u8 {
   kInline,
   kFlex,
   kText,
+  kReplaced,
 };
 
 struct LayoutBox {
@@ -26,6 +27,8 @@ struct LayoutBox {
   LayoutBox* last_child = nullptr;
   LayoutBox* next_sibling = nullptr;
   LayoutBox* prev_sibling = nullptr;
+
+  u32 image_handle = 0;
 
   f32 x = 0, y = 0;
   f32 content_width = 0, content_height = 0;

@@ -92,6 +92,8 @@ void Application::EnsureUpdateManager() {
       config_.surface ? static_cast<f32>(config_.surface->width()) : 0;
   cfg.layout_context.viewport_height =
       config_.surface ? static_cast<f32>(config_.surface->height()) : 0;
+  cfg.layout_context.image_cache = &image_cache_;
+  cfg.image_cache = &image_cache_;
   cfg.canvas = canvas_.get();
   cfg.event_manager = &event_manager_;
   update_manager_ = std::make_unique<UpdateManager>(cfg);

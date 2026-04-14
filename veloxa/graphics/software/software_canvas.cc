@@ -267,6 +267,46 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
   hb_font_destroy(hb_font);
 }
 
+void SoftwareCanvas::DrawImage(const Image& image, const Rect& src_rect,
+                               const Rect& dst_rect) {
+  if (!image.valid() || src_rect.IsEmpty() || dst_rect.IsEmpty()) return;
+
+  Rect clip = CurrentClip();
+  Rect visible = clip.Intersect(dst_rect);
+  if (visible.IsEmpty()) return;
+
+  vx::u32 stride_px = stride_ / 4;
+  i32 dx0 = static_cast<i32>(visible.x);
+  i32 dy0 = static_cast<i32>(visible.y);
+  i32 dx1 = static_cast<i32>(visible.right());
+  i32 dy1 = static_cast<i32>(visible.bottom());
+
+  if (dx0 < 0) dx0 = 0;
+  if (dy0 < 0) dy0 = 0;
+  if (dx1 > static_cast<i32>(width_)) dx1 = static_cast<i32>(width_);
+  if (dy1 > static_cast<i32>(height_)) dy1 = static_cast<i32>(height_);
+
+  const u32* src_pixels = image.pixels();
+  u32 img_w = image.width();
+  u32 img_h = image.height();
+
+  for (i32 py = dy0; py < dy1; ++py) {
+    f32 ty = (static_cast<f32>(py) + 0.5f - dst_rect.y) / dst_rect.h;
+    i32 sy = static_cast<i32>(src_rect.y + ty * src_rect.h);
+    if (sy < 0 || sy >= static_cast<i32>(img_h)) continue;
+
+    for (i32 px = dx0; px < dx1; ++px) {
+      f32 tx = (static_cast<f32>(px) + 0.5f - dst_rect.x) / dst_rect.w;
+      i32 sx = static_cast<i32>(src_rect.x + tx * src_rect.w);
+      if (sx < 0 || sx >= static_cast<i32>(img_w)) continue;
+
+      u32 src = src_pixels[sy * img_w + sx];
+      u32 dst_idx = static_cast<u32>(py) * stride_px + static_cast<u32>(px);
+      pixels_[dst_idx] = Rasterizer::BlendSrcOver(pixels_[dst_idx], src);
+    }
+  }
+}
+
 void SoftwareCanvas::PushClipRect(const Rect& rect) {
   Rect current = CurrentClip();
   clip_stack_.push_back(current.Intersect(rect));

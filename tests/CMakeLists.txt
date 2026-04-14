@@ -168,6 +168,15 @@ target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 
+# Core: Image
+find_package(PNG REQUIRED)
+
+vx_add_test(image_decoder_test core/image/image_decoder_test.cc)
+target_link_libraries(image_decoder_test PRIVATE vx_core PNG::PNG)
+
+vx_add_test(image_cache_test core/image/image_cache_test.cc)
+target_link_libraries(image_cache_test PRIVATE vx_core PNG::PNG)
+
 vx_add_test(font_manager_test text/font_manager_test.cc)
 target_link_libraries(font_manager_test PRIVATE vx_text)
 

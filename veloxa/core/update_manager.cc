@@ -24,7 +24,7 @@ void UpdateManager::Update() {
 
   render::DisplayList new_list;
   if (layout_root_) {
-    new_list = render::Record(layout_root_);
+    new_list = render::Record(layout_root_, config_.image_cache);
   }
 
   last_dirty_rect_ = render::ComputeDirtyRect(
@@ -35,7 +35,7 @@ void UpdateManager::Update() {
     config_.canvas->PushClipRect(last_dirty_rect_);
     config_.canvas->FillRect(last_dirty_rect_,
                              gfx::Brush::Solid(gfx::Color::White()));
-    render::Replay(new_list, config_.canvas);
+    render::Replay(new_list, config_.canvas, config_.image_cache);
     config_.canvas->PopClip();
   }
 

@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "veloxa/core/css/enums.h"
+#include "veloxa/core/image/image_cache.h"
 #include "veloxa/core/render/render_utils.h"
 #include "veloxa/foundation/containers/small_vector.h"
 
@@ -52,7 +53,8 @@ void PaintBorders(layout::LayoutBox* box, const css::ComputedStyle* style,
   }
 }
 
-void RecordBox(layout::LayoutBox* box, DisplayList& list) {
+void RecordBox(layout::LayoutBox* box, DisplayList& list,
+               image::ImageCache* image_cache) {
   const css::ComputedStyle* style = box->style;
   css::ComputedStyle default_style;
   if (!style) style = &default_style;
@@ -120,6 +122,12 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
     }
   }
 
+  if (box->type == layout::LayoutType::kReplaced && box->image_handle != 0) {
+    gfx::Rect content_rect{box->x, box->y, box->content_width,
+                            box->content_height};
+    list.push_back(PaintCommand::DrawImage(box->image_handle, content_rect));
+  }
+
   SmallVector<layout::LayoutBox*, 16> children;
   for (auto* child = box->first_child; child; child = child->next_sibling) {
     children.push_back(child);
@@ -132,7 +140,7 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
         return za < zb;
       });
   for (auto* child : children) {
-    RecordBox(child, list);
+    RecordBox(child, list, image_cache);
   }
 
   if (has_clip) list.push_back(PaintCommand::PopClip());
@@ -141,14 +149,16 @@ void RecordBox(layout::LayoutBox* box, DisplayList& list) {
 
 }  // namespace
 
-DisplayList Record(layout::LayoutBox* root) {
+DisplayList Record(layout::LayoutBox* root,
+                   image::ImageCache* image_cache) {
   DisplayList list;
   if (!root) return list;
-  RecordBox(root, list);
+  RecordBox(root, list, image_cache);
   return list;
 }
 
-void Replay(const DisplayList& list, gfx::Canvas* canvas) {
+void Replay(const DisplayList& list, gfx::Canvas* canvas,
+            image::ImageCache* image_cache) {
   for (const auto& cmd : list) {
     switch (cmd.type) {
       case PaintCommand::Type::kFillRect:
@@ -166,6 +176,16 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas) {
         canvas->DrawText(cmd.text, cmd.rect, cmd.param,
                          gfx::Brush::Solid(cmd.color));
         break;
+      case PaintCommand::Type::kDrawImage:
+        if (image_cache && cmd.image_handle != 0) {
+          const gfx::Image* img = image_cache->Get(cmd.image_handle);
+          if (img && img->valid()) {
+            gfx::Rect src{0, 0, static_cast<f32>(img->width()),
+                          static_cast<f32>(img->height())};
+            canvas->DrawImage(*img, src, cmd.rect);
+          }
+        }
+        break;
       case PaintCommand::Type::kPushClipRect:
         canvas->PushClipRect(cmd.rect);
         break;
@@ -182,9 +202,10 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas) {
   }
 }
 
-void Paint(layout::LayoutBox* root, gfx::Canvas* canvas) {
-  DisplayList list = Record(root);
-  Replay(list, canvas);
+void Paint(layout::LayoutBox* root, gfx::Canvas* canvas,
+           image::ImageCache* image_cache) {
+  DisplayList list = Record(root, image_cache);
+  Replay(list, canvas, image_cache);
 }
 
 gfx::Rect ComputeDirtyRect(const DisplayList& old_list,

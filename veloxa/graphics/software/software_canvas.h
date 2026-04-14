@@ -43,6 +43,9 @@ class SoftwareCanvas : public Canvas {
   void DrawText(vx::StringView text, const Rect& bounds, vx::f32 font_size,
                 const Brush& brush) override;
 
+  void DrawImage(const Image& image, const Rect& src_rect,
+                 const Rect& dst_rect) override;
+
   void PushClipRect(const Rect& rect) override;
   void PushClipPath(const Path& path) override;
   void PopClip() override;

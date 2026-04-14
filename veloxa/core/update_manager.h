@@ -19,6 +19,7 @@ class UpdateManager {
     layout::LayoutContext layout_context;
     gfx::Canvas* canvas = nullptr;
     event::EventManager* event_manager = nullptr;
+    image::ImageCache* image_cache = nullptr;
   };
 
   explicit UpdateManager(const Config& config);
