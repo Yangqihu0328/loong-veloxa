@@ -343,6 +343,33 @@ veloxa/
 - `TransitionManager::HasActive() const` 在 const 上遍历 `transitions_`，查找是否存在 `!tr.completed` 的项（TASK-20260413-02）
 - 优先用容器语义表达状态，避免手写计数器与业务逻辑双轨维护
 
+## 已验证的模式（来自功能补全 TASK-20260414-01）
+
+### 可选依赖注入 + 退化模式
+- SoftwareCanvas 构造函数接受可选 `FontManager*` + `GlyphCache*`；有值时用 FreeType 渲染字形，无值时退化为旧存根
+- Record/Replay 接受可选 `ImageCache*`；无值时跳过图片处理
+- 所有现有测试零修改通过——向后兼容验证
+- 适用场景：给已有模块注入新的可选能力，不破坏现有调用方
+
+### QuickJS C API 绑定模式
+- `JS_NewClassID` + `JS_NewClass` 注册自定义 JS 类（Element、CSSStyleDeclaration）
+- `JS_SetOpaque` / `JS_GetOpaque` 存储/取回 C++ 对象指针
+- `JS_SetContextOpaque` 存储全局绑定上下文（DomBindings*），替代全局变量
+- `JS_DupValue` 保持 JS callback 引用，Unbind 时 `JS_FreeValue` 释放
+- getter/setter 通过 `JS_DefinePropertyGetSet` + `JS_CFUNC_getter_magic` / `JS_CFUNC_setter_magic` 注册
+
+### 子代理 Prompt "文件内容嵌入 + 禁止修改清单" 模式
+- prompt 中直接嵌入当前文件的关键代码片段（而非路径引用），子代理可精确修改
+- 包含"不修改"清单（根 CMakeLists、memory-bank/、.cursor/ 等）
+- 本次 5 个子代理全部零返工，验证该策略已成熟
+- 与 TASK-03 的"精确签名 prompt"模式互补
+
+### CMake 循环依赖解决模式
+- 当 A（vx_core）需要链接 B（vx_script），而 B 的源码 include A 的头文件时
+- B 不链接 A（仅通过 PUBLIC include path 获取头文件可见性）
+- A 链接 B（PRIVATE），B 的符号在最终可执行文件中由 A 提供
+- 关键：B 的 vx_foundation PUBLIC 链接已提供 ${PROJECT_SOURCE_DIR} include path
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

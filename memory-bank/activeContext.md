@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建完成
+回顾中
 
 ## 当前任务
 
@@ -37,6 +37,11 @@
 无。设计决策已在头脑风暴阶段覆盖，可直接进入 `/build`。
 
 ## 待处理事项
+- **P1**：计划模板增加「CMake 链接方向约束分析」段——新模块涉及两个已有库时预画依赖图检测循环（来源 TASK-20260414-01）
+- **P1**：dom_bindings.cc 全局状态迁移到 DomBindings 实例或 context opaque（技术债 #45，来源 TASK-20260414-01）
+- **P1**：StyleGetProp 实现读路径（技术债 #46，来源 TASK-20260414-01）
+- **P1**：SoftwareCanvas::DrawText 缓存 HarfBuzz font 对象（技术债 #48，来源 TASK-20260414-01）
+- **P1**：addEventListener lambda 中 JSContext* 生命周期保证（技术债 #50，来源 TASK-20260414-01）
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
 - **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
