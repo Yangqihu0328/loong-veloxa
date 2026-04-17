@@ -2,7 +2,19 @@
 
 ## 当前任务
 
-无活跃任务。
+**TASK-20260418-01 — 消化关键技术债务**
+
+- ✅ 2026-04-18：`/van` 初始化完成（Level 3，特性分支规划为 `feature/TASK-20260418-01-tech-debt`）
+- ✅ 2026-04-18：`/plan` 头脑风暴完成，4 条债务方案确定（A1 / B1 / C1 / D1）
+- ✅ 2026-04-18：设计规格保存至 `docs/specs/2026-04-18-tech-debt-dom-bindings-design.md`
+- ✅ 2026-04-18：实现计划保存至 `docs/plans/2026-04-18-tech-debt-dom-bindings.md`
+- ⏳ 待进入 `/build`：按 Phase 0→5 顺序执行 TDD 小步任务
+
+**关键决策落点**：
+- `JS_IsRegisteredClass` API 存在于 quickjs-ng v0.14.0（风险消除）
+- `DomBindings` 改 pimpl（不暴露 quickjs.h 到 header）
+- `hb_font_t*` 嵌入 `FontManager::FontEntry`（非新增 HbFontCache 类）
+- `font_manager_test` 需要显式链接 HarfBuzz（tests/CMakeLists.txt 小改）
 
 ## 已完成任务
 
