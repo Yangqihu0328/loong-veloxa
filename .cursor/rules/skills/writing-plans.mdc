@@ -28,6 +28,21 @@ alwaysApply: false
 - 一起变更的文件应该放在一起
 - 在现有代码库中遵循已有模式
 
+## CMake 链接方向约束分析（涉及 C/C++ 编译单元时**必填**）
+
+> 反复出现（TASK-20260414-01、TASK-20260418-01 至少 2 次）：下游目标需要上游的"间接"依赖时，若上游是 PRIVATE 链接，下游编译/链接会失败。
+
+在任务分解**之前**，回答以下问题：
+
+1. **依赖图**：本次新增/修改的库目标（如 `vx_text`）和下游目标（含测试 `xxx_test`、可执行文件）各自链接了哪些上游？列出 `target_link_libraries` 方向。
+2. **头文件暴露**：每个下游目标的源文件是否会 **直接** `#include <上游依赖的头>`？（例如 `font_manager_test.cc` include `<ft2build.h>` → 需要 FreeType 头）
+3. **符号依赖**：每个下游目标是否会 **间接** 依赖上游依赖暴露的符号？（例如 `font_manager_test` 调用 `FontManager::GetHbFont`，其实现在 `vx_text` 内部调用了 `hb_ft_font_create_referenced` → 静态库不传递，需要 PUBLIC 或下游直接链）
+4. **当前链接方向**：列出问题 2/3 中依赖在提供方的 `PUBLIC`/`PRIVATE`/`INTERFACE` 状态。
+5. **结论**：是否需要把提供方的某些依赖从 `PRIVATE` 升 `PUBLIC`？还是下游自己补链（一般不推荐，除非语义上真正独立）？
+6. **禁止项**：不要在多个 `CMakeLists.txt` 中重复调用同一 `pkg_check_modules(FOO ...)`——`FindPkgConfig` 对重入敏感，会报 `Unknown arguments specified`。
+
+如果上述分析得出"改 CMakeLists.txt"结论，把 CMake 变更作为独立 Phase 前置任务（而非后补），列出具体的 `target_link_libraries(X PUBLIC/PRIVATE …)` 修改行。
+
 ## 小块任务粒度
 
 **每一步是一个动作（2-5 分钟）：**

@@ -240,6 +240,45 @@
 - 不接受 Surface* 指针，需手动 Lock/Unlock Surface 获取 pixels
 - 写测试时应参考现有测试的构造方式，避免 API 假设错误
 
+## DomBindings pimpl 与 QuickJS 集成经验（TASK-20260418-01）
+
+### pimpl 化 header 零 quickjs 依赖
+- `dom_bindings.h` 仅前向声明 `struct JSContext;`，所有 `JSClassID`/`JSValue`/`JS_*` 都进 `.cc`
+- **不完整类型坑**：`std::unique_ptr<InstanceData>` 在 header 中只有前向声明时，`~DomBindings()` 必须在 `.cc` 定义（non-default），否则 delete 时类型不完整
+- 匿名 namespace 中的 C 风格回调无法访问 `private` 嵌套类型——把 `struct InstanceData;` 前向声明放 `public:`，定义和 `data_` 保持 `private`；用 `friend struct DomBindingsInternal;` 提供 `.cc` 内桥接
+- `JS_SetContextOpaque(ctx, this)` + `JS_GetContextOpaque(ctx)` 是 ctx→C++ 实例的规范通道
+
+### JSClassID 是进程级常量，不是实例状态
+- `JSClassID` 由 `JS_NewClassID(rt, &id)` 全局分配，即使多个 `JSRuntime` 也共享；必须当作 file-scope static 处理
+- 幂等注册模板（量产代码必用）：
+  ```cpp
+  if (s_class_id == 0) JS_NewClassID(rt, &s_class_id);
+  if (!JS_IsRegisteredClass(rt, s_class_id)) JS_NewClass(rt, s_class_id, &def);
+  ```
+- 陷阱：把 `JSClassID` 作为实例成员每次 `Bind` 重新 `JS_NewClassID`，会在同 runtime 上创建重复 class 导致 `JS_NewObjectClass` 失败
+- quickjs-ng v0.14.0 已支持 `JS_IsRegisteredClass`（`build/_deps/quickjsng-src/quickjs.h` 可核实）
+
+### JS 回调生命周期 UAF 防护
+- `addEventListener` 注册 C++ lambda 捕获了 `JSValue callback` —— lambda 与 `JSValue` **必须同寿命**
+- `Unbind` 顺序硬约束：先 `EventManager::RemoveEventListeners(el)`（销毁 lambda 拷贝）**再** `JS_FreeValue(callback)`
+- 维护 `InstanceData::listener_elements: Vector<Element*>` 去重记录已绑定元素，`Unbind` 遍历清理；`removeEventListener` 也必须同步移除
+- 剩余风险：`DomBindings` 析构必须先于 `EventManager`；相反则 `RemoveEventListeners` 作用于悬垂 em 指针。当前由宿主手动保证，弱引用/观察者模式留待后续
+
+## HarfBuzz + FreeType 生命周期与 CMake 传播（TASK-20260418-01）
+
+### hb_font_t 缓存模式
+- `hb_ft_font_create_referenced(FT_Face)` 是重操作（解析 charmap/metric），per-DrawText 调用是显著性能债
+- 缓存粒度：每 `FontHandle` 一个 `hb_font_t`，跟 `FT_Face` 同寿命
+- `FT_Face` 尺寸变化时 HarfBuzz 需显式通知：**先** `FT_Set_Pixel_Sizes(face, 0, new_size)`（调用方契约）**再** `hb_ft_font_changed(hb_font)`；否则 `hb_shape` 会用旧 metrics
+- 释放顺序：`Shutdown` 中先 `hb_font_destroy(hb)` 再 `FT_Done_Face(face)` —— 某些 HarfBuzz 版本在 face 已释放后析构 hb_font 是 UB
+
+### CMake 静态库依赖传播
+- 核心原则：静态库 `A` 的 `.a` 内包含 `A.o` 但**不**捆绑其 `PRIVATE` 依赖 `B.a`；链接 `A` 的目标 `T` 不会自动得到 `B` 的头路径和符号
+- 当 `T` 的源文件**直接** `#include <b_header.h>` 或**间接**依赖通过 `A` 内联/模板暴露的 `B` 符号时，`B` 必须在 `A` 中 `PUBLIC` 链接
+- 本次反面教训：先尝试在 `tests/CMakeLists.txt` 添加 `pkg_check_modules(HARFBUZZ …)` 通过 `font_manager_test` 补链接，触发 `FindPkgConfig.cmake` "Unknown arguments specified"（父 scope 已调用导致参数状态冲突）
+- 正确解法：在 `veloxa/text/CMakeLists.txt` 把 `Freetype::Freetype`、`${HARFBUZZ_LIBRARIES}` 从 `PRIVATE` 改 `PUBLIC`，同时 `${HARFBUZZ_INCLUDE_DIRS}` 也改 `PUBLIC`；所有下游（含 tests）自动继承
+- 决策准则：**公开 header 中前向声明的类型**（`struct hb_font_t;`）即使在 .h 里不 include，只要 **测试或下游需要定义并调用这些类型的 API**，依赖就必须 `PUBLIC`
+
 ### 技术债务清单
 1. Benchmark 延期（需 google benchmark）
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
@@ -285,9 +324,9 @@
 42. transition shorthand 仅支持单条声明，不支持逗号分隔多条（如 `transition: bg 300ms, opacity 200ms`）
 43. LayoutBox.style 是 const 指针，动画覆盖需 const_cast，应考虑引入可写样式覆盖层或改为 non-const
 44. `vx_script`：`JS_SetInterruptHandler` / 执行预算未实现（见 `creative-quickjs-host.md` Phase 2）；`JSMallocFunctions` 与 Foundation 分配器未对齐
-45. dom_bindings.cc 使用全局变量（g_bound_doc、g_element_class_id、g_tracked_callbacks），不支持多 Document/多线程
-46. StyleGetProp getter 始终返回空字符串——读路径未实现（写路径通过 CssParser 正常工作）
+45. ~~dom_bindings.cc 使用全局变量（g_bound_doc、g_element_class_id、g_tracked_callbacks）~~ ✅ 已迁移到 `DomBindings::InstanceData`（pimpl，`JS_SetContextOpaque` 桥接）；JSClassID 保留为文件级 `s_` 静态 + `JS_IsRegisteredClass` 幂等注册（TASK-20260418-01）
+46. ~~StyleGetProp getter 始终返回空字符串~~ ✅ 已实现 length/color/auto/number/inherit/initial 序列化，遍历 `inline_declarations()`（TASK-20260418-01）；Enum（display 等）读路径仍返回 `""`，留作后续
 47. removeEventListener 简化为移除元素所有监听器，未实现按 type+handler 精确移除
-48. SoftwareCanvas::DrawText 每次调用创建 hb_font_t——应缓存到 GlyphCache 或 FontManager 级别
+48. ~~SoftwareCanvas::DrawText 每次调用创建 hb_font_t~~ ✅ 已缓存到 `FontManager::FontEntry`，`GetHbFont(handle, pixel_size)` 按需创建 + `hb_ft_font_changed` 响应 size 变化（TASK-20260418-01）
 49. textContent setter 不处理无 Text 子节点的情况（不创建新 Text 节点，静默返回）
-50. addEventListener lambda 捕获 JSContext*，Unbind 应确保在 JS_FreeValue callbacks 之前先 RemoveEventListeners
+50. ~~addEventListener lambda 捕获 JSContext*~~ ✅ `DomBindings::Unbind` 先 `em->RemoveEventListeners(el)` 再 `FreeAll callbacks`，消除 UAF（TASK-20260418-01）；遗留约束：宿主必须确保 `DomBindings` 先于 `EventManager` 析构

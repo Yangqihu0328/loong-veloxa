@@ -13,7 +13,12 @@
 - ✅ 2026-04-18：`/build` Phase 2 (#50) — `Unbind` 顺序修复（先 `RemoveEventListeners` 再 `FreeAll`），防止 JSValue-释放后 C++ lambda 仍被调用的 UAF；新增 2 个测试；commit `d105c36`
 - ✅ 2026-04-18：`/build` Phase 3 (#46) — `StyleGetProp` 读路径实装，新增 `SerializeCssValue`（length/color/auto/number/inherit/initial），Enum 按约定暂保留空串；新增 7 个测试；commit `081896a`
 - ✅ 2026-04-18：`/build` Phase 4 (#48) — `FontManager::GetHbFont` 引入 `hb_font_t` 每 FontEntry 缓存；`SoftwareCanvas::DrawText` 改借用不释放；`vx_text` CMake 依赖从 PRIVATE→PUBLIC 以支持测试链接；新增 3 个测试；commit `d73d303`
-- ⏳ Phase 5：文档收尾（本次更新）+ 进入 `/reflect`
+- ✅ 2026-04-18：`/build` Phase 5 — Memory Bank 文档收尾；commit `ea1a95b`
+- ✅ 2026-04-18：`/reflect` — 反思文档落盘 `memory-bank/reflection/reflection-TASK-20260418-01.md`；核心产出：
+  - `techContext.md` 技术债 #45/#46/#48/#50 标记已解决 + 增补 "DomBindings pimpl + QuickJS 集成"、"HarfBuzz 缓存与 CMake 传播" 两段经验
+  - `systemPatterns.md` 沉淀 5 条新模式（pimpl+JSContext opaque、JSClassID 幂等注册、JS 回调 lifetime、hb_font 缓存、CMake PUBLIC/PRIVATE 准则）
+  - `.cursor/rules/skills/writing-plans.mdc` 新增「CMake 链接方向约束分析」段（闭环 P1 建议）
+- ⏳ 下一步：`/archive`
 
 **关键决策落点（落地确认）**：
 - ✅ `JS_IsRegisteredClass` API 存在于 quickjs-ng v0.14.0，`DomBindings` 构造函数做一次性幂等注册

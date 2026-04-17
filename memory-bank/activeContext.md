@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建完成 — 待进入 `/reflect`
+回顾中 — 待进入 `/archive`
 
 ## 当前任务
 
@@ -32,7 +32,7 @@
 | 2 | #50 Unbind 顺序修复 | ✅ `d105c36` |
 | 3 | #46 StyleGetProp 读路径 | ✅ `081896a` |
 | 4 | #48 FontManager hb_font 缓存 | ✅ `d73d303` |
-| 5 | 文档更新 + 最终验证 | 🟡 进行中 |
+| 5 | 文档更新 + 最终验证 | ✅ `ea1a95b` |
 
 **不需要创意阶段**（所有设计决策已在头脑风暴定案）。
 
@@ -42,7 +42,7 @@
 - `ctest --output-on-failure` → **856/856 passed**（新增 `dom_bindings_test` 11 条、`font_manager_test` 3 条均通过）
 
 ## 待处理事项
-- **P1**：计划模板增加「CMake 链接方向约束分析」段——新模块涉及两个已有库时预画依赖图检测循环（来源 TASK-20260414-01）
+- ~~**P1**：计划模板增加「CMake 链接方向约束分析」段——新模块涉及两个已有库时预画依赖图检测循环（来源 TASK-20260414-01）~~ ✅ 已落实到 `.cursor/rules/skills/writing-plans.mdc`（TASK-20260418-01 反思）
 - **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
 - **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
 - **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）

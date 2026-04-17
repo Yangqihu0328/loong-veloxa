@@ -370,6 +370,47 @@ veloxa/
 - A 链接 B（PRIVATE），B 的符号在最终可执行文件中由 A 提供
 - 关键：B 的 vx_foundation PUBLIC 链接已提供 ${PROJECT_SOURCE_DIR} include path
 
+## 已验证的模式（来自 TASK-20260418-01 消化关键技术债务）
+
+### DomBindings pimpl + JSContext opaque 桥接模式
+- `dom_bindings.h` 零 `quickjs.h` 依赖：仅 `struct JSContext;` 前向声明
+- `DomBindings` 成员只剩 `std::unique_ptr<InstanceData> data_`；`InstanceData` 前向声明放 `public:`（供 `.cc` 匿名 namespace 内自由函数命名），定义放 `.cc` 并 `private` 成员
+- `~DomBindings()` 必须在 `.cc` non-default 定义，否则不完整类型 delete 失败
+- `friend struct DomBindingsInternal;` + 匿名 namespace 内 `DomBindingsInternal::Data(b)` 桥接，不扩 public API
+- `Bind` 时 `JS_SetContextOpaque(ctx, this)`；所有 QuickJS C 回调通过 `JS_GetContextOpaque(ctx)` 拿回实例
+- 适用场景：需要把 C++ 实例与 `JSContext` 绑定但又不想泄漏 quickjs 类型到 header 的任何集成
+
+### QuickJS JSClassID 幂等注册模板
+- `JSClassID` 是 **进程/runtime 全局** 常量，不是实例状态
+- 必须用文件级 `static`（如 `s_element_class_id`），绝不嵌入 `InstanceData`
+- 幂等注册模板：
+  ```cpp
+  if (s_class_id == 0) JS_NewClassID(rt, &s_class_id);
+  if (!JS_IsRegisteredClass(rt, s_class_id)) {
+    JS_NewClass(rt, s_class_id, &class_def);
+  }
+  ```
+- `JS_IsRegisteredClass` 见 quickjs-ng v0.14.0 `quickjs.h`
+
+### JS 回调生命周期（lambda-vs-JSValue 同寿命）
+- C++ 代码注册 event listener 时 lambda 捕获 `JSValue callback`——lambda 拷贝数量 = 引用数
+- 销毁顺序硬约束：**先** 销毁所有 lambda 拷贝（`EventManager::RemoveEventListeners`）**再** `JS_FreeValue(callback)`
+- 维护 `listener_elements: Vector<Element*>` 去重记录已绑定元素，`Unbind` 反向清理
+- `removeEventListener` 必须同步从该向量移除，避免 `Unbind` 重复操作
+
+### hb_font_t 缓存模式（per-handle）
+- `hb_ft_font_create_referenced(FT_Face)` 是重操作；在 `FontManager::FontEntry` 内缓存
+- 调用方契约：先 `FT_Set_Pixel_Sizes(face, 0, new_size)` 再 `GetHbFont(handle, new_size)`
+- 同 handle 同 size → 直接返回缓存指针
+- 同 handle 异 size → `hb_ft_font_changed(hb_font)` 重读 metrics，指针稳定
+- `Shutdown` 时先 `hb_font_destroy` 再 `FT_Done_Face`（防某些 HarfBuzz 版本 UB）
+
+### CMake 静态库 PUBLIC/PRIVATE 依赖传播准则
+- 静态库 `A.a` 不捆绑其 `PRIVATE` 依赖；链接 `A` 的下游目标 `T` 不会自动获得 `B` 的头/符号
+- 下游需 include 或间接依赖 `B` 符号时，`A` 必须 `PUBLIC` 链接 `B`
+- 不要在下游 `CMakeLists.txt` 用 `pkg_check_modules` 补链接——`pkg_check_modules` 不应跨文件重复调用同一模块（`FindPkgConfig: Unknown arguments specified`）
+- 正确动作：在提供方升 `PRIVATE → PUBLIC`
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持
