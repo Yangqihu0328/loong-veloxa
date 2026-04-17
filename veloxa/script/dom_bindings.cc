@@ -596,9 +596,18 @@ void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
 }
 
 void DomBindings::Unbind() {
-  // Phase 2 (#50) will insist that listener teardown happens before
-  // callback JSValues are freed. For Phase 1 we already clear the list
-  // to avoid dangling pointers across rebind.
+  // #50: Tear down EventManager lambdas BEFORE freeing the JS callbacks
+  // those lambdas captured. Freeing first would leave em_ holding
+  // lambdas that reference already-freed JSValue callbacks, and any
+  // later dispatch (e.g. HandleInput) would be use-after-free.
+  //
+  // Host contract (out of scope for this task, tracked as P2 residual):
+  // DomBindings must be destroyed before its EventManager.
+  if (data_->em) {
+    for (usize i = 0; i < data_->listener_elements.size(); ++i) {
+      data_->em->RemoveEventListeners(data_->listener_elements[i]);
+    }
+  }
   data_->listener_elements.clear();
   data_->tracked_callbacks.FreeAll();
   if (data_->ctx) {

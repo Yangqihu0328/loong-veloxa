@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
 
+#include "veloxa/core/css/computed_style.h"
 #include "veloxa/core/dom/document.h"
 #include "veloxa/core/dom/text.h"
 #include "veloxa/core/event/event_manager.h"
+#include "veloxa/core/event/event_types.h"
+#include "veloxa/core/layout/layout_box.h"
 #include "veloxa/foundation/strings/interned_string.h"
 #include "veloxa/foundation/strings/string.h"
 #include "veloxa/script/dom_bindings.h"
@@ -231,6 +234,90 @@ TEST(DomBindingsLifecycleTest, MultipleInstancesIndependentDocuments) {
   b2.Unbind();
   eng1.Shutdown();
   eng2.Shutdown();
+}
+
+TEST(DomBindingsLifecycleTest, UnbindClearsListenersFromEventManager) {
+  // Regression for #50: DomBindings::Unbind must remove each tracked
+  // element's listeners from EventManager BEFORE freeing the JS
+  // callbacks those lambdas captured. Verified here by inspecting that
+  // an em sibling listener on the same element is cleared too —
+  // RemoveEventListeners(el) is element-scoped so any listener on it
+  // is gone after Unbind. Before this fix, em retained the JS lambda
+  // (and the sibling listener) and could invoke it over a freed
+  // JSValue.
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+
+  dom::Document doc;
+  event::EventManager em;
+  auto* el = doc.CreateElement(dom::TagId::kDiv);
+  el->set_id(InternedString::Intern("t"));
+  doc.AppendChild(el);
+
+  DomBindings bindings;
+  bindings.Bind(engine.context(), &doc, &em);
+
+  auto r = engine.EvalGlobal(
+      "document.getElementById('t').addEventListener("
+      "'pointerdown', function(){});",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+
+  // Sibling listener — unrelated to DomBindings. Used as observer.
+  int sibling_fired = 0;
+  em.AddEventListener(el, event::EventType::kKeyDown,
+                      [&sibling_fired](event::DOMEvent&) {
+                        ++sibling_fired;
+                      });
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = el;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 50;
+
+  event::InputEvent down{};
+  down.type = event::EventType::kPointerDown;
+  down.x = 10;
+  down.y = 10;
+  em.HandleInput(down, &box);
+  ASSERT_EQ(em.focused_element(), el);
+
+  event::InputEvent key{};
+  key.type = event::EventType::kKeyDown;
+  key.key_code = 0x41;
+  em.HandleInput(key, &box);
+  EXPECT_EQ(sibling_fired, 1);  // baseline: listener works before Unbind
+
+  bindings.Unbind();
+
+  // After Unbind, em must no longer hold any listener for el.
+  em.HandleInput(key, &box);
+  EXPECT_EQ(sibling_fired, 1);  // still 1 → all listeners on el cleared
+
+  engine.Shutdown();
+}
+
+TEST(DomBindingsLifecycleTest, UnbindThenBoundReflectsState) {
+  // Sanity: bound() reflects Bind/Unbind transitions.
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+  dom::Document doc;
+  event::EventManager em;
+
+  DomBindings bindings;
+  EXPECT_FALSE(bindings.bound());
+  bindings.Bind(engine.context(), &doc, &em);
+  EXPECT_TRUE(bindings.bound());
+  EXPECT_EQ(bindings.context(), engine.context());
+  EXPECT_EQ(bindings.document(), &doc);
+  EXPECT_EQ(bindings.event_manager(), &em);
+  bindings.Unbind();
+  EXPECT_FALSE(bindings.bound());
+  engine.Shutdown();
 }
 
 }  // namespace vx::script
