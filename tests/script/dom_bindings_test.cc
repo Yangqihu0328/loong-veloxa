@@ -110,6 +110,77 @@ TEST_F(DomBindingsTest, StyleSetBackgroundColor) {
   EXPECT_GE(decls->size(), 1u);
 }
 
+// ----- StyleGetProp read path (#46 / TASK-20260418-01) -----
+
+TEST_F(DomBindingsTest, StyleGetBackgroundColor) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.backgroundColor = 'red';"
+      "el.style.backgroundColor",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "rgba(255, 0, 0, 255)");
+}
+
+TEST_F(DomBindingsTest, StyleGetWidthPx) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.width = '100px';"
+      "el.style.width",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "100px");
+}
+
+TEST_F(DomBindingsTest, StyleGetAuto) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.width = 'auto';"
+      "el.style.width",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "auto");
+}
+
+TEST_F(DomBindingsTest, StyleGetPercent) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.height = '50%';"
+      "el.style.height",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "50%");
+}
+
+TEST_F(DomBindingsTest, StyleGetOpacity) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.opacity = '0.5';"
+      "el.style.opacity",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "0.5");
+}
+
+TEST_F(DomBindingsTest, StyleGetUnsetReturnsEmpty) {
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').style.color",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayEnumCurrentlyEmpty) {
+  // display uses kEnum; reverse-lookup table is deferred (#46 residual).
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'block';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "");
+}
+
 TEST_F(DomBindingsTest, AddEventListenerRegisters) {
   auto result = engine_.EvalGlobal(
       "var btn = document.getElementById('btn');"

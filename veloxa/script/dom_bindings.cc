@@ -4,6 +4,7 @@ extern "C" {
 #include "quickjs.h"
 }
 
+#include <cstdio>
 #include <cstring>
 
 #include "veloxa/core/css/parser.h"
@@ -187,12 +188,92 @@ static const CamelMapping kStyleMappings[] = {
 static constexpr int kStyleMappingCount =
     static_cast<int>(sizeof(kStyleMappings) / sizeof(kStyleMappings[0]));
 
+// ----- CSS value → string serialization (read path for StyleGetProp) -----
+
+const char* UnitSuffix(css::Unit u) {
+  switch (u) {
+    case css::Unit::kPx: return "px";
+    case css::Unit::kEm: return "em";
+    case css::Unit::kRem: return "rem";
+    case css::Unit::kPercent: return "%";
+    case css::Unit::kVw: return "vw";
+    case css::Unit::kVh: return "vh";
+    case css::Unit::kAuto:
+    case css::Unit::kNumber:
+    case css::Unit::kNone:
+      return "";
+  }
+  return "";
+}
+
+void AppendCStr(const char* s, String* out) {
+  out->append(StringView(s));
+}
+
+void AppendNumber(f32 v, String* out) {
+  char buf[32];
+  int n = std::snprintf(buf, sizeof(buf), "%g", static_cast<double>(v));
+  if (n > 0) out->append(StringView(buf, static_cast<usize>(n)));
+}
+
+void SerializeCssValue(const css::CssValue& v, String* out) {
+  switch (v.type) {
+    case css::ValueType::kLength:
+      AppendNumber(v.number, out);
+      AppendCStr(UnitSuffix(v.unit), out);
+      break;
+    case css::ValueType::kColor: {
+      // CssValue stores color as 0xRRGGBBAA.
+      u32 rgba = v.color;
+      u8 r = static_cast<u8>((rgba >> 24) & 0xFF);
+      u8 g = static_cast<u8>((rgba >> 16) & 0xFF);
+      u8 b = static_cast<u8>((rgba >> 8) & 0xFF);
+      u8 a = static_cast<u8>(rgba & 0xFF);
+      char buf[48];
+      int n = std::snprintf(buf, sizeof(buf),
+                            "rgba(%u, %u, %u, %u)", r, g, b, a);
+      if (n > 0) out->append(StringView(buf, static_cast<usize>(n)));
+      break;
+    }
+    case css::ValueType::kNumber:
+      AppendNumber(v.number, out);
+      break;
+    case css::ValueType::kAuto:
+      AppendCStr("auto", out);
+      break;
+    case css::ValueType::kInherit:
+      AppendCStr("inherit", out);
+      break;
+    case css::ValueType::kInitial:
+      AppendCStr("initial", out);
+      break;
+    case css::ValueType::kEnum:
+    case css::ValueType::kNone:
+      // Enum reverse-lookup (display, flex-direction, etc.) is deferred
+      // — tracked as P2 residual for #46.
+      break;
+  }
+}
+
 // ----- Style property magic getter/setter -----
 
 JSValue StyleGetProp(JSContext* ctx, JSValueConst this_val, int magic) {
   auto* so = GetStyleOpaque(this_val);
   if (!so || !so->element || magic < 0 || magic >= kStyleMappingCount) {
     return JS_NewString(ctx, "");
+  }
+
+  const auto* decls = so->element->inline_declarations();
+  if (!decls) return JS_NewString(ctx, "");
+
+  css::PropertyId target = kStyleMappings[magic].prop;
+  for (usize i = 0; i < decls->size(); ++i) {
+    const auto& d = (*decls)[i];
+    if (d.property == target) {
+      String out;
+      SerializeCssValue(d.value, &out);
+      return JS_NewStringLen(ctx, out.data(), out.size());
+    }
   }
   return JS_NewString(ctx, "");
 }
