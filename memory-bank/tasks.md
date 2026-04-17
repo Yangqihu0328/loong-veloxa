@@ -4,7 +4,7 @@
 
 ### TASK-20260418-01 — 消化关键技术债务
 
-- **状态**：规划中
+- **状态**：构建完成（待反思/归档）
 - **复杂度**：Level 3（中等功能）
 - **创建日期**：2026-04-18
 - **描述**：针对 TASK-20260414-01 归档遗留的 4 条 P1 技术债一次性修复：
@@ -13,9 +13,9 @@
   - **#48**：`SoftwareCanvas::DrawText` 缓存 HarfBuzz `hb_font_t`（方案 C1：缓存嵌入 `FontManager::FontEntry`）
   - **#50**：`addEventListener` lambda 生命周期（方案 D1：`listener_elements` + Unbind 顺序控制）
 - **涉及子系统**：`veloxa/script`（dom_bindings）、`veloxa/text`（font_manager）、`veloxa/graphics/software`（software_canvas）
-- **工作流路径**：`/van` ✅ → `/plan` ✅ → (不需要 /creative) → `/build` → `/reflect` → `/archive`
+- **工作流路径**：`/van` ✅ → `/plan` ✅ → (不需要 /creative) → `/build` ✅ → `/reflect` → `/archive`
 - **基线分支**：`main`
-- **特性分支**：`feature/TASK-20260418-01-tech-debt`（待创建）
+- **特性分支**：`feature/TASK-20260418-01-tech-debt`（已创建）
 - **安全相关**：否（纯内部重构 + UAF 修复，无外部输入/认证/存储变更）
 - **前置验证**：✅ 通过
 - **设计规格**：`docs/specs/2026-04-18-tech-debt-dom-bindings-design.md`

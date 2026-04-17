@@ -8,13 +8,22 @@
 - ✅ 2026-04-18：`/plan` 头脑风暴完成，4 条债务方案确定（A1 / B1 / C1 / D1）
 - ✅ 2026-04-18：设计规格保存至 `docs/specs/2026-04-18-tech-debt-dom-bindings-design.md`
 - ✅ 2026-04-18：实现计划保存至 `docs/plans/2026-04-18-tech-debt-dom-bindings.md`
-- ⏳ 待进入 `/build`：按 Phase 0→5 顺序执行 TDD 小步任务
+- ✅ 2026-04-18：`/build` Phase 0 — 基线验证（856/856 通过），创建特性分支 `feature/TASK-20260418-01-tech-debt`，提交设计 + 计划文档
+- ✅ 2026-04-18：`/build` Phase 1 (#45) — DomBindings pimpl 改造，全局状态迁移至 `InstanceData`，`JSClassID` 改文件级 static + 幂等注册（`JS_IsRegisteredClass`）；新增 2 个测试；commit `255c74d`
+- ✅ 2026-04-18：`/build` Phase 2 (#50) — `Unbind` 顺序修复（先 `RemoveEventListeners` 再 `FreeAll`），防止 JSValue-释放后 C++ lambda 仍被调用的 UAF；新增 2 个测试；commit `d105c36`
+- ✅ 2026-04-18：`/build` Phase 3 (#46) — `StyleGetProp` 读路径实装，新增 `SerializeCssValue`（length/color/auto/number/inherit/initial），Enum 按约定暂保留空串；新增 7 个测试；commit `081896a`
+- ✅ 2026-04-18：`/build` Phase 4 (#48) — `FontManager::GetHbFont` 引入 `hb_font_t` 每 FontEntry 缓存；`SoftwareCanvas::DrawText` 改借用不释放；`vx_text` CMake 依赖从 PRIVATE→PUBLIC 以支持测试链接；新增 3 个测试；commit `d73d303`
+- ⏳ Phase 5：文档收尾（本次更新）+ 进入 `/reflect`
 
-**关键决策落点**：
-- `JS_IsRegisteredClass` API 存在于 quickjs-ng v0.14.0（风险消除）
-- `DomBindings` 改 pimpl（不暴露 quickjs.h 到 header）
-- `hb_font_t*` 嵌入 `FontManager::FontEntry`（非新增 HbFontCache 类）
-- `font_manager_test` 需要显式链接 HarfBuzz（tests/CMakeLists.txt 小改）
+**关键决策落点（落地确认）**：
+- ✅ `JS_IsRegisteredClass` API 存在于 quickjs-ng v0.14.0，`DomBindings` 构造函数做一次性幂等注册
+- ✅ `DomBindings` pimpl 化：header 零 `quickjs.h` 依赖，`InstanceData` 前向声明公开（供 `.cc` 内自由函数命名），定义私有
+- ✅ `hb_font_t*` 嵌入 `FontManager::FontEntry`，`pixel_size` 变更用 `hb_ft_font_changed`
+- ✅ HarfBuzz/FreeType 在 `vx_text` CMakeLists 改 `PUBLIC`（非 tests/CMakeLists 加 pkg_check_modules）
+
+**验证状态**：
+- `cmake --build build -j` → 0 errors / 0 warnings
+- `ctest --output-on-failure` → 856/856 passed（较基线 +14 个新增测试均过）
 
 ## 已完成任务
 
