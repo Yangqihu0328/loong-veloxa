@@ -4,6 +4,8 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include <hb.h>
+#include <hb-ft.h>
 
 namespace vx::text {
 
@@ -25,6 +27,14 @@ Status FontManager::Init() {
 
 void FontManager::Shutdown() {
   for (usize i = 0; i < font_count_; ++i) {
+    // Destroy hb_font_t before FT_Face — hb_ft_font_create_referenced
+    // holds a reference to the FT_Face but freeing the face first is
+    // undefined on some HarfBuzz versions.
+    if (fonts_[i].hb_font) {
+      hb_font_destroy(fonts_[i].hb_font);
+      fonts_[i].hb_font = nullptr;
+      fonts_[i].hb_pixel_size = 0;
+    }
     if (fonts_[i].face) {
       FT_Done_Face(fonts_[i].face);
       fonts_[i].face = nullptr;
@@ -93,5 +103,26 @@ FT_FaceRec_* FontManager::GetFace(FontHandle handle) const {
 }
 
 usize FontManager::font_count() const { return font_count_; }
+
+hb_font_t* FontManager::GetHbFont(FontHandle handle, u32 pixel_size) {
+  if (handle == kInvalidFont) return nullptr;
+  for (usize i = 0; i < font_count_; ++i) {
+    if (fonts_[i].handle != handle) continue;
+    FontEntry& entry = fonts_[i];
+    if (!entry.face) return nullptr;
+
+    if (!entry.hb_font) {
+      entry.hb_font = hb_ft_font_create_referenced(entry.face);
+      entry.hb_pixel_size = pixel_size;
+    } else if (entry.hb_pixel_size != pixel_size) {
+      // FT_Face has been reconfigured (precondition); tell HarfBuzz to
+      // re-read metrics so subsequent hb_shape sees the new size.
+      hb_ft_font_changed(entry.hb_font);
+      entry.hb_pixel_size = pixel_size;
+    }
+    return entry.hb_font;
+  }
+  return nullptr;
+}
 
 }  // namespace vx::text
