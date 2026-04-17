@@ -149,4 +149,88 @@ TEST_F(DomBindingsTest, AddEventListenerMultipleTypes) {
   EXPECT_EQ(result.value(), "ok");
 }
 
+// ----- Lifecycle / multi-instance regression tests (TASK-20260418-01) -----
+
+TEST(DomBindingsLifecycleTest, JSClassIdStableAcrossBindings) {
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+
+  dom::Document doc1;
+  event::EventManager em1;
+  auto* div1 = doc1.CreateElement(dom::TagId::kDiv);
+  div1->set_id(InternedString::Intern("a"));
+  doc1.AppendChild(div1);
+
+  DomBindings b1;
+  b1.Bind(engine.context(), &doc1, &em1);
+  auto r1 = engine.EvalGlobal(
+      "document.getElementById('a').tagName", "t1.js");
+  ASSERT_TRUE(r1.ok());
+  EXPECT_EQ(r1.value(), "div");
+  b1.Unbind();
+
+  dom::Document doc2;
+  event::EventManager em2;
+  auto* span2 = doc2.CreateElement(dom::TagId::kSpan);
+  span2->set_id(InternedString::Intern("b"));
+  doc2.AppendChild(span2);
+
+  DomBindings b2;
+  b2.Bind(engine.context(), &doc2, &em2);
+  auto r2 = engine.EvalGlobal(
+      "document.getElementById('b').tagName", "t2.js");
+  ASSERT_TRUE(r2.ok());
+  EXPECT_EQ(r2.value(), "span");
+  b2.Unbind();
+
+  engine.Shutdown();
+}
+
+TEST(DomBindingsLifecycleTest, MultipleInstancesIndependentDocuments) {
+  QuickjsEngine eng1, eng2;
+  ASSERT_TRUE(eng1.Init().ok());
+  ASSERT_TRUE(eng2.Init().ok());
+
+  dom::Document doc1, doc2;
+  event::EventManager em1, em2;
+
+  auto* e1 = doc1.CreateElement(dom::TagId::kDiv);
+  e1->set_id(InternedString::Intern("only-in-1"));
+  doc1.AppendChild(e1);
+
+  auto* e2 = doc2.CreateElement(dom::TagId::kSpan);
+  e2->set_id(InternedString::Intern("only-in-2"));
+  doc2.AppendChild(e2);
+
+  DomBindings b1, b2;
+  b1.Bind(eng1.context(), &doc1, &em1);
+  // Interleaved: b2 binds while b1 still active. Old impl would overwrite
+  // the shared g_bound_doc pointer and break eng1 queries.
+  b2.Bind(eng2.context(), &doc2, &em2);
+
+  auto r1 = eng1.EvalGlobal(
+      "document.getElementById('only-in-1') !== null ? 'found' : 'null'",
+      "cross1.js");
+  ASSERT_TRUE(r1.ok());
+  EXPECT_EQ(r1.value(), "found");
+
+  auto r2 = eng2.EvalGlobal(
+      "document.getElementById('only-in-2') !== null ? 'found' : 'null'",
+      "cross2.js");
+  ASSERT_TRUE(r2.ok());
+  EXPECT_EQ(r2.value(), "found");
+
+  // Cross queries should not leak between engines.
+  auto r1_cross = eng1.EvalGlobal(
+      "document.getElementById('only-in-2') === null ? 'null' : 'found'",
+      "cross3.js");
+  ASSERT_TRUE(r1_cross.ok());
+  EXPECT_EQ(r1_cross.value(), "null");
+
+  b1.Unbind();
+  b2.Unbind();
+  eng1.Shutdown();
+  eng2.Shutdown();
+}
+
 }  // namespace vx::script

@@ -14,15 +14,50 @@ extern "C" {
 
 namespace vx::script {
 
+// InstanceData is the per-DomBindings state formerly held in file-scope
+// globals. It is accessed from free-function JS callbacks via
+// JS_GetContextOpaque(ctx) → DomBindings* → data_.
+struct DomBindings::InstanceData {
+  JSContext* ctx = nullptr;
+  dom::Document* doc = nullptr;
+  event::EventManager* em = nullptr;
+  // Elements that received at least one addEventListener. Used by Unbind
+  // to deterministically tear down lambdas before freeing JS callbacks.
+  // (See #50 fix in Phase 2.)
+  Vector<dom::Element*> listener_elements;
+
+  struct TrackedCallbacks {
+    JSContext* ctx = nullptr;
+    Vector<JSValue> callbacks;
+
+    void Track(JSValue cb) { callbacks.push_back(cb); }
+    void FreeAll() {
+      if (!ctx) return;
+      for (usize i = 0; i < callbacks.size(); ++i) {
+        JS_FreeValue(ctx, callbacks[i]);
+      }
+      callbacks.clear();
+      ctx = nullptr;
+    }
+  } tracked_callbacks;
+};
+
+// Bridge for free-function callbacks to access InstanceData without
+// widening the public API surface of DomBindings.
+struct DomBindingsInternal {
+  static DomBindings::InstanceData* Data(DomBindings* b) {
+    return b ? b->data_.get() : nullptr;
+  }
+};
+
 namespace {
 
 DomBindings* GetBindings(JSContext* ctx) {
   return static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
 }
 
-event::EventManager* GetEventManager(JSContext* ctx) {
-  auto* b = GetBindings(ctx);
-  return b ? b->event_manager() : nullptr;
+DomBindings::InstanceData* GetData(JSContext* ctx) {
+  return DomBindingsInternal::Data(GetBindings(ctx));
 }
 
 // ----- JS event name → EventType mapping -----
@@ -80,12 +115,20 @@ const char* EventTypeToString(event::EventType type) {
 }
 
 // ----- Element JS class -----
+//
+// JSClassID values are process-wide identifiers managed by QuickJS's
+// JSRuntime class table. They are not per-DomBindings state: multiple
+// runtimes reuse the same numeric id, and a fresh runtime starts with
+// that id unregistered. We keep them as file-scope statics and register
+// idempotently via JS_IsRegisteredClass so repeated Bind calls within a
+// single runtime do not re-register the class.
 
-JSClassID g_element_class_id = 0;
+static JSClassID s_element_class_id = 0;
+static JSClassID s_style_class_id = 0;
 
 dom::Element* GetElement(JSContext* /*ctx*/, JSValueConst this_val) {
   return static_cast<dom::Element*>(
-      JS_GetOpaque(this_val, g_element_class_id));
+      JS_GetOpaque(this_val, s_element_class_id));
 }
 
 void ElementFinalizer(JSRuntime* /*rt*/, JSValueConst /*val*/) {}
@@ -100,20 +143,18 @@ JSClassDef g_element_class_def = {
 
 // ----- Style proxy JS class -----
 
-JSClassID g_style_class_id = 0;
-
 struct StyleOpaque {
   dom::Element* element;
 };
 
 StyleOpaque* GetStyleOpaque(JSValueConst this_val) {
   return static_cast<StyleOpaque*>(
-      JS_GetOpaque(this_val, g_style_class_id));
+      JS_GetOpaque(this_val, s_style_class_id));
 }
 
 void StyleFinalizer(JSRuntime* /*rt*/, JSValueConst val) {
   auto* so = static_cast<StyleOpaque*>(
-      JS_GetOpaque(val, g_style_class_id));
+      JS_GetOpaque(val, s_style_class_id));
   delete so;
 }
 
@@ -268,26 +309,6 @@ JSValue ElementSetTextContent(JSContext* ctx, JSValueConst this_val,
   return JS_UNDEFINED;
 }
 
-// ----- Tracked JS callbacks for cleanup -----
-
-struct TrackedCallbacks {
-  JSContext* ctx = nullptr;
-  Vector<JSValue> callbacks;
-
-  void Track(JSValue cb) { callbacks.push_back(cb); }
-
-  void FreeAll() {
-    if (!ctx) return;
-    for (usize i = 0; i < callbacks.size(); ++i) {
-      JS_FreeValue(ctx, callbacks[i]);
-    }
-    callbacks.clear();
-    ctx = nullptr;
-  }
-};
-
-TrackedCallbacks g_tracked_callbacks;
-
 // ----- addEventListener / removeEventListener -----
 
 JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
@@ -304,16 +325,27 @@ JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
   if (!valid) return JS_UNDEFINED;
 
   JSValue callback = JS_DupValue(ctx, argv[1]);
-  auto* em = GetEventManager(ctx);
-  if (!em) {
+  auto* data = GetData(ctx);
+  if (!data || !data->em) {
     JS_FreeValue(ctx, callback);
     return JS_UNDEFINED;
   }
 
-  g_tracked_callbacks.Track(callback);
+  data->tracked_callbacks.Track(callback);
+
+  // Record element once so Unbind can tear down its listeners before
+  // the JS callbacks are freed (see #50 in Phase 2).
+  bool found = false;
+  for (usize i = 0; i < data->listener_elements.size(); ++i) {
+    if (data->listener_elements[i] == el) {
+      found = true;
+      break;
+    }
+  }
+  if (!found) data->listener_elements.push_back(el);
 
   JSContext* captured_ctx = ctx;
-  em->AddEventListener(
+  data->em->AddEventListener(
       el, event_type,
       [captured_ctx, callback](event::DOMEvent& event) mutable {
         JSValue js_event = JS_NewObject(captured_ctx);
@@ -332,9 +364,19 @@ JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
 JSValue ElementRemoveEventListener(JSContext* ctx, JSValueConst this_val,
                                    int /*argc*/, JSValueConst* /*argv*/) {
   auto* el = GetElement(ctx, this_val);
-  auto* em = GetEventManager(ctx);
-  if (!el || !em) return JS_UNDEFINED;
-  em->RemoveEventListeners(el);
+  auto* data = GetData(ctx);
+  if (!el || !data || !data->em) return JS_UNDEFINED;
+  data->em->RemoveEventListeners(el);
+  // Keep listener_elements in sync so Unbind doesn't redundantly operate
+  // on this element. Swap-and-pop (order irrelevant).
+  for (usize i = 0; i < data->listener_elements.size(); ++i) {
+    if (data->listener_elements[i] == el) {
+      data->listener_elements[i] =
+          data->listener_elements[data->listener_elements.size() - 1];
+      data->listener_elements.pop_back();
+      break;
+    }
+  }
   return JS_UNDEFINED;
 }
 
@@ -343,7 +385,7 @@ JSValue ElementGetStyle(JSContext* ctx, JSValueConst this_val) {
   if (!el) return JS_UNDEFINED;
 
   JSValue style_obj =
-      JS_NewObjectClass(ctx, static_cast<int>(g_style_class_id));
+      JS_NewObjectClass(ctx, static_cast<int>(s_style_class_id));
   if (JS_IsException(style_obj)) return style_obj;
 
   auto* so = new StyleOpaque{el};
@@ -394,7 +436,7 @@ JSValue MakeSetterMagic(
 JSValue WrapElement(JSContext* ctx, dom::Element* el) {
   if (!el) return JS_NULL;
 
-  JSValue obj = JS_NewObjectClass(ctx, static_cast<int>(g_element_class_id));
+  JSValue obj = JS_NewObjectClass(ctx, static_cast<int>(s_element_class_id));
   if (JS_IsException(obj)) return obj;
   JS_SetOpaque(obj, el);
   return obj;
@@ -417,16 +459,15 @@ dom::Element* FindElementById(dom::Element* root, StringView id) {
 
 // ----- document global -----
 
-dom::Document* g_bound_doc = nullptr;
-
 JSValue DocGetElementById(JSContext* ctx, JSValueConst /*this_val*/, int argc,
                           JSValueConst* argv) {
-  if (argc < 1 || !g_bound_doc) return JS_NULL;
+  auto* data = GetData(ctx);
+  if (argc < 1 || !data || !data->doc) return JS_NULL;
 
   const char* id_str = JS_ToCString(ctx, argv[0]);
   if (!id_str) return JS_NULL;
 
-  dom::Element* el = FindElementById(g_bound_doc, StringView(id_str));
+  dom::Element* el = FindElementById(data->doc, StringView(id_str));
   JS_FreeCString(ctx, id_str);
 
   if (!el) return JS_NULL;
@@ -437,8 +478,12 @@ JSValue DocGetElementById(JSContext* ctx, JSValueConst /*this_val*/, int argc,
 
 void RegisterStyleClass(JSContext* ctx) {
   JSRuntime* rt = JS_GetRuntime(ctx);
-  JS_NewClassID(rt, &g_style_class_id);
-  JS_NewClass(rt, g_style_class_id, &g_style_class_def);
+  if (s_style_class_id == 0) {
+    JS_NewClassID(rt, &s_style_class_id);
+  }
+  if (!JS_IsRegisteredClass(rt, s_style_class_id)) {
+    JS_NewClass(rt, s_style_class_id, &g_style_class_def);
+  }
 
   JSValue proto = JS_NewObject(ctx);
 
@@ -451,13 +496,17 @@ void RegisterStyleClass(JSContext* ctx) {
     JS_FreeAtom(ctx, atom);
   }
 
-  JS_SetClassProto(ctx, g_style_class_id, proto);
+  JS_SetClassProto(ctx, s_style_class_id, proto);
 }
 
 void RegisterElementClass(JSContext* ctx) {
   JSRuntime* rt = JS_GetRuntime(ctx);
-  JS_NewClassID(rt, &g_element_class_id);
-  JS_NewClass(rt, g_element_class_id, &g_element_class_def);
+  if (s_element_class_id == 0) {
+    JS_NewClassID(rt, &s_element_class_id);
+  }
+  if (!JS_IsRegisteredClass(rt, s_element_class_id)) {
+    JS_NewClass(rt, s_element_class_id, &g_element_class_def);
+  }
 
   JSValue proto = JS_NewObject(ctx);
 
@@ -503,12 +552,13 @@ void RegisterElementClass(JSContext* ctx) {
       JS_UNDEFINED, 0);
   JS_FreeAtom(ctx, style_atom);
 
-  JS_SetClassProto(ctx, g_element_class_id, proto);
+  JS_SetClassProto(ctx, s_element_class_id, proto);
 }
 
-void RegisterDocumentObject(JSContext* ctx, dom::Document* doc) {
-  g_bound_doc = doc;
-
+void RegisterDocumentObject(JSContext* ctx, dom::Document* /*doc*/) {
+  // Document pointer now lives in DomBindings::InstanceData and is
+  // retrieved per-call via JS_GetContextOpaque. Here we just install the
+  // JS-visible `document` global with its methods.
   JSValue global = JS_GetGlobalObject(ctx);
   JSValue doc_obj = JS_NewObject(ctx);
 
@@ -522,18 +572,23 @@ void RegisterDocumentObject(JSContext* ctx, dom::Document* doc) {
 
 }  // namespace
 
+DomBindings::DomBindings() : data_(std::make_unique<InstanceData>()) {}
 DomBindings::~DomBindings() { Unbind(); }
+
+bool DomBindings::bound() const { return data_->ctx != nullptr; }
+event::EventManager* DomBindings::event_manager() const { return data_->em; }
+dom::Document* DomBindings::document() const { return data_->doc; }
+JSContext* DomBindings::context() const { return data_->ctx; }
 
 void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
                        event::EventManager* em) {
   Unbind();
-  ctx_ = ctx;
-  doc_ = doc;
-  em_ = em;
+  data_->ctx = ctx;
+  data_->doc = doc;
+  data_->em = em;
 
   JS_SetContextOpaque(ctx, this);
-
-  g_tracked_callbacks.ctx = ctx;
+  data_->tracked_callbacks.ctx = ctx;
 
   RegisterStyleClass(ctx);
   RegisterElementClass(ctx);
@@ -541,19 +596,22 @@ void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
 }
 
 void DomBindings::Unbind() {
-  g_tracked_callbacks.FreeAll();
-  if (ctx_) {
-    JS_SetContextOpaque(ctx_, nullptr);
-    JSValue global = JS_GetGlobalObject(ctx_);
-    JSAtom doc_atom = JS_NewAtom(ctx_, "document");
-    JS_DeleteProperty(ctx_, global, doc_atom, 0);
-    JS_FreeAtom(ctx_, doc_atom);
-    JS_FreeValue(ctx_, global);
+  // Phase 2 (#50) will insist that listener teardown happens before
+  // callback JSValues are freed. For Phase 1 we already clear the list
+  // to avoid dangling pointers across rebind.
+  data_->listener_elements.clear();
+  data_->tracked_callbacks.FreeAll();
+  if (data_->ctx) {
+    JS_SetContextOpaque(data_->ctx, nullptr);
+    JSValue global = JS_GetGlobalObject(data_->ctx);
+    JSAtom doc_atom = JS_NewAtom(data_->ctx, "document");
+    JS_DeleteProperty(data_->ctx, global, doc_atom, 0);
+    JS_FreeAtom(data_->ctx, doc_atom);
+    JS_FreeValue(data_->ctx, global);
   }
-  g_bound_doc = nullptr;
-  ctx_ = nullptr;
-  doc_ = nullptr;
-  em_ = nullptr;
+  data_->ctx = nullptr;
+  data_->doc = nullptr;
+  data_->em = nullptr;
 }
 
 }  // namespace vx::script
