@@ -171,7 +171,15 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
   if (pixel_size == 0) pixel_size = 1;
   FT_Set_Pixel_Sizes(face, 0, pixel_size);
 
-  hb_font_t* hb_font = hb_ft_font_create_referenced(face);
+  // #48: obtain a cached hb_font_t for this handle instead of the
+  // previous per-DrawText hb_ft_font_create_referenced/hb_font_destroy.
+  // FontManager handles reconfiguration when pixel_size differs.
+  hb_font_t* hb_font = font_manager_->GetHbFont(font, pixel_size);
+  if (!hb_font) {
+    DrawTextFallback(text, bounds, font_size, brush);
+    return;
+  }
+
   hb_buffer_t* buf = hb_buffer_create();
   hb_buffer_add_utf8(buf, text.data(), static_cast<int>(text.size()), 0, -1);
   hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
@@ -264,7 +272,7 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
   }
 
   hb_buffer_destroy(buf);
-  hb_font_destroy(hb_font);
+  // hb_font is owned by FontManager; do not destroy here.
 }
 
 void SoftwareCanvas::DrawImage(const Image& image, const Rect& src_rect,
