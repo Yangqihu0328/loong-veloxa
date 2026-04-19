@@ -18,14 +18,14 @@
 
 | 维度 | 值 |
 |------|----|
-| 主机 | TBD（待 Phase 6 回填）|
-| OS | TBD |
-| CPU | TBD |
-| 编译器 | TBD |
+| 主机 | qihooz（开发笔记本，WSL2）|
+| OS | Linux 6.6.87.2-microsoft-standard-WSL2 (Ubuntu 22.04 host) |
+| CPU | x86_64, 8 logical, ~2918 MHz；L1d 48 KiB ×4 / L1i 32 KiB ×4 / L2 1280 KiB ×4 / L3 12288 KiB ×1 |
+| 编译器 | gcc 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3), C++17 |
 | google/benchmark 版本 | v1.9.1 (FetchContent) |
 | 构建模式 | Release（`-DCMAKE_BUILD_TYPE=Release`，独立 `build-bench/`）|
 | 生成命令的 `--benchmark_min_time` | 0.5s |
-| 生成日期 | TBD |
+| 生成日期 | 2026-04-19 |
 
 > 任何对 baseline JSON 的更新都必须把上表 4 行 TBD 同步刷新；否则 baseline 失去可追溯性。
 

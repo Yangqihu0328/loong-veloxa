@@ -1,26 +1,38 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中（TASK-20260419-03 第 2 轮启动 — 覆盖 Phase 3-6：Parser / PropertyLookup+cluster / README / baseline JSON 入仓 + 收尾）
+构建中（TASK-20260419-03 第 2 轮 = Phase 3+4+5+6 全部完成 ✅；任务整体完成，待 `/reflect` 整体回顾 + `/archive`）
 
 ## 当前任务
 
 **TASK-20260419-03** — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
 
 - **复杂度：** Level 2
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（已 rebase 到 main `a09ad1e`，feature ahead 2 commits：plan `0a9c6fd` + WIP Phase 1 `430a61e`）
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（基于 main `a09ad1e` rebase，feature ahead 10 commits 共 7 个 phase + 收尾）
 - **TDD 模式：** 覆盖补充（既有 GTest 作正确性基线，本任务不新增 GTest）
-- **本轮范围：** Phase 1 验证（编译/运行 3 个 smoke bench）+ Phase 2（Tokenizer 完整 ~10 BM 套件）；Phase 3-6 留待下轮
-- **进度：** Phase 0 ✅；Phase 1 ✅（3 smoke bench Release 编译干净 + 各跑 1 BM 非零 ns/op + exit 0）；Phase 2 ✅（Tokenizer 10 BM 完整套件验证通过）；Phase 3-6 ⬜（留待下轮 `/build`）
-- **rebase 冲突处理：** plan 与 WIP 两个 commit 在 MB 文件出现冲突，全部接受 main 端版本（TASK-04 归档后 idle 是更新真相）；pause commit (`679efaf`) skip（已无意义）
-- **WIP commit subject 注：** `wip(TASK-03): Phase 1 CSS bench scaffolding (BLOCKED on TASK-04)` — 字面已不准（TASK-04 已解锁），但保留不动避免动 commit 历史；归档时在文档说明
+- **整体进度：** Phase 0/1/2/3/4/5/6 全 ✅，30 BMs（10 tokenizer + 11 parser + 9 property lookup）入仓 + 3 baseline JSON 入仓
+- **第 2 轮（本轮）范围与产出：**
+  - Phase 3 — `bench_css_parser.cc` 11 BMs 完整套件（4 stylesheet template + 6 inline Range + 1 selector）
+  - Phase 4 — `bench_css_property_lookup.cc` 9 BMs 完整套件（含 5 cluster probes）+ **关键产出**：cluster 判定 = **未触发**（最慢 single key 仅 2.75× HitHot5，远低于 5× 阈值），TASK-06 候选优先级 P1→P3
+  - Phase 5 — `benchmarks/README.md` 扩展（CSS 章节 + 5 行已知量级 + 3 行注意事项）+ 新建 `benchmarks/baseline/README.md`（失真警告 + 5 条更新协议 + 命令模板）
+  - Phase 6 — Release 全量 fresh rebuild build-bench/ + 3 baseline JSON（共 ~15 KB，全 release）入仓 + README/baseline TBD 数字回填
 - **本轮验证证据：**
-  - Phase 1：Release `cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 干净 ✅；3 exe 各 1 BM 行（635 / 1821 / 10.4 ns）；TASK-04 修复（`enum_serialization.cc` LookupImpl）实地生效 — vx_core Release 链接成功无 `-Werror=array-bounds`
-  - Phase 2：Tokenizer 10 BM（7 Range + 3 single）；BM_TokenizeAll 297-340 MiB/s 稳定（无 quadratic 退化）；StringHeavy 603 / WhitespaceHeavy 614 / NumericHeavy 372 MiB/s
-  - Debug 全测试 890/890 ✅；3 CSS bench Release exit 0 + BM 行数符合预期（10 / 1 / 1）
-- **本轮提交：** chore(mb) resume + feat(benchmarks) tokenizer suite + chore(build) finalize
-- **第 1 轮回顾：** `memory-bank/reflection/reflection-TASK-20260419-03-round1.md`（关键发现：TASK-04 修复实地生效、新增「WIP commit subject 含外部状态」反复模式、多 phase 任务的轮次工作流缺乏阶段守卫支持）
-- **下一步：** 第 2 轮 `/build`（覆盖 Phase 3-6：Parser 11 BM + PropertyLookup 9 BM + cluster 度量 + README + 3 baseline JSON 入仓）；启动时阶段切回「构建中」
+  - 7 bench exe Release 编译干净（含 fresh rm + reconfigure 路径）
+  - 3 baseline JSON 体检：context.library_build_type=release ✅，BM count = 10 + 11 + 9 = 30 ✅
+  - Debug 全测试 890/890 ✅（regression 通过）
+  - 7 bench exe（4 foundation + 3 css）全 exit 0
+  - lint 0
+  - 关键数字（baseline JSON 实测）：BM_TokenizeAll/4096 ~10.8 µs (~265 MiB/s)、BM_ParseStylesheetMedium ~18.5 µs、BM_PropertyLookupHitHot5 ~13 ns、HitSingle/transition-timing-function ~33 ns
+- **本轮提交（feature ahead 6→10）：**
+  - `1e896d3` feat(benchmarks): CSS parser suite [P3]（含本轮启动 MB 阶段切换）
+  - `66f0a10` feat(benchmarks): CSS property lookup + cluster probe [P4]
+  - `36c7e9c` docs(benchmarks): document CSS suite + baseline retention policy [P5]
+  - 待 commit：3 baseline JSON + README 数字回填 + MB 收尾（本步骤的 finalize commit）
+- **关键发现 — Release 全量 build 副发现（main 已存在）：**
+  - `tests/platform/memory_surface_test.cc:102/105/108` — `fgets` `-Werror=unused-result`
+  - `tests/foundation/strings/string_test.cc` — `-Werror=array-bounds` GCC IPA 误报（与 TASK-04 同类，作用于 `BasicString` 而非 `Lookup<N>`）
+  - 这些**不阻塞本任务**（bench 目标不依赖 tests）；建议立 TASK-07 修复（与 TASK-04 系列同源 — Release 通路验证缺失）
+- **下一步：** `/reflect` 整体回顾（覆盖第 1 + 第 2 轮，对照原 plan 7 phase）→ `/archive`
 
 ## 最近归档
 
@@ -33,7 +45,8 @@
 ### 后续任务候选
 
 - **TASK-20260419-05（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-20260419-02 归档）
-- **TASK-20260419-06（建议）：** HashMap Hash Mixing 优化（cluster 问题，反思 #4） — `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]（来源 TASK-20260419-02 BUILD 副发现）
+- **TASK-20260419-06（建议，**优先级降级 P1→P3**）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]。**降级根据**（TASK-03 P4 实测）：PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证明 cluster 问题主要见于 int key + 大规模场景，**短字符串 + 小规模场景免疫**；TASK-06 价值仍在但可推迟到大规模 int-key 容器场景出现时
+- **TASK-20260419-07（新建议）：** 修复 main 已存在的两个 Release `-Werror` 编译失败 — (1) `tests/platform/memory_surface_test.cc` `fgets -Wunused-result`（直接处理返回值）; (2) `tests/foundation/strings/string_test.cc` `-Werror=array-bounds`（GCC IPA 误报，参考 TASK-04 detemplatize / pragma 套路）。**触发：** TASK-03 P6 Release 全量 build。Level 1。**与 TASK-04 同源** — Release 通路验证缺失反复模式
 
 ### 长期项（按优先级）
 

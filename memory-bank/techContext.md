@@ -70,7 +70,14 @@ cmake --build build -j
 - **代理**：与 quickjs-ng 同步，需 `http_proxy`/`https_proxy` 或 `git config --global http.proxy ...`
 - **`-Werror -Wpedantic` 隔离**：`benchmarks/CMakeLists.txt` 通过把 `benchmark` 目标的 include 路径标记为 `INTERFACE_SYSTEM_INCLUDE_DIRECTORIES` 屏蔽第三方头文件 warning（`benchmark::benchmark` 是 ALIAS，需操作底层 `benchmark` target）
 - **DEBUG 警告**：默认配置不指定 `CMAKE_BUILD_TYPE`，运行时 google/benchmark 会输出 `***WARNING*** Library was built as DEBUG`，数据失真——基线测量必须显式 `-DCMAKE_BUILD_TYPE=Release`
-- **结果留存**：不提交 baseline JSON；本地需要对比时按 `benchmarks/README.md` 用 `--benchmark_format=json --benchmark_out=...` + `tools/compare.py` 流程
+- **结果留存**（已修订，TASK-20260419-03）：
+  - **Foundation 4 个 bench**（`bench_allocators` / `bench_containers` / `bench_hash_map` / `bench_strings`）：仍**不**入仓 baseline；本地按需用 `--benchmark_format=json --benchmark_out=...` + `tools/compare.py`
+  - **CSS 3 个 bench**（`bench_css_tokenizer` / `bench_css_parser` / `bench_css_property_lookup`）：入仓 `benchmarks/baseline/*.json` 共 3 份（TASK-03 P6 入仓，~15 KB），仅作「形态参考」**不**作 CI 卡点。任何 baseline 更新必须：
+    1. 由真实算法 / 数据结构 / hash 函数变更触发（不接受跨机数字漂移更新）
+    2. 走 Release 独立 `build-bench/` + `--benchmark_min_time=0.5s`
+    3. 同步刷新 `benchmarks/baseline/README.md` 「当前生成环境」表 4 行
+    4. JSON 体检确认 `context.library_build_type == "release"`
+  - 详细更新协议见 `benchmarks/baseline/README.md`
 
 ### 已知首次配置失败模式
 

@@ -109,11 +109,11 @@ benchmarks/baseline/
 | `BM_StringConstructSso/8` | ~16 ns | SSO ≤22 字节路径 |
 | `BM_StringConstructHeap/64` | ~38 ns | heap 分配 |
 | `BM_InternedStringEquality` | ~1.7 ns | 验证 O(1) 指针相等 |
-| `BM_TokenizeAll/4096` | TBD MiB/s | 详见 `baseline/bench_css_tokenizer.json`；form: 稳定吞吐 |
-| `BM_ParseStylesheetMedium` (20×5) | TBD ns/op | Tokenizer 吞吐的 ~1/3，AST 构造主导 |
-| `BM_ParseDeclarationListInline/8` | TBD ns/op | inline style 路径，每倍 decl 约 2× 时间（线性） |
-| `BM_PropertyLookupHitHot5` | TBD ns | hot-key 平均；HashMap<StringView, PropertyId> 60 entries |
-| `BM_PropertyLookupHitSingle/transition-timing-function` | TBD ns | **未触发 cluster** — 与 HitHot5 比 < 5×（详见 baseline/README） |
+| `BM_TokenizeAll/4096` | ~10.8 µs (~265 MiB/s) | 详见 `baseline/bench_css_tokenizer.json`；form: 稳定吞吐 |
+| `BM_ParseStylesheetMedium` (20×5) | ~18.5 µs | Tokenizer 吞吐的 ~1/3，AST 构造主导 |
+| `BM_ParseDeclarationListInline/8` | ~1.14 µs | inline style 路径，每倍 decl 约 2× 时间（线性） |
+| `BM_PropertyLookupHitHot5` | ~13 ns | hot-key 平均；HashMap<StringView, PropertyId> 60 entries |
+| `BM_PropertyLookupHitSingle/transition-timing-function` | ~33 ns | **未触发 cluster** — vs HitHot5 ≈ 2.5×，远低于 5× 阈值（详见 baseline/README） |
 
 ## 注意事项
 

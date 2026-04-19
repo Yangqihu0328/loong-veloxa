@@ -5,14 +5,18 @@
 ### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
 
 - **复杂度级别：** Level 2
-- **状态：** 第 1 轮 REFLECT 完成 ✅（**任务整体未完成**，Phase 3-6 留待第 2 轮 `/build`，**不可** `/archive`）
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（feature ahead-of-main 5 commits：plan `0a9c6fd` + WIP `430a61e` + chore(mb) resume `dfdf556` + feat tokenizer `4d014ec` + chore(build) finalize `fb9f8eb`，**第 1 轮 reflect commit 待提交**）
+- **状态：** BUILD 完成 ✅（第 1 轮 + 第 2 轮 全 7 phase 完整，待 `/reflect` 整体回顾 + `/archive`）
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（feature ahead-of-main 9-10 commits）
 - **TDD 模式：** 覆盖补充
-- **第 1 轮范围（已完成）：** Phase 0 验证 + Phase 1 验证（3 smoke bench 编译/运行）+ Phase 2（Tokenizer 完整 10 BM 套件）
-- **第 1 轮回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-03-round1.md`
-- **第 1 轮关键发现：** TASK-04 修复实地生效（vx_core Release 链接 0 `-Werror=array-bounds`）；BM_TokenizeAll 297-340 MiB/s 跨 64-4096 byte 规模稳定无 quadratic 退化；新增「WIP commit subject 含外部状态过期」反复模式
-- **第 2 轮范围（待续）：** Phase 3（Parser 11 BM）/ Phase 4（PropertyLookup 9 BM + cluster 度量）/ Phase 5（README 双段）/ Phase 6（3 baseline JSON 入仓 + 数据回填 + 收尾）
-- **第 2 轮启动前置：** 用户决定时间点；启动时把 `activeContext.md` 阶段切回「构建中」
+- **第 1 轮（已完成）：** Phase 0 验证 + Phase 1（3 smoke bench 编译/运行）+ Phase 2（Tokenizer 10 BM）
+  - 提交：plan `0a9c6fd` + WIP `430a61e` + chore(mb) resume `dfdf556` + feat tokenizer `4d014ec` + chore(build) finalize `fb9f8eb` + 第 1 轮 reflect `86b1495`
+  - 回顾：`memory-bank/reflection/reflection-TASK-20260419-03-round1.md`
+- **第 2 轮（已完成）：** Phase 3（Parser 11 BM）+ Phase 4（PropertyLookup 9 BM + cluster 度量）+ Phase 5（README + baseline/README）+ Phase 6（3 baseline JSON 入仓 + TBD 回填 + Release 全量验证）
+  - 提交：feat parser P3 `1e896d3`（含本轮启动 MB 切阶段）+ feat property lookup P4 `66f0a10` + docs P5 `36c7e9c` + （待 commit）feat baselines P6
+  - **关键产出**：cluster 判定 = **未触发**（最慢 single key vs HitHot5 = 2.75×，远低于 5× 阈值）→ TASK-06 候选 P1→P3
+  - **副发现**：main 已存在 2 个 Release `-Werror` 编译失败（`memory_surface_test.cc fgets` + `string_test.cc array-bounds`）→ 建议 TASK-07
+- **整体产出：** 30 BMs 入仓（10 + 11 + 9）+ 3 baseline JSON 入仓（~15 KB，全 release）+ techContext baseline 工作流段 + benchmarks/README CSS 章节 + benchmarks/baseline/README 完整协议
+- **下一步：** `/reflect` 整体回顾 → `/archive`
 
 ## 任务历史
 
