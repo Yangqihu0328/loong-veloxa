@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-回顾中（TASK-20260419-03 第 1 轮 = Phase 0+1+2 已 reflect；**任务整体未完成**，Phase 3-6 留待第 2 轮 `/build`，**不可** `/archive`）
+构建中（TASK-20260419-03 第 2 轮启动 — 覆盖 Phase 3-6：Parser / PropertyLookup+cluster / README / baseline JSON 入仓 + 收尾）
 
 ## 当前任务
 
