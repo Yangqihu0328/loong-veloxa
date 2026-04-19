@@ -2,15 +2,9 @@
 
 ## 当前任务
 
-无活跃任务。
+### TASK-20260419-03 — CSS 解析性能基准（续接）
 
-## 暂停中任务
-
-### TASK-20260419-03 — CSS 解析性能基准（Phase 1 已 WIP，TASK-04 解锁条件已满足）
-
-- 分支：`feature/TASK-20260419-03-css-benchmarks`（待 rebase main `a09ad1e`）
-- Phase 0 ✅ Phase 1 ⛔（待续接验证 3 smoke 编译）
-- 续接路径详见 `tasks.md` 「暂停中任务」段
+- **2026-04-19 续接 BUILD 启动：** TASK-04 已归档合并到 main `a09ad1e`；`feature/TASK-20260419-03-css-benchmarks` rebase 到 main，3 处 MB 冲突均接受 main 端版本（TASK-04 idle 状态为更新真相），pause commit `679efaf` skip（已无意义）；feature 分支 ahead 2 commits（plan + WIP Phase 1）。本轮范围：Phase 1 验证（编译/运行 3 smoke bench）+ Phase 2（Tokenizer 完整 ~10 BM 套件）。Phase 3-6 留待下轮。
 
 ## 已完成任务
 

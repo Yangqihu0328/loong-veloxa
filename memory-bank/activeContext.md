@@ -1,20 +1,20 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲（TASK-20260419-04 已归档并合并到 main；TASK-20260419-03 仍暂停于 Phase 1，但阻塞已解除，可随时续接）
+构建中（TASK-20260419-03 续接：rebase main 已完成，本轮目标 = Phase 1 验证 + Phase 2）
 
 ## 当前任务
-无活跃任务。
-
-**优先建议下一步：** 续接 TASK-20260419-03 — `git checkout feature/TASK-20260419-03-css-benchmarks && git rebase main && /build`，先验证 3 个 CSS smoke bench 编译跑通后进入 Phase 2。
-
-## 暂停中任务
 
 **TASK-20260419-03** — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
-- 分支：`feature/TASK-20260419-03-css-benchmarks`（ahead-of-old-main 3 commits：plan + WIP Phase 1 + chore；待 rebase main `a09ad1e` 拾取 TASK-04 修复）
-- Phase 0 ✅ Phase 1 ⛔（vx_core Release `-Werror=array-bounds`，**已被 TASK-20260419-04 解锁**）
-- 续接动作：`git checkout feature/TASK-20260419-03-css-benchmarks && git rebase main && cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 验证 3 smoke 通过 → 进入 Phase 2
-- 续接需重新 `/build` — `activeContext.md` 续接前需切回 `构建中` 阶段
+
+- **复杂度：** Level 2
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（已 rebase 到 main `a09ad1e`，feature ahead 2 commits：plan `0a9c6fd` + WIP Phase 1 `430a61e`）
+- **TDD 模式：** 覆盖补充（既有 GTest 作正确性基线，本任务不新增 GTest）
+- **本轮范围：** Phase 1 验证（编译/运行 3 个 smoke bench）+ Phase 2（Tokenizer 完整 ~10 BM 套件）；Phase 3-6 留待下轮
+- **进度：** Phase 0 ✅（暂停前）；Phase 1 文件 WIP commit ✅，待编译/运行验证；Phase 2-6 ⬜
+- **rebase 冲突处理：** plan 与 WIP 两个 commit 在 MB 文件出现冲突，全部接受 main 端版本（TASK-04 归档后 idle 是更新真相）；pause commit (`679efaf`) skip（已无意义）
+- **WIP commit subject 注：** `wip(TASK-03): Phase 1 CSS bench scaffolding (BLOCKED on TASK-04)` — 字面已不准（TASK-04 已解锁），但保留不动避免动 commit 历史；归档时在文档说明
+- **焦点：** 1) Phase 1 编译 + 运行验证；2) 替换 Tokenizer smoke 为完整套件并验证
 
 ## 最近归档
 
@@ -26,7 +26,6 @@
 
 ### 后续任务候选
 
-- **TASK-20260419-03（暂停，阻塞已解除）：** CSS 解析基准 — 立即可续接，详见上方暂停中任务
 - **TASK-20260419-05（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-20260419-02 归档）
 - **TASK-20260419-06（建议）：** HashMap Hash Mixing 优化（cluster 问题，反思 #4） — `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]（来源 TASK-20260419-02 BUILD 副发现）
 

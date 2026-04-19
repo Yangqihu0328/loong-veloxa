@@ -2,17 +2,14 @@
 
 ## 当前任务
 
-无活跃任务。
-
-## 暂停中任务
-
 ### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
 
 - **复杂度级别：** Level 2
-- **状态：** 暂停（Phase 1 WIP 已 commit，**TASK-04 解锁条件已满足**，可立即续接）
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（ahead-of-old-main 3 commits：plan + WIP Phase 1 + chore）
-- **进度：** Phase 0 ✅（GTest 890/890 + Release `build-bench/` + bench_allocators 13 BM 验证 Release 通路 OK）；Phase 1 ⛔（CMake 扩展 + css_corpus.h + 3 smoke .cc 已写入但未编译验证）
-- **续接动作：** `git checkout feature/TASK-20260419-03-css-benchmarks` → `git rebase main`（拾取 a09ad1e TASK-04 修复）→ `activeContext.md` 阶段切回「构建中」 → `cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 验证 3 smoke 跑通 → 进入 Phase 2
+- **状态：** 构建中（已续接，本轮 Phase 1 验证 + Phase 2）
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（已 rebase 到 main `a09ad1e`，feature ahead 2 commits：plan `0a9c6fd` + WIP Phase 1 `430a61e`）
+- **TDD 模式：** 覆盖补充
+- **本轮范围：** Phase 1 验证 + Phase 2 Tokenizer 完整 ~10 BM 套件
+- **后续轮次：** Phase 3（Parser）/ Phase 4（PropertyLookup + cluster 度量）/ Phase 5（README）/ Phase 6（baseline JSON + 收尾）— 待本轮 `/reflect` 后另开下一轮 `/build`
 
 ## 任务历史
 
