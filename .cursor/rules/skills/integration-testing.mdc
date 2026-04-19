@@ -1,0 +1,169 @@
+---
+description: 集成测试规范 - 涉及跨模块、回调链、生命周期管理、JS 绑定时使用，避免单元测试遗漏组合 Bug
+globs: []
+alwaysApply: false
+---
+
+# 集成测试 (Integration Testing)
+
+## 概述
+
+> **核心原则**：单元测试通过 ≠ 系统正确。组合 Bug 只能由集成测试发现。
+
+Loong Veloxa 多次反复案例：所有单元测试绿、`/build` 报告"功能完成"，实际场景（QuickJS 释放顺序、跨模块属性回读、Hover 命中）全部失败。
+
+## 适用场景
+
+满足以下**任何一项**时，**必须**为该任务补集成测试：
+
+1. **跨模块协作**：DOM ↔ 样式、布局 ↔ 渲染、事件 ↔ 脚本绑定
+2. **回调链 / 闭包持有**：`std::function`、JS 回调、用户回调跨多次 tick
+3. **生命周期管理**：对象在他模块之前/之后销毁、对象间双向持有、weak 引用
+4. **脚本绑定**：JS 调用 C++、C++ 触发 JS、属性 setter/getter 对称性
+5. **完整管线**：Update → Layout → Render → Compose 端到端
+6. **C API 公开接口**：`vx_*` 函数对外契约
+
+## 六条铁律
+
+### Rule 1 — Setter 写入必须用 Getter 立即回读验证
+
+> 反复模式（TASK-20260418-01 P1#2）：set 成功 ≠ get 能读。
+
+```cpp
+// ❌ 错：只测 set
+TEST(StyleTest, SetDisplay) {
+  el->style().Set("display", "block");
+  EXPECT_NO_THROW(...);
+}
+
+// ✅ 对：set + get 对称
+TEST(StyleTest, SetDisplayRoundTrip) {
+  el->style().Set("display", "block");
+  EXPECT_EQ(el->style().Get("display"), "block");
+}
+```
+
+每个 setter 集成测试必须配 1 个对应的 get 回读断言。Enum / 颜色 / 数值要分别验证序列化结果。
+
+### Rule 2 — 跨模块销毁顺序必须显式覆盖两个方向
+
+> 反复模式（TASK-20260418-01 P1#4）：用户先析构 EventManager 触发 UAF。
+
+任何「模块 A 持有指向模块 B 的指针 / 回调」的设计，必须包含：
+
+```cpp
+TEST(LifecycleTest, ADestroyedBeforeB) { /* 默认顺序 */ }
+TEST(LifecycleTest, BDestroyedBeforeA) { /* 反向顺序 */ }
+```
+
+两个方向都必须**不崩**；至少一个方向要测「在 B 已死后 A 调用 B 的接口」分支。
+
+### Rule 3 — JS 回调必须覆盖三个生命周期点
+
+> 反复模式（TASK-20260418-01 P1#4）：JS 回调持有的 lambda 在 Element 析构 / removeEventListener 后仍触发。
+
+| 时机 | 必测 |
+|------|------|
+| 注册后正常触发 | ✅ |
+| `removeEventListener` 后再触发同事件 | ✅（不应被调用）|
+| Element / DOM 销毁后回调仍存活在事件队列时 | ✅（必须 no-op，禁止崩溃）|
+
+每个 `addEventListener` 类 API **必须**配 3 个测试。
+
+### Rule 4 — 完整管线测试必须断言**最终输出**而非中间状态
+
+> 反复模式（TASK-09）：单元测试 SelectorMatcher 过，但 Update 后 ComputedStyle 的 :hover 仍 false。
+
+集成测试断言对象必须是用户**可观测**的最终状态：
+
+- 渲染：DisplayList 内容 / 像素采样
+- 样式：`ComputedStyle.GetXxx()` 而非「Resolver 内部缓存大小」
+- 事件：用户回调被调用次数 + 参数
+
+中间状态（Match 结果、Cascade 中间结果）只能作为辅助断言。
+
+### Rule 5 — 集成测试必须使用真实组合，禁止替换组件为 Mock
+
+> 单元测试可以 Mock，集成测试**不可以**。否则失去价值。
+
+- 使用真实 `EventManager` + 真实 `EventDispatcher` + 真实 `Element` 树
+- 例外：外部 IO（文件、网络）可 fake；HAL 层可用 `MockPlatform`，因为 HAL 本身就是抽象边界
+
+### Rule 6 — 每个集成测试必须能在 < 100ms 内单独运行
+
+> 防止集成测试腐化为「初始化 200 行，断言 2 行」的不可维护脚本。
+
+- 单测试 setup ≤ 30 行
+- 单测试运行时间 < 100ms
+- 复用 fixture 提取 helper（参见 `tests/dom_bindings_test.cc::SetupTestEnv`）
+
+超出阈值 → 拆测试或抽 fixture。
+
+## API 速查表
+
+### 创建最小 DOM + 样式 + 事件环境
+
+```cpp
+#include "veloxa/core/dom/element.h"
+#include "veloxa/core/event/event_manager.h"
+#include "veloxa/core/style/style_resolver.h"
+
+class MyIntegrationTest : public ::testing::Test {
+ protected:
+  void SetUp() override {
+    document_ = std::make_unique<dom::Document>();
+    em_ = std::make_unique<event::EventManager>(document_.get());
+    resolver_ = std::make_unique<style::StyleResolver>();
+  }
+  std::unique_ptr<dom::Document> document_;
+  std::unique_ptr<event::EventManager> em_;
+  std::unique_ptr<style::StyleResolver> resolver_;
+};
+```
+
+### 派发输入事件并观测 DOM 事件
+
+```cpp
+em_->DispatchInput(InputEvent::MouseDown(x, y));
+EXPECT_EQ(callback_count, 1);
+```
+
+### 触发完整 Update 管线
+
+```cpp
+app_->Update();  // Style → Layout → Render
+EXPECT_EQ(el->GetComputedStyle().GetEnum<Display>(PropertyId::kDisplay), Display::kBlock);
+```
+
+### JS 绑定测试
+
+```cpp
+script::ScriptEngine engine;
+script::DomBindings bindings;
+bindings.Bind(engine.runtime(), engine.context(), document_.get(), em_.get());
+engine.Eval("document.body.addEventListener('click', () => count++)");
+em_->DispatchInput(InputEvent::MouseClick(...));
+EXPECT_EQ(engine.GetGlobal("count"), 1);
+```
+
+## 与单元测试的分工
+
+| 测试类型 | 目标 | 文件后缀 | CMake 目标 |
+|---------|------|---------|-----------|
+| 单元测试 | 单类 / 单函数 | `*_test.cc` | `<module>_test` |
+| 集成测试 | 跨模块 / 完整管线 | `*_integration_test.cc` | `<module>_integration_test` |
+
+**不要**把集成测试塞进单元测试文件——单元测试应该 < 50ms 且无外部依赖。
+
+## 验证
+
+新增功能 PR 自检清单：
+
+- [ ] 上述 6 个适用场景中命中的，是否每条都有 ≥ 1 个集成测试？
+- [ ] Setter 类 API 是否有 get 回读？
+- [ ] 跨模块持有是否有正反两个销毁顺序测试？
+- [ ] JS 回调是否覆盖注册/移除/对象销毁 3 个时点？
+- [ ] 集成测试断言是否落在用户可观测状态？
+- [ ] 单测试运行 < 100ms？
+
+任一项「否」→ 不能合并。

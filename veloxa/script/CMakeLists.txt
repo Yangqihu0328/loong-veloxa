@@ -17,3 +17,7 @@ add_library(vx_script STATIC
 target_include_directories(vx_script PUBLIC ${PROJECT_SOURCE_DIR})
 target_link_libraries(vx_script PUBLIC vx_foundation)
 target_link_libraries(vx_script PRIVATE qjs qjs-libc)
+# vx_script needs css::EnumValueToCssString (provided by vx_core).
+# vx_core ↔ vx_script form a circular static-library dependency; CMake handles
+# this by repeating both archives on the link command line.
+target_link_libraries(vx_script PRIVATE vx_core)

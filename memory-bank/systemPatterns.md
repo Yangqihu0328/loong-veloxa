@@ -369,6 +369,7 @@ veloxa/
 - B 不链接 A（仅通过 PUBLIC include path 获取头文件可见性）
 - A 链接 B（PRIVATE），B 的符号在最终可执行文件中由 A 提供
 - 关键：B 的 vx_foundation PUBLIC 链接已提供 ${PROJECT_SOURCE_DIR} include path
+- **边界情况（TASK-20260419-01）**：当 B 不只是 include A 的头，还**实际调用**了 A 的符号（如 `dom_bindings.cc` 调用 `EnumValueToCssString`）→ 必须显式 `target_link_libraries(B PRIVATE A)` 形成双向 link。CMake 对静态库循环可解（archive 重复扫描），但需要双向 link 才能让 linker 解析符号。
 
 ## 已验证的模式（来自 TASK-20260418-01 消化关键技术债务）
 
@@ -404,6 +405,23 @@ veloxa/
 - 同 handle 同 size → 直接返回缓存指针
 - 同 handle 异 size → `hb_ft_font_changed(hb_font)` 重读 metrics，指针稳定
 - `Shutdown` 时先 `hb_font_destroy` 再 `FT_Done_Face`（防某些 HarfBuzz 版本 UB）
+
+## 已验证的模式（来自 TASK-20260419-01 流程规则沉淀 + P2 收口）
+
+### u64 不透明句柄模式（ListenerToken / DestructionObserverToken）
+- 当外部需要"精确撤销"已注册的资源（监听器、观察者、定时器、动画），使用单调递增 `u64` token 作为不透明句柄
+- 注册接口返回 token（`ListenerToken AddXxx(...)`），撤销接口接受 token（`RemoveXxxByToken(Element*, ListenerToken)`）
+- token 0（`kInvalidListenerToken`）作为哨兵；未知 token 静默 no-op，不报错
+- 内部实现用 `Vector<Entry>` 线性查找（小规模 OK）或 `HashMap<Token, Index>`（>100 listener 时考虑）
+- 与现有 `JSValue` 句柄风格一致；与 SetInvalidationCallback "失效推送" 模式互补
+- 已复用 2 次：`EventDispatcher::ListenerToken`（B7）、`EventManager::DestructionObserverToken`（B6）
+
+### 反向析构观察者模式（DestructionObserver）
+- 当 A 持有 B 的非拥有指针（`B*`），但 A 与 B 的析构顺序无法静态保证（如 host 应用决定）
+- B 在析构函数中触发观察者列表（A 在构造时通过 `B::AddDestructionObserver(callback)` 注册）
+- A 在析构函数中调用 `B::RemoveDestructionObserver(token)` 注销，避免回调已死亡的 A
+- 观察者快照在析构开始时拷贝，遍历期间允许 callback 内调用 RemoveObserver（不影响本次 fire）
+- 适用场景：双向依赖的子系统、跨模块生命周期解耦（DomBindings ↔ EventManager）
 
 ### CMake 静态库 PUBLIC/PRIVATE 依赖传播准则
 - 静态库 `A.a` 不捆绑其 `PRIVATE` 依赖；链接 `A` 的下游目标 `T` 不会自动获得 `B` 的头/符号

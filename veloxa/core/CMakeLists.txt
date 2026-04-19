@@ -9,6 +9,7 @@ add_library(vx_core STATIC
   html/tokenizer.cc
   html/parser.cc
   css/property.cc
+  css/enum_serialization.cc
   css/tokenizer.cc
   css/parser.cc
   css/selector_matcher.cc

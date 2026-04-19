@@ -141,6 +141,50 @@ alwaysApply: false
 [具体任务描述]
 ```
 
+### LayoutBox 坐标语义（任务涉及 LayoutBox 时**必填**）
+
+> 来源 TASK-04：子代理用 absolute 计算 hover 区域，但 LayoutBox 存的是 padding-box 相对父原点。
+
+涉及 `LayoutBox`、坐标转换、命中测试、绘制定位时，prompt 必须包含：
+
+- **`LayoutBox::origin`**：相对**父盒**的 padding-box 原点（不是绝对屏幕坐标）
+- **要得到屏幕坐标**：自下而上累加链上每个父节点的 `origin`，或调用 `LayoutEngine::GetAbsoluteRect(node)`
+- **`size`**：content-box 还是 border-box？查 `veloxa/core/layout/layout_box.h` 当前实现注释
+- **margin/padding/border 是否已并入**：明示
+
+提供「坐标转换辅助函数」清单到 prompt（避免子代理自己重新发明）。
+
+### 并行子代理前置条件（计划要并行派发多个子代理时**必填**）
+
+> 来源 TASK-08：3 个并行子代理同时改 EventDispatcher::AddEventListener，最后无法合并。
+
+并行派发**前**必须验证（写入计划文档）：
+
+1. **文件级隔离**：每个子代理写入的目标文件**互不重叠**？逐文件列出归属。
+2. **共享头依赖**：所有子代理都依赖同一 .h 接口签名时，**必须**先有一个串行的「接口冻结」前置 Phase 把 .h 改完并提交，再并行派发实现。
+3. **数据流方向**：若 A 的输出是 B 的输入，**禁止**并行 → 串行执行。
+4. **测试目标隔离**：每个子代理新增的测试文件互不重叠？
+
+只有 1+2+3+4 **全部满足**才能并行派发。否则降为串行。
+
+### 跨模块数据格式（涉及共享数据结构时**必填**）
+
+> 来源 TASK-02：缺少格式 prompt 触发 24 小时返工（像素格式假设矛盾）。
+
+当子代理任务读写跨模块共享数据时，prompt 必须包含：
+
+- **格式精确定义**：bit 布局、字节序、单位、范围
+  - 例：`RGBA32 = R[0:7] | G[8:15] | B[16:23] | A[24:31]`
+  - 例：`CSS color = u32 0xRRGGBBAA`（与上面**不同**！黑色 CSS=0x000000FF，gfx=0xFF000000）
+- **格式引用位置**：上游/下游模块在哪里使用？文件 + 函数
+- **已知不一致**：如有跨格式风险（CSS color vs gfx::Color），明示桥接函数（如 `CssColorToGfx`）
+
+反例（不要给子代理这种描述）：
+> "把 CSS background-color 应用到 PaintCommand"
+
+正例：
+> "把 ComputedStyle::background_color (u32 RRGGBBAA) 通过 render_utils.h::CssColorToGfx 转换为 gfx::Color，再写入 PaintCommand::FillRect{color, ...}"
+
 ## 与 Memory Bank 集成
 
 - 每个任务完成后更新 `memory-bank/progress.md`

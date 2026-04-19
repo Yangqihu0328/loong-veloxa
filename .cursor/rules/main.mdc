@@ -65,6 +65,7 @@ alwaysApply: true
 | 头脑风暴 | 创建功能、组件、修改行为之前 | `.cursor/rules/skills/brainstorming.mdc` |
 | 编写计划 | 有需求规格后，写代码之前 | `.cursor/rules/skills/writing-plans.mdc` |
 | TDD | 实现任何功能或修复 Bug 时 | `.cursor/rules/skills/test-driven-development.mdc` |
+| 集成测试 | 涉及跨模块、回调链、生命周期、JS 绑定时 | `.cursor/rules/skills/integration-testing.mdc` |
 | 系统化调试 | 遇到 Bug、测试失败、异常行为时 | `.cursor/rules/skills/systematic-debugging.mdc` |
 | 完成验证 | 声明工作完成之前 | `.cursor/rules/skills/verification.mdc` |
 | 代码审查 | 任务间的质量检查 | `.cursor/rules/skills/code-review.mdc` |

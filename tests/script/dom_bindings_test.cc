@@ -18,17 +18,17 @@ class DomBindingsTest : public ::testing::Test {
   void SetUp() override {
     ASSERT_TRUE(engine_.Init().ok());
 
-    auto* div = doc_.CreateElement(dom::TagId::kDiv);
-    div->set_id(InternedString::Intern("box"));
+    div_ = doc_.CreateElement(dom::TagId::kDiv);
+    div_->set_id(InternedString::Intern("box"));
     auto* text1 = doc_.CreateText(String("Hello"));
-    div->AppendChild(text1);
-    doc_.AppendChild(div);
+    div_->AppendChild(text1);
+    doc_.AppendChild(div_);
 
-    auto* span = doc_.CreateElement(dom::TagId::kSpan);
-    span->set_id(InternedString::Intern("btn"));
+    btn_ = doc_.CreateElement(dom::TagId::kSpan);
+    btn_->set_id(InternedString::Intern("btn"));
     auto* text2 = doc_.CreateText(String("Click"));
-    span->AppendChild(text2);
-    doc_.AppendChild(span);
+    btn_->AppendChild(text2);
+    doc_.AppendChild(btn_);
 
     bindings_.Bind(engine_.context(), &doc_, &em_);
   }
@@ -38,10 +38,31 @@ class DomBindingsTest : public ::testing::Test {
     engine_.Shutdown();
   }
 
+  // Synthesize a pointerdown that hit-tests onto `target`. Used to verify
+  // that JS-side addEventListener / removeEventListener are wired through
+  // the EventDispatcher correctly.
+  void DispatchPointerDown(dom::Element* target) {
+    static thread_local css::ComputedStyle s_style;
+    layout::LayoutBox box{};
+    box.element = target;
+    box.style = &s_style;
+    box.x = 0;
+    box.y = 0;
+    box.content_width = 100;
+    box.content_height = 100;
+    event::InputEvent input{};
+    input.type = event::EventType::kPointerDown;
+    input.x = 50;
+    input.y = 50;
+    em_.HandleInput(input, &box);
+  }
+
   QuickjsEngine engine_;
   dom::Document doc_;
   event::EventManager em_;
   DomBindings bindings_;
+  dom::Element* div_ = nullptr;
+  dom::Element* btn_ = nullptr;
 };
 
 TEST_F(DomBindingsTest, GetElementByIdFound) {
@@ -170,15 +191,48 @@ TEST_F(DomBindingsTest, StyleGetUnsetReturnsEmpty) {
   EXPECT_EQ(r.value(), "");
 }
 
-TEST_F(DomBindingsTest, StyleGetDisplayEnumCurrentlyEmpty) {
-  // display uses kEnum; reverse-lookup table is deferred (#46 residual).
+// display uses kEnum and is now serialized via css::EnumValueToCssString
+// (TASK-20260419-01 B5). Each value maps round-trip set→get to its
+// canonical CSS spelling.
+
+TEST_F(DomBindingsTest, StyleGetDisplayBlock) {
   auto r = engine_.EvalGlobal(
       "var el = document.getElementById('box');"
       "el.style.display = 'block';"
       "el.style.display",
       "t.js");
   ASSERT_TRUE(r.ok());
-  EXPECT_EQ(r.value(), "");
+  EXPECT_EQ(r.value(), "block");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayFlex) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'flex';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "flex");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayNone) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'none';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "none");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayInlineBlock) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'inline-block';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "inline-block");
 }
 
 TEST_F(DomBindingsTest, AddEventListenerRegisters) {
@@ -221,6 +275,73 @@ TEST_F(DomBindingsTest, AddEventListenerMultipleTypes) {
       "test.js");
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(result.value(), "ok");
+}
+
+// ----- Precise removeEventListener (TASK-20260419-01 B7) -----
+
+TEST_F(DomBindingsTest, RemoveEventListenerByHandlerKeepsSibling) {
+  auto setup = engine_.EvalGlobal(
+      "globalThis.calledA = 0;"
+      "globalThis.calledB = 0;"
+      "var fnA = function(e) { globalThis.calledA++; };"
+      "var fnB = function(e) { globalThis.calledB++; };"
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', fnA);"
+      "btn.addEventListener('pointerdown', fnB);"
+      "btn.removeEventListener('pointerdown', fnA);"
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  DispatchPointerDown(btn_);
+
+  auto a = engine_.EvalGlobal("String(globalThis.calledA)", "t.js");
+  auto b = engine_.EvalGlobal("String(globalThis.calledB)", "t.js");
+  ASSERT_TRUE(a.ok());
+  ASSERT_TRUE(b.ok());
+  EXPECT_EQ(a.value(), "0");  // removed handler did not fire
+  EXPECT_EQ(b.value(), "1");  // sibling handler fired exactly once
+}
+
+TEST_F(DomBindingsTest, RemoveEventListenerUnknownHandlerKeepsAll) {
+  auto setup = engine_.EvalGlobal(
+      "globalThis.called = 0;"
+      "var fn = function(e) { globalThis.called++; };"
+      "var other = function(e) {};"
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', fn);"
+      "btn.removeEventListener('pointerdown', other);"  // unknown handler
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  DispatchPointerDown(btn_);
+
+  auto r = engine_.EvalGlobal("String(globalThis.called)", "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "1");  // original listener still fires
+}
+
+TEST_F(DomBindingsTest, RemoveEventListenerByTypeOnlyRemovesAll) {
+  // Backward compatibility: 1-arg form (type without handler) still acts as a
+  // bulk remove for that element + type.
+  auto setup = engine_.EvalGlobal(
+      "globalThis.called = 0;"
+      "var fnA = function(e) { globalThis.called++; };"
+      "var fnB = function(e) { globalThis.called++; };"
+      "var btn = document.getElementById('btn');"
+      "btn.addEventListener('pointerdown', fnA);"
+      "btn.addEventListener('pointerdown', fnB);"
+      "btn.removeEventListener('pointerdown');"
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  DispatchPointerDown(btn_);
+
+  auto r = engine_.EvalGlobal("String(globalThis.called)", "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "0");
 }
 
 // ----- Lifecycle / multi-instance regression tests (TASK-20260418-01) -----
@@ -388,6 +509,61 @@ TEST(DomBindingsLifecycleTest, UnbindThenBoundReflectsState) {
   EXPECT_EQ(bindings.event_manager(), &em);
   bindings.Unbind();
   EXPECT_FALSE(bindings.bound());
+  engine.Shutdown();
+}
+
+// B6 (TASK-20260419-01): the destruction-observer mechanism in EventManager
+// allows the strict "DomBindings destroyed first" host contract to be relaxed.
+// Both orderings must now be safe.
+
+TEST(DomBindingsLifecycleTest, EventManagerDestroyedBeforeDomBindings) {
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+  dom::Document doc;
+  auto* btn = doc.CreateElement(dom::TagId::kSpan);
+  btn->set_id(InternedString::Intern("btn"));
+  doc.AppendChild(btn);
+
+  DomBindings bindings;
+  {
+    event::EventManager em;
+    bindings.Bind(engine.context(), &doc, &em);
+    ASSERT_EQ(bindings.event_manager(), &em);
+
+    // Register a JS listener so DomBindings tracks btn in listener_elements.
+    auto r = engine.EvalGlobal(
+        "document.getElementById('btn')."
+        "addEventListener('pointerdown', function(e) {});",
+        "t.js");
+    ASSERT_TRUE(r.ok());
+  }  // em destroyed first — observer should null out bindings' em pointer.
+
+  // After EM is gone, DomBindings must not hold a dangling pointer.
+  EXPECT_EQ(bindings.event_manager(), nullptr);
+
+  // Subsequent Unbind must be safe (no UAF, no crash).
+  bindings.Unbind();
+  EXPECT_FALSE(bindings.bound());
+  engine.Shutdown();
+}
+
+TEST(DomBindingsLifecycleTest, DomBindingsDestroyedBeforeEventManagerStillWorks) {
+  // The original ordering (DomBindings first) must continue to work after the
+  // observer mechanism is added — the observer must be deregistered in Unbind
+  // so it can't fire on freed InstanceData.
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+  dom::Document doc;
+  event::EventManager em;
+  {
+    DomBindings bindings;
+    bindings.Bind(engine.context(), &doc, &em);
+    bindings.Unbind();
+  }
+  // EM is still alive here. Destroying it now must not invoke a stale
+  // observer callback (which would dereference freed InstanceData).
+  // (Implicit: this test scope ends, em destructor runs, ASAN guard.)
+  SUCCEED();
   engine.Shutdown();
 }
 

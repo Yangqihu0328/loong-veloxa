@@ -1,35 +1,54 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+回顾中
 
 ## 当前任务
 
-**无活跃任务**——等待 `/van` 开始新任务。
+**TASK-20260419-01** — 流程规则沉淀 + P2 功能技术债收口
 
-最近归档：`memory-bank/archive/archive-TASK-20260418-01.md`（TASK-20260418-01 消化关键技术债务，已合并到 main）
+- **复杂度：** Level 3
+- **分支：** `feature/TASK-20260419-01-rules-and-debt`（基线 `main`）
+- **创建日期：** 2026-04-19
+- **设计规格：** `docs/specs/2026-04-19-rules-and-debt-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-rules-and-debt.md` ✅
+- **范围：** Part A 落实 14 条 P1 流程规则改进；Part B 修复 P2 三条功能债
+
+## 关键决策（已固化）
+
+| 子项 | 决策 |
+|------|------|
+| Part A/B 顺序 | A 先 B 后；Part A 内部 A1→A2→A3→A4 顺序，Part B 内部 B5（独立）→ B6（基础设施）→ B7（业务接入） |
+| 集成测试规范位置 | 新建 `.cursor/rules/skills/integration-testing.mdc`（独立技能） |
+| B5 Enum 反查 | 新建 `veloxa/core/css/enum_serialization.{h,cc}`，覆盖全部 13 个 Enum |
+| B6 反向析构 | EventManager `AddDestructionObserver` 回调（push 失效模式同构） |
+| B7 精确移除 | `EventDispatcher::AddEventListener` 返回 u64 token；新增 `RemoveByToken` API |
+| 子代理使用 | 不使用（Part A 主线程更可靠；Part B 单 Phase 代码量小） |
+
+## 是否需要 /creative
+
+**否。** 头脑风暴阶段已固化全部 3 个设计点的方案。直接 `/build`。
+
+## 验收标准
+
+- 全量测试 ≥ 878 通过（基线 856 + 新增 22）
+- `activeContext.md` 待办列表 ≤ 5 条
+- API 兼容：现有 856 测试零修改通过
+- 编译零新警告
+
+## 最近归档
+
+`memory-bank/archive/archive-TASK-20260418-01.md`（TASK-20260418-01 消化关键技术债务，已合并到 main）
 
 ## 待处理事项
-- ~~**P1**：计划模板增加「CMake 链接方向约束分析」段——新模块涉及两个已有库时预画依赖图检测循环（来源 TASK-20260414-01）~~ ✅ 已落实到 `.cursor/rules/skills/writing-plans.mdc`（TASK-20260418-01 反思）
-- **P1**：`/plan` checklist：FetchContent 引入 C/第三方编译时，校验根目录 `add_compile_options(-Werror…)` 是否仅限 `$<COMPILE_LANGUAGE:CXX>` 或目标级（来源 TASK-20260413-01，反复模式「环境/编译前置未验证」）
-- **P1**：含 Git 拉取依赖的文档（`techContext` 或 README）写明代理 `http_proxy`/`HTTPS_PROXY` 与首次 `cmake` 注意点（来源 TASK-20260413-01）
-- **P1**：计划模板增加「测试基础设施审计」段——列出测试需要访问的内部状态及其访问路径（来源 TASK-11，反复出现）
+
+### 长期项（不在本任务范围）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
+- **P1**：跨子库新增符号引用前 grep link graph，确认是否触发循环依赖（来源 TASK-20260419-01 反思 #1，已固化到 `writing-plans.mdc` 「静态库循环依赖审计」段）
 - **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
-- **P1**：子代理 prompt 模板增加「跨模块数据格式」段（来源 TASK-02）— 已验证有效
-- **P1**：集成测试优先验证数据格式一致性（来源 TASK-02）
-- **P1**：存根文件预创建策略固化到子代理开发规则（来源 TASK-04）
-- **P1**：合并 Phase 给子代理的策略固化到计划模板（来源 TASK-04）
-- **P1**：计划模板增加「边界输入清单」段——每个 Phase 列出非默认路径（来源 TASK-06，反复出现）
-- **P1**：集成测试必须使用真实 HTML/CSS 解析器，禁止仅用手动 DOM 构建（来源 TASK-06，反复出现）
-- **P1**：子代理 prompt 涉及 LayoutBox 坐标计算时须包含 x/y 语义定义（content origin vs border box origin）（来源 TASK-07）
-- **P1**：集成测试像素验证优先用 DisplayList 检查和区域扫描，避免硬编码坐标（来源 TASK-07）
-- **P1**：CSS 颜色测试禁止与 gfx::Color 编程常量直接比较，必须通过 CssColorToGfx 转换（来源 TASK-07）
-- **P1**：集成测试禁止使用 HTML inline style（BuildTree 不解析），必须用外部 CSS 选择器（来源 TASK-08，API 能力假设错误第三次出现）
-- **P1**：并行子代理可行条件：无共享 .cc + 共享 .h 已创建 + CMakeLists.txt 已更新（来源 TASK-08）
-- **P1**：跨模块参数透传修改时，计划模板增加「调用链端到端验证」段（来源 TASK-09）
-- **P1**：设计文档管线注入点须附代码级可行性验证（来源 TASK-13）
-- **P1**：集成测试模板增加 API 备忘清单：html::Parser / FindElement / HandleInput（来源 TASK-13，反复出现第 4 次）
-- **P2**：`StyleGetProp` Enum 读路径（display 等）——需要 `PropertyId→enum string` 反查表（来源 TASK-20260418-01 #46）
-- **P2**：`DomBindings`/`EventManager` 析构顺序硬约束——当前仅保证 `DomBindings` 先析构；反向场景需弱引用机制（来源 TASK-20260418-01 #50）
-- **P2**：`removeEventListener` 按 `(type, handler)` 精确移除，仍待 `EventManager` 扩展 API（原 #47，来源 TASK-20260418-01）
+
+### 已落实（本任务完成）
+- ~~14 条 P1 流程规则~~ ✅ Part A：`writing-plans.mdc` / `subagent-development.mdc` / 新建 `integration-testing.mdc` / `techContext.md`
+- ~~`StyleGetProp` Enum 读路径~~ ✅ B5：新建 `enum_serialization.{h,cc}`，覆盖全部 13 个 Enum
+- ~~`DomBindings`/`EventManager` 析构反向~~ ✅ B6：`EventManager::AddDestructionObserver` + 弱引用
+- ~~`removeEventListener` 精确移除~~ ✅ B7：`ListenerToken` API + `RemoveByToken`

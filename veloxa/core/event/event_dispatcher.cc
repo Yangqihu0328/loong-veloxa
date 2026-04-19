@@ -6,15 +6,32 @@
 
 namespace vx::event {
 
-void EventDispatcher::AddEventListener(dom::Element* element, EventType type,
-                                       EventHandler handler,
-                                       bool use_capture) {
+ListenerToken EventDispatcher::AddEventListener(dom::Element* element,
+                                                EventType type,
+                                                EventHandler handler,
+                                                bool use_capture) {
+  ListenerToken token = next_token_++;
   listeners_[element].push_back(
-      EventListener{type, std::move(handler), use_capture});
+      EventListener{type, std::move(handler), use_capture, token});
+  return token;
 }
 
 void EventDispatcher::RemoveEventListeners(dom::Element* element) {
   listeners_.Erase(element);
+}
+
+void EventDispatcher::RemoveEventListenerByToken(dom::Element* element,
+                                                 ListenerToken token) {
+  if (token == kInvalidListenerToken) return;
+  auto* vec = listeners_.Find(element);
+  if (vec == nullptr) return;
+  for (usize i = 0; i < vec->size(); ++i) {
+    if ((*vec)[i].token == token) {
+      vec->erase(vec->begin() + i);
+      if (vec->empty()) listeners_.Erase(element);
+      return;
+    }
+  }
 }
 
 void EventDispatcher::Dispatch(DOMEvent& event) {

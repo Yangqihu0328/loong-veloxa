@@ -66,6 +66,32 @@ void EventManager::HandleInput(const InputEvent& input,
   }
 }
 
+EventManager::~EventManager() {
+  // Snapshot to a local Vector so observers may safely call
+  // RemoveDestructionObserver re-entrantly without invalidating iteration.
+  Vector<DestructionObserverEntry> observers = std::move(destruction_observers_);
+  destruction_observers_.clear();
+  for (usize i = 0; i < observers.size(); ++i) {
+    if (observers[i].callback) observers[i].callback();
+  }
+}
+
+EventManager::DestructionObserverToken
+EventManager::AddDestructionObserver(DestructionObserver cb) {
+  DestructionObserverToken token = next_destruction_token_++;
+  destruction_observers_.push_back({token, std::move(cb)});
+  return token;
+}
+
+void EventManager::RemoveDestructionObserver(DestructionObserverToken token) {
+  for (usize i = 0; i < destruction_observers_.size(); ++i) {
+    if (destruction_observers_[i].token == token) {
+      destruction_observers_.erase(destruction_observers_.begin() + i);
+      return;
+    }
+  }
+}
+
 void EventManager::SetInvalidationCallback(InvalidationCallback cb) {
   invalidation_callback_ = std::move(cb);
 }
@@ -92,13 +118,21 @@ bool EventManager::IsFocused(const dom::Element* el) const {
   return el != nullptr && el == focused_;
 }
 
-void EventManager::AddEventListener(dom::Element* element, EventType type,
-                                    EventHandler handler, bool use_capture) {
-  dispatcher_.AddEventListener(element, type, std::move(handler), use_capture);
+ListenerToken EventManager::AddEventListener(dom::Element* element,
+                                             EventType type,
+                                             EventHandler handler,
+                                             bool use_capture) {
+  return dispatcher_.AddEventListener(element, type, std::move(handler),
+                                      use_capture);
 }
 
 void EventManager::RemoveEventListeners(dom::Element* element) {
   dispatcher_.RemoveEventListeners(element);
+}
+
+void EventManager::RemoveEventListenerByToken(dom::Element* element,
+                                              ListenerToken token) {
+  dispatcher_.RemoveEventListenerByToken(element, token);
 }
 
 }  // namespace vx::event
