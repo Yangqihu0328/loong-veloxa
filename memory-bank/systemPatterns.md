@@ -451,6 +451,45 @@ veloxa/
 - 注意：`<real-tgt>` 必须是真实 target 名，不是 ALIAS（如对 `benchmark::benchmark` 操作会报 "ALIAS target 不可写"）
 - 已应用：`benchmark`（TASK-20260419-02）；下次接入新 FetchContent C++ 库可复用
 
+## 已验证的模式（来自 TASK-20260419-04 GCC IPA `-Warray-bounds` 修复）
+
+### 数组+长度对的现代 C++ 习惯：宏化非模板查表
+
+**问题模式：** 想给 N 个不同长度的常量数组写一个统一的「越界检查 + 索引取值」工具函数，最自然的写法是模板取数组引用：
+
+```cpp
+template <usize N>
+StringView Lookup(const char* const (&table)[N], u16 v) {
+  if (v >= N) return StringView();
+  return ...;
+}
+```
+
+调用点：`Lookup(kDisplay, v)` — 编译器自动推导 N，无失配风险。看起来很优雅。
+
+**陷阱：** GCC 11+ 的 IPA（过程间分析）会按每个不同 N 分别 clone 这个模板特化（5 个 N 就 5 个 clone）。然后在 `-O2` 下做跨 clone 的值域传播时，可能将 clone-A 的访问路径与 clone-B 的数组类型元数据错误关联，得出「partly outside array bounds」的误判。`if (v >= N) return` 这层防御对 IPA 不可见。一旦项目开 `-Werror=array-bounds`，Release 构建直接挂掉，但 Debug `-O0` 完全不触发，问题潜伏到下游 target 链接才暴露。
+
+**解法：** 拒绝模板，改宏 + 非模板辅助函数：
+
+```cpp
+StringView LookupImpl(const char* const* table, std::size_t n, u16 v) {
+  if (v >= n) return StringView();
+  ...
+}
+#define VX_LOOKUP(arr, v) LookupImpl((arr), std::size(arr), (v))
+// 调用：VX_LOOKUP(kDisplay, v)
+// TU 末尾：#undef VX_LOOKUP
+```
+
+**关键设计：**
+1. 单一非模板 `LookupImpl` — 没有 clone，IPA 无法 mis-correlate
+2. 宏用 `std::size(arr)` 自动派生长度 — 调用点写法跟模板版一样简洁，arr 与 size 不可能脱节（解决"显式传 size 易失配"这一传统反对意见）
+3. 宏 `#define`/`#undef` 严格限制在 TU 内（.cc 文件末尾），不通过 header 泄漏
+
+**适用场景：** 任何「N 个不同长度的同型常量数组 + 统一访问/检查逻辑」的查表函数。已应用：`veloxa/core/css/enum_serialization.cc`（13 个 enum 表 / 5 种长度）。
+
+**反向教训：** 引入 `template<usize N>` / CRTP / SFINAE 等模板特化技巧时，必须在 PR 阶段验证 Release `-O2 -Werror` 通路 — Debug 验证不充分（已固化为 `activeContext.md` 待处理事项 P1）。
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

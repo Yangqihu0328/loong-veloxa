@@ -5,7 +5,7 @@
 ### TASK-20260419-04 — 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报
 
 - **复杂度级别：** Level 1（小修小补 / 单文件 / 修复路径明确）
-- **状态：** BUILD 完成 ✅（待 `/reflect`）
+- **状态：** REFLECT 完成 ✅（待 `/archive`）
 - **采用方案：** C — 去模板化（用户裁定）
 - **改动：** `veloxa/core/css/enum_serialization.cc` 净 +28/-7 行：`template<usize N> Lookup` → `LookupImpl(const char* const*, std::size_t, u16)` + `VX_LOOKUP(arr, v)` 宏（`std::size(arr)` 自动派生长度，宏 TU 内 `#define`/`#undef` 限定）；详尽注释记录 GCC IPA clone 误报史
 - **验证：** Debug 890/890 ✅；Release `vx_core` 编译干净 ✅；Release 17/17 EnumSerialization 测试 ✅
