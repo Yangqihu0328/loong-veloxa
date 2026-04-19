@@ -5,12 +5,32 @@
 ### TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化）
 
 - **复杂度级别：** Level 2（多文件：image_cache.{h,cc} + tests + bench 复跑验证；机械替换 + 数据双索引设计；无 UI/架构空白）
-- **状态：** 🟡 初始化（待 `/plan`）
-- **当前阶段：** 初始化（`activeContext.md`）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（待创建，基于 main `f045a0e`）
+- **状态：** 🟢 规划完成（待 `/build`）
+- **当前阶段：** 规划中（`activeContext.md`）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（已创建，含 1 commit `e7a9162`）
+- **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
 - **创建日期：** 2026-04-19
 - **来源：** TASK-20260419-09 K6 拆出（`ImageCache::Load` hit 路径 O(N) 字符串扫描；Hit<256> 1151.77 ns > `ReplayImageReal<16>` 595 ns）；候选区已立项 P1 高 ROI
 - **预期工作量：** ~1-2h（含 baseline 同机对比 + 单测 + bench 复跑确认 K6 命题已解）
+
+#### 4 决策（D1-D4，plan 阶段头脑风暴用户确认）
+
+| # | 维度 | 选择 | 理由 |
+|---|------|------|------|
+| D1 | HashMap key 类型 | **owned `String`** + 自定义 `StringHash` + `StringEq` | VAN F2 + plan 补 grep（`string.h:30-56` SSO 内联确认）：StringView key 在 vector resize 时悬挂；`std::equal_to<String>` 类型推导不确定 → 自定义 functor 兜底 |
+| D2 | HashMap 初始容量 | 沿用 `kDefaultCapacity = 16`，不 reserve | 生产场景不频繁增长；TASK-09 K6 baseline 极端 256 entry 仅 ~4 次 rehash，分摊代价远低于命中收益 |
+| D3 | 边界测试 | 加 1 个 `ClearAndReloadDeduplicates` GTest（~5 行） | 双索引最易出 bug 点 = `Clear()` 漏清 HashMap → 此测试是「双索引同步」回归安全网 |
+| D4 | Phase 划分 | **4 phase**（细粒度提交）：P1 仅加字段 / P2 切 Load 路径 + 新测试 / P3 bench + baseline / P4 文档 | Incremental 改造模式；P1 引入字段不影响行为，「数据结构改造与行为切换分离」便于独立 review/回滚 |
+
+#### Phase 划分（4 phase，详见 plan §2）
+
+| Phase | 估时 | 文件 | 提交主题 |
+|-------|------|------|---------|
+| 1 | 10-15 min | image_cache.h（加字段 + functor） | wip phase-1 |
+| 2 | 20-30 min | image_cache.cc（切 Load + Clear）+ test（+1 用例） | feat phase-2 |
+| 3 | 15-20 min | bench 同机复跑 + baseline JSON + 2 README | docs phase-3 |
+| 4 | 10-15 min | techContext + MB 收尾 | chore phase-4 |
 
 #### 核心目标
 

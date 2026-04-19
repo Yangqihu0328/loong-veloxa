@@ -4,12 +4,12 @@
 
 ### TASK-20260419-11：`ImageCache::Load` HashMap 化（K6 高 ROI 优化）
 
-**当前阶段：** 初始化（待 `/plan`）
+**当前阶段：** 规划完成（待 `/build`）
 
 **里程碑：**
 - ✅ VAN（2026-04-19）：复杂度评估 Level 2，5 处 grep 实证（落实 P0 #4 完整应用），双索引方案确定
-- ⏳ Plan
-- ⏳ Build
+- ✅ Plan（2026-04-19）：design + plan 双文档落地，4 决策（D1-D4）确认（owned String key / 默认 16 cap / +1 ClearAndReloadDeduplicates 用例 / 4 phase 细粒度），plan 补 grep `string.h:30-56` SSO 内联确认（D1 最终验证），无需 `/creative`
+- ⏳ Build（4 phase 估时 55-80 min；按 TASK-09 4× 经验可能 30-45 min）
 - ⏳ Reflect
 - ⏳ Archive
 

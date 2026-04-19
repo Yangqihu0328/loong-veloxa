@@ -1,23 +1,28 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化
+规划中
 
 ## 当前任务
 
 **TASK-20260419-11：`ImageCache::Load` HashMap 化（K6 高 ROI 优化）**
 
 - **复杂度级别：** Level 2（image_cache.{h,cc} + tests + bench 复跑；机械替换 + 数据双索引设计）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（待创建，基于 main `f045a0e`）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（已创建，含 1 commit `e7a9162`）
+- **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
 - **来源：** TASK-20260419-09 K6 量化拆出（hit 路径 O(N) 字符串扫；Hit<256> 1151.77 ns > ReplayImageReal<16> 595 ns）
 - **VAN 阶段重大发现（5 处 grep 实证，落实 P0 #4 完整应用）：**
   - F1：handle 必须保持 1-based vector 下标（`Get(handle)` O(1) + ABI）→ 必须**双索引**：保留 `Vector<Entry>` + 新增 `HashMap<String, ImageHandle>`
-  - F2：`String` 无直接 `==(String, String)` operator（仅 `==(String, StringView)` 隐式） → plan 阶段确认 `std::equal_to<String>` 是否可实例化，否则用自定义 `StringEq` functor
+  - F2：`String` 无直接 `==(String, String)` operator（仅 `==(String, StringView)` 隐式） → plan 阶段确认风险，用自定义 `StringEq` functor 兜底（不依赖 `std::equal_to<String>`）
   - F3：djb2 hash 模板已现成（`property.cc:84 StringViewHash` 可机械复刻为 `StringHash`，~5 行）
   - F4：`application.cc:67/118` 是唯一调用方，仅持有指针 — 无 handle 数值依赖 → 回归风险接近零
   - F5：`image_cache_test.cc:55-65 DeduplicateSamePath` 已覆盖 dedup 契约（K6 改造关键回归点）
-- **核心目标：** Hit<16> 50.87 ns → ~10-30 ns；Hit<256> 1151.77 ns → ~10-30 ns（38-115×↓）；Miss + Get 不退化
-- **下一步：** `/plan` 进行计划
+- **Plan 阶段补 grep（plan §"管线注入点核对表"）：** `string.h:30-56 BasicString` SSO 内联确认 ✅（D1 `StringView` key 方案危险性最终验证）+ 调用链 grep 仅 `application.cc` 1 处 ✅（F4 复确）
+- **5 决策（D1-D4，plan 头脑风暴用户确认）：** owned String key + 自定义 StringHash/StringEq（D1）/ 默认 capacity 16 不 reserve（D2）/ 加 1 个 ClearAndReloadDeduplicates GTest（D3）/ 4 phase 细粒度（D4：P1 仅加字段 / P2 切 Load + 测试 / P3 bench + baseline / P4 文档）
+- **核心目标量化：** Hit<16> 50.87 ns → ~10-30 ns（~2-5×↓）；Hit<256> 1151.77 ns → ~10-30 ns（38-115×↓）；Miss + Get 不退化
+- **不需要 `/creative` 阶段：** 设计空白已由 §2 双索引方案 + D1-D4 决策完整闭合
+- **下一步：** `/build` 进行构建
 
 ## 最近归档
 
