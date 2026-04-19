@@ -2,18 +2,23 @@
 
 ## 当前任务
 
-### TASK-20260419-02 — 补充 Google Benchmark 集成与 Foundation 性能基准
+无活跃任务。使用 `/van` 启动新任务。
+
+<details>
+<summary>已归档：TASK-20260419-02 — 补充 Google Benchmark 集成与 Foundation 性能基准（点开查看历史细节）</summary>
 
 - **复杂度级别：** Level 2（简单增强）
-- **状态：** 回顾完成（reflection 已写入 `memory-bank/reflection/reflection-TASK-20260419-02.md`，待 `/archive`）
+- **状态：** ✅ 已完成（已合并到 main）
+- **分支：** `feature/TASK-20260419-02-benchmarks`（已删除）
 - **创建日期：** 2026-04-19
-- **基线分支：** `main`
-- **功能分支：** `feature/TASK-20260419-02-benchmarks`（7 个提交）
+- **归档日期：** 2026-04-19
 - **来源：** TASK-20260405-01 Foundation 延期项 P1#1（"Benchmark 延期 — 需 google benchmark，网络恢复后补充"）
 - **设计规格：** `docs/specs/2026-04-19-benchmarks-design.md`
 - **实现计划：** `docs/plans/2026-04-19-benchmarks.md`
-- **预估提交：** 7 个（脚手架 + 4 bench 文件 + 文档 + 收尾）
-- **预估新增 BM 用例：** ~25（按 Range 展开 ~42）；不新增 GTest 测试
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-02.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-02.md`
+- **实际提交：** 10 个（plan + 7 build + reflect + archive）
+- **实际新增 BM 用例：** 40（allocators 13 + containers 8 + hash_map 10 + strings 9）；GTest 基线 890/890 不变
 
 #### 关键决策（头脑风暴 4 轮，全部 A 方案）
 
@@ -24,40 +29,28 @@
 | 用例深度 | 中等（每组件核心操作 + 1-2 个尺寸/容量梯度） |
 | 结果留存 | 仅控制台 + README 给出 JSON 导出（不提交 baseline 文件） |
 
-#### 任务范围
+#### Phase 概览
 
 | Phase | 内容 | 提交 |
 |-------|------|------|
 | 0 | 基线验证（890 测试全绿；FetchContent 通路验证） | 0 |
 | 1 | 创建分支 + `benchmarks/CMakeLists.txt` + 4 个 smoke .cc | 1 |
-| 2 | `bench_allocators.cc`（Malloc/Arena/Pool，17 BM） | 1 |
+| 2 | `bench_allocators.cc`（Malloc/Arena/Pool，13 BM） | 1 |
 | 3 | `bench_containers.cc`（Vector/SmallVector/IntrusiveList，8 BM） | 1 |
-| 4 | `bench_hash_map.cc`（insert/lookup hit&miss/rehash，8 BM） | 1 |
+| 4 | `bench_hash_map.cc`（insert/lookup hit&miss/rehash，10 BM） | 1 |
 | 5 | `bench_strings.cc`（BasicString SSO+heap、InternedString，9 BM） | 1 |
 | 6 | `README.md` + `techContext.md` 更新（依赖表 + Benchmark 启用段） | 1 |
 | 7 | 收尾验证 + 依赖安全审计（google/benchmark v1.9.1 CVE） + MB 收尾 | 1 |
 
-#### 后续任务（待 02 归档后立项）
-
-- **TASK-20260419-03（建议）：** CSS 解析基准 — `bench_css_tokenizer` / `bench_css_parser` / `bench_property_lookup`
-- **TASK-20260419-04（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`
-
 #### 安全相关
 
-否（纯内部性能测量；唯一新依赖 google/benchmark v1.9.1 在 Phase 7 步骤 4 走 CVE 检索）
+否（纯内部性能测量；唯一新依赖 google/benchmark v1.9.1 经 CVE 审计：GitHub Security Advisories 0 条）
 
-#### 安全相关
+#### 副发现
 
-否（纯内部性能测量；唯一外部依赖是 Google Benchmark v1.9.1，归档时做 CVE 检索）
+`HashMap::Find` 对小整数 key 在 cap≥1024 时严重 cluster（LookupHit/16384=9µs vs n=64=69ns）。根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]。已记入 `benchmarks/README.md` ⚠️ 量级表 + activeContext 待处理事项 P2，建议立项 TASK-20260419-05。
 
-#### 前置验证（VAN 阶段已完成）
-
-| 维度 | 结果 |
-|------|------|
-| 依赖可获取性 | ✅ 代理 `192.168.101.217:7890` 验证通过（curl HTTP 200 1.5s；git clone benchmark v1.9.0 8.3s） |
-| CMake 接入点 | ✅ 根 `CMakeLists.txt` L43-53 已有 `VX_BUILD_BENCHMARKS` option + FetchContent + `add_subdirectory(benchmarks)` |
-| 待新建 | `benchmarks/` 目录（不存在） |
-| 测试基线 | 待 Phase 0 验证（声称数：890） |
+</details>
 
 <details>
 <summary>已归档：TASK-20260419-01 — 流程规则沉淀 + P2 功能技术债收口（点开查看历史细节）</summary>
@@ -142,6 +135,7 @@
 
 | ID | 描述 | 最终状态 | 归档日期 |
 |----|------|---------|---------|
+| TASK-20260419-02 | 补充 Google Benchmark 集成与 Foundation 性能基准（4 个 bench exe / 40 BM 用例） | ✅ 已完成 | 2026-04-19 |
 | TASK-20260419-01 | 流程规则沉淀 + P2 功能技术债收口（14 条 P1 流程规则 + CSS Enum 序列化 / EventManager 反向析构 / removeEventListener 精确移除） | ✅ 已完成 | 2026-04-19 |
 | TASK-20260418-01 | 消化关键技术债务（#45 dom_bindings 全局状态 / #46 StyleGetProp 读路径 / #48 hb_font 缓存 / #50 addEventListener 生命周期） | ✅ 已完成 | 2026-04-18 |
 | TASK-20260414-01 | 功能补全（border-radius / 字体渲染 / 图片支持 / JS-DOM 绑定） | ✅ 已完成 | 2026-04-14 |
