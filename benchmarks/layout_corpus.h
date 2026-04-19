@@ -65,6 +65,44 @@ inline void BuildFlat(vx::dom::Document& doc, int n) {
   }
 }
 
+// Styled variants used by render benches: every leaf div gets a non-zero
+// background-color so RecordBox emits a FillRect command (default style has
+// alpha=0 which suppresses background paints). Render benches must use these
+// or their inner Replay loops will see an empty DisplayList.
+inline void BuildFlatStyled(vx::dom::Document& doc, int n) {
+  auto* body = doc.CreateElement(vx::dom::TagId::kBody);
+  doc.AppendChild(body);
+  for (int i = 0; i < n; ++i) {
+    auto* d = doc.CreateElement(vx::dom::TagId::kDiv);
+    d->SetInlineDeclaration(vx::css::PropertyId::kBackgroundColor,
+                            vx::css::CssValue::Color(0xff336699u));
+    body->AppendChild(d);
+  }
+}
+
+inline void BuildTextHeavyStyled(vx::dom::Document& doc, int n) {
+  auto* body = doc.CreateElement(vx::dom::TagId::kBody);
+  doc.AppendChild(body);
+  for (int i = 0; i < n; ++i) {
+    auto* d = doc.CreateElement(vx::dom::TagId::kDiv);
+    d->SetInlineDeclaration(vx::css::PropertyId::kBackgroundColor,
+                            vx::css::CssValue::Color(0xff336699u));
+    body->AppendChild(d);
+    d->AppendChild(doc.CreateText(vx::String("The quick brown fox")));
+  }
+}
+
+inline void BuildImageStyled(vx::dom::Document& doc, int n) {
+  auto* body = doc.CreateElement(vx::dom::TagId::kBody);
+  doc.AppendChild(body);
+  for (int i = 0; i < n; ++i) {
+    auto* img = doc.CreateElement(vx::dom::TagId::kImg);
+    img->SetInlineDeclaration(vx::css::PropertyId::kBackgroundColor,
+                              vx::css::CssValue::Color(0xff993366u));
+    body->AppendChild(img);
+  }
+}
+
 inline void BuildNested(vx::dom::Document& doc, int depth) {
   auto* body = doc.CreateElement(vx::dom::TagId::kBody);
   doc.AppendChild(body);
@@ -223,6 +261,42 @@ inline vx::dom::Document& CachedNestedFlexDocument() {
     detail::BuildNestedFlex(*d);
     return d;
   }();
+  return *doc;
+}
+
+inline vx::dom::Document& CachedFlatStyledDocument(int n) {
+  static std::mutex mu;
+  static std::map<int, vx::dom::Document*> cache;
+  std::lock_guard<std::mutex> lock(mu);
+  auto it = cache.find(n);
+  if (it != cache.end()) return *it->second;
+  auto* doc = new vx::dom::Document();
+  detail::BuildFlatStyled(*doc, n);
+  cache.emplace(n, doc);
+  return *doc;
+}
+
+inline vx::dom::Document& CachedTextHeavyStyledDocument(int n) {
+  static std::mutex mu;
+  static std::map<int, vx::dom::Document*> cache;
+  std::lock_guard<std::mutex> lock(mu);
+  auto it = cache.find(n);
+  if (it != cache.end()) return *it->second;
+  auto* doc = new vx::dom::Document();
+  detail::BuildTextHeavyStyled(*doc, n);
+  cache.emplace(n, doc);
+  return *doc;
+}
+
+inline vx::dom::Document& CachedImageStyledDocument(int n) {
+  static std::mutex mu;
+  static std::map<int, vx::dom::Document*> cache;
+  std::lock_guard<std::mutex> lock(mu);
+  auto it = cache.find(n);
+  if (it != cache.end()) return *it->second;
+  auto* doc = new vx::dom::Document();
+  detail::BuildImageStyled(*doc, n);
+  cache.emplace(n, doc);
   return *doc;
 }
 

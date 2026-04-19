@@ -22,10 +22,12 @@
 #include <utility>
 
 #include "benchmarks/layout_corpus.h"
+#include "veloxa/core/css/selector.h"
 #include "veloxa/core/layout/layout_engine.h"
 #include "veloxa/core/layout/layout_utils.h"
 #include "veloxa/core/layout/text_shaper.h"
 #include "veloxa/core/render/renderer.h"
+#include "veloxa/foundation/containers/vector.h"
 #include "veloxa/foundation/memory/arena_allocator.h"
 
 namespace {
@@ -35,12 +37,21 @@ struct LaidOut {
   vx::layout::LayoutBox* root;
 };
 
+const vx::Vector<vx::css::Stylesheet>& EmptySheets() {
+  static const vx::Vector<vx::css::Stylesheet> sheets;
+  return sheets;
+}
+
 vx::layout::LayoutContext MakeCtx(vx::layout::TextShaper* shaper = nullptr) {
   vx::layout::LayoutContext ctx;
   ctx.viewport_width = 800;
   ctx.viewport_height = 600;
   ctx.root_font_size = 16.0f;
   ctx.text_shaper = shaper;
+  // Render benches rely on inline background-color decls landing in the
+  // ComputedStyle, which only happens when StyleResolver runs (i.e. when
+  // ctx.stylesheets is non-null — even an empty Vector is fine).
+  ctx.stylesheets = &EmptySheets();
   return ctx;
 }
 
@@ -58,16 +69,19 @@ LaidOut& CachedLayout(Shape shape, int n) {
   laid->arena = std::make_unique<vx::ArenaAllocator>();
 
   vx::dom::Document* doc = nullptr;
-  // SimpleTextShaper must outlive Layout call only. For text-heavy doc we
-  // pre-shape via Layout below; the resulting box widths/heights are then
-  // baked into the cached LayoutBox tree.
   vx::layout::SimpleTextShaper shaper;
   auto ctx = MakeCtx(shape == Shape::kTextHeavy ? &shaper : nullptr);
 
   switch (shape) {
-    case Shape::kFlat:      doc = &vx::bench::CachedFlatDocument(n);      break;
-    case Shape::kTextHeavy: doc = &vx::bench::CachedTextHeavyDocument(n); break;
-    case Shape::kImage:     doc = &vx::bench::CachedImageDocument(n);     break;
+    case Shape::kFlat:
+      doc = &vx::bench::CachedFlatStyledDocument(n);
+      break;
+    case Shape::kTextHeavy:
+      doc = &vx::bench::CachedTextHeavyStyledDocument(n);
+      break;
+    case Shape::kImage:
+      doc = &vx::bench::CachedImageStyledDocument(n);
+      break;
   }
   laid->root = vx::layout::LayoutEngine::Layout(doc, ctx, *laid->arena);
   auto* out = laid.get();
