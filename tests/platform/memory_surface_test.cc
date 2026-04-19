@@ -99,13 +99,13 @@ TEST(MemorySurfaceTest, SavePPMWritesValidFile) {
   ASSERT_NE(f, nullptr);
 
   char header[64];
-  std::fgets(header, sizeof(header), f);
+  ASSERT_NE(std::fgets(header, sizeof(header), f), nullptr);
   EXPECT_STREQ(header, "P6\n");
 
-  std::fgets(header, sizeof(header), f);
+  ASSERT_NE(std::fgets(header, sizeof(header), f), nullptr);
   EXPECT_STREQ(header, "2 2\n");
 
-  std::fgets(header, sizeof(header), f);
+  ASSERT_NE(std::fgets(header, sizeof(header), f), nullptr);
   EXPECT_STREQ(header, "255\n");
 
   vx::u8 rgb[12];

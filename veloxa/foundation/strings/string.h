@@ -58,6 +58,12 @@ class BasicString {
   BasicString(const char* str, Alloc* alloc = &DefaultAllocator())
       : BasicString(StringView(str), alloc) {}
 
+  // Marked [[gnu::noinline]] to break GCC IPA cross-function correlation that
+  // mis-derives offset bounds for `other.data()` and emits a false-positive
+  // -Warray-bounds in Release (-O2). See TASK-20260419-07.
+#if defined(__GNUC__) && !defined(__clang__)
+  [[gnu::noinline]]
+#endif
   BasicString(const BasicString& other) : alloc_(other.alloc_) {
     if (other.IsSSO()) {
       std::memcpy(&storage_, &other.storage_, sizeof(Storage));

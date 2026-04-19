@@ -598,6 +598,47 @@ git rebase --skip   # 因为 pause 信息已无意义，TASK-Y 已解锁
 
 **反模式：** 仅写「Phase X 实测可能不符合预期」而不写两路动作 → 实测否定预期时只能临时决策。
 
+## 已验证的模式（来自 TASK-20260419-07 — GCC IPA `-Warray-bounds` 「阻断关联」元模式）
+
+### GCC `-Warray-bounds` 误报 3 阶段诊断与修复表
+
+**问题**：GCC 在 `-O2 -Werror=array-bounds` 下对模板查表、字符串拷贝、容器内存操作等场景频发误报，错误消息形态相似但**根因分散在 3 个编译阶段**，方案选错则白做工。
+
+**诊断方法（30 秒判定）**：
+
+| 发出阶段 | 错误消息特征 | 验证方法 | 适用方案族 |
+|---------|------|---------|---------|
+| **前端 / 解析期** | 数组定义点的明显越界（编译期常量下标） | 看错误位置是否在数组定义行附近 | 改下标 / 改大小 |
+| **中端 IPA** | 含「forming offset [X, Y] is out of the bounds [0, Z] of object」+ 报错位置在**调用点**而非定义点 | 把 `std::memcpy` 改 `__builtin_memcpy`：消息函数名变 `__builtin_memcpy` 仍报 → 100% IPA | **阻断 IPA 关联**（首选治本） |
+| **后端 fortify** | 含 `__builtin___memcpy_chk` / `__strncpy_chk` / `__glibc_objsize0` | 同上验证：消息消失 → fortify | `__builtin_xxx` 绕过 fortify wrapper |
+
+### 「阻断 IPA 关联」方案族（中端 IPA 误报的治本手法）
+
+GCC IPA pass 通过**跨函数推导指针 / 数组的可能范围**触发误报。修复元原理是**在某个边界强制 IPA 停止跨函数推导**：
+
+| 手法 | 适用场景 | 实例 |
+|------|---------|------|
+| **去模板化** + `std::size()` 运行时取大小 | `template<usize N>` 取数组引用，多 N 值 clone 跨实例化 IPA 传播 | TASK-04 `Lookup<N>` → `LookupImpl + VX_LOOKUP` 宏 |
+| **`[[gnu::noinline]]` 边界化函数视野** | 函数被内联到调用点后 IPA 关联对象内部布局与运行时大小 | TASK-07 `BasicString` 拷贝构造 noinline |
+| **隐藏指针来源**（如 `asm volatile("" : "+r"(p))` barrier） | 指针 union 类型 / 多源汇合导致 IPA 误关联 | 暂未实例化 |
+
+**判定优先级**：先选「阻断关联」族（治本，不留 `#pragma` 污染），再选「警告抑制」族（`#pragma GCC diagnostic ignored` / `-Wno-`）。后者只在阻断方案确实成本更高时使用。
+
+**代价权衡**：
+- 去模板化：失去模板的调用点简洁性，需配套 helper（如 `VX_LOOKUP` 宏）补回 ergonomics
+- noinline：损失内联开销（~1-2ns indirect call）；只对**冷路径**或**包含较重操作**（分配 / 系统调用 / 大循环）的函数适用
+
+### 候选方案表「根因验证步骤」要求
+
+VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证操作**（grep / 读 1 个头 / 跑 1 个 build），而不是直接靠错误消息表面假设根因。
+
+**反模式**（TASK-07 实测）：
+- VAN 假设「`-Warray-bounds` 来自 `__memcpy_chk` fortify wrapper」 → 推荐 B3 `__builtin_memcpy`
+- BUILD 试验失败 → 才发现根因是 IPA（先于 fortify 展开）
+- 若 B3 行附「先 grep `string_fortified.h` 确认 chk 是诊断展示层还是诊断源头」，30 秒可排除
+
+**落实**：候选方案表 ≥ 3 项时强制要求；2 项以内可豁免（决策成本与验证成本接近）。
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持
