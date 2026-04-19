@@ -2,7 +2,14 @@
 
 ## 当前任务
 
-**无活跃任务**——等待 `/van` 开始新任务。
+**TASK-20260419-01** — 流程规则沉淀 + P2 功能技术债收口（Level 3）
+
+- 2026-04-19 `/van`：完成初始化。分支 `feature/TASK-20260419-01-rules-and-debt` 已从 `main` 创建。前置验证通过。
+- 2026-04-19 `/plan`：完成头脑风暴 + 设计规格 + 实现计划。
+  - 设计文档：`docs/specs/2026-04-19-rules-and-debt-design.md`（462 行）
+  - 实现计划：`docs/plans/2026-04-19-rules-and-debt.md`（21 个提交计划，9 个 Phase）
+  - 三个设计决策点全部固化（B5/B6/B7），无需 `/creative`
+- 下一步：`/build` 直接进入实现。Phase 0（基线验证）→ Phase A1-A4（流程规则）→ Phase B5-B7（代码）→ Phase 8（收尾）。
 
 ## 已完成任务
 
