@@ -35,6 +35,21 @@ struct DomBindings::InstanceData {
   // (See #50 fix in Phase 2.)
   Vector<dom::Element*> listener_elements;
 
+  // B7 (TASK-20260419-01): per-(element, type, JS callback identity) record of
+  // the ListenerToken that EventManager handed back. Used by
+  // ElementRemoveEventListener(type, handler) to remove exactly one listener
+  // by token instead of the legacy bulk RemoveEventListeners.
+  // callback_ptr is JS_VALUE_GET_PTR of the registered callback; identity is
+  // pointer equality (matches DOM `removeEventListener` "same-object" semantic
+  // for object handlers).
+  struct JsListenerEntry {
+    dom::Element* element;
+    event::EventType type;
+    void* callback_ptr;
+    event::ListenerToken token;
+  };
+  Vector<JsListenerEntry> js_listener_entries;
+
   struct TrackedCallbacks {
     JSContext* ctx = nullptr;
     Vector<JSValue> callbacks;
@@ -436,7 +451,7 @@ JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
   if (!found) data->listener_elements.push_back(el);
 
   JSContext* captured_ctx = ctx;
-  data->em->AddEventListener(
+  event::ListenerToken token = data->em->AddEventListener(
       el, event_type,
       [captured_ctx, callback](event::DOMEvent& event) mutable {
         JSValue js_event = JS_NewObject(captured_ctx);
@@ -449,25 +464,92 @@ JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
         JS_FreeValue(captured_ctx, js_event);
       });
 
+  // Record (element, type, callback_ptr) → token so removeEventListener can
+  // target this specific listener by JS handler identity.
+  data->js_listener_entries.push_back(DomBindings::InstanceData::JsListenerEntry{
+      el, event_type, JS_VALUE_GET_PTR(callback), token});
+
   return JS_UNDEFINED;
 }
 
+// Internal helper: drop entry at index i from js_listener_entries (swap-pop).
+static void DropJsEntry(DomBindings::InstanceData* data, usize i) {
+  usize last = data->js_listener_entries.size() - 1;
+  if (i != last) {
+    data->js_listener_entries[i] = data->js_listener_entries[last];
+  }
+  data->js_listener_entries.pop_back();
+}
+
+// Internal helper: if `el` no longer has any tracked entries, drop it from
+// listener_elements so Unbind doesn't redundantly bulk-remove it.
+static void MaybeForgetElement(DomBindings::InstanceData* data,
+                               dom::Element* el) {
+  for (usize i = 0; i < data->js_listener_entries.size(); ++i) {
+    if (data->js_listener_entries[i].element == el) return;  // still tracked
+  }
+  for (usize i = 0; i < data->listener_elements.size(); ++i) {
+    if (data->listener_elements[i] == el) {
+      usize last = data->listener_elements.size() - 1;
+      if (i != last) data->listener_elements[i] = data->listener_elements[last];
+      data->listener_elements.pop_back();
+      return;
+    }
+  }
+}
+
 JSValue ElementRemoveEventListener(JSContext* ctx, JSValueConst this_val,
-                                   int /*argc*/, JSValueConst* /*argv*/) {
+                                   int argc, JSValueConst* argv) {
   auto* el = GetElement(ctx, this_val);
   auto* data = GetData(ctx);
   if (!el || !data || !data->em) return JS_UNDEFINED;
-  data->em->RemoveEventListeners(el);
-  // Keep listener_elements in sync so Unbind doesn't redundantly operate
-  // on this element. Swap-and-pop (order irrelevant).
-  for (usize i = 0; i < data->listener_elements.size(); ++i) {
-    if (data->listener_elements[i] == el) {
-      data->listener_elements[i] =
-          data->listener_elements[data->listener_elements.size() - 1];
-      data->listener_elements.pop_back();
-      break;
+
+  // Two supported call shapes:
+  //   removeEventListener(type)            — bulk remove (legacy 1-arg form)
+  //   removeEventListener(type, handler)   — precise remove by JS handler
+  // Anything with no args clears every listener on the element (very legacy).
+  if (argc == 0) {
+    data->em->RemoveEventListeners(el);
+    for (usize i = data->js_listener_entries.size(); i-- > 0;) {
+      if (data->js_listener_entries[i].element == el) DropJsEntry(data, i);
+    }
+    MaybeForgetElement(data, el);
+    return JS_UNDEFINED;
+  }
+
+  const char* type_str = JS_ToCString(ctx, argv[0]);
+  if (!type_str) return JS_UNDEFINED;
+  event::EventType event_type;
+  bool valid = MapJsEventName(type_str, &event_type);
+  JS_FreeCString(ctx, type_str);
+  if (!valid) return JS_UNDEFINED;
+
+  if (argc < 2 || JS_IsUndefined(argv[1]) || JS_IsNull(argv[1])) {
+    // 1-arg legacy form: remove every listener on `el` of `event_type`.
+    for (usize i = data->js_listener_entries.size(); i-- > 0;) {
+      auto& e = data->js_listener_entries[i];
+      if (e.element == el && e.type == event_type) {
+        data->em->RemoveEventListenerByToken(el, e.token);
+        DropJsEntry(data, i);
+      }
+    }
+    MaybeForgetElement(data, el);
+    return JS_UNDEFINED;
+  }
+
+  // 2-arg precise form: match JS handler identity (pointer equality).
+  void* handler_ptr = JS_VALUE_GET_PTR(argv[1]);
+  for (usize i = 0; i < data->js_listener_entries.size(); ++i) {
+    auto& e = data->js_listener_entries[i];
+    if (e.element == el && e.type == event_type &&
+        e.callback_ptr == handler_ptr) {
+      data->em->RemoveEventListenerByToken(el, e.token);
+      DropJsEntry(data, i);
+      MaybeForgetElement(data, el);
+      return JS_UNDEFINED;
     }
   }
+  // Unknown (type, handler) pair: silent no-op (matches DOM spec).
   return JS_UNDEFINED;
 }
 
