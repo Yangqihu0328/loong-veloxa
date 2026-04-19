@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化
+构建中
 
 ## 当前任务
 
@@ -19,12 +19,14 @@
      63 |   const char* s = table[v];
   ```
 - **根因：** `template<usize N> Lookup(const char* const (&table)[N], u16 v)` 在 13 个 `case` 中按不同 `N` 内联出 5+ 个 clone；GCC IPA 跨 clone 做值域传播时，将「某 case 实际类型为 `[5]` 的访问」错误地匹配到「另一 case 类型为 `[2]/[4]` 的 table」，未识别 `if (v >= N) return` 已先行守住。Debug `-O0` 不做该层优化故不触发。
-- **TDD 模式：** 现有 GTest 覆盖（`tests/core/css/enum_serialization_test.cc` 166 行 / 60 个 `EnumValueToCssString` 断言）即为本任务的回归验收基线 — Level 1 不新增测试，复用既有覆盖
-- **候选方案（待 BUILD 阶段确认）：**
-  - **A) 文件局部 pragma**：`enum_serialization.cc` 顶部 `#pragma GCC diagnostic push` + `#pragma GCC diagnostic ignored "-Warray-bounds"` 包裹 `Lookup<N>` 模板 + `pop`；附详尽注释解释抑制原因（≈ 5 行；推荐）
-  - **B) CMake 单文件豁免**：`veloxa/core/CMakeLists.txt` 对该 .cc 加 `set_source_files_properties(... PROPERTIES COMPILE_OPTIONS "-Wno-array-bounds")`（≈ 3 行；CMake 层）
-  - **C) 去模板化**：把 `Lookup<N>` 改为 `LookupImpl(const char* const* table, std::size_t n, u16 v)`，13 处调用点显式传 `std::size(arr)`；消除 IPA clone 触发条件（≈ 30 行；与 Level 1 工作量边界吃紧）
-- **焦点：** VAN 完成；下一步 `/build` — 1-2 句话与用户确认 A/B/C 方向后立即开干
+- **TDD 模式：** 现有 GTest 覆盖（`tests/core/css/enum_serialization_test.cc` 166 行 / 60 个 `EnumValueToCssString` 断言）作为回归验收基线 — Level 1 不新增测试
+- **采用方案：** **C — 去模板化**（用户裁定；根因消除最彻底）。`Lookup<N>` → `LookupImpl(const char* const*, std::size_t, u16)` + `VX_LOOKUP(arr, v)` 宏（用 `std::size(arr)` 自动派生长度，杜绝 arr/size 失配；宏 `#undef` 严格 TU 内）
+- **实施改动：** `veloxa/core/css/enum_serialization.cc` 净改 +28/-7 行（含详尽注释记录 GCC IPA 误报史）
+- **验证证据：**
+  - Debug `cmake --build build && ctest`：890/890 ✅
+  - Release `cmake --build build-bench --target vx_core`：✅ 编译干净，`-Werror=array-bounds` 不再触发
+  - Release `ctest -R EnumSerialization`：17/17 ✅（含 OutOfRangeReturnsEmpty 等关键边界，确认 `-O2` 下语义等价）
+- **焦点：** BUILD 完成；下一步 `/reflect` 进行回顾
 
 **前置验证：**
 

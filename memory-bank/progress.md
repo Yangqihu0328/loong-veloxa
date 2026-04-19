@@ -5,6 +5,7 @@
 ### TASK-20260419-04 — 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报
 
 - **2026-04-19 VAN：** 复杂度评估 Level 1（单文件 / 修复路径明确）。前置验证全部通过：错误已 100% 复现（TASK-03 Phase 1 已确认）；影响范围 = 单文件 `veloxa/core/css/enum_serialization.cc`（107 行）；现有测试覆盖 = `tests/core/css/enum_serialization_test.cc` 166 行 / 60 处 `EnumValueToCssString` 断言（无需新增测试）；A/B/C 三个候选方案技术可行性确认（GCC pragma / CMake `set_source_files_properties` / 去模板化）。已创建分支 `feature/TASK-20260419-04-array-bounds-fix`（基线 main `861070e`）。下一步 `/build` — 用户用 1-2 句话确认 A/B/C 方向后立即开干（推荐 A 方案）。
+- **2026-04-19 BUILD ✅：** 用户裁定 C 方案（去模板化，根因消除）。`enum_serialization.cc` 改动 +28/-7：`template<usize N> Lookup` → 非模板 `LookupImpl(const char* const*, std::size_t, u16)`；新增 `VX_LOOKUP(arr, v)` 宏（用 `std::size(arr)` 自动派生长度避免 arr/size 失配，TU 内 `#define`/`#undef` 严格作用域）；附详尽注释记录 GCC IPA clone 误报史与去模板化动机。验证证据：Debug 890/890 ✅；Release `cmake --build build-bench --target vx_core` 编译干净（`-Werror=array-bounds` 不再触发）✅；Release `ctest -R EnumSerialization` 17/17 ✅（含 OutOfRangeReturnsEmpty 等关键边界，确认 `-O2` 下语义等价）。Lint 干净；本任务无新增依赖故跳过 CVE 审计。下一步 `/reflect`。
 
 ## 暂停中任务
 
