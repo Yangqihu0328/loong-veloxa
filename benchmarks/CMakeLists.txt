@@ -40,3 +40,10 @@ vx_add_benchmark(bench_strings)
 vx_add_benchmark(bench_css_tokenizer        vx_core)
 vx_add_benchmark(bench_css_parser           vx_core)
 vx_add_benchmark(bench_css_property_lookup  vx_core)
+
+# Layout + Render benches (TASK-20260419-05). Replay needs vx_graphics + vx_platform
+# for SoftwareCanvas; the others stay on vx_core only.
+vx_add_benchmark(bench_layout_buildtree     vx_core)
+vx_add_benchmark(bench_layout_flex          vx_core)
+vx_add_benchmark(bench_render_record        vx_core)
+vx_add_benchmark(bench_render_replay        vx_core vx_graphics vx_platform)
