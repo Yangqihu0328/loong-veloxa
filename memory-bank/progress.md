@@ -2,7 +2,25 @@
 
 ## 当前任务
 
-无活动任务，等待 `/van` 启动新任务。
+### TASK-20260419-11：`ImageCache::Load` HashMap 化（K6 高 ROI 优化）
+
+**当前阶段：** 初始化（待 `/plan`）
+
+**里程碑：**
+- ✅ VAN（2026-04-19）：复杂度评估 Level 2，5 处 grep 实证（落实 P0 #4 完整应用），双索引方案确定
+- ⏳ Plan
+- ⏳ Build
+- ⏳ Reflect
+- ⏳ Archive
+
+**VAN 阶段关键发现：**
+- F1：`gfx::ImageHandle = u32` 是 1-based vector 下标，`Get(handle) = images_[handle-1]` 是 ABI — 必须**双索引**（保 Vector + 加 HashMap）
+- F2：`String` 无 `==(String, String)` 直接 operator → plan 阶段试编译 `std::equal_to<String>`，否则自定义 `StringEq`
+- F3：djb2 hash 模板可机械复刻自 `property.cc:84 StringViewHash`（~5 行）
+- F4：唯一调用方 `application.cc:67/118` 仅持有指针 → 回归风险接近零
+- F5：`image_cache_test.cc:55-65 DeduplicateSamePath` 已覆盖 dedup 契约（K6 关键回归点）
+
+**核心目标：** Hit<16> 50.87 ns → ~10-30 ns；Hit<256> 1151.77 ns → ~10-30 ns（38-115×↓）
 
 ## 已完成任务
 

@@ -1,9 +1,23 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+初始化
 
-无活动任务。准备使用 `/van` 启动新任务。
+## 当前任务
+
+**TASK-20260419-11：`ImageCache::Load` HashMap 化（K6 高 ROI 优化）**
+
+- **复杂度级别：** Level 2（image_cache.{h,cc} + tests + bench 复跑；机械替换 + 数据双索引设计）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（待创建，基于 main `f045a0e`）
+- **来源：** TASK-20260419-09 K6 量化拆出（hit 路径 O(N) 字符串扫；Hit<256> 1151.77 ns > ReplayImageReal<16> 595 ns）
+- **VAN 阶段重大发现（5 处 grep 实证，落实 P0 #4 完整应用）：**
+  - F1：handle 必须保持 1-based vector 下标（`Get(handle)` O(1) + ABI）→ 必须**双索引**：保留 `Vector<Entry>` + 新增 `HashMap<String, ImageHandle>`
+  - F2：`String` 无直接 `==(String, String)` operator（仅 `==(String, StringView)` 隐式） → plan 阶段确认 `std::equal_to<String>` 是否可实例化，否则用自定义 `StringEq` functor
+  - F3：djb2 hash 模板已现成（`property.cc:84 StringViewHash` 可机械复刻为 `StringHash`，~5 行）
+  - F4：`application.cc:67/118` 是唯一调用方，仅持有指针 — 无 handle 数值依赖 → 回归风险接近零
+  - F5：`image_cache_test.cc:55-65 DeduplicateSamePath` 已覆盖 dedup 契约（K6 改造关键回归点）
+- **核心目标：** Hit<16> 50.87 ns → ~10-30 ns；Hit<256> 1151.77 ns → ~10-30 ns（38-115×↓）；Miss + Get 不退化
+- **下一步：** `/plan` 进行计划
 
 ## 最近归档
 
@@ -22,7 +36,7 @@
 - **TASK-20260419-06（建议，P3 降级）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射。**降级理由（TASK-03 P4 实测）：** PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证 cluster 问题主要见于 **int key + 大规模**场景。**触发条件**：「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报；目前不主动改避免引入不必要内联开销（来源 TASK-20260419-07 副发现）
 - **TASK-20260419-10（TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear。**TASK-09 VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` `Vector<LayoutBox*> children` 扩容序列；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 / prefetch break。**预期产出**：调查报告 +（可能）layout 算法重构 PR。**触发条件**：建议在 TASK-11 之后立项（K6 修复独立且小，先做）
-- **TASK-20260419-11（TASK-09 K6 拆出，建议 P1 高 ROI）：** `ImageCache::Load` HashMap 化（**优化类**，机械替换）— 现状 hit 路径 O(N) 字符串扫，size=256 时 1162 ns > `ReplayImageReal<16>` 595 ns（K6 量化数据）。改 `HashMap<String, ImageHandle>` 后 hit 路径稳定 ~10-30 ns 不论 size。**预期工作量**：~1-2h（含 baseline 同机对比 + 单测 + bench 复跑确认 K6 命题已解）。**触发条件**：可即立项（K6 修复独立 + 工作量小，建议在 TASK-10 之前先做）
+- ~~TASK-20260419-11：已立项为当前任务（详见上方「当前任务」段）；VAN 阶段确认双索引方案（保 handle ABI + Get O(1)），djb2 模板可复刻自 `property.cc:84`~~
 - **TASK-20260419-12（TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选优化：(a) `hb_buffer` 复用（避免 hb_buffer_create/destroy 每帧分配）；(b) glyph bitmap 直接 raster 到 canvas（避免 GlyphCache → 中间 buffer → blit 的两次拷贝）。**预期产出**：warm 真路径 < 3000 ns（小于 fallback）后默认真路径。**触发条件**：当真路径默认化提上日程时
 
 ### 长期项（按优先级）
