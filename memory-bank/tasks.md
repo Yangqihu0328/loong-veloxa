@@ -2,6 +2,11 @@
 
 ## 当前任务
 
+无（等待 `/van` 启动新任务）
+
+<details>
+<summary>TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处） — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处）
 
 - **复杂度级别：** Level 1（2 文件，修复路径明确）
@@ -31,20 +36,27 @@
 |---|------|------|
 | 1 | `8b57f8d` | fix(tests/platform): assert fgets return value |
 | 2 | `51d6ff1` | fix(foundation/strings): mark BasicString copy ctor noinline |
+| 3 | `6fca7cb` | chore(build): finalize TASK-20260419-07 memory bank state |
+| 4 | `0d749c1` | docs(reflect): add reflection for TASK-20260419-07 |
+| 5 | `466ba01` | chore: ignore build-*/ directories |
 
 #### 安全相关
 
 否。
 
+</details>
+
 ### 待立项候选
 
 - **TASK-20260419-05（建议，P1）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-02 归档；可用 TASK-03 baseline 反推性能预算锚）
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
+- **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 
 ## 任务历史
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
 | TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |
 | TASK-20260419-04 | 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（解锁 TASK-03 Phase 1） | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-04.md` |
 
