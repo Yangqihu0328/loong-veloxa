@@ -424,4 +424,59 @@ TEST(DomBindingsLifecycleTest, UnbindThenBoundReflectsState) {
   engine.Shutdown();
 }
 
+// B6 (TASK-20260419-01): the destruction-observer mechanism in EventManager
+// allows the strict "DomBindings destroyed first" host contract to be relaxed.
+// Both orderings must now be safe.
+
+TEST(DomBindingsLifecycleTest, EventManagerDestroyedBeforeDomBindings) {
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+  dom::Document doc;
+  auto* btn = doc.CreateElement(dom::TagId::kSpan);
+  btn->set_id(InternedString::Intern("btn"));
+  doc.AppendChild(btn);
+
+  DomBindings bindings;
+  {
+    event::EventManager em;
+    bindings.Bind(engine.context(), &doc, &em);
+    ASSERT_EQ(bindings.event_manager(), &em);
+
+    // Register a JS listener so DomBindings tracks btn in listener_elements.
+    auto r = engine.EvalGlobal(
+        "document.getElementById('btn')."
+        "addEventListener('pointerdown', function(e) {});",
+        "t.js");
+    ASSERT_TRUE(r.ok());
+  }  // em destroyed first — observer should null out bindings' em pointer.
+
+  // After EM is gone, DomBindings must not hold a dangling pointer.
+  EXPECT_EQ(bindings.event_manager(), nullptr);
+
+  // Subsequent Unbind must be safe (no UAF, no crash).
+  bindings.Unbind();
+  EXPECT_FALSE(bindings.bound());
+  engine.Shutdown();
+}
+
+TEST(DomBindingsLifecycleTest, DomBindingsDestroyedBeforeEventManagerStillWorks) {
+  // The original ordering (DomBindings first) must continue to work after the
+  // observer mechanism is added — the observer must be deregistered in Unbind
+  // so it can't fire on freed InstanceData.
+  QuickjsEngine engine;
+  ASSERT_TRUE(engine.Init().ok());
+  dom::Document doc;
+  event::EventManager em;
+  {
+    DomBindings bindings;
+    bindings.Bind(engine.context(), &doc, &em);
+    bindings.Unbind();
+  }
+  // EM is still alive here. Destroying it now must not invoke a stale
+  // observer callback (which would dereference freed InstanceData).
+  // (Implicit: this test scope ends, em destructor runs, ASAN guard.)
+  SUCCEED();
+  engine.Shutdown();
+}
+
 }  // namespace vx::script

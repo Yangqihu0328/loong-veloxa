@@ -23,6 +23,13 @@ struct DomBindings::InstanceData {
   JSContext* ctx = nullptr;
   dom::Document* doc = nullptr;
   event::EventManager* em = nullptr;
+  // Token returned by em->AddDestructionObserver in Bind. Used in two places:
+  //   - Unbind (when em is still alive) calls em->RemoveDestructionObserver
+  //     to deregister our callback before this InstanceData goes out of scope.
+  //   - The observer itself fires when em is destroyed first; it nulls em
+  //     and clears listener_elements so Unbind becomes a no-op for them.
+  // 0 means "no observer registered".
+  event::EventManager::DestructionObserverToken em_observer_token = 0;
   // Elements that received at least one addEventListener. Used by Unbind
   // to deterministically tear down lambdas before freeing JS callbacks.
   // (See #50 fix in Phase 2.)
@@ -671,6 +678,18 @@ void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
   data_->doc = doc;
   data_->em = em;
 
+  // B6 (TASK-20260419-01): if EventManager is destroyed before us, drop our
+  // pointer to it so Unbind/AddEventListener become safe no-ops. This relaxes
+  // the previous strict "DomBindings must be destroyed first" host contract.
+  if (em != nullptr) {
+    InstanceData* data = data_.get();
+    data_->em_observer_token = em->AddDestructionObserver([data]() {
+      data->em = nullptr;
+      data->listener_elements.clear();
+      data->em_observer_token = 0;
+    });
+  }
+
   JS_SetContextOpaque(ctx, this);
   data_->tracked_callbacks.ctx = ctx;
 
@@ -685,9 +704,17 @@ void DomBindings::Unbind() {
   // lambdas that reference already-freed JSValue callbacks, and any
   // later dispatch (e.g. HandleInput) would be use-after-free.
   //
-  // Host contract (out of scope for this task, tracked as P2 residual):
-  // DomBindings must be destroyed before its EventManager.
+  // B6 (TASK-20260419-01): destruction order is now permissive. The two
+  // valid orderings are handled here:
+  //   - DomBindings first: em_ != nullptr; deregister our observer (so it
+  //     can never fire on the freed InstanceData) and tear down listeners.
+  //   - EventManager first: the observer already fired and set em_ = nullptr
+  //     and cleared listener_elements; this branch is a no-op.
   if (data_->em) {
+    if (data_->em_observer_token != 0) {
+      data_->em->RemoveDestructionObserver(data_->em_observer_token);
+      data_->em_observer_token = 0;
+    }
     for (usize i = 0; i < data_->listener_elements.size(); ++i) {
       data_->em->RemoveEventListeners(data_->listener_elements[i]);
     }
