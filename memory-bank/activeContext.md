@@ -1,7 +1,9 @@
 # 活跃上下文
 
 ## 当前阶段
-规划中
+构建完成（待 `/reflect`）
+
+**TDD 模式：** 已豁免（bench 任务，与 TASK-05 同例）— smoke 三件套全过：15 BMs（drawtext 8 + imagecache 7） / 全 exit 0 / items_processed > 0 / JSON items_per_second > 0
 
 ## 当前任务
 
@@ -19,7 +21,18 @@
 - **Plan 阶段补 grep 验证（第二轮 P0 规则预防）：** `Element::SetAttribute(InternedString, String)` ✅ + `InternedString::Intern(StringView)` ✅ + `Brush::Solid(Color)` ✅ + `SoftwareCanvas` ctor 后两参可选 ✅ → design §5.3 代码可直接照写，build 阶段无需返工
 - **5 决策（D1-D5，用户确认）：** A1+A2 / cold+warm 维度 / B1×3 cache size + B2×2 + B3 / 多张 distinct PNG fixture / 5 phase
 - **意义：** 「方案根因假设未先验证」P0 在 TASK-05 /archive 落实新规（`writing-plans.mdc` §3 强制 grep）后**第一+第二次产生预防价值** — VAN+Plan 双阶段共 grep 7 处，一次性发现 3 个原假设全错 + 4 个 API 签名验证通过
-- **下一步：** `/build` 开始 Phase 1（无 `/creative` 需要）
+- **构建完成（5 phase / 5 commits + finalize）：**
+  - Phase 1 ✅ `f767231` corpus 扩 + 2 smoke + CMake 注册
+  - Phase 2 ✅ `c19dc97` bench_imagecache 全套 7 BMs（K6 新发现）
+  - Phase 3 ✅ `8e55337` bench_drawtext 全套 8 BMs（K1 修正归因 + K7 新发现）
+  - Phase 4 ✅ `913bf01` 2 baseline JSON + 2 README
+  - Phase 5 ⏳ techContext + systemPatterns + MB 收尾（本 commit）
+- **核心数据成果：**
+  - **K1 修正归因**：TASK-05 8200 ns/cmd 实为 fallback 路径（FillRect ×19/cmd），"820×"是 per-cmd 工作不可比性，非真路径慢源
+  - **K1 真根因**：`Real_Cold_Medium` 52763 ns / 19 char = FT_Load_Glyph + FT_Render_Glyph 是冷路径主体（vs warm 9.1×）
+  - **K6 新发现（最高 ROI 候选）**：`ImageCache::Load` hit 路径 O(N) 字符串扫，size=256 时 1162 ns > ReplayImageReal<16> 595 ns → HashMap 改造极高价值
+  - **K7 新发现**：当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），如默认开真路径需先优化 hb_buffer 复用 + 直接 raster
+- **下一步：** `/reflect` 进行回顾
 
 ## 最近归档
 

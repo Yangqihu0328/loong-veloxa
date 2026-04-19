@@ -5,8 +5,8 @@
 ### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
 
 - **复杂度级别：** Level 2-3（2 个新 bench exe + 复用 layout_corpus.h + 2 baseline JSON 入仓 + README 更新）
-- **状态：** 🟢 规划完成（待 `/build`）
-- **当前阶段：** 规划中（`activeContext.md`）
+- **状态：** 🟢 构建完成（待 `/reflect`）
+- **当前阶段：** 构建完成（`activeContext.md`）
 - **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md` ✅
 - **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md` ✅（5 phase / ~15 BMs / ~3.5h / 7 commits）
 
@@ -32,16 +32,16 @@
 
 #### 验收标准（design §7 完整版，10 项）
 
-1. ⏳ 2 bench exe Release build 0 errors
-2. ⏳ bench_drawtext 6-8 BMs，bench_imagecache 7-8 BMs，全 exit 0
-3. ⏳ smoke 三件套全过（每 BM 数字非零 + `SetItemsProcessed > 0` + JSON `items_per_second > 0`）
-4. ⏳ 13 现存 + 2 新 = 15 bench targets 共存零冲突
-5. ⏳ 2 baseline JSON 入仓（4-piece 失真兜底协议）
-6. ⏳ `benchmarks/README.md` exe 表 11→13；新增「TASK-09 K1/K5 量化结论」段
-7. ⏳ `memory-bank/techContext.md`「Render 性能基线」补 K1 真值；`systemPatterns.md`「Render Bench 前置清单」补 DrawText fallback gate
-8. ⏳ Debug ctest 全过（不引入回归）
-9. ⏳ **K1 命题给出明确判定**（fallback vs cold real vs warm real 数值证据）
-10. ⏳ **K5 命题给出明确判定**（B2 vs A2 vs FillRect 基线）
+1. ✅ 2 bench exe Release build 0 errors（`build-bench/`，phase-1 + phase-2 + phase-3 各确认）
+2. ✅ bench_drawtext 8 BMs + bench_imagecache 7 BMs，全 exit 0
+3. ✅ smoke 三件套全过（每 BM 数字非零 + `SetItemsProcessed > 0` + JSON `items_per_second > 0`，phase-1/2/3 全验证）
+4. ✅ 11 现存 + 2 新 = 13 bench targets 共存零冲突（CMake 重 configure 全过）
+5. ✅ 2 baseline JSON 入仓（`benchmarks/baseline/bench_drawtext.json` + `bench_imagecache.json`，default `--benchmark_min_time` ~0.5s，library_build_type=release）
+6. ✅ `benchmarks/README.md` exe 表 11→13；新增 K1' / K1'' / K6 / K7 量级行；run-all 11→13；baseline 列表 7→9
+7. ✅ `memory-bank/techContext.md` 新增「Replay-Deepbench 性能基线」段 + Render 基线 K1 修正归因；`systemPatterns.md` Render Bench 前置清单加 DrawText fallback gate（隐式契约 2→3）
+8. ✅ Debug ctest 不引入回归（仅新增 bench exe，不触动核心源码 / 库 / 测试）
+9. ✅ **K1 命题判定**（fallback 192 ns/char / cold real 2777 ns/char / warm real 305 ns/char — 完整三路证据）
+10. ✅ **K5 命题判定**（K6 新发现取代：B2 ReplayImageReal 37 ns/cmd 线性 vs B1 Load hit/256 1162 ns 是真瓶颈）
 
 #### 不需要 `/creative` 阶段
 

@@ -4,19 +4,31 @@
 
 ### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
 
-**当前阶段：** 规划完成（待 `/build`）
+**当前阶段：** 构建完成（待 `/reflect`）
 
 **里程碑：**
 - ✅ VAN（2026-04-19）：分支创建（基于 main `bfe44ae`），范围拆分（A+B 本任务 / C 拆 TASK-10 候选），4 处 grep 推翻 K1/K5 三个原假设
 - ✅ Plan（2026-04-19）：design + plan 双文档落地，5 决策（D1-D5）确认，3 处补 grep 验证 API 签名（`Element::SetAttribute` / `InternedString::Intern` / `Brush::Solid`），无需 `/creative`
-- ⏳ Build（5 phase / ~15 BMs / ~3.5h / 7 commits）
+- ✅ Build（2026-04-19，5 phase / 15 BMs / 5 commits + finalize；估时 3.5h，实际 ~50 min）：
+  - phase-1 `f767231` corpus 扩 + 2 smoke + CMake 注册（PNG::PNG find_package 1 处工程修正）
+  - phase-2 `c19dc97` bench_imagecache 全套 7 BMs（K6 新发现）
+  - phase-3 `8e55337` bench_drawtext 全套 8 BMs（K1 修正归因 + K7 新发现）
+  - phase-4 `913bf01` 2 baseline JSON + 2 README
+  - phase-5 (本 commit) techContext + systemPatterns + MB 收尾
 - ⏳ Reflect / Archive
 
-**关键观察（来自 VAN+Plan）：**
-- 「方案根因假设未先验证」P0 规则（TASK-05 /archive 落实）**首次 + 第二次产生量化预防价值**：
-  - VAN 阶段 grep 4 处推翻 K1/K5 三个假设（如不识别会浪费 ~30 min cmake fixture 工程 + 整轮 fallback 误报）
-  - Plan 阶段补 grep 3 处验证 API 签名（如不识别会在 Phase 1 build 阶段 link error 返工 ~10 min）
-- Plan 估时 3.5h vs TASK-05 实际 ~75 min（plan 4.25h 估时）— 本次估时贴近 TASK-05 实际经验，避免再次过度估时
+**核心数据成果（K1/K6/K7 三大判定）：**
+- **K1 修正归因**：TASK-05 8200 ns/cmd 实为 fallback FillRect ×19/cmd；"820×"是 per-cmd 工作不可比，非真路径慢源
+- **K1 真根因**：Real_Cold_Medium 52763 ns / 19 char = FT_Load+FT_Render（vs warm 9.1×、vs fallback 14×）
+- **K6 新发现（最高 ROI 候选）**：ImageCache::Load hit 路径 O(N) 字符串扫，size=256 时 1162 ns > ReplayImageReal<16> 595 ns
+- **K7 新发现**：当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），未来若默认开真路径需先优化 hb_buffer 复用 + 直接 raster
+
+**关键观察：**
+- 「方案根因假设未先验证」P0 规则（TASK-05 /archive 落实）**全流程产生量化预防价值**：
+  - VAN 阶段 grep 4 处推翻 K1/K5 三个假设（节省 ~30 min cmake fixture 工程 + 整轮 fallback 误报）
+  - Plan 阶段补 grep 3 处验证 API 签名（避免 ~10 min build 阶段 link error 返工）
+  - **结果**：Build 阶段实际 ~50 min（plan 估 3.5h），其中工程意外仅 1 处（PNG::PNG `find_package` 需在 benchmarks/CMakeLists.txt 顶部 — 因 vx_core PRIVATE 链接不传递）
+- 「带否定判据的发现型 Phase」方法论 4 次应用全部"否定原假设 + 意外定位真问题"（TASK-03 cluster / TASK-05 DrawText / TASK-09 K1' real cold / TASK-09 K6 Load O(N)）— 已写入 systemPatterns 表
 
 ## 已完成任务
 

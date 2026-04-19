@@ -654,8 +654,10 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 |------|-----------|------|---------|
 | TASK-03 P4 | PropertyMap djb2 触发 cluster | ❌ 否（最慢 single key 仅 2.75× HitHot5）| TASK-06 P1→P3 降级 |
 | TASK-05 P6 | ImageCache Get 是 Replay hot path | ❌ 否（image 路径未触发，但**意外发现 DrawText 是 820× hot path**）| 立 TASK-09 候选 |
+| TASK-09 P3 | DrawText 8200 ns/cmd 是 FreeType+HarfBuzz 真路径慢 | ❌ 否（实际是 fallback；真根因是 FT_Load+FT_Render 冷路径 9.1×）| K1' 修正归因写入 baseline + techContext |
+| TASK-09 P2 | ImageCache 真路径整体瓶颈在 Decode | ❌ 否（**意外发现 Load hit 路径 O(N) 字符串扫，size=256 时 1162 ns 比 ReplayImageReal<16> 还慢**）| K6 推 HashMap 改造为高 ROI 候选 |
 
-**关键观察**：方法论 2 次都在"否定原假设"的同时**意外定位真正的问题**（cluster 度量发现 djb2 + 短字符串场景免疫；hot path 度量发现 DrawText 才是瓶颈）— 这是 plan 阶段单纯靠 grep / 推理无法获得的认知跳跃。
+**关键观察**：方法论 4 次都在"否定原假设"的同时**意外定位真正的问题**（cluster 度量发现 djb2 + 短字符串场景免疫；hot path 度量发现 DrawText 才是瓶颈；真路径冷热对比定位 FT_Load+FT_Render；ImageCache size 扫描定位 O(N) Load）— 这是 plan 阶段单纯靠 grep / 推理无法获得的认知跳跃。
 
 **落实**：写入 `writing-plans.mdc`「Phase 类型」附录段；任何性能/正确性边界 phase 都应套用这个 4 要素清单。
 
@@ -668,14 +670,15 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 | `FillRect` | `style->background_color.a > 0` AND `border_radius == 0` |
 | `FillRoundedRect` | `style->background_color.a > 0` AND `border_radius > 0` |
 | `StrokeRoundedRect` | `border_radius > 0` AND `border_style[0] != kNone` AND `border[kTop] > 0` |
-| `DrawText` | `box->type == kText` AND `box->text_node != nullptr` AND `text_data.empty() == false` |
+| `DrawText` | `box->type == kText` AND `box->text_node != nullptr` AND `text_data.empty() == false`；**且**真路径需 `SoftwareCanvas` ctor 同时传 `&FontManager + &GlyphCache`，否则走 `DrawTextFallback`（每字符 1 个 FillRect，TASK-09 K1' 教训）|
 | `DrawImage` | `box->type == kReplaced` AND `box->image_handle != 0`（**需 layout 时 ctx.image_cache 非空**）|
 | `PushClipRect` | `style->overflow == kHidden` |
 | `PushLayer` | `style->opacity < 1.0f` |
 
-**两个隐式契约**（极易踩坑，TASK-05 Phase 6 全空 list 假阳性来源）：
+**三个隐式契约**（极易踩坑，TASK-05 Phase 6 全空 list 假阳性来源 + TASK-09 phase-3 fallback 误测来源）：
 1. **inline declaration 须经 StyleResolver 才生效** — `LayoutContext::stylesheets` 必须非 null（即使是空 Vector）；nullptr 时 LayoutEngine 走默认 ComputedStyle，inline `background-color` 直接被忽略
 2. **ImageCache 是三阶段管道契约** — layout（生成 handle）/ Record（读 handle emit cmd）/ Replay（拿 handle 取 image）三阶段必须同传 cache 指针；任一传 nullptr 链断、image 路径完全测不到
+3. **DrawText 真路径需 `SoftwareCanvas` ctor 显式传 `&FontManager + &GlyphCache`**（TASK-09 K1' 教训）— 任一为 nullptr 则走 `DrawTextFallback`（每字符 1 个 FillRect，性能特征与真路径完全不同）。bench 名命名应明确区分 `Fallback_*` 与 `Real_*` 避免 K1 类归因错误
 
 ### 跨阶段管道型 API 的 default-nullptr 反模式（TASK-05 K5 教训）
 
