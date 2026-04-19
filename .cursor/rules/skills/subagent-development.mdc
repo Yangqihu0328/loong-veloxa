@@ -141,6 +141,19 @@ alwaysApply: false
 [具体任务描述]
 ```
 
+### LayoutBox 坐标语义（任务涉及 LayoutBox 时**必填**）
+
+> 来源 TASK-04：子代理用 absolute 计算 hover 区域，但 LayoutBox 存的是 padding-box 相对父原点。
+
+涉及 `LayoutBox`、坐标转换、命中测试、绘制定位时，prompt 必须包含：
+
+- **`LayoutBox::origin`**：相对**父盒**的 padding-box 原点（不是绝对屏幕坐标）
+- **要得到屏幕坐标**：自下而上累加链上每个父节点的 `origin`，或调用 `LayoutEngine::GetAbsoluteRect(node)`
+- **`size`**：content-box 还是 border-box？查 `veloxa/core/layout/layout_box.h` 当前实现注释
+- **margin/padding/border 是否已并入**：明示
+
+提供「坐标转换辅助函数」清单到 prompt（避免子代理自己重新发明）。
+
 ### 跨模块数据格式（涉及共享数据结构时**必填**）
 
 > 来源 TASK-02：缺少格式 prompt 触发 24 小时返工（像素格式假设矛盾）。
