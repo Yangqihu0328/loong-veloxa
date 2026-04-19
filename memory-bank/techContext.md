@@ -207,6 +207,50 @@ cmake --build build -j
 > - DrawText 8200 ns/cmd vs FillRect 10 ns/cmd = **820×**，远超 5× 阈值（与 TASK-03 cluster 同源「带否定判据」方法）
 > - 渲染优化方向应优先聚焦 SoftwareCanvas::DrawText 路径（候选：FreeType+HarfBuzz 集成 / glyph cache / SOA glyph layout）
 > - FillRect 已接近物理极限（10 ns/cmd ≈ 2.5 cycles per pixel base + memset 摊还），优化 ROI 极低
+>
+> **K1 修正归因（来源 TASK-20260419-09 phase-3，2026-04-19）**：
+> - TASK-05 BM_ReplayTextHeavy 测的是 **fallback 路径**（`SoftwareCanvas::DrawText` 在 `font_manager == nullptr || glyph_cache == nullptr` 时走 `DrawTextFallback` — 每字符 1 个 FillRect）
+> - "8200 ns/cmd" ≈ `BM_DrawTextFallback_Medium` 3647 ns / 19 char × 含 PushClip + 多字符 painting 的合计；**"820×"实为「1 cmd 含 N 字符 painting」vs「1 cmd 单 FillRect」的 per-cmd 工作不可比性**，并非真路径慢源
+> - **真正贵的是真路径冷路径**：`BM_DrawTextReal_Cold_Medium` 52763 ns / 19 char = 2777 ns/char，是 fallback 的 14×，是 warm 的 9.1× → FT_Load_Glyph + FT_Render_Glyph 是冷路径成本主体，glyph_cache 是 ROI 极高的存量优化
+
+## Replay-Deepbench 性能基线（来源 TASK-20260419-09，2026-04-19）
+
+入仓 `benchmarks/baseline/bench_drawtext.json` + `bench_imagecache.json`（Release，`build-bench/`，default `--benchmark_min_time` ~0.5s）。
+
+### DrawText（`bench_drawtext`，8 BMs）
+
+| 形态 | 时间 / 单位 |
+|------|------------|
+| `BM_DrawTextFallback_Short`（"hi"，2 char） | 460 ns（230 ns/char） |
+| `BM_DrawTextFallback_Medium`（19 char） | 3647 ns（**192 ns/char** ≈ FillRect ×19） |
+| `BM_DrawTextReal_Cold_Medium`（19 char） | **52763 ns（2777 ns/char）— FT_Load+FT_Render** |
+| `BM_DrawTextReal_Warm_Medium`（19 char） | 5807 ns（305 ns/char） |
+| `BM_DrawTextReal_Warm_Short`（2 char） | 968 ns（hb_shape 固定开销显化） |
+| `BM_DrawTextReal_Warm_Long`（124 char） | 16852 ns（136 ns/char，最佳摊还） |
+| `BM_ReplayTextHeavyFallback`（96 cmd） | 804 µs / 119k cmd/s |
+| `BM_ReplayTextHeavyReal`（96 cmd） | 913 µs / 105k cmd/s（**仅 13% overhead vs fallback**） |
+
+> **K7 发现（新，TASK-09 phase-3）**：当前 warm 真路径（5807 ns）> fallback（3647 ns），1.6×。`hb_shape` 固定开销 + glyph bitmap memcpy 当前 > 19 个 FillRect。如未来默认开真路径，需先做：(a) `hb_buffer` 复用避免每次 alloc / (b) glyph bitmap 直接 raster 到 canvas 避免中间 memcpy。
+
+### ImageCache（`bench_imagecache`，7 BMs；libpng 程序化 fixture 写 `/tmp/vx_bench_<pid>_<i>.png`）
+
+| 形态 | 时间 / 单位 |
+|------|------------|
+| `BM_ImageCacheLoad_Miss` | 3692 ns（含 1×1 RGBA decode + Vector push） |
+| `BM_ImageCacheLoad_Hit<1>` | 9.99 ns（最佳） |
+| `BM_ImageCacheLoad_Hit<16>` | 48.5 ns |
+| `BM_ImageCacheLoad_Hit<256>` | **1162 ns（116× of Hit<1>）— K6 hot point** |
+| `BM_ReplayImageReal<16>`（end-to-end） | 595 ns（37 ns/cmd） |
+| `BM_ReplayImageReal<64>`（end-to-end） | 2390 ns（37 ns/cmd，完美线性） |
+| `BM_ImageCacheGet` | 0.94 ns（O(1) 数组下标确认） |
+
+> **K6 发现（最高 ROI 优化候选）**：`ImageCache::Load` hit 路径是 O(N) 字符串扫描；cache size = 256 时单次 Load = 1162 ns，**比整个 ReplayImageReal<16>（595 ns）还慢**。改 `HashMap<String, ImageHandle>` 是高 ROI 候选优化（任何 > 30 张图片的真实页面都直接受益）。
+
+### 用途
+
+- DrawText 路径修改（FreeType / HarfBuzz / glyph cache 重构）以 K1 修正归因 + K7 为基线
+- ImageCache 改造（HashMap 化）以 K6 + `BM_ImageCacheGet` 0.94 ns 为对照
+- 跨硬件比较见 `benchmarks/baseline/README.md` 失真警告
 
 ### 用途
 

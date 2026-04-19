@@ -161,10 +161,18 @@ alwaysApply: false
 - **必须**：plan §0 全局约束段写明 `-DCMAKE_BUILD_TYPE=Release` + 独立 `build-bench/` 目录（与 Debug `build/` 隔离）
 - **反例**：TASK-20260419-02 首次未指定 → Debug 编译跑出微秒级假数字（O0 不优化）
 
-### 2. CMake helper 函数实际签名验证
+### 2. CMake helper 函数实际签名验证 + 链接可见性
 
-- **必须**：grep 项目内 `vx_add_benchmark` / `add_benchmark` / `add_test` 等自定义 CMake 函数的真实签名（不靠印象/复制其它项目）
-- **反例**：TASK-20260419-05 plan §1.1 写成三参 `vx_add_benchmark(name file libs)`，实际签名 `vx_add_benchmark(name [extra_libs...])`（文件名硬编码）
+- **必须 (a)**：grep 项目内 `vx_add_benchmark` / `add_benchmark` / `add_test` 等自定义 CMake 函数的真实签名（不靠印象/复制其它项目）
+- **必须 (b)**：当下游 target 通过 vx_core / vx_graphics 等中间 target 链接到第三方库（PNG::PNG / JPEG::JPEG / Freetype 等）时，**grep 必须确认链接关键字**（`PUBLIC` / `PRIVATE` / `INTERFACE`）：
+  - `PUBLIC` / `INTERFACE` → 传递到下游，下游可直接链接
+  - `PRIVATE` → **不传递**，下游必须独立 `find_package(<Lib> REQUIRED)` + 显式链接
+  - 检查命令示例：
+    ```bash
+    rg "target_link_libraries\(vx_core" --type cmake -A 3 | rg "PNG::PNG|JPEG::JPEG"
+    ```
+- **反例 1**：TASK-20260419-05 plan §1.1 写成三参 `vx_add_benchmark(name file libs)`，实际签名 `vx_add_benchmark(name [extra_libs...])`（文件名硬编码）
+- **反例 2（升 P0，TASK-20260419-09 phase-1 工程意外）**：plan 阶段假设 `bench_imagecache` 链接 `vx_core` 即可拿到 `PNG::PNG`，实际 `vx_core PRIVATE PNG::PNG` 不传递 → cmake reconfigure 报 `Target "PNG::PNG" not found`；修正方式 `benchmarks/CMakeLists.txt` 顶部加 `find_package(PNG REQUIRED)`
 
 ### 3. 目标 API 的发射/触发条件 grep（**最关键**，反复模式 #3 第 9+ 次升 P0）
 

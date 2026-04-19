@@ -1,6 +1,6 @@
 # Veloxa Benchmark Baselines
 
-本目录保存 **CSS / Layout / Render 模块** 共 7 个 bench 的 google/benchmark JSON 输出，作为入仓的「形态参考基线」（Foundation 4 bench 不入仓 — 见 `../README.md` §策略）。
+本目录保存 **CSS / Layout / Render / Replay-Deepbench 模块** 共 9 个 bench 的 google/benchmark JSON 输出，作为入仓的「形态参考基线」（Foundation 4 bench 不入仓 — 见 `../README.md` §策略）。
 
 ## ⚠️ 失真警告（必读）
 
@@ -13,19 +13,32 @@
    - 让人类读者快速建立量级直觉：
      - **CSS** — Tokenizer ~300 MiB/s、Parser ~100 MiB/s、PropertyLookup ~10 ns
      - **Layout** — buildtree flat ~ 117 ns/box (small)、512 box flat ~ 196 µs（super-linear knee 在 N=128~256 之间）、flex 8x8 ~ 4.9 µs / 16x16 ~ 73 µs（super-linear）
-     - **Render** — Record ~26 ns/box (linear)、Replay FillRect ~10 ns/cmd (~100 M/s)、**Replay DrawText ~8200 ns/cmd（hot path，比 FillRect 慢 820x — 见 §key findings）**
+     - **Render** — Record ~26 ns/box (linear)、Replay FillRect ~10 ns/cmd (~100 M/s)、**Replay DrawText ~8200 ns/cmd（fallback 路径 hot — TASK-09 K1 已修正归因，见 §key findings）**
+     - **DrawText** — fallback ~192 ns/char、real cold ~2777 ns/char（FT_Load+FT_Render，9.1× of warm）、real warm ~305 ns/char（hb_shape + glyph cache hit；当前 1.6× of fallback — K7）
+     - **ImageCache** — `Get` ~0.94 ns（O(1)）、`Load` hit/1 ~10 ns、hit/256 **~1162 ns**（O(N) 字符串扫，K6）、`ReplayImageReal<64>` ~37 ns/cmd
    - 跨任务做对照参考时的形态锚点
    - reflection / archive 文档引用时有具体数字可指
 
-## Key findings (本次 TASK-20260419-05 入仓)
+## Key findings
+
+### TASK-20260419-05 入仓 (历史)
 
 | # | 发现 | 数值 | 后续 |
 |---|------|------|------|
-| K1 | Replay 的真正 hot path 是 `DrawText`，不是 ImageCache | DrawText ~8200 ns/cmd vs FillRect ~10 ns/cmd = 820x | 立 TASK-20260419-09（候选）：DrawText / shaping / glyph cache 微基准 |
-| K2 | Layout buildtree-flat 在 N=128→256 出现 super-linear knee | 7.7 µs → 70 µs（10x for 2x N） | 待 /reflect 调查；可能 cache / arena grow |
-| K3 | Layout flex 8x8→16x16 同源 super-linear | 4.9 µs → 73 µs（14.9x for 4x cells） | 同 K2 根因假设 |
+| K1 | Replay 的真正 hot path 是 `DrawText`，不是 ImageCache | DrawText ~8200 ns/cmd vs FillRect ~10 ns/cmd = 820x | **TASK-09 phase-3 修正归因**（见下方 K1' / K7） |
+| K2 | Layout buildtree-flat 在 N=128→256 出现 super-linear knee | 7.7 µs → 70 µs（10x for 2x N） | **TASK-10 候选**（VAN 否定 ArenaAllocator chunk grow 假设） |
+| K3 | Layout flex 8x8→16x16 同源 super-linear | 4.9 µs → 73 µs（14.9x for 4x cells） | 同 K2，并入 TASK-10 |
 | K4 | Record 对 image 元素无额外开销 | ImgVsNoImg(16) = 544 ns ≈ Medium(64)/4 = 465 ns | image 路径在 Record 是 noop；瓶颈在 Layout 的 image_cache->Load + Replay 的 cache->Get |
-| K5 | ImageCache 真实例无法在 bench 内构造 | DecodeFromFile 需要文件 I/O；layout 不传 cache → image_handle=0 → Record 不 emit kDrawImage | 推 TASK-20260419-09 候选 |
+| K5 | ImageCache 真实例无法在 bench 内构造 | DecodeFromFile 需要文件 I/O；layout 不传 cache → image_handle=0 → Record 不 emit kDrawImage | **TASK-09 phase-2 已解决**（libpng 程序化 fixture，见 K6） |
+
+### TASK-20260419-09 入仓 (本次 phase-2 + phase-3)
+
+| # | 发现 | 数值 | 后续 |
+|---|------|------|------|
+| K1' | TASK-05 K1「DrawText 8200 ns/cmd 是 FT+HB 真路径」**修正归因** | TASK-05 测的是 fallback（`font_manager == nullptr` gate）：`Fallback_Medium` 3647 ns / 19 char = 192 ns/char ≈ FillRect ×19；"820×" 实为「1 cmd 含 N 字符 painting」vs「1 cmd 单 FillRect」的 per-cmd 工作不可比 | 文档化（已更新 systemPatterns Render Bench 前置清单） |
+| K1'' | DrawText 真路径冷路径才是真正贵的 | `Real_Cold_Medium` 52763 ns vs `Real_Warm` 5807 ns = 9.1×；vs `Fallback` = 14× | glyph_cache 已是 ROI 极高的存量优化；冷启动场景仍可考虑 pre-warm |
+| K6 | `ImageCache::Load` hit 路径 O(N) 字符串扫描；cache size 256 时单次 1162 ns | hit/1 9.99 ns → hit/16 48.5 ns → hit/256 **1162 ns**（116×）；**比 ReplayImageReal<16> 595 ns 还慢** | **强烈推荐**改 `HashMap<String, ImageHandle>`（O(1) 查表）— ROI 极高 |
+| K7 | DrawText 真路径 warm > fallback（1.6×） | `Real_Warm_Medium` 5807 ns vs `Fallback_Medium` 3647 ns | 如未来默认开真路径需先优化：(a) `hb_buffer` 复用避免每次 alloc / (b) glyph bitmap 直接 raster 到 canvas 避免中间 memcpy |
 
 ## 当前生成环境
 
@@ -37,8 +50,8 @@
 | 编译器 | gcc 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3), C++17 |
 | google/benchmark 版本 | v1.9.1 (FetchContent) |
 | 构建模式 | Release（`-DCMAKE_BUILD_TYPE=Release`，独立 `build-bench/`）|
-| 生成命令的 `--benchmark_min_time` | CSS = 0.5s；Layout/Render = 0.05s（共 7 BM exe，0.5s 单文件 ~10s 接受度差，0.05s 已稳态 — 经 3 次 repetitions median 验证） |
-| 生成日期 | CSS = 2026-04-19 (TASK-03)；Layout/Render = 2026-04-19 (TASK-05) |
+| 生成命令的 `--benchmark_min_time` | CSS = 0.5s；Layout/Render = 0.05s（共 7 BM exe，0.5s 单文件 ~10s 接受度差，0.05s 已稳态 — 经 3 次 repetitions median 验证）；DrawText/ImageCache = 默认 0.5s（TASK-09 入仓 baseline） |
+| 生成日期 | CSS = 2026-04-19 (TASK-03)；Layout/Render = 2026-04-19 (TASK-05)；DrawText/ImageCache = 2026-04-19 (TASK-09) |
 
 > 任何对 baseline JSON 的更新都必须把上表 4 行 TBD 同步刷新；否则 baseline 失去可追溯性。
 
@@ -73,6 +86,11 @@ for b in bench_layout_buildtree bench_layout_flex bench_render_record bench_rend
     --benchmark_report_aggregates_only=true --benchmark_min_time=0.05s \
     > "benchmarks/baseline/${b}.json"
 done
+for b in bench_drawtext bench_imagecache; do
+  ./build-bench/benchmarks/$b \
+    --benchmark_format=json \
+    --benchmark_out="benchmarks/baseline/${b}.json"
+done
 
 # 体检（必须看到 library_build_type=release，否则数字废）
 for j in benchmarks/baseline/bench_*.json; do
@@ -97,3 +115,4 @@ python3 build-bench/_deps/benchmark-src/tools/compare.py \
 |------|------|---------|---------|
 | 2026-04-19 | TASK-20260419-03 | 初次入仓（CSS 基准首次落地） | CSS 30 行 (10 + 11 + 9) |
 | 2026-04-19 | TASK-20260419-05 | 入仓 Layout + Render 4 个 baseline | Layout 14 + 6 = 20 行；Render 5 + 5 = 10 行；共 30 行 |
+| 2026-04-19 | TASK-20260419-09 | 入仓 DrawText + ImageCache 2 个 baseline；K1 修正归因 + K6/K7 新发现 | DrawText 8 BMs；ImageCache 7 BMs；共 15 行 |

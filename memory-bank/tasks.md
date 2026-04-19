@@ -2,7 +2,120 @@
 
 ## 当前任务
 
-_无活跃任务 — 等待 `/van` 接受新任务_
+无活动任务，等待 `/van` 启动新任务。
+
+<details>
+<summary>TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集） — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
+
+- **复杂度级别：** Level 2-3（2 个新 bench exe + 复用 layout_corpus.h + 2 baseline JSON 入仓 + README 更新）
+- **状态：** ✅ 已完成（已合并到 main，详见 `archive-TASK-20260419-09.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-09.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-09.md`
+- **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md`
+- **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md`（5 phase / 15 BMs / **plan 估 3.5h / 实际 ~50 min** / 7 commits）
+
+#### 5 决策（D1-D5，plan 阶段头脑风暴用户确认）
+
+| # | 维度 | 选择 |
+|---|------|------|
+| D1 | DrawText 层次 | **A1+A2**：A1 直接 `SoftwareCanvas::DrawText` 微基准（fallback / Real_Cold / Real_Warm）+ A2 端到端 Replay TextHeavy 真 vs fallback 对比 |
+| D2 | 文本维度 | 短(2)/中(19)/长(124) char + glyph cache cold/warm 分组（量化 cache 收益） |
+| D3 | ImageCache 维度 | B1 Load hit/miss × cache size {1, 16, 256}（验 O(N) 扫）+ B2 端到端真路径 N={16, 64} + B3 Get 单次 |
+| D4 | fixture 策略 | 多张 distinct PNG（setup 写 256 张 1×1 RGBA 到 `/tmp/vx_bench_<pid>_<i>.png`，path 唯一避免 hit 污染） |
+| D5 | Phase 划分 | 5 phase（P1 corpus 扩 + 2 smoke / P2 bench_imagecache / P3 bench_drawtext / P4 baseline JSON + README / P5 techContext + MB 收尾） |
+
+#### Phase 划分（5 phase，详见 plan §1-5）
+
+| Phase | 时间 | 文件 | BM 数 | 提交主题 |
+|-------|------|------|-------|---------|
+| 1 | 30 min | layout_corpus.h 扩展 + 2 smoke .cc + CMakeLists | 2 smoke | wip phase-1 |
+| 2 | 50 min | bench_imagecache.cc 全套 | 7 BMs | feat phase-2 |
+| 3 | 60 min | bench_drawtext.cc 全套 | 8 BMs | feat phase-3 |
+| 4 | 30 min | 2 baseline JSON + 2 README | 0 | docs phase-4 |
+| 5 | 30 min | techContext + systemPatterns + MB 收尾 | 0 | docs + chore phase-5 |
+
+#### 验收标准（design §7 完整版，10 项）
+
+1. ✅ 2 bench exe Release build 0 errors（`build-bench/`，phase-1 + phase-2 + phase-3 各确认）
+2. ✅ bench_drawtext 8 BMs + bench_imagecache 7 BMs，全 exit 0
+3. ✅ smoke 三件套全过（每 BM 数字非零 + `SetItemsProcessed > 0` + JSON `items_per_second > 0`，phase-1/2/3 全验证）
+4. ✅ 11 现存 + 2 新 = 13 bench targets 共存零冲突（CMake 重 configure 全过）
+5. ✅ 2 baseline JSON 入仓（`benchmarks/baseline/bench_drawtext.json` + `bench_imagecache.json`，default `--benchmark_min_time` ~0.5s，library_build_type=release）
+6. ✅ `benchmarks/README.md` exe 表 11→13；新增 K1' / K1'' / K6 / K7 量级行；run-all 11→13；baseline 列表 7→9
+7. ✅ `memory-bank/techContext.md` 新增「Replay-Deepbench 性能基线」段 + Render 基线 K1 修正归因；`systemPatterns.md` Render Bench 前置清单加 DrawText fallback gate（隐式契约 2→3）
+8. ✅ Debug ctest 不引入回归（仅新增 bench exe，不触动核心源码 / 库 / 测试）
+9. ✅ **K1 命题判定**（fallback 192 ns/char / cold real 2777 ns/char / warm real 305 ns/char — 完整三路证据）
+10. ✅ **K5 命题判定**（K6 新发现取代：B2 ReplayImageReal 37 ns/cmd 线性 vs B1 Load hit/256 1162 ns 是真瓶颈）
+
+#### 不需要 `/creative` 阶段
+
+理由：所有设计决策已在 plan 阶段头脑风暴 D1-D5 完成；无 UI/算法/架构空白。
+
+#### 元数据
+
+- **分支：** `feature/TASK-20260419-09-replay-deepbench`（基于 main `bfe44ae`）
+- **创建日期：** 2026-04-19
+- **归档日期：** 2026-04-19
+- **来源：** TASK-20260419-05 K1（DrawText 真路径未验证）+ K5（ImageCache 三阶段链断）触发；候选区已立项 P1
+
+#### 范围决策（VAN /van 阶段拆分，2026-04-19）
+
+原候选 TASK-09 包含 3 个独立子目标，VAN 范围检查后**拆为 2 任务**：
+
+| 子目标 | 本次范围 | 原因 |
+|---|---|---|
+| A. DrawText 真路径微基准（FreeType + HarfBuzz + glyph_cache 拆解；fallback vs 真路径对比） | ✅ 本次做 | bench 类，与 TASK-05 同模式可复用 layout_corpus.h |
+| B. 真 ImageCache 通路基准（Load + Get + cache hit/miss + nullptr 对比） | ✅ 本次做 | bench 类，同 A |
+| C. Layout super-linear knee 根因（K2 + K3） | ❌ 拆为 TASK-20260419-10 | 异质（研究/调查类，可能产出 layout 算法重构 PR），混做会拉长任务且模式不统一 |
+
+#### VAN 阶段重大发现（推翻 K1/K5 假设，落实「方案根因假设未先验证」P0 #3 提前止损）
+
+| # | 原假设（TASK-05 K1/K5） | VAN grep 实证 | 影响 |
+|---|---|---|---|
+| F1 | K5：「ImageCache 真路径需 fixture 文件复制（`configure_file()` 拷 PNG）」 | ❌ 错。`tests/core/image/image_decoder_test.cc:12-41` 已有 `CreateTestPng()` 用 libpng 程序化构造 PNG 写 `/tmp/vx_test_<pid>.png` | B 子目标实现简化 ~1h（不用 cmake fixture 工程） |
+| F2 | K1：「DrawText 8200 ns/cmd 是 FreeType+HarfBuzz 真路径」 | ⚠️ 可能误判。`SoftwareCanvas::DrawText` line 145 在 `font_manager==nullptr \|\| glyph_cache==nullptr` 时 fallback 到 `DrawTextFallback`（逐字符 FillRect）；当前 bench 不传 font_manager → **测的实际是 fallback 路径** | A 子目标核心命题改为「fallback vs 真路径谁是 820× 根因」，拆解维度更细 |
+| F3 | K2/K3：「ArenaAllocator chunk grow 是 super-linear 根因」 | ❌ 错。`ArenaAllocator` 默认 4096 byte/block 不 grow（新 block 仍 4096）；malloc 4096 块 ~µs 级，无法解释 7.7→70 µs 的 10× 跳变 | C 子目标已拆为 TASK-10，候选根因表需重写 |
+| F4 | TTF 字体 fixture 来源 | ✅ `/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf` 已被 font_manager_test 验证可用 | A 子目标无需打包字体 |
+| F5 | 依赖可获取性 | ✅ FreeType + HarfBuzz + libpng 已在 vx_text/vx_core 链接 | 不触发 FetchContent → P0 git proxy 不触发 |
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ FreeType / HarfBuzz / libpng 已在 vx_text / vx_core；DejaVuSans.ttf 系统已装 |
+| 环境就绪 | ✅ `build-bench/` 复用，无 FetchContent → P0 git proxy 不触发 |
+| 已有 artifact | ✅ TASK-05 4 bench 已在 main；新增 2 bench 文件名（`bench_drawtext.cc` / `bench_imagecache.cc` 或同等命名）不冲突 |
+| 待处理事项关联 | ✅ 落实 candidate TASK-09（候选区 P1）；推 TASK-10（候选） |
+| Sticky ID 一致性 | ✅ 候选区 ID = TASK-20260419-09，本任务沿用 |
+
+#### 关键发现（4 项 → /reflect 输入）
+
+| # | 发现 | 数值 | 后续 |
+|---|------|------|------|
+| K1' | TASK-05 「DrawText 8200 ns/cmd 是 FT+HB 真路径」**修正归因** | fallback 192 ns/char ≈ FillRect ×19；"820×"是 per-cmd 工作不可比性 | 已写入 techContext + systemPatterns DrawText fallback gate 隐式契约 |
+| K1'' | DrawText 真路径**冷路径**才是 hot | `Real_Cold_Medium` 52763 ns / 19 char（**14× of fallback / 9.1× of warm**） | glyph_cache 已是 ROI 极高存量优化 |
+| K6 | `ImageCache::Load` hit 路径 O(N) 字符串扫；size=256 时 1162 ns | hit/1 9.99 ns → hit/256 1162 ns（116×）；**比 ReplayImageReal<16> 595 ns 还慢** | 立 **TASK-20260419-11**（候选 P1 高 ROI）：HashMap 改造 |
+| K7 | warm 真路径 5807 ns > fallback 3647 ns（1.6×） | hb_shape 固定开销 + glyph bitmap memcpy > 19 个 FillRect | 立 **TASK-20260419-12**（候选 P2 触发型）：hb_buffer 复用 + 直接 raster |
+
+#### 提交清单（7 commits, on `feature/TASK-20260419-09-replay-deepbench`）
+
+| # | SHA | 主题 |
+|---|-----|------|
+| 1 | `71e01ab` | docs(plan): TASK-20260419-09 replay deepbench design + plan |
+| 2 | `f767231` | wip(TASK-20260419-09): phase-1 register bench_drawtext + bench_imagecache smoke |
+| 3 | `c19dc97` | feat(bench): add bench_imagecache full suite (TASK-20260419-09 phase-2) |
+| 4 | `8e55337` | feat(bench): add bench_drawtext full suite + K1 verdict (TASK-20260419-09 phase-3) |
+| 5 | `913bf01` | docs(bench): TASK-20260419-09 phase-4 baselines + READMEs |
+| 6 | `8cdb36c` | chore(build): finalize TASK-20260419-09 memory bank state (phase-5) |
+| 7 | `6e0f775` | docs(reflect): add reflection for TASK-20260419-09 |
+
+#### 安全相关
+
+否（性能测量任务，无外部输入/无认证/无新依赖）。
+
+</details>
 
 <details>
 <summary>TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe） — ✅ 已归档（点开查看历史）</summary>
@@ -157,12 +270,16 @@ _无活跃任务 — 等待 `/van` 接受新任务_
 - ~~TASK-20260419-05：已立项为当前任务，详见上方「当前任务」段~~
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
-- **TASK-20260419-09（新增，TASK-05 K1 + K5 触发，建议 P1）：** Replay hot path 深度基准 — 真实 ImageCache 通路（含解决 DecodeFromFile fixture 文件依赖：在 build-bench 期 `configure_file()` 复制 1×1 PNG 到 `${CMAKE_BINARY_DIR}/benchmarks/fixtures/`）+ `DrawText` 微基准（拆解 SimpleTextShaper / glyph cache lookup / SoftwareCanvas DrawTextFallback）。目标量化「Text 是否真的是 820× FillRect 慢的根因」+ 「ImageCache 是否走真路径仍 < DrawText」。来源：TASK-20260419-05 K1 hot path 实证 + K5 fixture 缺失工程问题
+- ~~TASK-20260419-09：已立项为当前任务（A+B 子集），详见上方「当前任务」段。VAN 阶段 grep 推翻 K5「需 fixture 文件复制」假设（复用 `image_decoder_test.cc::CreateTestPng()` 程序化构造写 /tmp）+ K1「DrawText 真路径」假设（实际走 fallback FillRect）~~
+- **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**，非 bench 类）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear（10×～15×）。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` 内 `Vector<LayoutBox*> children` 扩容序列（首发→第 N 次扩容产生连续 reallocate）；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 cache miss（256 box × ~100 byte = 25.6 KB ≤ L1d 32KB，但 prefetch pattern 可能 break）。**预期产出**：调查报告 + （可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后立项；如新增 layout 性能问题先于 TASK-09 完成出现可优先此项
+- **TASK-20260419-11（新增，TASK-09 K6 拆出，建议 P1 高 ROI 优化）：** `ImageCache::Load` HashMap 化（**优化类**，机械替换）— 现状 hit 路径 O(N) 字符串扫，cache size = 256 时 1162 ns 单次 Load > `ReplayImageReal<16>` 595 ns（K6 量化数据）。改 `HashMap<String, ImageHandle>` 后 hit 路径预期稳定 ~10-30 ns 不论 cache size。**预期工作量**：~1-2h（含同机 baseline 对比 + 单测 + bench 复跑确认 K6 命题已解）。**触发条件**：可即立项（K6 修复独立 + 工作量小，建议在 TASK-10 之前优先做）
+- **TASK-20260419-12（新增，TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选：(a) `hb_buffer` 复用避免每次 alloc/free；(b) glyph bitmap 直接 raster 到 canvas 避免 GlyphCache → 中间 buffer → blit 两次拷贝。**预期产出**：warm 真路径 < 3000 ns 后默认真路径开关。**触发条件**：当真路径默认化提上日程时
 
 ## 任务历史
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |
 | TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
 | TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
 | TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |

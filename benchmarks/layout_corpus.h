@@ -29,7 +29,9 @@
 
 #include <map>
 #include <mutex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "veloxa/core/css/css_value.h"
 #include "veloxa/core/css/enums.h"
@@ -37,6 +39,8 @@
 #include "veloxa/core/dom/document.h"
 #include "veloxa/core/dom/element.h"
 #include "veloxa/core/dom/tag.h"
+#include "veloxa/foundation/base/assert.h"
+#include "veloxa/foundation/strings/interned_string.h"
 #include "veloxa/foundation/strings/string.h"
 
 namespace vx::bench {
@@ -97,6 +101,26 @@ inline void BuildImageStyled(vx::dom::Document& doc, int n) {
   doc.AppendChild(body);
   for (int i = 0; i < n; ++i) {
     auto* img = doc.CreateElement(vx::dom::TagId::kImg);
+    img->SetInlineDeclaration(vx::css::PropertyId::kBackgroundColor,
+                              vx::css::CssValue::Color(0xff993366u));
+    body->AppendChild(img);
+  }
+}
+
+// TASK-20260419-09: <img> with `src` attribute pointing at fixture PNGs so
+// LayoutEngine triggers the real image_cache->Load() path (sets
+// LayoutType::kReplaced + image_handle), enabling end-to-end true ImageCache
+// Replay benchmarks. Each src must be unique to keep cache hit/miss
+// behaviour controllable from the bench side.
+inline void BuildImageWithSrcStyled(vx::dom::Document& doc, int n,
+                                    const std::vector<std::string>& paths) {
+  VX_DCHECK(static_cast<int>(paths.size()) >= n);
+  auto* body = doc.CreateElement(vx::dom::TagId::kBody);
+  doc.AppendChild(body);
+  for (int i = 0; i < n; ++i) {
+    auto* img = doc.CreateElement(vx::dom::TagId::kImg);
+    img->SetAttribute(vx::InternedString::Intern("src"),
+                      vx::String(paths[i].c_str()));
     img->SetInlineDeclaration(vx::css::PropertyId::kBackgroundColor,
                               vx::css::CssValue::Color(0xff993366u));
     body->AppendChild(img);
@@ -296,6 +320,24 @@ inline vx::dom::Document& CachedImageStyledDocument(int n) {
   if (it != cache.end()) return *it->second;
   auto* doc = new vx::dom::Document();
   detail::BuildImageStyled(*doc, n);
+  cache.emplace(n, doc);
+  return *doc;
+}
+
+// TASK-20260419-09: caller must supply a `paths` vector with at least `n`
+// entries; the document captures references to these paths via
+// dom::Element::SetAttribute(InternedString, String) which copies the
+// string content, so the caller's vector lifetime does not matter after
+// the cached document is built.
+inline vx::dom::Document& CachedImageWithSrcStyledDocument(
+    int n, const std::vector<std::string>& paths) {
+  static std::mutex mu;
+  static std::map<int, vx::dom::Document*> cache;
+  std::lock_guard<std::mutex> lock(mu);
+  auto it = cache.find(n);
+  if (it != cache.end()) return *it->second;
+  auto* doc = new vx::dom::Document();
+  detail::BuildImageWithSrcStyled(*doc, n, paths);
   cache.emplace(n, doc);
   return *doc;
 }
