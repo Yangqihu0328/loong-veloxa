@@ -34,6 +34,17 @@
 - `string.h` 还有 3 处 runtime-size `memcpy`（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）共享同一架构风险，当前 GCC 11.4 未触发；commit body 留有「未来 GCC 升级若回归则套用同 noinline 模式」的迁移指南
 - **方法论教训：** 对 GCC `-Warray-bounds` 误报，先排查诊断阶段（IPA / fortify / 前端），再选方案 — 这次 B3 失败暴露了「假设根因 = `__memcpy_chk` 而未验证」的判断盲点
 
+#### 回顾完成 ✅
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-07.md`
+- **沉淀到 `systemPatterns.md`：** 新段「GCC `-Warray-bounds` 误报 3 阶段诊断与修复表」+「阻断 IPA 关联方案族」+「候选方案表根因验证步骤要求」
+- **改进建议（5 项）：**
+  - P1 #1：GCC IPA 诊断方法论沉淀 → `systemPatterns.md` ✅ 已落实
+  - P1 #2：候选方案表附根因验证步骤 → `writing-plans.mdc`（待固化）
+  - P2 #4：「方案根因假设未先验证」加入 `/reflect` 反复模式表（待固化）
+  - P2 #5：TASK-07 ↔ TASK-04 横向链接写入 archive（归档时落实）
+  - P3 #3：string.h 剩余 3 处 memcpy 防御性 noinline 化（触发型，已加入候选）
+
 ## 已完成任务
 
 - TASK-20260419-03：CSS 解析性能基准（Tokenizer 10 BM / Parser 11 BM / PropertyLookup 9 BM = 30 BMs + 3 baseline JSON 入仓 + Cluster 度量证 PropertyMap 均匀 → TASK-06 P1→P3 降级） → 归档 `memory-bank/archive/archive-TASK-20260419-03.md`

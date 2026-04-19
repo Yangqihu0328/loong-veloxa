@@ -5,7 +5,8 @@
 ### TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处）
 
 - **复杂度级别：** Level 1（2 文件，修复路径明确）
-- **状态：** 🟢 构建完成（待 `/reflect`）
+- **状态：** 🔵 回顾完成（待 `/archive`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-07.md`
 - **分支：** `feature/TASK-20260419-07-release-werror-fixes`（基于 main `b321482`）
 - **创建日期：** 2026-04-19
 - **来源：** TASK-20260419-03 P6 Release fresh build 副发现 + 长期项 P1 #2
