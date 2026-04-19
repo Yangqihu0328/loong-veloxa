@@ -1,11 +1,22 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+构建中
 
 ## 当前任务
 
-无
+**TASK-20260419-05：Layout + Render 性能基准（4 bench exe）**
+
+- 级别：Level 2-3（4 文件新建 + 1 共享 CMakeLists 修改 + README + 4 baseline JSON）
+- 分支：`feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
+- 目标 4 bench：`bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`
+- **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
+- **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h）
+- **4 决策已定（头脑风暴）：** (1) corpus 用纯程序化 DOM API；(2) flex 二维 BENCHMARK_TEMPLATE 5 固定点 + 1 嵌套 flex；(3) ImageCache 在 Record/Replay 各加 1 个 img-only 对比 BM；(4) 4 baseline JSON 全入仓 + 复用 TASK-03 baseline/README 协议
+- 衔接 TASK-03 模式（plan §TASK-03 模式复刻清单）：`vx_add_benchmark()` 三参 + baseline 协议 + RangeMultiplier 公式 + 程序化 corpus + 带否定判据 phase
+- 前置验证全 ✅（无 FetchContent → P0 git proxy 不触发）
+- Sticky ID：候选区固定 TASK-05（与 TASK-04 同样反向插入）
+- **下一步：** `/build` 进入实现（Phase 1：CMake 注册 + 4 smoke .cc）
 
 ## 最近归档
 
@@ -19,7 +30,7 @@
 
 ### 后续任务候选
 
-- **TASK-20260419-05（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-20260419-02 归档）
+- ~~TASK-20260419-05：已立项为当前任务，详见上方「当前任务」段~~
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报；目前不主动改避免引入不必要内联开销（来源 TASK-20260419-07 副发现）
 - **TASK-20260419-06（建议，**优先级降级 P1→P3**）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]。**降级根据**（TASK-03 P4 实测）：PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证明 cluster 问题主要见于 int key + 大规模场景，**短字符串 + 小规模场景免疫**；TASK-06 价值仍在但可推迟到大规模 int-key 容器场景出现时
 - ~~TASK-20260419-07：已归档（`archive-TASK-20260419-07.md`），合并到 main `206d227`~~

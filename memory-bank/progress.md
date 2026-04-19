@@ -2,7 +2,23 @@
 
 ## 当前任务
 
-无（等待 `/van` 启动新任务）
+### TASK-20260419-05：Layout + Render 性能基准（4 bench exe）
+
+#### 里程碑
+
+- 2026-04-19 — `/van`：API 验证 ✅、分支创建 ✅、前置验证 ✅（无 FetchContent）
+- 2026-04-19 — `/plan`：4 决策头脑风暴 ✅、design 文档落盘 ✅、7-phase 实现计划落盘 ✅、Memory Bank 同步 ✅
+
+#### 关键决策
+
+1. Corpus = 纯程序化 DOM API（仿 TASK-03 css_corpus）
+2. Flex bench = 二维 BENCHMARK_TEMPLATE 5 固定点 + 1 嵌套 flex
+3. ImageCache 在 Record/Replay 各加 1 个 img-only 对比（带否定判据 / 5x cluster 阈值同源 TASK-03）
+4. 4 baseline JSON 全入仓 + 复用 TASK-03 4-piece 失真兜底协议
+
+#### 下一步
+
+`/build` Phase 1 — CMakeLists + 4 smoke .cc 注册
 
 ## 已完成任务
 

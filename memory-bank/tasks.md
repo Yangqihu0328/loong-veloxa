@@ -2,7 +2,79 @@
 
 ## 当前任务
 
-无（等待 `/van` 启动新任务）
+### TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe）
+
+- **复杂度级别：** Level 2-3（4 文件新建 + CMakeLists 更新 + README + 4 baseline JSON 入仓）
+- **状态：** 🟢 规划完成（待 `/build`）
+- **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
+- **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h / 7 commits）
+- **分支：** `feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
+- **创建日期：** 2026-04-19
+- **来源：** TASK-20260419-02 归档 P1 后续任务 + TASK-20260419-03 baseline 模式延伸应用
+- **Sticky ID 说明：** 候选区固定 ID TASK-05（自 TASK-02 归档以来），与当天序号 08 不同；按候选区一致性使用 sticky ID（参考 TASK-04 同样反向插入先例）
+
+#### 目标 API（已验证）
+
+| API | bench 用途 |
+|---|---|
+| `vx::layout::LayoutEngine::Layout(doc, ctx)` | `bench_layout_buildtree` — 构造 BlockBox / InlineBox 树 + 完整 layout（默认 block flow） |
+| `vx::layout::LayoutEngine::Layout(doc, ctx)` （带 `display: flex` DOM） | `bench_layout_flex` — 触发 flex code path（行/列、子项数、尺寸约束）|
+| `vx::render::Record(root)` → `DisplayList` | `bench_render_record` — 树→ DisplayList 转换 |
+| `vx::render::Replay(list, canvas)` | `bench_render_replay` — DisplayList → Canvas 命令重放 |
+
+#### 衔接 TASK-03 模式（可复用）
+
+- ✅ `vx_add_benchmark()` CMake 函数已支持额外链接库（TASK-03 引入）
+- ✅ baseline JSON 入仓 + `benchmarks/baseline/README.md` 4-piece 失真兜底协议（TASK-03 沉淀）
+- ✅ RangeMultiplier 公式 `ceil(log_m(hi/lo))+1`（TASK-03 实证）
+- ✅ 程序化 corpus 构造 + 静态 cache（TASK-03 `StylesheetCorpus` / `InlineStyleCorpus` 模式可复刻为 `LayoutCorpus`）
+- ✅ 「带否定判据的发现型 phase」模板（TASK-03 cluster 度量；本任务可用于发现 layout 慢路径）
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|------|------|
+| 依赖可获取性 | ✅ 4 API 全在 main，`vx_core` 已链 |
+| 环境就绪 | ✅ `build-bench/` 复用，**无需 FetchContent → P0 git proxy 不触发** |
+| 已有 artifact | ✅ 7 现存 bench（4 Foundation + 3 CSS）；新增 4 bench 文件名不冲突 |
+| 待处理事项关联 | ✅ 落实 `activeContext.md` 长期项 P1 「Layout + Render 基准」 |
+
+#### 4 决策（头脑风暴产出）
+
+| # | 维度 | 选择 |
+|---|------|------|
+| 1 | Corpus 构造 | **A** 纯程序化 DOM API（`CreateElement` + `AppendChild` + `SetInlineDeclaration`） |
+| 2 | Flex 输入维度 | **B** 二维 `BENCHMARK_TEMPLATE(rows, cols)` 5 固定多维点 + 1 嵌套 flex |
+| 3 | ImageCache 覆盖 | **B** Record / Replay 各加 1 个 img-only 对比 BM（含 ImgVsNoImg/Cache vs /NoCache 判定 hot path） |
+| 4 | baseline 入仓 | **A** 4 个全入仓 + 复用 TASK-03 baseline/README 4-piece 失真兜底协议 |
+
+#### Phase 划分（7 phase，详见 plan §1-7）
+
+| Phase | 时间 | 文件 | BM 数 | 提交主题 |
+|-------|------|------|-------|---------|
+| 1 | 30min | CMakeLists + 4 smoke .cc | 4 | wip phase-1 |
+| 2 | 30min | layout_corpus.h | 0 | wip phase-2 |
+| 3 | 45min | bench_layout_buildtree.cc | 9 → 14 行 | feat phase-3 |
+| 4 | 45min | bench_layout_flex.cc | 6 | feat phase-4 |
+| 5 | 30min | bench_render_record.cc | 5 | feat phase-5 |
+| 6 | 45min | bench_render_replay.cc | 5-6 | feat phase-6 |
+| 7 | 30min | README + baseline + MB | 0 | docs phase-7 |
+
+#### 验收标准（design §9 完整版）
+
+1. ✅ 4 bench exe Release build 0 errors
+2. ✅ 各 bench BM 数量符合设计（design §3）
+3. ✅ 4 bench 全 exit 0 + 数字非零
+4. ✅ 全 7+4=11 bench targets 共存、零冲突
+5. ✅ Debug ctest 890/890 不变
+6. ✅ 4 baseline JSON 入仓 + README 更新
+7. ✅ techContext.md「Layout 性能基线」+「Render 性能基线」段补全
+8. ✅ ImageCache 对比 BM 给出明确判定（≥/< 5x 阈值，TASK-03 cluster 同源）
+- 安全相关：否（性能测量任务，无外部输入/无认证/无新依赖）
+
+#### 风险与中止判据
+
+详见 plan §「风险与中止判据」表 — 含 Phase 6 ImageCache API 探查 30min 预算 + 退化路径（推 TASK-09）
 
 <details>
 <summary>TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处） — ✅ 已归档（点开查看历史）</summary>
@@ -48,7 +120,7 @@
 
 ### 待立项候选
 
-- **TASK-20260419-05（建议，P1）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-02 归档；可用 TASK-03 baseline 反推性能预算锚）
+- ~~TASK-20260419-05：已立项为当前任务，详见上方「当前任务」段~~
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 
