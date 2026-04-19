@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中（TASK-20260419-03 续接：rebase main 已完成，本轮目标 = Phase 1 验证 + Phase 2）
+回顾中（TASK-20260419-03 第 1 轮 = Phase 0+1+2 已 reflect；**任务整体未完成**，Phase 3-6 留待第 2 轮 `/build`，**不可** `/archive`）
 
 ## 当前任务
 
@@ -18,7 +18,9 @@
   - Phase 1：Release `cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 干净 ✅；3 exe 各 1 BM 行（635 / 1821 / 10.4 ns）；TASK-04 修复（`enum_serialization.cc` LookupImpl）实地生效 — vx_core Release 链接成功无 `-Werror=array-bounds`
   - Phase 2：Tokenizer 10 BM（7 Range + 3 single）；BM_TokenizeAll 297-340 MiB/s 稳定（无 quadratic 退化）；StringHeavy 603 / WhitespaceHeavy 614 / NumericHeavy 372 MiB/s
   - Debug 全测试 890/890 ✅；3 CSS bench Release exit 0 + BM 行数符合预期（10 / 1 / 1）
-- **本轮提交：** chore(mb) resume + feat(benchmarks) tokenizer suite
+- **本轮提交：** chore(mb) resume + feat(benchmarks) tokenizer suite + chore(build) finalize
+- **第 1 轮回顾：** `memory-bank/reflection/reflection-TASK-20260419-03-round1.md`（关键发现：TASK-04 修复实地生效、新增「WIP commit subject 含外部状态」反复模式、多 phase 任务的轮次工作流缺乏阶段守卫支持）
+- **下一步：** 第 2 轮 `/build`（覆盖 Phase 3-6：Parser 11 BM + PropertyLookup 9 BM + cluster 度量 + README + 3 baseline JSON 入仓）；启动时阶段切回「构建中」
 
 ## 最近归档
 
@@ -35,6 +37,8 @@
 
 ### 长期项（按优先级）
 
+- **P1（新模式，首次出现）：** WIP / 中间 commit 的 subject 严禁包含外部任务状态字样（`BLOCKED on TASK-X` / `WAITING for Y` / `PENDING dep`），改用中性 `(unverified)` / `(compile-pending)` 后缀；外部依赖关系写到 commit body。**根因：** WIP commit 在 rebase / 续接 / 后续阅读时，subject 的 git log oneline 长期可见而 body 易被忽略，"过期外部状态"会持续误导。**首发：** TASK-20260419-03 Round 1 — `wip(TASK-03): Phase 1 CSS bench scaffolding (BLOCKED on TASK-04)` commit 在 TASK-04 解锁后 subject 字面失效但难以清理。**落实：** 下次 wip commit 前对照；如再次出现立即升级 P0 + 写入 `git-workflow.mdc` 「Commit Subject 规范」段
+- **P1（新模式）：** Level 2+ 多 phase 任务（phase 数 ≥ 5）需要支持「轮次完成」中间态 — `/reflect` 不强制切死端「回顾中」，允许多次 `/build` 续接同一 task 的不同 phase 区间。**首发：** TASK-20260419-03 Round 1 — 当前阶段流转 `构建中 → 回顾中 → 归档中` 假设「一轮即完成」，本任务 Phase 3-6 还要做但已切到「回顾中」，下轮 `/build` 又要切回，违反隐含 invariant。**落实：** 修改 `complexity-levels.mdc` 增加「多轮次 Build 工作流」段；或调整 `/reflect`、`/build`、`/archive` 命令的阶段守卫
 - **P1（新升级，反复出现）：** 任何引入 GCC/Clang 模板特化技巧（`template<usize N>` 取数组引用、CRTP、SFINAE 分派）的 PR 必须在 PR 检查表中加一行「Release `-O2 -Werror` 通路验证」。来源：TASK-20260419-04 反思 — TASK-01 引入 `Lookup<N>` 时仅 Debug 验证，未验证 Release `-Werror=array-bounds`，导致 TASK-03 Phase 1 才暴露；与 TASK-02 反思 #1 P1「性能基准任务必须 Release」同源（同属"前置依赖/环境/API 能力未验证"反复模式，已 8+ 次出现），但泛化范围更广 — 不限基准任务。下次涉及模板/泛型代码引入的 PR 前固化到 `writing-plans.mdc` 「Release 通路验证」段
 - **P1**：跨子库新增符号引用前 grep link graph，确认是否触发循环依赖（来源 TASK-20260419-01 反思 #1，规则已固化到 `writing-plans.mdc` 「静态库循环依赖审计」段；下次涉及静态库间符号引用时强制执行）
 - **P1**：性能基准任务必须在 Plan 阶段就显式 `-DCMAKE_BUILD_TYPE=Release` + 独立 `build-bench/` 目录（来源 TASK-20260419-02 反思 #1；下次 CSS / Layout / Render bench 立项前固化到 `writing-plans.mdc` 「性能基准任务必检项」段）

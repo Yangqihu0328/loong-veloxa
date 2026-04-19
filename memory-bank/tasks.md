@@ -5,11 +5,14 @@
 ### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
 
 - **复杂度级别：** Level 2
-- **状态：** 构建中（已续接，本轮 Phase 1 验证 + Phase 2）
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（已 rebase 到 main `a09ad1e`，feature ahead 2 commits：plan `0a9c6fd` + WIP Phase 1 `430a61e`）
+- **状态：** 第 1 轮 REFLECT 完成 ✅（**任务整体未完成**，Phase 3-6 留待第 2 轮 `/build`，**不可** `/archive`）
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（feature ahead-of-main 5 commits：plan `0a9c6fd` + WIP `430a61e` + chore(mb) resume `dfdf556` + feat tokenizer `4d014ec` + chore(build) finalize `fb9f8eb`，**第 1 轮 reflect commit 待提交**）
 - **TDD 模式：** 覆盖补充
-- **本轮范围：** Phase 1 验证 + Phase 2 Tokenizer 完整 ~10 BM 套件
-- **后续轮次：** Phase 3（Parser）/ Phase 4（PropertyLookup + cluster 度量）/ Phase 5（README）/ Phase 6（baseline JSON + 收尾）— 待本轮 `/reflect` 后另开下一轮 `/build`
+- **第 1 轮范围（已完成）：** Phase 0 验证 + Phase 1 验证（3 smoke bench 编译/运行）+ Phase 2（Tokenizer 完整 10 BM 套件）
+- **第 1 轮回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-03-round1.md`
+- **第 1 轮关键发现：** TASK-04 修复实地生效（vx_core Release 链接 0 `-Werror=array-bounds`）；BM_TokenizeAll 297-340 MiB/s 跨 64-4096 byte 规模稳定无 quadratic 退化；新增「WIP commit subject 含外部状态过期」反复模式
+- **第 2 轮范围（待续）：** Phase 3（Parser 11 BM）/ Phase 4（PropertyLookup 9 BM + cluster 度量）/ Phase 5（README 双段）/ Phase 6（3 baseline JSON 入仓 + 数据回填 + 收尾）
+- **第 2 轮启动前置：** 用户决定时间点；启动时把 `activeContext.md` 阶段切回「构建中」
 
 ## 任务历史
 
