@@ -7,6 +7,7 @@ extern "C" {
 #include <cstdio>
 #include <cstring>
 
+#include "veloxa/core/css/enum_serialization.h"
 #include "veloxa/core/css/parser.h"
 #include "veloxa/core/css/property.h"
 #include "veloxa/core/dom/text.h"
@@ -216,14 +217,14 @@ void AppendNumber(f32 v, String* out) {
   if (n > 0) out->append(StringView(buf, static_cast<usize>(n)));
 }
 
-void SerializeCssValue(const css::CssValue& v, String* out) {
+void SerializeCssValue(const css::CssValue& v, css::PropertyId prop,
+                       String* out) {
   switch (v.type) {
     case css::ValueType::kLength:
       AppendNumber(v.number, out);
       AppendCStr(UnitSuffix(v.unit), out);
       break;
     case css::ValueType::kColor: {
-      // CssValue stores color as 0xRRGGBBAA.
       u32 rgba = v.color;
       u8 r = static_cast<u8>((rgba >> 24) & 0xFF);
       u8 g = static_cast<u8>((rgba >> 16) & 0xFF);
@@ -247,10 +248,12 @@ void SerializeCssValue(const css::CssValue& v, String* out) {
     case css::ValueType::kInitial:
       AppendCStr("initial", out);
       break;
-    case css::ValueType::kEnum:
+    case css::ValueType::kEnum: {
+      StringView s = css::EnumValueToCssString(prop, v.enum_value);
+      if (!s.empty()) out->append(s);
+      break;
+    }
     case css::ValueType::kNone:
-      // Enum reverse-lookup (display, flex-direction, etc.) is deferred
-      // — tracked as P2 residual for #46.
       break;
   }
 }
@@ -271,7 +274,7 @@ JSValue StyleGetProp(JSContext* ctx, JSValueConst this_val, int magic) {
     const auto& d = (*decls)[i];
     if (d.property == target) {
       String out;
-      SerializeCssValue(d.value, &out);
+      SerializeCssValue(d.value, target, &out);
       return JS_NewStringLen(ctx, out.data(), out.size());
     }
   }

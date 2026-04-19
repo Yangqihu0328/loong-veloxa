@@ -170,15 +170,48 @@ TEST_F(DomBindingsTest, StyleGetUnsetReturnsEmpty) {
   EXPECT_EQ(r.value(), "");
 }
 
-TEST_F(DomBindingsTest, StyleGetDisplayEnumCurrentlyEmpty) {
-  // display uses kEnum; reverse-lookup table is deferred (#46 residual).
+// display uses kEnum and is now serialized via css::EnumValueToCssString
+// (TASK-20260419-01 B5). Each value maps round-trip set→get to its
+// canonical CSS spelling.
+
+TEST_F(DomBindingsTest, StyleGetDisplayBlock) {
   auto r = engine_.EvalGlobal(
       "var el = document.getElementById('box');"
       "el.style.display = 'block';"
       "el.style.display",
       "t.js");
   ASSERT_TRUE(r.ok());
-  EXPECT_EQ(r.value(), "");
+  EXPECT_EQ(r.value(), "block");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayFlex) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'flex';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "flex");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayNone) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'none';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "none");
+}
+
+TEST_F(DomBindingsTest, StyleGetDisplayInlineBlock) {
+  auto r = engine_.EvalGlobal(
+      "var el = document.getElementById('box');"
+      "el.style.display = 'inline-block';"
+      "el.style.display",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "inline-block");
 }
 
 TEST_F(DomBindingsTest, AddEventListenerRegisters) {
