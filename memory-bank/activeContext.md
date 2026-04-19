@@ -1,37 +1,15 @@
 # 活跃上下文
 
 ## 当前阶段
-回顾中
+空闲
 
 ## 当前任务
 
-**TASK-20260419-11：`ImageCache::Load` HashMap 化（K6 高 ROI 优化）**
-
-- **复杂度级别：** Level 2（image_cache.{h,cc} + tests + bench 复跑；机械替换 + 数据双索引设计）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 5 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5` + P4 收尾即将提交）
-- **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
-- **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / 实测 ~35-40 min vs plan 55-80 min）
-- **来源：** TASK-20260419-09 K6 量化拆出（hit 路径 O(N) 字符串扫；Hit<256> 1151.77 ns > ReplayImageReal<16> 595 ns）
-
-### 构建结果（10/10 验收 ✅）
-
-- **K6 量化命题完全解：** Hit<16> 50.87 → **44.05 ns**（1.16×↓，目标 < 50 ns ✓）；Hit<256> 1151.77 → **45.70 ns**（**25.2×↓**，目标 < 100 ns ✓）；anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」消失
-- **回归零退化：** ctest **891/891** PASS（含新增 `ClearAndReloadDeduplicates` D3 RED probe 验证有效）；Release `-O3` build-bench 0 errors / 0 warnings；Miss/Get/ReplayImageReal 持平
-- **已知微回归（plan 已注明可接受）：** Hit<1> 10.35 → 43.27 ns（HashMap djb2 + probe 固有 ~32 ns 开销，被 256 路径净增益完全压倒）
-- **入仓制品：** baseline JSON 重生成（带 repetitions=3 / mean+median+stddev/cv）；2 README + techContext K6 状态全部翻牌「已解决」
-
-### Plan 阶段沉淀（保留以备 `/reflect`）
-
-- **VAN 5 grep 实证（F1-F5，落实 P0 #4 完整应用）：** F1 handle 必须 1-based vector 下标 → 双索引；F2 `String` 无直接 `==(String,String)` → 自定义 StringEq；F3 djb2 现成可复刻；F4 `application.cc` 唯一调用方；F5 `DeduplicateSamePath` 已覆盖 dedup 契约
-- **Plan 补 grep：** `string.h:30-56 BasicString` SSO 内联确认 → D1 `StringView` key 危险性最终验证
-- **4 决策（D1-D4）：** owned String key + 自定义 StringHash/StringEq（D1）/ 默认 capacity 16（D2）/ 加 1 个 ClearAndReloadDeduplicates GTest（D3）/ 4 phase 细粒度（D4）
-
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-11.md`（计划 vs 实际 + 4 维回顾 + 反复模式扫描 + 6 改进建议）
-- **关键沉淀：** L1 Mixed TDD RED 反向探针（D3 类回归网测试标配）；L2 bench plan 阈值表对超低 ns BM 用绝对增量兜底；L4 「数据结构改造与行为切换分离」P1+P2 拆分模式；估时校准 4.2×→2.0× 收敛
-- **下一步：** `/archive` 进行归档
+_无活跃任务。使用 `/van [task description]` 开始新任务。_
 
 ## 最近归档
 
+- `memory-bank/archive/archive-TASK-20260419-11.md`（TASK-20260419-11 ImageCache::Load HashMap 化 — K6 高 ROI 修复 — 双索引方案（`Vector<Entry>` 保 ABI/Get O(1) + `HashMap<String, ImageHandle, StringHash, StringEq>` 提供 O(1) path 查询）；Hit<256> 1151.77 ns → 45.70 ns（**25.2×↓**），Hit<16> 50.87 → 44.05 ns；ctest 891/891 PASS（含 `ClearAndReloadDeduplicates` D3 回归网，RED 反向探针验证有效）；Release `-O3` 0 errors；3 P1 沉淀：bench 阈值表绝对增量兜底 / Plan grep `which <tool>` / Mixed TDD RED 反向探针；3 P2 沉淀：P1+P2 拆分模式 / HashMap 不是金科玉律 / bench 估时校准 4.2×→2.0× 收敛；已 `--no-ff` 合并到 main `8515c25`）
 - `memory-bank/archive/archive-TASK-20260419-09.md`（TASK-20260419-09 Replay 深度基准 + 真 ImageCache 通路 — 2 bench exe / 15 BMs / 2 baseline JSON 入仓；K1 修正归因（fallback 非真路径）+ 真冷路径 14× 慢；K6 新发现 ImageCache::Load O(N) hit 路径（size=256 时 1162 ns）→ 推 TASK-11 P1 高 ROI；K7 新发现 warm 真路径 1.6× 慢 fallback → 推 TASK-12 P2 触发型；落实「方案根因假设未先验证」P0 第 2 次完整应用 + 升级 grep 规则覆盖 CMake 链接可见性）
 - `memory-bank/archive/archive-TASK-20260419-05.md`（TASK-20260419-05 Layout + Render 性能基准 — 4 bench exe / 30 BMs / 4 baseline JSON 入仓；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-20260419-09 候选；落实 P0 #2 `writing-plans.mdc`「性能基准任务必检项」段；已 `--no-ff` 合并到 main `d0999e8`）
 - `memory-bank/archive/archive-TASK-20260419-07.md`（TASK-20260419-07 修复 main Release `-Werror` 编译失败 2 处 — fgets unused-result + BasicString copy ctor IPA array-bounds 误报；与 TASK-04 同元模式不同手法 noinline；已 `--no-ff` 合并到 main `206d227`）
@@ -47,7 +25,7 @@
 - **TASK-20260419-06（建议，P3 降级）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射。**降级理由（TASK-03 P4 实测）：** PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证 cluster 问题主要见于 **int key + 大规模**场景。**触发条件**：「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报；目前不主动改避免引入不必要内联开销（来源 TASK-20260419-07 副发现）
 - **TASK-20260419-10（TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear。**TASK-09 VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` `Vector<LayoutBox*> children` 扩容序列；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 / prefetch break。**预期产出**：调查报告 +（可能）layout 算法重构 PR。**触发条件**：建议在 TASK-11 之后立项（K6 修复独立且小，先做）
-- ~~TASK-20260419-11：已立项为当前任务（详见上方「当前任务」段）；VAN 阶段确认双索引方案（保 handle ABI + Get O(1)），djb2 模板可复刻自 `property.cc:84`~~
+- ~~TASK-20260419-11：已完成并合并到 main `8515c25`，详见 `archive-TASK-20260419-11.md`~~
 - **TASK-20260419-12（TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选优化：(a) `hb_buffer` 复用（避免 hb_buffer_create/destroy 每帧分配）；(b) glyph bitmap 直接 raster 到 canvas（避免 GlyphCache → 中间 buffer → blit 的两次拷贝）。**预期产出**：warm 真路径 < 3000 ns（小于 fallback）后默认真路径。**触发条件**：当真路径默认化提上日程时
 
 ### 长期项（按优先级）

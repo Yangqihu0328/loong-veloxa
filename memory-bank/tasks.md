@@ -2,12 +2,18 @@
 
 ## 当前任务
 
+_无活跃任务。使用 `/van [task description]` 开始新任务。_
+
+<details>
+<summary>TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化） — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化）
 
 - **复杂度级别：** Level 2（多文件：image_cache.{h,cc} + tests + bench 复跑验证；机械替换 + 数据双索引设计；无 UI/架构空白）
-- **状态：** 🟢 回顾完成（待 `/archive`）
-- **当前阶段：** 回顾中（`activeContext.md`）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 6 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5`、P4 `bfff464` + reflect 即将提交）
+- **状态：** ✅ 已完成（已合并到 main `8515c25`，详见 `archive-TASK-20260419-11.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-11.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-11.md`
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（共 8 commits 含 archive；已 `--no-ff` 合并到 main）
 - **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-11.md`
 - **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
 - **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
@@ -83,6 +89,8 @@
 #### 安全相关
 
 否（性能优化任务，无外部输入新增/无认证路径/无新依赖；`HashMap` 已是 vx_core 内部成熟容器）。
+
+</details>
 
 <details>
 <summary>TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集） — ✅ 已归档（点开查看历史）</summary>
@@ -352,13 +360,14 @@
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 - ~~TASK-20260419-09：已立项为当前任务（A+B 子集），详见上方「当前任务」段。VAN 阶段 grep 推翻 K5「需 fixture 文件复制」假设（复用 `image_decoder_test.cc::CreateTestPng()` 程序化构造写 /tmp）+ K1「DrawText 真路径」假设（实际走 fallback FillRect）~~
 - **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**，非 bench 类）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear（10×～15×）。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` 内 `Vector<LayoutBox*> children` 扩容序列（首发→第 N 次扩容产生连续 reallocate）；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 cache miss（256 box × ~100 byte = 25.6 KB ≤ L1d 32KB，但 prefetch pattern 可能 break）。**预期产出**：调查报告 + （可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后立项；如新增 layout 性能问题先于 TASK-09 完成出现可优先此项
-- ~~TASK-20260419-11：已立项为当前任务（分支 `feature/TASK-20260419-11-imagecache-hashmap`），详见上方「当前任务」段。**VAN 阶段重大发现**：handle 必须保持 1-based vector 下标（保 Get O(1) + ABI），改造路径定为**双索引**（Vector + HashMap）；djb2 模板可复刻自 `property.cc:84 StringViewHash`~~
+- ~~TASK-20260419-11：已完成并归档（合并到 main `8515c25`），详见 `archive-TASK-20260419-11.md`。**核心成果**：双索引方案 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`) 让 `BM_ImageCacheLoad_Hit<256>` 从 1151.77 ns → 45.70 ns（**25.2×↓**），K6 命题完全解；ctest 891/891 PASS；Release `-O3` 0 errors~~
 - **TASK-20260419-12（新增，TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选：(a) `hb_buffer` 复用避免每次 alloc/free；(b) glyph bitmap 直接 raster 到 canvas 避免 GlyphCache → 中间 buffer → blit 两次拷贝。**预期产出**：warm 真路径 < 3000 ns 后默认真路径开关。**触发条件**：当真路径默认化提上日程时
 
 ## 任务历史
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-11 | ImageCache::Load HashMap 化（K6 高 ROI 修复）— 双索引 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`)；保 ABI / Get O(1)；Hit<256> 1151.77 ns → 45.70 ns（25.2×↓）；ctest 891/891 PASS；新增 `ClearAndReloadDeduplicates` D3 回归网（RED 反向探针验证有效）；3 P1 + 3 P2 改进沉淀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-11.md` |
 | TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |
 | TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
 | TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
