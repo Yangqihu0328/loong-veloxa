@@ -639,17 +639,19 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 
 **落实**：候选方案表 ≥ 3 项时强制要求；2 项以内可豁免（决策成本与验证成本接近）。
 
-### 「带否定判据的发现型 Phase」方法论（TASK-03 + TASK-05 双实证）
+### 「带否定判据的发现型 Phase」方法论（TASK-03 + TASK-05 + TASK-09×2，**4/4 成熟实践**）
+
+**状态**：**已成熟实践**（4/4 成功率，全部"否定原假设 + 意外定位真问题"）— TASK-09 reflection 升级，删除原"双实证"措辞。
 
 **适用场景**：性能 bench / 正确性边界探查类任务，存在「假设 X 是瓶颈/问题」需要量化证伪或证实的情况。
 
 **4 要素**：
 1. **Hypothesis**：明确写出「X 是 hot path / 触发 cluster / 走慢路径」
-2. **Threshold**：写出"超过 Y× 即视为命中"（TASK-03 / TASK-05 都用 5×；与 google/benchmark 默认稳态噪音 ~5% 远超）
-3. **对比组**：在同一 BM 文件内构造 baseline + suspect 双 BM（必要时设 single-key probe）
+2. **Threshold**：写出"超过 Y× 即视为命中"（TASK-03 / TASK-05 / TASK-09 都用 5×；与 google/benchmark 默认稳态噪音 ~5% 远超）
+3. **对比组**：在同一 BM 文件内构造 baseline + suspect 双 BM（必要时设 single-key probe / cold-warm 对比 / size 扫描）
 4. **接受任意结果**：方法论的价值不在"证实 X 是问题"，而在"任意结果都得到量化结论"
 
-**已成功应用 2 次**：
+**已成功应用 4 次**：
 | Task | Hypothesis | 结果 | 后续动作 |
 |------|-----------|------|---------|
 | TASK-03 P4 | PropertyMap djb2 触发 cluster | ❌ 否（最慢 single key 仅 2.75× HitHot5）| TASK-06 P1→P3 降级 |
@@ -659,7 +661,24 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 
 **关键观察**：方法论 4 次都在"否定原假设"的同时**意外定位真正的问题**（cluster 度量发现 djb2 + 短字符串场景免疫；hot path 度量发现 DrawText 才是瓶颈；真路径冷热对比定位 FT_Load+FT_Render；ImageCache size 扫描定位 O(N) Load）— 这是 plan 阶段单纯靠 grep / 推理无法获得的认知跳跃。
 
-**落实**：写入 `writing-plans.mdc`「Phase 类型」附录段；任何性能/正确性边界 phase 都应套用这个 4 要素清单。
+**落实**：写入 `writing-plans.mdc`「Phase 类型」附录段；任何性能/正确性边界 phase 都应套用这个 4 要素清单。**TASK-09 reflection 阶段：方法论标记为成熟实践（4/4），下次同类 phase 默认套用，不再标"实验性"。**
+
+### bench 类任务估时校准（TASK-05 + TASK-09 双实证 4× 高估）
+
+**现象**：连续两次 bench 类任务 plan 估时与实际严重偏离：
+| 任务 | Plan 估 | 实际 | 比率 |
+|------|--------|------|------|
+| TASK-05 | 4.25h | 75 min | **3.4×** |
+| TASK-09 | 3.5h | ~50 min | **4.2×** |
+
+**根因**：bench 基础设施（`layout_corpus.h` / `vx_add_benchmark` / google/benchmark FetchContent / smoke 三件套 / baseline JSON 协议 / `library_build_type=release` 体检）已成熟，"复用率 ≥ 80%"；但 plan mental model 仍按"从零写一个 bench exe"计算，导致 3-4× 系统性高估。
+
+**改进协议**（下次 bench 任务 plan §0 必填）：
+- **复用率假设**：layout_corpus.h X% / vx_add_benchmark 100% / smoke 三件套 100% / baseline JSON 协议 100%
+- **单 BM 实际编写时间** ：3-5 min（成熟期），非 10-15 min（从零）
+- **单 phase 估时基线**：phase = 4-8 BMs → 30-50 min；phase = 文档 / baseline → 20-30 min
+
+**触发升级**：如下次 bench 任务再次 > 3× 高估，升级到 `writing-plans.mdc` 强制条目。
 
 ### Render Bench 前置清单（TASK-05 K1+K4 教训）
 

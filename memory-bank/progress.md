@@ -4,7 +4,7 @@
 
 ### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
 
-**当前阶段：** 构建完成（待 `/reflect`）
+**当前阶段：** 回顾完成（待 `/archive`）
 
 **里程碑：**
 - ✅ VAN（2026-04-19）：分支创建（基于 main `bfe44ae`），范围拆分（A+B 本任务 / C 拆 TASK-10 候选），4 处 grep 推翻 K1/K5 三个原假设
@@ -15,7 +15,13 @@
   - phase-3 `8e55337` bench_drawtext 全套 8 BMs（K1 修正归因 + K7 新发现）
   - phase-4 `913bf01` 2 baseline JSON + 2 README
   - phase-5 (本 commit) techContext + systemPatterns + MB 收尾
-- ⏳ Reflect / Archive
+- ✅ Reflect（2026-04-19）：`memory-bank/reflection/reflection-TASK-20260419-09.md` 落地，5 项改进建议（P0×1 / P1×2 / P2×2）全部闭环：
+  - **P0 #1**（已落实）：`writing-plans.mdc` §3 grep 增补「CMake 链接可见性 PUBLIC/PRIVATE/INTERFACE 必查」（PNG::PNG 工程意外的根本预防）
+  - **P1 #2**（已迁入 activeContext）：bench 类任务 plan 估时模板（含复用率 + 单 BM 3-5 min 经验值）；连续 2 次 4× 高估
+  - **P1 #4**（已迁入 tasks 候选）：TASK-20260419-11 `ImageCache::Load` HashMap 化（K6 高 ROI 优化）
+  - **P2 #3**（已沉淀 systemPatterns）：「带否定判据的发现型 Phase」标记 4/4 成熟实践
+  - **P2 #5**（已沉淀 systemPatterns）：bench 估时校准段（双实证 4× 高估，触发升级阈值）
+- ⏳ Archive
 
 **核心数据成果（K1/K6/K7 三大判定）：**
 - **K1 修正归因**：TASK-05 8200 ns/cmd 实为 fallback FillRect ×19/cmd；"820×"是 per-cmd 工作不可比，非真路径慢源

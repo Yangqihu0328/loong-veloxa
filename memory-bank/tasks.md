@@ -5,8 +5,9 @@
 ### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
 
 - **复杂度级别：** Level 2-3（2 个新 bench exe + 复用 layout_corpus.h + 2 baseline JSON 入仓 + README 更新）
-- **状态：** 🟢 构建完成（待 `/reflect`）
-- **当前阶段：** 构建完成（`activeContext.md`）
+- **状态：** 🟢 回顾完成（待 `/archive`）
+- **当前阶段：** 回顾中（`activeContext.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-09.md` ✅
 - **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md` ✅
 - **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md` ✅（5 phase / ~15 BMs / ~3.5h / 7 commits）
 
@@ -241,6 +242,8 @@
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 - ~~TASK-20260419-09：已立项为当前任务（A+B 子集），详见上方「当前任务」段。VAN 阶段 grep 推翻 K5「需 fixture 文件复制」假设（复用 `image_decoder_test.cc::CreateTestPng()` 程序化构造写 /tmp）+ K1「DrawText 真路径」假设（实际走 fallback FillRect）~~
 - **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**，非 bench 类）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear（10×～15×）。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` 内 `Vector<LayoutBox*> children` 扩容序列（首发→第 N 次扩容产生连续 reallocate）；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 cache miss（256 box × ~100 byte = 25.6 KB ≤ L1d 32KB，但 prefetch pattern 可能 break）。**预期产出**：调查报告 + （可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后立项；如新增 layout 性能问题先于 TASK-09 完成出现可优先此项
+- **TASK-20260419-11（新增，TASK-09 K6 拆出，建议 P1 高 ROI 优化）：** `ImageCache::Load` HashMap 化（**优化类**，机械替换）— 现状 hit 路径 O(N) 字符串扫，cache size = 256 时 1162 ns 单次 Load > `ReplayImageReal<16>` 595 ns（K6 量化数据）。改 `HashMap<String, ImageHandle>` 后 hit 路径预期稳定 ~10-30 ns 不论 cache size。**预期工作量**：~1-2h（含同机 baseline 对比 + 单测 + bench 复跑确认 K6 命题已解）。**触发条件**：可即立项（K6 修复独立 + 工作量小，建议在 TASK-10 之前优先做）
+- **TASK-20260419-12（新增，TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选：(a) `hb_buffer` 复用避免每次 alloc/free；(b) glyph bitmap 直接 raster 到 canvas 避免 GlyphCache → 中间 buffer → blit 两次拷贝。**预期产出**：warm 真路径 < 3000 ns 后默认真路径开关。**触发条件**：当真路径默认化提上日程时
 
 ## 任务历史
 
