@@ -5,9 +5,7 @@
 
 #include <benchmark/benchmark.h>
 
-#include "veloxa/core/dom/document.h"
-#include "veloxa/core/dom/element.h"
-#include "veloxa/core/dom/tag.h"
+#include "benchmarks/layout_corpus.h"
 #include "veloxa/core/layout/layout_engine.h"
 #include "veloxa/core/layout/layout_utils.h"
 #include "veloxa/foundation/memory/arena_allocator.h"
@@ -22,21 +20,8 @@ vx::layout::LayoutContext MakeCtx() {
   return ctx;
 }
 
-vx::dom::Document& SmokeDocument() {
-  static vx::dom::Document doc;
-  static bool built = false;
-  if (!built) {
-    auto* body = doc.CreateElement(vx::dom::TagId::kBody);
-    doc.AppendChild(body);
-    auto* div = doc.CreateElement(vx::dom::TagId::kDiv);
-    body->AppendChild(div);
-    built = true;
-  }
-  return doc;
-}
-
 static void BM_LayoutBuildTreeSmoke(benchmark::State& state) {
-  auto& doc = SmokeDocument();
+  auto& doc = vx::bench::CachedFlatDocument(1);
   auto ctx = MakeCtx();
   for (auto _ : state) {
     vx::ArenaAllocator arena;
