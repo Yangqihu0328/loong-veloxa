@@ -40,6 +40,31 @@
 | zlib | 压缩 | 待接入（资源打包） |
 | libuv | 异步 I/O | 待接入（事件循环） |
 
+## FetchContent 与代理（开发环境注意）
+
+### http_proxy / HTTPS_PROXY 设置
+
+首次 `cmake -B build` 触发 `FetchContent` 拉取 quickjs-ng（v0.14.0）等依赖。WSL2 / 内网环境若无系统 DNS，必须导出代理：
+
+```bash
+export http_proxy=http://your-proxy:port
+export https_proxy=$http_proxy
+cmake -B build
+```
+
+### 离线场景
+
+若需完全离线构建，预先把 `_deps` 目录从可联网机器拷贝到 `build/_deps`，再运行 `cmake -B build`，FetchContent 会跳过下载。
+
+### 已知首次配置失败模式
+
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| `Could not resolve host: github.com` | 无代理 | 设置 `http_proxy` / `https_proxy` |
+| `error: '#pragma' is not allowed here` (QuickJS) | 全局 `-Werror=pedantic` 污染 C 源 | 用 `add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>")` 限制为仅 C++ |
+| `Unknown arguments specified` (FindPkgConfig) | 子目录重复 `pkg_check_modules` | 提供方一次声明 + `target_link_libraries(... PUBLIC ...)` 传播 |
+| 第三方库 include 路径在测试目标找不到 | 通过 `INTERFACE` 链接但下游 target 没传播 | 改用 `PUBLIC` 链接（参考 TASK-20260418-01 P1#1）|
+
 ## Sciter 架构分析摘要
 
 ### 分层架构（参考）
