@@ -236,20 +236,20 @@ cmake --build build -j
 
 | 形态 | 时间 / 单位 |
 |------|------------|
-| `BM_ImageCacheLoad_Miss` | 3692 ns（含 1×1 RGBA decode + Vector push） |
-| `BM_ImageCacheLoad_Hit<1>` | 9.99 ns（最佳） |
-| `BM_ImageCacheLoad_Hit<16>` | 48.5 ns |
-| `BM_ImageCacheLoad_Hit<256>` | **1162 ns（116× of Hit<1>）— K6 hot point** |
-| `BM_ReplayImageReal<16>`（end-to-end） | 595 ns（37 ns/cmd） |
-| `BM_ReplayImageReal<64>`（end-to-end） | 2390 ns（37 ns/cmd，完美线性） |
-| `BM_ImageCacheGet` | 0.94 ns（O(1) 数组下标确认） |
+| `BM_ImageCacheLoad_Miss` | 3344 ns（含 1×1 RGBA decode + Vector push） |
+| `BM_ImageCacheLoad_Hit<1>` | 43.27 ns（HashMap djb2 + probe 固有开销，绝对量微小）|
+| `BM_ImageCacheLoad_Hit<16>` | 44.05 ns（O(1) 起效）|
+| `BM_ImageCacheLoad_Hit<256>` | **45.70 ns（O(1) 平台化，原 1162 ns 25.2×↓）— K6 已解决** |
+| `BM_ReplayImageReal<16>`（end-to-end） | 597.86 ns（37 ns/cmd） |
+| `BM_ReplayImageReal<64>`（end-to-end） | 2398.12 ns（37 ns/cmd，完美线性） |
+| `BM_ImageCacheGet` | 1.16 ns（O(1) 数组下标，未改）|
 
-> **K6 发现（最高 ROI 优化候选）**：`ImageCache::Load` hit 路径是 O(N) 字符串扫描；cache size = 256 时单次 Load = 1162 ns，**比整个 ReplayImageReal<16>（595 ns）还慢**。改 `HashMap<String, ImageHandle>` 是高 ROI 候选优化（任何 > 30 张图片的真实页面都直接受益）。
+> **K6（TASK-20260419-11 已解决）**：`ImageCache::Load` hit 路径已升级为双索引 `Vector<Entry>`（保留 ABI / Get O(1)）+ `HashMap<String, gfx::ImageHandle, StringHash, StringEq>`（O(1) path lookup）。Hit<256> 1151.77 ns → 45.70 ns（**25.2×↓**），Hit<16> 50.87 ns → 44.05 ns（**1.16×↓**），anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」消失。Hit<1> 10.35 ns → 43.27 ns 是 HashMap 固有 ~32 ns 开销（djb2 + probe），绝对量微小，被 256 路径净增益完全压倒。详见 `archive-TASK-20260419-11.md`。
 
 ### 用途
 
 - DrawText 路径修改（FreeType / HarfBuzz / glyph cache 重构）以 K1 修正归因 + K7 为基线
-- ImageCache 改造（HashMap 化）以 K6 + `BM_ImageCacheGet` 0.94 ns 为对照
+- ImageCache 改造（HashMap 化）已由 TASK-20260419-11 完成：双索引 + custom StringHash/StringEq，未来可对照 `BM_ImageCacheGet` 1.16 ns 评估进一步优化空间
 - 跨硬件比较见 `benchmarks/baseline/README.md` 失真警告
 
 ### 用途

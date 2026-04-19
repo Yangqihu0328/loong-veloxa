@@ -5,9 +5,9 @@
 ### TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化）
 
 - **复杂度级别：** Level 2（多文件：image_cache.{h,cc} + tests + bench 复跑验证；机械替换 + 数据双索引设计；无 UI/架构空白）
-- **状态：** 🟢 规划完成（待 `/build`）
-- **当前阶段：** 规划中（`activeContext.md`）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（已创建，含 1 commit `e7a9162`）
+- **状态：** 🟢 构建完成（待 `/reflect`）
+- **当前阶段：** 构建完成（`activeContext.md`）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 5 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5`，P4 收尾即将提交）
 - **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
 - **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
 - **创建日期：** 2026-04-19
@@ -66,18 +66,18 @@
 | 待处理事项关联 | ✅ 落实 candidate TASK-11（候选区 P1 高 ROI）；与 TASK-10/12 不冲突 |
 | Sticky ID 一致性 | ✅ 候选区 ID = TASK-20260419-11，本任务沿用 |
 
-#### 验收标准（初拟，待 /plan 细化）
+#### 验收标准（构建完成，10/10 ✅）
 
-1. ✅ 双索引数据结构（`Vector<Entry>` + `HashMap<String, ImageHandle>`）实现，handle 保持 1-based vector 下标
-2. ✅ `ImageCache::Load` hit 路径全部走 HashMap O(1)，O(N) 字符串扫被消除
+1. ✅ 双索引数据结构（`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`）实现，handle 保持 1-based vector 下标
+2. ✅ `ImageCache::Load` hit 路径全部走 HashMap O(1)，O(N) 字符串扫被消除（Hit<256> 1151.77 → 45.70 ns，**25.2×↓**）
 3. ✅ 现有 3 个 GTest 全部通过（含 `DeduplicateSamePath` dedup 契约）
-4. ✅ ctest 全量回归（890/890）零退化
-5. ✅ Release `-Werror` 通路零编译失败
-6. ✅ `bench_imagecache` 同机复跑：Hit<16> < 50 ns 且 Hit<256> < 100 ns（即 K6 量化命题"size=256 时 1162 ns"已解）
-7. ✅ Miss 与 Get 性能不退化（Miss 由 DecodeFromFile 主导；Get 仍用 `images_[handle-1]`）
-8. ✅ baseline JSON 重生成入仓（同名覆盖），README "Key findings" 段加入 K6 修复证据行
-9. ✅ techContext.md「Replay-Deepbench 性能基线」段更新（K6 状态从"待优化"改为"已解决"）
-10. ✅ Memory Bank 更新（K6 候选标记为已完成，并在反思中评估 1-2h 工作量是否准确）
+4. ✅ ctest 全量回归 **891/891** 通过（新增 `ClearAndReloadDeduplicates` 1 项，D3 RED probe 验证有效）
+5. ✅ Release `-O3 -DNDEBUG` 通路（`build-bench/`）零编译失败 / 零 -Wall 警告
+6. ✅ `bench_imagecache` 同机复跑：Hit<16> = 44.05 ns（< 50 ns ✓）；Hit<256> = 45.70 ns（< 100 ns ✓）— K6 量化命题完全解
+7. ✅ Miss 3833 → 3344 ns（不退化）；Get 0.94 → 1.16 ns（噪声级，实现未改动）；ReplayImageReal<16/64> 持平
+8. ✅ baseline JSON 重生成入仓（带 repetitions=3 / mean+median+stddev/cv，library_build_type=release），baseline/README 加 K6-resolved 行 + 历史项；benchmarks/README ImageCache 量级行已更新
+9. ✅ techContext.md「Replay-Deepbench 性能基线」段 K6 状态从"待优化"改为"已解决"，含双索引架构 + 实测对比数字
+10. ✅ Memory Bank 更新（tasks/activeContext/progress 推进到「构建完成」；K6 候选标记结案；1-2h 实绩待 `/reflect` 评估，目前实测 P1+P2+P3+P4 ~35-40 min vs plan 估 ~55-80 min）
 
 #### 安全相关
 
