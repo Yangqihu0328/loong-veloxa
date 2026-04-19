@@ -2,7 +2,35 @@
 
 ## 当前任务
 
-无活跃任务。使用 `/van` 启动新任务。
+无活跃任务。建议下一步 `/van TASK-04` 立 Level 1 修复任务，解锁 TASK-03 Phase 1 续接。
+
+## 暂停中任务
+
+### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
+
+- **复杂度级别：** Level 2
+- **状态：** 暂停（Phase 1 WIP 已 commit，等待 TASK-04 解锁）
+- **分支：** `feature/TASK-20260419-03-css-benchmarks`（ahead-of-main 4 commits：plan + WIP Phase 1 + 2 chore；MB 暂停说明）
+- **进度：** Phase 0 ✅（GTest 890/890 + Release `build-bench/` + bench_allocators 13 BM 验证 Release 通路 OK）；Phase 1 ⛔（CMake 扩展 + css_corpus.h + 3 smoke .cc 已写入但未编译验证）
+- **阻塞：** Release `-O2 -Werror=array-bounds` 拒绝 `vx_core/css/enum_serialization.cc:63` — GCC IPA inline 模板 `Lookup<N>` 跨 5+ clone 值域分析误报；Debug 不触发；TASK-02 仅链 vx_foundation 故未暴露
+- **续接动作：** TASK-04 修复合并到 main 后 → `git checkout feature/TASK-20260419-03-css-benchmarks` → `git rebase main` 或 merge → `/build` → `cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 验证 3 smoke 跑通 → 进入 Phase 2
+
+### TASK-20260419-04 — 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（待 `/van`）
+
+- **复杂度级别：** Level 1（小修小补 / 单文件）
+- **状态：** 待立项
+- **来源：** TASK-20260419-03 Phase 1 BUILD 副发现
+- **目标：** GCC Release `-O2 -Werror` 下 `vx_core` 干净编译；不影响 Debug、不削弱告警、保持 `Lookup<N>` 行为契约
+- **错误现场：**
+  ```
+  veloxa/core/css/enum_serialization.cc:63:15: error: array subscript ‘const char* const [5][0]’ is partly outside array bounds of ‘const char* const [2]’ [-Werror=array-bounds]
+     63 |   const char* s = table[v];
+  ```
+- **候选方案：**
+  - A) 文件顶部 `#pragma GCC diagnostic push/ignored "-Warray-bounds"`/`pop`（最小手术，源文件级）
+  - B) `veloxa/core/CMakeLists.txt` 对该单文件 `set_source_files_properties(... PROPERTIES COMPILE_OPTIONS "-Wno-array-bounds")`（CMake 层豁免）
+  - C) 重构 `Lookup<N>` 去模板化为非模板版本（消除 IPA clone 触发条件）
+- **解锁目标：** TASK-20260419-03 Phase 1
 
 <details>
 <summary>已归档：TASK-20260419-02 — 补充 Google Benchmark 集成与 Foundation 性能基准（点开查看历史细节）</summary>

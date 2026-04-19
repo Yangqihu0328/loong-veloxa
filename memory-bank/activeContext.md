@@ -1,10 +1,17 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+空闲（TASK-20260419-03 已开工但暂停于 Phase 1，等待 TASK-20260419-04 解锁）
 
 ## 当前任务
-无活跃任务。使用 `/van` 启动新任务。
+无活跃任务。建议下一步：`/van TASK-04` 处理 `enum_serialization.cc` Release `-Warray-bounds` 误报，解锁 TASK-03 续接。
+
+## 暂停中任务
+
+**TASK-20260419-03** — CSS 解析性能基准
+- 分支：`feature/TASK-20260419-03-css-benchmarks`（已 ahead-of-main 4 commits：plan + WIP Phase 1 + 2 chore）
+- Phase 0 ✅ Phase 1 ⛔（vx_core Release `-Werror=array-bounds` 阻塞）
+- 续接：TASK-04 合并后 `git checkout feature/TASK-20260419-03-css-benchmarks` → `/build`
 
 ## 最近归档
 
@@ -16,9 +23,10 @@
 
 ### 后续任务候选
 
-- **TASK-20260419-03（建议）：** CSS 解析基准 — `bench_css_tokenizer` / `bench_css_parser` / `bench_property_lookup`（来源 TASK-20260419-02 归档）
-- **TASK-20260419-04（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-20260419-02 归档）
-- **TASK-20260419-05（建议）：** HashMap Hash Mixing 优化（cluster 问题，反思 #4） — `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]（来源 TASK-20260419-02 BUILD 副发现）
+- **TASK-20260419-03（暂停）：** CSS 解析基准 — `bench_css_tokenizer` / `bench_css_parser` / `bench_css_property_lookup`；Phase 1 阻塞，详见上方暂停中任务
+- **TASK-20260419-04（待 `/van`，最高优先级）：** 修复 `veloxa/core/css/enum_serialization.cc` Release `-O2 -Werror=array-bounds` 误报（GCC IPA inline 模板 `Lookup<N>` 跨 5+ clone 值域分析失误）；候选方案：A) 文件局部 `#pragma GCC diagnostic push/ignored "-Warray-bounds"` / B) CMake `set_source_files_properties(... PROPERTIES COMPILE_OPTIONS "-Wno-array-bounds")` / C) 重构 `Lookup<N>` 去模板化；Level 1（小修小补 / 单文件）；解锁目标 = TASK-03 Phase 1 续接
+- **TASK-20260419-05（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（原 04，编号顺延；来源 TASK-20260419-02 归档）
+- **TASK-20260419-06（建议）：** HashMap Hash Mixing 优化（cluster 问题，反思 #4） — `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]（原 05，编号顺延；来源 TASK-20260419-02 BUILD 副发现）
 
 ### 长期项（按优先级）
 
