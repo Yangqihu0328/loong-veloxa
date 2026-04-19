@@ -209,4 +209,54 @@ TEST_F(EventDispatcherTest, RemoveEventListeners) {
   EXPECT_EQ(count, 0);
 }
 
+// ----- Listener token (TASK-20260419-01 B7) -----
+//
+// AddEventListener returns a u64 token; RemoveEventListenerByToken removes
+// only the matching listener while siblings on the same element keep firing.
+
+TEST_F(EventDispatcherTest, AddEventListenerReturnsUniqueTokens) {
+  auto t1 = dispatcher_.AddEventListener(
+      child_, EventType::kPointerDown, [](DOMEvent&) {}, false);
+  auto t2 = dispatcher_.AddEventListener(
+      child_, EventType::kPointerDown, [](DOMEvent&) {}, false);
+  auto t3 = dispatcher_.AddEventListener(
+      root_, EventType::kPointerUp, [](DOMEvent&) {}, false);
+  EXPECT_NE(t1, t2);
+  EXPECT_NE(t2, t3);
+  EXPECT_NE(t1, t3);
+  EXPECT_NE(t1, 0u);
+  EXPECT_NE(t2, 0u);
+  EXPECT_NE(t3, 0u);
+}
+
+TEST_F(EventDispatcherTest, RemoveEventListenerByToken_RemovesOnlyOne) {
+  int a = 0, b = 0;
+  auto token_a = dispatcher_.AddEventListener(
+      child_, EventType::kPointerDown,
+      [&a](DOMEvent&) { ++a; }, false);
+  dispatcher_.AddEventListener(
+      child_, EventType::kPointerDown,
+      [&b](DOMEvent&) { ++b; }, false);
+
+  dispatcher_.RemoveEventListenerByToken(child_, token_a);
+
+  auto event = MakeEvent(EventType::kPointerDown, child_);
+  dispatcher_.Dispatch(event);
+  EXPECT_EQ(a, 0);  // removed
+  EXPECT_EQ(b, 1);  // sibling survived
+}
+
+TEST_F(EventDispatcherTest, RemoveEventListenerByToken_UnknownTokenIsNoOp) {
+  int count = 0;
+  dispatcher_.AddEventListener(
+      child_, EventType::kPointerDown,
+      [&count](DOMEvent&) { ++count; }, false);
+
+  dispatcher_.RemoveEventListenerByToken(child_, 0xDEADBEEFu);
+  // Unknown token must not throw and must not affect existing listener.
+  auto event = MakeEvent(EventType::kPointerDown, child_);
+  dispatcher_.Dispatch(event);
+  EXPECT_EQ(count, 1);
+}
+
 }  // namespace
