@@ -135,6 +135,21 @@ cmake --build build -j
 
 **对 TASK-20260419-06（HashMap Hash Mixing）影响：** 优先级 **P1→P3 降级**；触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项。TASK-20260419-02 测得的 std::hash<int> identity-mapping cluster 问题对 **int key + n=16384** 真实存在（n=16384=9µs vs n=64=69ns），但**对短字串 + 60 entry 场景免疫**。
 
+### HashMap 不是金科玉律：极小 N 下线性扫的 cache locality 仍胜（TASK-11 反思 #5）
+
+**TASK-11 实证**：`ImageCache::Load` Hit<1>（cache 仅 1 entry）改造前后：
+- 旧：`for (i: 0..size) if images_[i].path.view() == path` — N=1 时仅 1 次 view()==path 比较 + cache-line 命中 = **10.35 ns**
+- 新：`String key(path); path_to_handle_.Find(key)` — 必须 djb2(O(strlen)) + H1 probing + Slot 间接 = **43.27 ns（4×↑）**
+
+**结论**：HashMap 在 N=1 上的 ~32 ns 固有开销（djb2 hash + probe + Slot 间接）**永远大于**单元素线性扫的一次 memcmp。本任务因 N 分布偏向 16/256 端（生产场景：> 30 张图片的真实页面），Hit<256> 25.2× 净增益完全压倒 Hit<1> 32 ns 微回归 → 整体 ROI 极高。
+
+**未来决策提示**：若引入新的 cache 场景且**N 永远 ≤ 4**（如「最近 N 调用 token cache」、「父链短路缓存」、「fallback registry」等），**不应套用同构 HashMap 方案**；考虑：
+- (a) 保留 `Vector<Entry>` 线性扫
+- (b) 用 fixed-size `array<pair, N>` + 分支预测友好的 unrolled 比较
+- (c) 若 key 是数值（`u32` / `Handle`），直接 `array<V, N>` 下标查找
+
+**判据**：N 中位数 ≤ 4 且 95th percentile ≤ 8 时，用线性扫；否则 HashMap 化。
+
 ### 用途
 
 - 任何后续 CSS 模块优化（SIMD scan / SOA token / ParserPool / hash 函数替换）必须以这些数字为对照

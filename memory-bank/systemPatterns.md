@@ -680,6 +680,74 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 
 **触发升级**：如下次 bench 任务再次 > 3× 高估，升级到 `writing-plans.mdc` 强制条目。
 
+**TASK-11 实证（2026-04-19）**：plan 55-80 min vs 实际 ~35-40 min = **~1.5-2.0×**，**protocol 首次生效**。偏差从 TASK-05/09 的 4× 收敛到 ~2×，距离"准确档"差 1 次校准；如下次 bench 任务 ≤ 1.5× 即可视为收敛，写入 `writing-plans.mdc` 作为基线。
+
+### bench plan 阈值表对超低 ns BM 的「绝对增量兜底」附录（TASK-11 反思 #1）
+
+**问题**：`< baseline × 1.2` 形式阈值在超低 ns BM 上对测量噪声极敏感，触发误警。
+
+**TASK-11 实证两例**：
+- `BM_ImageCacheGet` 0.94 → 1.16 ns = 1.23×（超 1.2×），但 Get 实现完全没改 — 纯属 0.22ns 噪声 / cache 抖动
+- `BM_ImageCacheLoad_Hit<1>` 10.35 → 43.27 ns = 4.18×（超 1.2× 严重），但绝对回归 32ns 是 HashMap djb2 + probe 固有开销，绝对量微小且被 Hit<256> 1106ns 净增益完全压倒
+
+**改进公式**（追加到任何 bench plan 阈值表）：
+```
+判定阈值 = max(baseline × 1.2,  baseline + 0.5ns)   for baseline < 5ns      （超低 ns，噪声敏感）
+判定阈值 = max(baseline × 1.2,  baseline + 5ns)     for baseline ∈ [5, 50)ns（低 ns，HashMap/probe 量级）
+判定阈值 = baseline × 1.2                            for baseline ≥ 50ns     （常规判定）
+```
+
+**关键判定原则**：性能改造任务的"主目标 BM"（本次 Hit<16>/Hit<256>）必须严格用乘法判定；"附带退化检查 BM"（本次 Get/Hit<1>/Miss）应用绝对增量兜底，避免噪声/固有开销误警阻塞合并。
+
+**写入待处理事项**：下次 bench plan 阈值表必引此公式（`activeContext.md` P1）。
+
+### Mixed TDD RED 反向探针实践（TASK-11 反思 #3 — 新模式）
+
+**适用场景**：mixed TDD 模式下（用户协议或 plan §0 明示「先实现后测试」），为预防特定 bug 而新增的「回归网测试」（D3 类决策产物）。
+
+**执行步骤**：
+1. 写测试 + 实现一起完成（mixed TDD 标准流程）
+2. 运行测试 → 应 PASS
+3. **反向探针**：临时破坏被测路径的关键一行（注释 / 替换 sentinel 值），重新构建 + 跑该单测
+4. **断言 RED**：测试必须立即 FAIL，且 FAIL 行号/断言指向被破坏的具体语义
+5. 恢复实现 + 跑全套确认 GREEN
+
+**TASK-11 D3 实证**：
+```cpp
+// veloxa/core/image/image_cache.cc
+void ImageCache::Clear() {
+  images_.clear();
+  // path_to_handle_.clear();  // RED probe ← 临时注释
+}
+```
+→ `ImageCacheTest.ClearAndReloadDeduplicates` 立即 FAIL（`EXPECT_EQ(h2.value(), 1)` 命中：HashMap 残留 handle 但 vector 已空，1-based 下标错位）
+→ 恢复 → PASS
+→ 总耗时 < 3 min
+
+**核心价值**：mixed TDD 的最大风险 = 「测试因实现已正确而误以为有效」（实现侧巧合让测试 PASS 但断言其实没真覆盖目标语义）。反向探针强制证明「实现正确 是 测试 PASS 的必要条件」，等价于严格 TDD 的 RED 阶段证据链。
+
+**适用判据**：D3 类「双索引 / 双向同步 / clear 一致性 / 缓存失效 / 转换闭环」等"易漏一处"型 bug 的回归测试**必做**反向探针；普通正向行为测试（LoadAndGet 等）不必。
+
+### 数据结构改造与行为切换分离的 P1+P2 拆分模式（TASK-11 反思 #4 — 新模式）
+
+**适用场景**：低风险性能优化任务，需引入新数据结构替代或补充现有数据结构。
+
+**P1**：仅声明新字段 + 必要的辅助 functor（`Hash` / `Eq` 等模板参数），不切任何 hot path 行为
+**P2**：切 hot path 调用方走新结构 + 加 D3 类回归测试
+
+**TASK-11 实证**：
+- P1（commit `ae72800`，23 行 + 0 行）：仅在 `ImageCache` 加 `HashMap<String, ImageHandle, StringHash, StringEq> path_to_handle_` 字段 + 2 个 functor 定义；Load/Clear 行为完全不变 → ctest 890/890 PASS 立即验证 F2 类型推导风险闭合
+- P2（commit `47ecb1d`，37 行 +/- 6 行）：切 Load 路径用 `Find()` + `Insert()`；Clear 同步两个结构；新增 ClearAndReloadDeduplicates → ctest 891/891 PASS
+
+**关键收益**：
+1. **review 风险面独立可量化** — P1 仅看头文件 + 编译/链接；P2 仅看 17 行 cc + 26 行 test
+2. **F 类编译风险与 K 类运行时风险解耦** — P1 失败 = 模板特化/类型推导问题（编译期）；P2 失败 = 行为问题（运行期），定位路径互不污染
+3. **可独立 revert** — 若 P2 发现性能不达预期可单独 revert；P1 留下的字段未被 Load 路径使用，无副作用
+
+**适用判据**：任务满足「(a) 引入新容器/索引/缓存层 + (b) 改造前后 ABI 不变 + (c) hot path 行为变更可机械替换」3 项时套用；不适用于 API 重构或语义重设计型任务。
+
+**未来候选触发**：Layout `Vector<LayoutBox*> children` HashMap 化 / ResolvedCache 升级 / 任何 O(N) → O(1) lookup 改造。
+
 ### Render Bench 前置清单（TASK-05 K1+K4 教训）
 
 `vx::render::RecordBox`（`renderer.cc:56-148`）对 paint 命令的 emit 全部带 gating，bench corpus 必须满足下列条件才能产出非空 DisplayList：

@@ -5,9 +5,10 @@
 ### TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化）
 
 - **复杂度级别：** Level 2（多文件：image_cache.{h,cc} + tests + bench 复跑验证；机械替换 + 数据双索引设计；无 UI/架构空白）
-- **状态：** 🟢 构建完成（待 `/reflect`）
-- **当前阶段：** 构建完成（`activeContext.md`）
-- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 5 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5`，P4 收尾即将提交）
+- **状态：** 🟢 回顾完成（待 `/archive`）
+- **当前阶段：** 回顾中（`activeContext.md`）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 6 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5`、P4 `bfff464` + reflect 即将提交）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-11.md`
 - **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
 - **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
 - **创建日期：** 2026-04-19
