@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建完成
+回顾中
 
 ## 当前任务
 
@@ -30,7 +30,8 @@
   - Debug ctest：890/890 通过
   - baseline JSON：4 份均 `library_build_type=release`
   - baseline 协议：完全复刻 TASK-03 4-piece 失真兜底
-- **下一步：** `/reflect` 进入回顾（重点处理 K1~K5 + 沉淀「styled corpus 必要性」+「ctx.stylesheets 非空 gating」+ 「image_cache 三阶段协同」三条 lessons）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-05.md`（5 项关键发现 + 8 项改进建议；P0 #1 techContext 段已落实，P0 #2 待 /archive 同步到 writing-plans.mdc）
+- **下一步：** `/archive` 归档任务（合并到 main，把 P0 #2「render bench 必须 grep 发射条件」固化到规则）
 
 ## 最近归档
 
@@ -51,7 +52,8 @@
 
 ### 长期项（按优先级）
 
-- **🟠 P1（新立项，TASK-20260419-07 关键教训）：** `writing-plans.mdc` 增加段「候选方案表必须附根因验证步骤」— 候选方案 ≥ 3 项时强制要求每方案附 ≤ 30 秒根因验证操作（grep / 读 1 个头 / 跑 1 个 build）。**根因：** TASK-07 VAN 假设「`-Warray-bounds` 来自 `__memcpy_chk` fortify」推荐 B3 `__builtin_memcpy`，BUILD 试验失败才发现 IPA 在中端先于 fortify 展开。**反复模式新子类：** 「方案-根因绑定假设未验证」首次明确识别（已在反复模式表加新行）。**落实命令：** `/build` 步骤 2 + `/plan` 候选方案表段
+- **🔴 P0（紧急升级，TASK-07 + TASK-05 第 2 次实证）：** `writing-plans.mdc` 增加段「目标 API 的发射/触发条件 grep」— 性能基准任务的 plan 阶段必须 grep 目标 hot path 的实际触发条件（如 `RecordBox` 的 `if (bg.a > 0)` gating），否则 smoke 数字无意义。**升级路径：** TASK-07 reflection §改进建议 #1 「候选方案附根因验证步骤」原 P1 → 本次 TASK-05 Phase 6 styled-corpus 假阳性即同型问题（plan 假设 div→Record 有命令但没 grep emit gate），第 2 次出现 → **升 P0**。**反复模式：** 「前置依赖/环境/API 能力未验证」（8+ 次 → 9+ 次）+ 「方案根因假设未先验证」（1 次 → 2 次）双重命中。**落实命令：** `/plan` 命令文档 + `writing-plans.mdc`「性能基准任务必检项」段
+- **🟠 P1（已升级 P0 见上，原 TASK-07 关键教训）：** ~~`writing-plans.mdc` 增加段「候选方案表必须附根因验证步骤」~~ → 已升级 P0 + 扩展为「目标 API 的发射/触发条件 grep」段
 - **🟠 P2（新增，反复模式表更新）：** `/reflect` 命令 §3.5 反复模式表加新行「方案根因假设未先验证」频率 1 次（来源 TASK-07）。**落实：** `.cursor/rules/skills/...` 或 `/reflect` 命令文档
 - **🔴 P0（紧急升级，反复 9+ 次，TASK-07 已验有效预防）：** Cursor 沙箱内任何 FetchContent 任务的 VAN 阶段**必须**强制重设 git 全局代理（`git config --global http.proxy http://...`），并在 `/archive` 阶段决定是否 unset；任务 hand-off（如 TASK-04 archive → TASK-03 resume → TASK-03 fresh rebuild）必须在新任务 VAN 检查表加一行「proxy 状态确认」。**根因：** TASK-02/04 反思都识别了此问题但只升 P1，每次都是「单次 5-10 分钟可解决 + 可绕行」导致**累计成本 ≥ 1 小时却始终未升 P0**；本次 TASK-03 Round 2 Phase 6 fresh build 第 9+ 次出现，破例升 P0。**下次落实动作：** (a) 写入 `main.mdc` 或 `writing-plans.mdc`「FetchContent 任务前置 checklist」强制条目；(b) `/van` 命令文档加阶段守卫「检测到 plan 含 FetchContent → 自动提醒 proxy 状态」。**已知代理地址：** `http://192.168.101.217:7890`（开发环境特定，写入规则时用占位符）
 - ~~🟠 P1（已归档为 TASK-20260419-07，合并到 main `206d227`）~~
@@ -64,3 +66,6 @@
 - **P1**：CMake 操作第三方 target 前必须先用 `get_target_property(... ALIASED_TARGET)` 识别 ALIAS，避免 `set_target_properties` 报错（来源 TASK-20260419-02 反思 #2）
 - **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
 - **P2**：google/benchmark `RangeMultiplier(m)->Range(lo,hi)` 的精确数量为 `ceil(log_m(hi/lo))+1`，写入 `writing-plans.mdc`「Benchmark 用例估算」附录（来源 TASK-20260419-02 反思 #5；TASK-20260419-03 整体 13 个 Range case 0 偏差实证）
+- **P1（新增, TASK-05）：** Bench smoke 验收三件套（数字非零 + SetItemsProcessed > 0 + JSON 校验 items_per_second > 0）— 写入 `writing-plans.mdc`「性能基准任务必检项」段。**根因：** TASK-05 Phase 1 smoke `BM_ReplaySmoke=1.65 ns + items_per_second=0/s` 满足「数字非零」但实际是空 list 假阳性，假阳性持续到 Phase 6 才被 styled-corpus 修正暴露。**已沉淀到 systemPatterns.md「Bench Smoke 自检模式」段**
+- **P2（新增, TASK-05）：** 「Render bench 前置清单」+「带否定判据的发现型 Phase」+「跨阶段管道型 API default-nullptr 反模式」3 段已沉淀到 `systemPatterns.md`（来源 TASK-05 K1/K4/K5 + TASK-03 cluster 同源方法论）— 下次 render 系列 bench plan / API 设计 review 必查
+- **P2（新增, TASK-05）：** Layout super-linear knee 调查（K2 + K3，buildtree N=128→256 + flex 8x8→16x16 同源 super-linear）— 候选根因：(a) ArenaAllocator chunk grow（4096 byte 边界）；(b) SmallVector 阈值；(c) cache miss。已写入 `techContext.md`「Layout 性能基线」段；建议归入 TASK-20260419-09 候选一并研究

@@ -35,12 +35,28 @@
 | K4 | Record 对 image 元素无额外开销 | image_handle=0 → 跳过；ImgVsNoImg 16 ≈ Medium 64/4 | 设计正确 |
 | K5 | ImageCache 真测 fixture 缺失 | DecodeFromFile I/O；layout 不传 cache → 三阶段链断 | 推 TASK-20260419-09 |
 
+#### `/reflect` 完成（2026-04-19）
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-05.md`
+- **关键结论：**
+  - 计划详尽度 ROI 极高（4.25h 预估 → 75 min 实跑，提速 70%）
+  - 5 项发现 K1-K5 全量化记录
+  - 反复模式「方案根因假设未先验证」第 2 次出现 → P1→P0 升级
+  - 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次 → 双重命中升级
+- **改进建议落实状态（8 项）：**
+  - ✅ P0 #1 — `techContext.md`「Layout 性能基线」+「Render 性能基线」段已补（与 CSS 性能基线段并列）
+  - ⏸️ P0 #2 — `writing-plans.mdc`「目标 API 的发射/触发条件 grep」+「性能基准任务必检项」段 → 推到 `/archive` 一并固化（已写入 activeContext 待处理）
+  - ✅ P1/P2 #3-#6 — `systemPatterns.md` 沉淀 3 段（「带否定判据的发现型 Phase」方法论 + 「Render Bench 前置清单」+「跨阶段管道型 API default-nullptr 反模式」+「Bench Smoke 自检模式」）
+  - ✅ P2 #7 — Layout super-linear knee（K2+K3）调查推 TASK-09 候选（已写入 tasks.md）
+  - ⏸️ P2 #8 — plan 起草前 grep CMake helper 实际签名（已写入 activeContext 待处理）
+- **3 条 build 期 lessons 沉淀位置：**
+  1. Styled corpus 必要性 → `systemPatterns.md`「Render Bench 前置清单」段
+  2. ctx.stylesheets 非空 gating → 同上段（隐式契约 #1）
+  3. ImageCache 三阶段协同 → 同上段（隐式契约 #2）+「跨阶段管道型 API default-nullptr 反模式」段
+
 #### 下一步
 
-`/reflect` 进入回顾 — 重点处理 K1~K5 + 沉淀 3 条 lessons：
-1. Render bench 需 Styled corpus（默认 alpha=0 → FillRect 不 emit）
-2. Render bench layout 阶段需 `ctx.stylesheets` 非空（StyleResolver gate）
-3. ImageCache 三阶段协同要求（layout/Record/Replay 任一不传 cache → 链断）
+`/archive` 归档任务 — 合并到 main + 把 P0 #2 落实到 `writing-plans.mdc`
 
 ## 已完成任务
 

@@ -5,7 +5,8 @@
 ### TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe）
 
 - **复杂度级别：** Level 2-3（4 文件新建 + CMakeLists 更新 + README + 4 baseline JSON 入仓）
-- **状态：** 🟢 构建完成（待 `/reflect`）
+- **状态：** 🔵 回顾完成（待 `/archive`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-05.md`
 - **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
 - **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h / 7 commits）
 - **分支：** `feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
@@ -68,7 +69,7 @@
 4. ✅ 全 7+4=11 bench targets 共存、零冲突
 5. ✅ Debug ctest 890/890 不变（`build/` 重新 build 验证）
 6. ✅ 4 baseline JSON 入仓（全 release 体检 ✅）+ baseline/README + benchmarks/README 更新
-7. ⏸️ techContext.md「Layout / Render 性能基线」段 — **待 /reflect 阶段补**（已写入 baseline/README 与 benchmarks/README，techContext 整理推给 /reflect 一并）
+7. ✅ techContext.md「Layout 性能基线」+「Render 性能基线」段已补（/reflect 阶段落实改进建议 #1，与 CSS 性能基线段并列）
 8. ⚠️ ImageCache 对比 BM 给出明确判定 — **回答「不是 hot path」但**真测路径 layout→Record→Replay 三阶段都不传 cache → list 内 0 个 kDrawImage。改用 Replay TextHeavy 通路实测出真正 hot path = `DrawText`（820× FillRect）。ImageCache 真测推 TASK-09。验收意图（量化是否 hot path）已满足。
 - 安全相关：否（性能测量任务，无外部输入/无认证/无新依赖）
 
