@@ -30,9 +30,16 @@ class EventManager {
   bool IsActive(const dom::Element* el) const;
   bool IsFocused(const dom::Element* el) const;
 
-  void AddEventListener(dom::Element* element, EventType type,
-                        EventHandler handler, bool use_capture = false);
+  // Returns a ListenerToken (forwarded from the underlying EventDispatcher).
+  // Pair with RemoveEventListenerByToken for precise removal; otherwise the
+  // legacy bulk RemoveEventListeners is still available.
+  ListenerToken AddEventListener(dom::Element* element, EventType type,
+                                 EventHandler handler,
+                                 bool use_capture = false);
   void RemoveEventListeners(dom::Element* element);
+  // Removes only the listener identified by `token` on `element`. Unknown
+  // tokens are silently ignored.
+  void RemoveEventListenerByToken(dom::Element* element, ListenerToken token);
 
   void SetInvalidationCallback(InvalidationCallback cb);
 

@@ -118,13 +118,21 @@ bool EventManager::IsFocused(const dom::Element* el) const {
   return el != nullptr && el == focused_;
 }
 
-void EventManager::AddEventListener(dom::Element* element, EventType type,
-                                    EventHandler handler, bool use_capture) {
-  dispatcher_.AddEventListener(element, type, std::move(handler), use_capture);
+ListenerToken EventManager::AddEventListener(dom::Element* element,
+                                             EventType type,
+                                             EventHandler handler,
+                                             bool use_capture) {
+  return dispatcher_.AddEventListener(element, type, std::move(handler),
+                                      use_capture);
 }
 
 void EventManager::RemoveEventListeners(dom::Element* element) {
   dispatcher_.RemoveEventListeners(element);
+}
+
+void EventManager::RemoveEventListenerByToken(dom::Element* element,
+                                              ListenerToken token) {
+  dispatcher_.RemoveEventListenerByToken(element, token);
 }
 
 }  // namespace vx::event

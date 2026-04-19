@@ -488,6 +488,51 @@ TEST_F(EventManagerTest, CallbackOnPointerUp) {
   EXPECT_EQ(callback_count, 2);
 }
 
+// ----- Listener token forwarding (TASK-20260419-01 B7) -----
+
+TEST_F(EventManagerTest, AddEventListenerReturnsToken) {
+  auto* el = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(el);
+  EventManager em;
+  auto t1 = em.AddEventListener(
+      el, EventType::kPointerDown, [](DOMEvent&) {});
+  auto t2 = em.AddEventListener(
+      el, EventType::kPointerDown, [](DOMEvent&) {});
+  EXPECT_NE(t1, t2);
+  EXPECT_NE(t1, 0u);
+  EXPECT_NE(t2, 0u);
+}
+
+TEST_F(EventManagerTest, RemoveEventListenerByToken_PreservesSiblings) {
+  auto* el = doc.CreateElement(dom::TagId::kDiv);
+  doc.AppendChild(el);
+
+  css::ComputedStyle style;
+  layout::LayoutBox box;
+  box.element = el;
+  box.style = &style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  EventManager em;
+  int kept_calls = 0;
+  int removed_calls = 0;
+  auto removed_token = em.AddEventListener(
+      el, EventType::kPointerDown,
+      [&removed_calls](DOMEvent&) { ++removed_calls; });
+  em.AddEventListener(
+      el, EventType::kPointerDown,
+      [&kept_calls](DOMEvent&) { ++kept_calls; });
+
+  em.RemoveEventListenerByToken(el, removed_token);
+
+  em.HandleInput(MakePointerDown(50, 50), &box);
+  EXPECT_EQ(removed_calls, 0);
+  EXPECT_EQ(kept_calls, 1);
+}
+
 // ----- Destruction observer (TASK-20260419-01 B6) -----
 
 TEST_F(EventManagerTest, DestructionObserverFiresOnDestruction) {
