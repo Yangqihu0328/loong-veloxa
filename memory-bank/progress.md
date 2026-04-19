@@ -2,7 +2,37 @@
 
 ## 当前任务
 
-无（等待 `/van` 启动新任务）
+### TASK-20260419-07：修复 main Release `-Werror` 编译失败 — 构建完成 ✅
+
+- **分支：** `feature/TASK-20260419-07-release-werror-fixes`（基于 main `b321482`）
+- **提交：** 2 个修复 + MB 收尾
+
+#### Fix (a) `tests/platform/memory_surface_test.cc` `fgets -Wunused-result`
+
+- **方案：** A1 — `ASSERT_NE(std::fgets(...), nullptr)` 包裹 3 处（line 102/105/108）
+- **提交：** `8b57f8d fix(tests/platform): assert fgets return value to clear -Werror=unused-result`
+- **验证：** `cmake --build build-bench --target memory_surface_test -j` 0 errors → 9/9 PASSED
+
+#### Fix (b) `veloxa/foundation/strings/string.h:69` `BasicString` 拷贝构造 `memcpy -Werror=array-bounds`
+
+- **关键发现（推翻原假设）：** `__builtin_memcpy` 替换（B3 方案）**未能消除误报**。诊断在 GCC 中端 IPA 阶段发出，先于 fortify 展开 — 绕过 `__memcpy_chk` 不等于绕过 IPA range derivation。
+- **最终方案：** B2 — 在拷贝构造上加 `[[gnu::noinline]]`（GCC-only 守卫），破坏 IPA 跨函数关联（与 TASK-04 detemplatize 同源模式：阻断 IPA 跨实例化传播）
+- **提交：** `51d6ff1 fix(foundation/strings): mark BasicString copy ctor noinline to dodge GCC IPA -Warray-bounds false positive`
+- **验证：** `cmake --build build-bench --target string_test -j` 0 errors → 26/26 PASSED
+- **性能影响评估：** 拷贝堆 String 必伴随分配（~1-2ns indirect-call 被 allocator 路径稀释），move ctor（热路径）未受影响
+
+#### 完成验证
+
+| 验证项 | 命令 | 结果 |
+|------|------|------|
+| Release 全量 build | `cmake --build build-bench -j` | ✅ exit 0（38.7s, 全部 target 编译通过）|
+| Debug ctest 回归 | `cd build && ctest -j --output-on-failure` | ✅ **890/890 PASSED**（2.46s, 零回归）|
+| Bench sanity | 7 bench 各跑 1ms | ✅ 全 exit 0，BM 数字正常 |
+
+#### 副发现（写入 commit 与归档候选）
+
+- `string.h` 还有 3 处 runtime-size `memcpy`（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）共享同一架构风险，当前 GCC 11.4 未触发；commit body 留有「未来 GCC 升级若回归则套用同 noinline 模式」的迁移指南
+- **方法论教训：** 对 GCC `-Warray-bounds` 误报，先排查诊断阶段（IPA / fortify / 前端），再选方案 — 这次 B3 失败暴露了「假设根因 = `__memcpy_chk` 而未验证」的判断盲点
 
 ## 已完成任务
 

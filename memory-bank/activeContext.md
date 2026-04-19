@@ -1,11 +1,24 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+构建中
 
 ## 当前任务
 
-无
+**TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处）**
+
+- 级别：Level 1
+- 分支：`feature/TASK-20260419-07-release-werror-fixes`（基于 main `b321482`）
+- 焦点：(a) `memory_surface_test.cc` `fgets -Wunused-result`（line 102/105/108） + (b) `string_test.cc` 触发 `string.h:69` `memcpy -Werror=array-bounds`（GCC IPA 误报）
+- 已实地复现 ✅（`build-bench/` 复用，无需 FetchContent → P0 git proxy checklist 不触发）
+- 来源：TASK-03 P6 fresh build 副发现 + 长期项 P1 #2 + 与 TASK-04 同源（Release 通路验证缺失反复模式）
+
+**构建完成 ✅（2 commit）**
+
+- (a) `8b57f8d` fix(tests/platform): A1 `ASSERT_NE(std::fgets(...), nullptr)` × 3 处
+- (b) `51d6ff1` fix(foundation/strings): B2 `[[gnu::noinline]]` 拷贝构造（GCC 守卫）— **B3 `__builtin_memcpy` 假设失败**（IPA 在中端，先于 fortify 展开）
+- 完成验证：Release 全量 build 0 errors（38.7s）+ Debug ctest 890/890（2.46s）+ 7 bench sanity exit 0
+- 下一步：`/reflect` 进入回顾
 
 ## 最近归档
 
@@ -20,12 +33,12 @@
 
 - **TASK-20260419-05（建议）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-20260419-02 归档）
 - **TASK-20260419-06（建议，**优先级降级 P1→P3**）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]。**降级根据**（TASK-03 P4 实测）：PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证明 cluster 问题主要见于 int key + 大规模场景，**短字符串 + 小规模场景免疫**；TASK-06 价值仍在但可推迟到大规模 int-key 容器场景出现时
-- **TASK-20260419-07（新建议）：** 修复 main 已存在的两个 Release `-Werror` 编译失败 — (1) `tests/platform/memory_surface_test.cc` `fgets -Wunused-result`（直接处理返回值）; (2) `tests/foundation/strings/string_test.cc` `-Werror=array-bounds`（GCC IPA 误报，参考 TASK-04 detemplatize / pragma 套路）。**触发：** TASK-03 P6 Release 全量 build。Level 1。**与 TASK-04 同源** — Release 通路验证缺失反复模式
+- ~~TASK-20260419-07：已立项为当前任务，详见上方「当前任务」段~~
 
 ### 长期项（按优先级）
 
 - **🔴 P0（紧急升级，反复 9+ 次）：** Cursor 沙箱内任何 FetchContent 任务的 VAN 阶段**必须**强制重设 git 全局代理（`git config --global http.proxy http://...`），并在 `/archive` 阶段决定是否 unset；任务 hand-off（如 TASK-04 archive → TASK-03 resume → TASK-03 fresh rebuild）必须在新任务 VAN 检查表加一行「proxy 状态确认」。**根因：** TASK-02/04 反思都识别了此问题但只升 P1，每次都是「单次 5-10 分钟可解决 + 可绕行」导致**累计成本 ≥ 1 小时却始终未升 P0**；本次 TASK-03 Round 2 Phase 6 fresh build 第 9+ 次出现，破例升 P0。**下次落实动作：** (a) 写入 `main.mdc` 或 `writing-plans.mdc`「FetchContent 任务前置 checklist」强制条目；(b) `/van` 命令文档加阶段守卫「检测到 plan 含 FetchContent → 自动提醒 proxy 状态」。**已知代理地址：** `http://192.168.101.217:7890`（开发环境特定，写入规则时用占位符）
-- **🟠 P1（待立项 — TASK-20260419-07，Level 1）：** 修复 main 已存在的两个 Release `-Werror` 编译失败 — (a) `tests/platform/memory_surface_test.cc:102/105/108` `fgets -Wunused-result`（直接处理返回值即可）；(b) `tests/foundation/strings/string_test.cc` `-Werror=array-bounds`（GCC IPA 误报，作用于 `BasicString`，参考 TASK-04 detemplatize / pragma 套路）。**触发：** TASK-03 P6 fresh Release `cmake --build build-bench -j` 整体失败暴露。**与 TASK-04 同源**（Release 通路验证缺失反复模式，已第 2 次因此暴露）。**不阻塞 TASK-03**：bench 目标不依赖 tests
+- ~~🟠 P1（已立项为 TASK-20260419-07，移至上方「当前任务」段）~~
 - **🟠 P3（实测降级，原 TASK-20260419-06，原 P1）：** HashMap Hash Mixing 优化 — `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射使所有起始探测位置压在 [0,127]（来源 TASK-20260419-02 BUILD 副发现）。**降级理由（TASK-20260419-03 P4 实测）：** PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证 cluster 问题主要见于 **int key + 大规模**场景，**短字串 + 小规模**场景免疫。**触发条件**变为：当出现「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景时再立项；不主动追求优化 PropertyMap 类场景
 - **P1（已确认，本任务整体回顾再次复确）：** WIP / 中间 commit 的 subject 严禁包含外部任务状态字样（`BLOCKED on TASK-X` / `WAITING for Y` / `PENDING dep`），改用中性 `(unverified)` / `(compile-pending)` 后缀；外部依赖关系写到 commit body。**根因：** WIP commit 在 rebase / 续接 / 后续阅读时，subject 的 git log oneline 长期可见而 body 易被忽略，"过期外部状态"会持续误导。**首发：** TASK-20260419-03 Round 1 — `wip(TASK-03): Phase 1 CSS bench scaffolding (BLOCKED on TASK-04)` commit 在 TASK-04 解锁后 subject 字面失效但难以清理；**Round 2 完成后 git log 阅读体验仍受损**，确认 P1 不升级也不降级。**落实：** 下次 wip commit 前对照；如再次出现立即升级 P0 + 写入 `git-workflow.mdc`「Commit Subject 规范」段
 - **P1（已确认，本任务整体回顾再次复确）：** Level 2+ 多 phase 任务（phase 数 ≥ 5）需要支持「轮次完成」中间态 — `/reflect` 不强制切死端「回顾中」，允许多次 `/build` 续接同一 task 的不同 phase 区间。**首发：** TASK-20260419-03 Round 1 — 当前阶段流转 `构建中 → 回顾中 → 归档中` 假设「一轮即完成」，本任务 Phase 3-6 还要做但已切到「回顾中」，下轮 `/build` 又要切回，违反隐含 invariant。**Round 2 实际操作：** 手动 StrReplace 把阶段改回构建中，无强制守卫干预。**落实：** 修改 `complexity-levels.mdc` 增加「多轮次 Build 工作流」段；或调整 `/reflect`、`/build`、`/archive` 命令的阶段守卫

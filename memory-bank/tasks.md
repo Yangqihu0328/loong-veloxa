@@ -2,13 +2,43 @@
 
 ## 当前任务
 
-无（等待 `/van` 启动新任务）
+### TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处）
+
+- **复杂度级别：** Level 1（2 文件，修复路径明确）
+- **状态：** 🟢 构建完成（待 `/reflect`）
+- **分支：** `feature/TASK-20260419-07-release-werror-fixes`（基于 main `b321482`）
+- **创建日期：** 2026-04-19
+- **来源：** TASK-20260419-03 P6 Release fresh build 副发现 + 长期项 P1 #2
+- **关联模式：** 与 TASK-20260419-04 同源（Release 通路验证缺失反复模式，第 2 次因此暴露）
+
+#### 修复目标（已实地复现 ✅）
+
+| # | 文件 | 行 | 错误 | 修复方向 |
+|---|------|----|----|---------|
+| (a) | `tests/platform/memory_surface_test.cc` | 102 / 105 / 108 | `fgets -Werror=unused-result` | ✅ A1 `ASSERT_NE(std::fgets(...), nullptr)` 包裹（commit `8b57f8d`） |
+| (b) | `veloxa/foundation/strings/string.h` 拷贝构造 | 61-74 | `memcpy` `-Werror=array-bounds` GCC IPA 误报 | ✅ B2 `[[gnu::noinline]]` 拷贝构造（GCC-only 守卫），commit `51d6ff1`。**B3 `__builtin_memcpy` 试验失败** — 诊断在 IPA 中端阶段，先于 fortify 展开 |
+
+#### 验收标准（全部 ✅）
+
+- ✅ `cmake --build build-bench -j` 全量构建零 `-Werror` 失败（38.7s）
+- ✅ `ctest` Debug 全量回归 890/890 不变（2.46s）
+- ✅ bench 7 目标继续 exit 0（sanity 跑 1ms 全 BM 数字正常）
+
+#### 提交清单
+
+| # | SHA | 描述 |
+|---|------|------|
+| 1 | `8b57f8d` | fix(tests/platform): assert fgets return value |
+| 2 | `51d6ff1` | fix(foundation/strings): mark BasicString copy ctor noinline |
+
+#### 安全相关
+
+否。
 
 ### 待立项候选
 
 - **TASK-20260419-05（建议，P1）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-02 归档；可用 TASK-03 baseline 反推性能预算锚）
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
-- **TASK-20260419-07（建议，P1，Level 1）：** 修复 main 已存在 2 个 Release `-Werror` 失败 — (a) `tests/platform/memory_surface_test.cc` `fgets -Wunused-result`；(b) `tests/foundation/strings/string_test.cc` `-Werror=array-bounds`（GCC IPA 误报，参考 TASK-04 detemplatize / pragma 套路）（来源 TASK-03 P6 fresh build 副发现）
 
 ## 任务历史
 
