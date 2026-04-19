@@ -58,6 +58,19 @@ alwaysApply: false
 
 如本节得出「需要改根 CMakeLists」结论，把 CMake 变更作为独立 Phase 前置任务。
 
+## 测试基础设施审计（任何 Phase 包含新写测试时**必填**）
+
+> 反复出现（TASK-11 多次）：测试需要访问的内部状态没有访问路径，临时塞 friend 或 `#define private public`。
+
+对每个测试任务列出：
+
+1. **被测内部状态**：测试需要读哪些内部字段？（私有成员、内部容器大小、内部回调触发次数）
+2. **当前访问路径**：是否已存在公开 getter / 测试专用 friend / 间接观测点？
+3. **缺失补救**：若无访问路径 → 计划中加「补充访问路径」前置任务。优先级顺序：
+   - **首选**：暴露公开只读 getter（`size()`、`count_xxx() const`）
+   - **次选**：在被测类中显式 `friend class XxxTest;`（白名单 friend）
+   - **禁止**：`#define private public`、`reinterpret_cast` 越权访问
+
 ## 小块任务粒度
 
 **每一步是一个动作（2-5 分钟）：**
