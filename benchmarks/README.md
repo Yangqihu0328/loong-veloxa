@@ -1,6 +1,6 @@
 # Veloxa Benchmarks
 
-Foundation + Core CSS 性能基准（基于 [google/benchmark](https://github.com/google/benchmark) v1.9.1，通过 CMake `FetchContent` 拉取）。
+Foundation + Core CSS + Layout + Render 性能基准（基于 [google/benchmark](https://github.com/google/benchmark) v1.9.1，通过 CMake `FetchContent` 拉取）。
 
 ## 启用
 
@@ -38,6 +38,10 @@ git config --global https.proxy http://<host>:<port>
 | `bench_css_tokenizer` | `CssTokenizer::Next` (range sweep + numeric/string/whitespace heavy) | 10 |
 | `bench_css_parser` | `CssParser::Parse` + `ParseDeclarationList` (4 stylesheet shapes + 6 inline + selector) | 11 |
 | `bench_css_property_lookup` | `PropertyIdFromName` (HitAll/HitHot5/HitSingle×5/Miss/BuildInit, includes cluster probes) | 9 |
+| `bench_layout_buildtree` | `LayoutEngine::Layout` block flow (flat range / nested chain / mixed + text) | 3 BM × 14 rows |
+| `bench_layout_flex` | `LayoutEngine::Layout` flex (BENCHMARK_TEMPLATE rows×cols + nested flex) | 6 |
+| `bench_render_record` | `render::Record` (Small/Medium/Large flat / TextHeavy / Image, image_cache=nullptr) | 5 |
+| `bench_render_replay` | `render::Replay` to SoftwareCanvas 256×256 (matches Record shapes) | 5 |
 
 ## 运行
 
@@ -51,9 +55,11 @@ git config --global https.proxy http://<host>:<port>
 # 过滤用例（regex）
 ./build/benchmarks/bench_hash_map --benchmark_filter='Lookup'
 
-# 跑全部 7 个 exe
+# 跑全部 11 个 exe
 for b in bench_allocators bench_containers bench_hash_map bench_strings \
-         bench_css_tokenizer bench_css_parser bench_css_property_lookup; do
+         bench_css_tokenizer bench_css_parser bench_css_property_lookup \
+         bench_layout_buildtree bench_layout_flex \
+         bench_render_record bench_render_replay; do
   ./build/benchmarks/$b
 done
 ```
@@ -82,14 +88,18 @@ python3 build/_deps/benchmark-src/tools/compare.py \
 
 ## 基线 JSON（已入仓）
 
-本仓库**保留** 3 份 CSS 基线 JSON 在 `benchmarks/baseline/` 下，作为「形态参考」（不是绝对性能契约）：
+本仓库**保留** 7 份基线 JSON（CSS 3 份 + Layout 2 份 + Render 2 份）在 `benchmarks/baseline/` 下，作为「形态参考」（不是绝对性能契约）。Foundation 4 份**不入仓**（数字与 hash/allocator 实现紧耦合且变化频繁，每次跑就是 hot-reload baseline，无沉淀价值）：
 
 ```
 benchmarks/baseline/
   bench_css_tokenizer.json
   bench_css_parser.json
   bench_css_property_lookup.json
-  README.md  ← 失真警告 + 更新协议 + 命令模板
+  bench_layout_buildtree.json
+  bench_layout_flex.json
+  bench_render_record.json
+  bench_render_replay.json
+  README.md  ← 失真警告 + key findings + 更新协议 + 命令模板
 ```
 
 **任何对比之前**先读 `benchmarks/baseline/README.md`。**不要**按 JSON 数字做 ±10% 之类的 CI 卡点 — 跨硬件 / 调度器漂移远大于 10%。建议用法：本地两次编译跑同一份 JSON 名称，靠 `compare.py` 看相对变化（同机同环境）。
@@ -114,6 +124,12 @@ benchmarks/baseline/
 | `BM_ParseDeclarationListInline/8` | ~1.14 µs | inline style 路径，每倍 decl 约 2× 时间（线性） |
 | `BM_PropertyLookupHitHot5` | ~13 ns | hot-key 平均；HashMap<StringView, PropertyId> 60 entries |
 | `BM_PropertyLookupHitSingle/transition-timing-function` | ~33 ns | **未触发 cluster** — vs HitHot5 ≈ 2.5×，远低于 5× 阈值（详见 baseline/README） |
+| `BM_LayoutBuildTreeFlat/8` | ~589 ns（73 ns/box）| 块流稳态；N=128→256 出现 super-linear knee（见 baseline/README K2） |
+| `BM_LayoutBuildTreeFlat/512` | ~196 µs（383 ns/box）| 验证 super-linear，比线性预期 (8→512: 64x) 慢 ~5x |
+| `BM_LayoutFlex<16,16>` | ~73 µs | 同源 super-linear knee（见 K3），256 cells 较 8x8 (64 cells) 慢 14.9x |
+| `BM_RecordLargeTree` (512 div) | ~16 µs（31 ns/box）| 线性 O(N) — Large/Small = 64.7x ≈ 64x 期望 |
+| `BM_ReplayMediumList` (~64 cmds) | ~630 ns（10 ns/cmd, 100 M/s）| FillRect/纯几何，线性 O(N) 完美 |
+| **`BM_ReplayTextHeavy`** (~96 cmds w/ DrawText) | **~784 µs** | ⚠️ DrawText ~8200 ns/cmd ≈ FillRect 的 **820×** — Replay 真正 hot path |
 
 ## 注意事项
 
@@ -121,5 +137,8 @@ benchmarks/baseline/
 - **InternedString** 的 `Intern` 用例会调用 `ClearInternedStrings()` 在 SetUp/TearDown 重置全局表，避免跨 BM 污染。
 - **WSL 时钟分辨率** 较低；若某用例 `Time` 为 0 或样本极少，加 `--benchmark_min_time=1.0s`。
 - **CSS Corpus** 由 `benchmarks/css_corpus.h` 程序化生成（`StylesheetCorpus(rules, decls)` / `InlineStyleCorpus(decls)`），**首次调用** O(rules×decls) 构造、缓存到 static map，后续 O(1)；BM 计时区间内不再重复生成。
+- **Layout/Render Corpus** 由 `benchmarks/layout_corpus.h` 程序化构造 `dom::Document`（7 种 shape：flat / nested / mixed / text-heavy / flex / nested-flex / image，每种再分裸版与 Styled 版）；同样 mutex-protected static map 缓存，跨 BM 复用同一 Document 指针。Render bench **必须**用 `*Styled*` 版本，否则 `RecordBox` 在默认 alpha=0 下不 emit `FillRect`，Replay list 为空。
+- **Render bench 的 layout 阶段**必须传 `ctx.stylesheets = &<empty Vector>`（非 nullptr），否则 LayoutEngine 走默认 ComputedStyle 路径，inline `background-color` 不会落到 `box->style`，效果同上。
+- **Record/Replay 的 image_cache 路径**未真测：layout 不传 `ctx.image_cache` → `image_handle = 0` → `RecordBox` 不 emit `kDrawImage` → Replay 没东西可 dispatch。Replay hot path 实测是 `DrawText`（见上表 / baseline/README K1）。真 ImageCache 通路推 TASK-20260419-09 候选（需要解决 `DecodeFromFile` 的 fixture 文件依赖）。
 - **PropertyMap 一次性 lazy build**（~60 entries 插入）由各 CSS property lookup BM 的 `Warmup()` 在第一行 BM 之前完成，不会污染单个 BM 的稳态 ns/op。
 - **`bench_css_tokenizer` / `bench_css_parser`** 中的 IIFE-built `static const std::string css = []{...}()` 把 corpus 一次性烘到 BSS，避免 `Stylesheet/Inline` corpus map 的查表开销混入热路径。
