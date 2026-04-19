@@ -5,7 +5,8 @@
 ### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
 
 - **复杂度级别：** Level 2
-- **状态：** BUILD 完成 ✅（第 1 轮 + 第 2 轮 全 7 phase 完整，待 `/reflect` 整体回顾 + `/archive`）
+- **状态：** REFLECT 完成 ✅（整体回顾覆盖 plan 全 7 phase；待 `/archive`）
+- **整体回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-03.md`（含 round 1 独立反思 `reflection-TASK-20260419-03-round1.md` 引用）
 - **分支：** `feature/TASK-20260419-03-css-benchmarks`（feature ahead-of-main 9-10 commits）
 - **TDD 模式：** 覆盖补充
 - **第 1 轮（已完成）：** Phase 0 验证 + Phase 1（3 smoke bench 编译/运行）+ Phase 2（Tokenizer 10 BM）
@@ -16,7 +17,20 @@
   - **关键产出**：cluster 判定 = **未触发**（最慢 single key vs HitHot5 = 2.75×，远低于 5× 阈值）→ TASK-06 候选 P1→P3
   - **副发现**：main 已存在 2 个 Release `-Werror` 编译失败（`memory_surface_test.cc fgets` + `string_test.cc array-bounds`）→ 建议 TASK-07
 - **整体产出：** 30 BMs 入仓（10 + 11 + 9）+ 3 baseline JSON 入仓（~15 KB，全 release）+ techContext baseline 工作流段 + benchmarks/README CSS 章节 + benchmarks/baseline/README 完整协议
-- **下一步：** `/reflect` 整体回顾 → `/archive`
+- **整体回顾关键产出：**
+  - **plan 完成度 8/8 全绿**；4/4 风险预案命中 2 行（cluster + 编译时长），ROI 极高
+  - **Cluster 度量**：PropertyMap 实测均匀（最慢 2.75× HitHot5 < 5× 阈值）→ TASK-06 P1→P3 降级
+  - **Plan Range 公式 13 case 0 偏差**（`ceil(log_m(hi/lo))+1`）
+  - **Tokenizer 297-340 MiB/s 跨 64-4096 byte 范围稳定**；Parser ~1/3 Tokenizer 吞吐
+  - **TASK-04 修复 2 次实地确认**（Round 1 + Round 2 fresh build）
+- **整体改进项落实状态：**
+  - **🔴 P0 #1：** Cursor 沙箱 git proxy 反复 9+ 次破例升 P0（详见 activeContext 长期项首条）
+  - **🟠 P1 #2：** 待立项 TASK-20260419-07（修复 main 已存在 2 个 Release `-Werror` 失败）
+  - **🟠 P3 #3：** TASK-06 优先级 P1→P3 降级（实测均匀依据）
+  - **P1 #4/#8：** Round 1 已记 P1 本次复确（多轮工作流守卫 + WIP commit subject 中性化）
+  - **P2 #5/#6/#7/#10：** 沉淀到 `systemPatterns.md` / `techContext.md`
+  - **#9 关闭：** rebase MB 冲突标准处理已在 round 1 沉淀且本次二次验证有效
+- **下一步：** `/archive`
 
 ## 任务历史
 
