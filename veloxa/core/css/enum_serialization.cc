@@ -1,6 +1,8 @@
 #include "veloxa/core/css/enum_serialization.h"
 
+#include <cstddef>
 #include <cstring>
+#include <iterator>
 
 namespace vx::css {
 
@@ -57,51 +59,70 @@ constexpr const char* kFontStyle[] = {
     "normal", "italic",
 };
 
-template <usize N>
-StringView Lookup(const char* const (&table)[N], u16 v) {
-  if (v >= N) return StringView();
+// Bounds-checked indexed lookup over a string-pointer table.
+//
+// History: this used to be a `template<usize N> Lookup(const char* const
+// (&table)[N], u16 v)` taking the array by reference so callers could omit the
+// length. GCC 11+ at -O2 cloned this template across every distinct N (we have
+// 5 different sizes here) and then mis-correlated the cross-clone value-range
+// analysis: it inferred that an access proven safe in one clone's [5]-typed
+// table was "partly outside" another clone's [2]/[4]-typed table, and -Werror
+// =array-bounds turned the false positive into a build failure under Release.
+// Detemplatising removes the IPA cloning trigger entirely. Callers now pass
+// the length explicitly via `std::size(arr)`; we keep this behind the
+// VX_LOOKUP() macro below so the array name and its size cannot drift apart.
+StringView LookupImpl(const char* const* table, std::size_t n, u16 v) {
+  if (v >= n) return StringView();
   const char* s = table[v];
   if (!s) return StringView();
   return StringView(s, std::strlen(s));
 }
+
+// Single-source-of-truth wrapper: deriving the size from `arr` itself prevents
+// the kind of length/array mismatch the old template variant guarded against.
+// Scoped to this TU; #undef'd after EnumValueToCssString below so the macro
+// does not leak into other code via header includes.
+#define VX_LOOKUP(arr, v) LookupImpl((arr), std::size(arr), (v))
 
 }  // namespace
 
 StringView EnumValueToCssString(PropertyId property, u16 enum_value) {
   switch (property) {
     case PropertyId::kDisplay:
-      return Lookup(kDisplay, enum_value);
+      return VX_LOOKUP(kDisplay, enum_value);
     case PropertyId::kPosition:
-      return Lookup(kPosition, enum_value);
+      return VX_LOOKUP(kPosition, enum_value);
     case PropertyId::kFlexDirection:
-      return Lookup(kFlexDirection, enum_value);
+      return VX_LOOKUP(kFlexDirection, enum_value);
     case PropertyId::kFlexWrap:
-      return Lookup(kFlexWrap, enum_value);
+      return VX_LOOKUP(kFlexWrap, enum_value);
     case PropertyId::kJustifyContent:
-      return Lookup(kJustifyContent, enum_value);
+      return VX_LOOKUP(kJustifyContent, enum_value);
     case PropertyId::kAlignItems:
     case PropertyId::kAlignSelf:
-      return Lookup(kAlign, enum_value);
+      return VX_LOOKUP(kAlign, enum_value);
     case PropertyId::kBoxSizing:
-      return Lookup(kBoxSizing, enum_value);
+      return VX_LOOKUP(kBoxSizing, enum_value);
     case PropertyId::kOverflow:
-      return Lookup(kOverflow, enum_value);
+      return VX_LOOKUP(kOverflow, enum_value);
     case PropertyId::kVisibility:
-      return Lookup(kVisibility, enum_value);
+      return VX_LOOKUP(kVisibility, enum_value);
     case PropertyId::kTextAlign:
-      return Lookup(kTextAlign, enum_value);
+      return VX_LOOKUP(kTextAlign, enum_value);
     case PropertyId::kWhiteSpace:
-      return Lookup(kWhiteSpace, enum_value);
+      return VX_LOOKUP(kWhiteSpace, enum_value);
     case PropertyId::kBorderTopStyle:
     case PropertyId::kBorderRightStyle:
     case PropertyId::kBorderBottomStyle:
     case PropertyId::kBorderLeftStyle:
-      return Lookup(kBorderStyle, enum_value);
+      return VX_LOOKUP(kBorderStyle, enum_value);
     case PropertyId::kFontStyle:
-      return Lookup(kFontStyle, enum_value);
+      return VX_LOOKUP(kFontStyle, enum_value);
     default:
       return StringView();
   }
 }
+
+#undef VX_LOOKUP
 
 }  // namespace vx::css
