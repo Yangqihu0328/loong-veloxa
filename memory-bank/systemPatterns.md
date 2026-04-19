@@ -639,6 +639,72 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 
 **落实**：候选方案表 ≥ 3 项时强制要求；2 项以内可豁免（决策成本与验证成本接近）。
 
+### 「带否定判据的发现型 Phase」方法论（TASK-03 + TASK-05 双实证）
+
+**适用场景**：性能 bench / 正确性边界探查类任务，存在「假设 X 是瓶颈/问题」需要量化证伪或证实的情况。
+
+**4 要素**：
+1. **Hypothesis**：明确写出「X 是 hot path / 触发 cluster / 走慢路径」
+2. **Threshold**：写出"超过 Y× 即视为命中"（TASK-03 / TASK-05 都用 5×；与 google/benchmark 默认稳态噪音 ~5% 远超）
+3. **对比组**：在同一 BM 文件内构造 baseline + suspect 双 BM（必要时设 single-key probe）
+4. **接受任意结果**：方法论的价值不在"证实 X 是问题"，而在"任意结果都得到量化结论"
+
+**已成功应用 2 次**：
+| Task | Hypothesis | 结果 | 后续动作 |
+|------|-----------|------|---------|
+| TASK-03 P4 | PropertyMap djb2 触发 cluster | ❌ 否（最慢 single key 仅 2.75× HitHot5）| TASK-06 P1→P3 降级 |
+| TASK-05 P6 | ImageCache Get 是 Replay hot path | ❌ 否（image 路径未触发，但**意外发现 DrawText 是 820× hot path**）| 立 TASK-09 候选 |
+
+**关键观察**：方法论 2 次都在"否定原假设"的同时**意外定位真正的问题**（cluster 度量发现 djb2 + 短字符串场景免疫；hot path 度量发现 DrawText 才是瓶颈）— 这是 plan 阶段单纯靠 grep / 推理无法获得的认知跳跃。
+
+**落实**：写入 `writing-plans.mdc`「Phase 类型」附录段；任何性能/正确性边界 phase 都应套用这个 4 要素清单。
+
+### Render Bench 前置清单（TASK-05 K1+K4 教训）
+
+`vx::render::RecordBox`（`renderer.cc:56-148`）对 paint 命令的 emit 全部带 gating，bench corpus 必须满足下列条件才能产出非空 DisplayList：
+
+| Paint 命令 | 触发条件（缺一即 emit 跳过） |
+|-----------|---------------------------|
+| `FillRect` | `style->background_color.a > 0` AND `border_radius == 0` |
+| `FillRoundedRect` | `style->background_color.a > 0` AND `border_radius > 0` |
+| `StrokeRoundedRect` | `border_radius > 0` AND `border_style[0] != kNone` AND `border[kTop] > 0` |
+| `DrawText` | `box->type == kText` AND `box->text_node != nullptr` AND `text_data.empty() == false` |
+| `DrawImage` | `box->type == kReplaced` AND `box->image_handle != 0`（**需 layout 时 ctx.image_cache 非空**）|
+| `PushClipRect` | `style->overflow == kHidden` |
+| `PushLayer` | `style->opacity < 1.0f` |
+
+**两个隐式契约**（极易踩坑，TASK-05 Phase 6 全空 list 假阳性来源）：
+1. **inline declaration 须经 StyleResolver 才生效** — `LayoutContext::stylesheets` 必须非 null（即使是空 Vector）；nullptr 时 LayoutEngine 走默认 ComputedStyle，inline `background-color` 直接被忽略
+2. **ImageCache 是三阶段管道契约** — layout（生成 handle）/ Record（读 handle emit cmd）/ Replay（拿 handle 取 image）三阶段必须同传 cache 指针；任一传 nullptr 链断、image 路径完全测不到
+
+### 跨阶段管道型 API 的 default-nullptr 反模式（TASK-05 K5 教训）
+
+`vx::render::Record(root, image_cache=nullptr)` 与 `vx::render::Replay(list, canvas, image_cache=nullptr)` 的 default nullptr 在管道中传递隐式语义：
+
+- 看似 cache **可选**（开发者印象：「不传就降级行为」）
+- 实际 cache **必需**（不传则 layout 阶段 image_handle 永远为 0 → Record 不 emit DrawImage → Replay 没 cmd 可分发）
+
+**反模式的本质**：管道型 API 的 default 参数应表达"完整路径 vs 短路路径"，但当前实现把"短路"当默认值，对调用方完全不透明。
+
+**改进方向**（候选）：
+- (a) 把 cache 改为非 default（必传），强迫调用方显式决策
+- (b) 注释里明文标注"三阶段必须同传"
+- (c) 在 dev 模式下加 `DCHECK(image_cache != nullptr || box 中无 image)` 一致性检查
+
+**警示用途**：未来 Veloxa 引入新的 cross-phase pipeline（如 GPU 命令 buffer / accessibility tree / animation context），API 设计 review 时应**禁止把可空指针作为 default**，避免重蹈覆辙。
+
+### Bench Smoke 自检模式（TASK-05 教训：避免空 list 假阳性）
+
+性能 bench 的 phase 1 smoke 验收**仅靠「数字非零」不充分**：
+
+- ❌ **假阳性案例**：`BM_ReplaySmoke = 1.65 ns + items_per_second=0/s` —「数字非零」但实际 list 为空，跑的是 `for (auto& cmd : empty_vector)` 的 range-for 进出开销
+- ✅ **改进 smoke 验收三件套**：
+  1. **数字非零**（基础）
+  2. **`SetItemsProcessed(N)` 或 `SetBytesProcessed(N)` 给非零 N**（强迫 bench 作者写 `state.SetItemsProcessed(state.iterations() * list.size())` 之类，把"非空"语义入到 metric 中）
+  3. **跑 smoke 后用 `--benchmark_format=json | jq .benchmarks[].items_per_second` 校验全 > 0**
+
+**落实**：写入 `writing-plans.mdc`「性能基准任务必检项」段；下次任何 bench plan 必加。
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

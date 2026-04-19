@@ -140,6 +140,86 @@ cmake --build build -j
 - 任何后续 CSS 模块优化（SIMD scan / SOA token / ParserPool / hash 函数替换）必须以这些数字为对照
 - TASK-20260419-05（候选）Layout/Render bench 立项时，可用这些数据反推 CSS 解析占整体 layout pipeline 时间预算的 ~5-10%；若 layout 时间 << CSS 解析时间，需怀疑 layout 本身有问题
 
+## Layout 性能基线（来源 TASK-20260419-05，2026-04-19）
+
+入仓 `benchmarks/baseline/bench_layout_*.json`，**形态参考**而非 SLA。同环境与 CSS 基线（Release / WSL2 8 核 ~2.92 GHz / gcc 11.4），生成参数为 `--benchmark_repetitions=3 --benchmark_report_aggregates_only --benchmark_min_time=0.05s`（3 次 median 后稳态）。
+
+### Buildtree（`bench_layout_buildtree`，3 BM × 14 行）
+
+| 形态 | 时间 / 单位 |
+|------|------------|
+| `BM_LayoutBuildTreeFlat/8` | 589 ns（73 ns/box） |
+| `BM_LayoutBuildTreeFlat/64` | 3.9 µs（61 ns/box） |
+| `BM_LayoutBuildTreeFlat/128` | **7.7 µs**（60 ns/box）— 线性段终点 |
+| `BM_LayoutBuildTreeFlat/256` | **70 µs**（274 ns/box）— ⚠️ super-linear knee |
+| `BM_LayoutBuildTreeFlat/512` | 196 µs（383 ns/box）|
+| `BM_LayoutBuildTreeNested/Range(2,64)` | 205 ns → 5.1 µs（每 depth ~80 ns 稳定） |
+| `BM_LayoutBuildTreeMixed`（3-level × 4-fanout + text） | 6.2 µs（53 box，~117 ns/box）|
+
+> **K2 发现：N=128→256 出现 super-linear knee（10× for 2× N）**；候选根因：(a) ArenaAllocator chunk grow（默认 4096 byte 边界）；(b) SmallVector<LayoutBox*, 16> 阈值降级；(c) cache miss。待 TASK-09 调查。
+
+### Flex（`bench_layout_flex`，6 BMs，BENCHMARK_TEMPLATE<rows, cols>）
+
+| 形态 | 时间 |
+|------|------|
+| `<1, 8>` | 762 ns（10.5 M cell/s） |
+| `<1, 32>` | 2.2 µs |
+| `<1, 128>` | 8.0 µs（线性段末） |
+| `<8, 8>` | **4.9 µs**（64 cell，线性段终点） |
+| `<16, 16>` | **73 µs**（256 cell，14.9× for 4× cells）— ⚠️ super-linear |
+| `BM_LayoutFlexNested`（3-level × 4-fanout） | 5.4 µs |
+
+> **K3 发现：8×8→16×16 同源 super-linear**，与 K2 形态一致 → 强烈暗示共享根因。
+
+### 用途
+
+- Layout 改动（margin collapsing / line box 模型 / inline-flow 重构）必须以这些数字为对照
+- super-linear knee 是 Layout 优化的天然下一步研究问题（K2 + K3）
+- 若引入新 layout 路径（grid / multi-column）需在该 .json 后追加新 bench 并入仓
+
+## Render 性能基线（来源 TASK-20260419-05，2026-04-19）
+
+入仓 `benchmarks/baseline/bench_render_*.json`，参数同 Layout 基线。
+
+### Record（`bench_render_record`，5 BMs；layout 一次缓存，仅计 Record）
+
+| 形态 | 时间 / 单位 |
+|------|------------|
+| `BM_RecordSmallTree`（8 div） | 274 ns（34 ns/box） |
+| `BM_RecordMediumTree`（64 div） | 1.86 µs（29 ns/box） |
+| `BM_RecordLargeTree`（512 div） | 16 µs（31 ns/box）— **线性 O(N)，64.7× for 64× N** |
+| `BM_RecordTextHeavy`（32 div + text） | 2.45 µs |
+| `BM_RecordImgVsNoImg`（16 img，cache=nullptr） | 544 ns（≈ Medium / 4，验证 K4） |
+
+> **K4 发现：Record 对 image 元素无额外开销**（image_handle=0 时 RecordBox 直接跳过 kDrawImage emit）；Record 阶段瓶颈不在 image。
+
+### Replay（`bench_render_replay`，5 BMs；layout+Record 缓存，仅计 Replay 到 SoftwareCanvas 256×256）
+
+| 形态 | 时间 / 单位 |
+|------|------------|
+| `BM_ReplaySmallList`（~8 cmd） | 83 ns（96 M cmd/s） |
+| `BM_ReplayMediumList`（~64 cmd） | 630 ns（102 M cmd/s）|
+| `BM_ReplayLargeList`（~512 cmd） | 5.0 µs（102 M cmd/s）— **完美线性** |
+| **`BM_ReplayTextHeavy`**（~96 cmd，含 DrawText） | **784 µs（122 k cmd/s）— ⚠️ DrawText 平均 8200 ns/cmd** |
+| `BM_ReplayImgVsNoImg`（~16 cmd，cache=nullptr） | 166 ns（96 M cmd/s） |
+
+> **K1 发现（最高价值）：Replay 真正 hot path = `DrawText`，不是 ImageCache**
+> - DrawText 8200 ns/cmd vs FillRect 10 ns/cmd = **820×**，远超 5× 阈值（与 TASK-03 cluster 同源「带否定判据」方法）
+> - 渲染优化方向应优先聚焦 SoftwareCanvas::DrawText 路径（候选：FreeType+HarfBuzz 集成 / glyph cache / SOA glyph layout）
+> - FillRect 已接近物理极限（10 ns/cmd ≈ 2.5 cycles per pixel base + memset 摊还），优化 ROI 极低
+
+### 用途
+
+- 任何 SoftwareCanvas 优化必须以 ReplayLargeList = 5 µs（FillRect 路径）+ ReplayTextHeavy = 784 µs（DrawText 路径）为对照
+- 若新增 GPU 后端（OpenGL / Vulkan），可对比 Replay 时间证明加速比（预期 DrawText 加速比远高于 FillRect）
+- DrawText 微基准（TASK-09 候选）应在该 baseline 之后再入仓
+
+### 已知 bench 工程约束
+
+- **Render bench 必须用 Styled corpus**（`CachedFlatStyledDocument` / `CachedTextHeavyStyledDocument` / `CachedImageStyledDocument`）— 默认 ComputedStyle background-color alpha=0 → `RecordBox` 不 emit FillRect → DisplayList 为空
+- **Render bench 的 layout 阶段必须传 `ctx.stylesheets = &<empty Vector>`**（非 nullptr）— 否则 LayoutEngine 走默认 ComputedStyle 路径，inline `background-color` 不会被 StyleResolver 处理
+- **ImageCache 真路径需 layout/Record/Replay 三阶段同传 cache 指针**（任一不传 → image_handle=0 → 链断）；当前 4 baseline 未走此路径，推 TASK-20260419-09 候选解决 fixture 工程
+
 ## Sciter 架构分析摘要
 
 ### 分层架构（参考）

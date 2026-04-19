@@ -1,6 +1,6 @@
 # Veloxa Benchmark Baselines
 
-本目录保存 **CSS 模块** 三个 bench 的 google/benchmark JSON 输出，作为入仓的「形态参考基线」。
+本目录保存 **CSS / Layout / Render 模块** 共 7 个 bench 的 google/benchmark JSON 输出，作为入仓的「形态参考基线」（Foundation 4 bench 不入仓 — 见 `../README.md` §策略）。
 
 ## ⚠️ 失真警告（必读）
 
@@ -10,9 +10,22 @@
 2. **不要**用这些数字做 CI 卡点（例如「比 baseline 慢 ±10% 就 fail」）— 跨硬件漂移远大于 ±10%，会造成大量假阳性。
 3. **正确用法**：本地评估改动时，先在当前 HEAD 跑一份新 JSON，再 `git switch <other> && cmake --build && 跑同一份 JSON 名`，用 `compare.py` 看**相对变化**。
 4. 入仓的 baseline 数字仅用于：
-   - 让人类读者快速建立「Tokenizer ~300 MiB/s 数量级、Parser ~100 MiB/s 数量级、PropertyLookup ~10 ns 数量级」的直觉
-   - 跨任务（如 TASK-05 Layout/Render bench）做对照参考时的形态锚点
+   - 让人类读者快速建立量级直觉：
+     - **CSS** — Tokenizer ~300 MiB/s、Parser ~100 MiB/s、PropertyLookup ~10 ns
+     - **Layout** — buildtree flat ~ 117 ns/box (small)、512 box flat ~ 196 µs（super-linear knee 在 N=128~256 之间）、flex 8x8 ~ 4.9 µs / 16x16 ~ 73 µs（super-linear）
+     - **Render** — Record ~26 ns/box (linear)、Replay FillRect ~10 ns/cmd (~100 M/s)、**Replay DrawText ~8200 ns/cmd（hot path，比 FillRect 慢 820x — 见 §key findings）**
+   - 跨任务做对照参考时的形态锚点
    - reflection / archive 文档引用时有具体数字可指
+
+## Key findings (本次 TASK-20260419-05 入仓)
+
+| # | 发现 | 数值 | 后续 |
+|---|------|------|------|
+| K1 | Replay 的真正 hot path 是 `DrawText`，不是 ImageCache | DrawText ~8200 ns/cmd vs FillRect ~10 ns/cmd = 820x | 立 TASK-20260419-09（候选）：DrawText / shaping / glyph cache 微基准 |
+| K2 | Layout buildtree-flat 在 N=128→256 出现 super-linear knee | 7.7 µs → 70 µs（10x for 2x N） | 待 /reflect 调查；可能 cache / arena grow |
+| K3 | Layout flex 8x8→16x16 同源 super-linear | 4.9 µs → 73 µs（14.9x for 4x cells） | 同 K2 根因假设 |
+| K4 | Record 对 image 元素无额外开销 | ImgVsNoImg(16) = 544 ns ≈ Medium(64)/4 = 465 ns | image 路径在 Record 是 noop；瓶颈在 Layout 的 image_cache->Load + Replay 的 cache->Get |
+| K5 | ImageCache 真实例无法在 bench 内构造 | DecodeFromFile 需要文件 I/O；layout 不传 cache → image_handle=0 → Record 不 emit kDrawImage | 推 TASK-20260419-09 候选 |
 
 ## 当前生成环境
 
@@ -24,8 +37,8 @@
 | 编译器 | gcc 11.4.0 (Ubuntu 11.4.0-1ubuntu1~22.04.3), C++17 |
 | google/benchmark 版本 | v1.9.1 (FetchContent) |
 | 构建模式 | Release（`-DCMAKE_BUILD_TYPE=Release`，独立 `build-bench/`）|
-| 生成命令的 `--benchmark_min_time` | 0.5s |
-| 生成日期 | 2026-04-19 |
+| 生成命令的 `--benchmark_min_time` | CSS = 0.5s；Layout/Render = 0.05s（共 7 BM exe，0.5s 单文件 ~10s 接受度差，0.05s 已稳态 — 经 3 次 repetitions median 验证） |
+| 生成日期 | CSS = 2026-04-19 (TASK-03)；Layout/Render = 2026-04-19 (TASK-05) |
 
 > 任何对 baseline JSON 的更新都必须把上表 4 行 TBD 同步刷新；否则 baseline 失去可追溯性。
 
@@ -48,18 +61,23 @@
 cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON
 cmake --build build-bench -j
 
-# 跑 3 份 baseline JSON（顺序无关，互不影响）
+# 跑 7 份 baseline JSON（CSS 用 0.5s，Layout/Render 用 0.05s + 3 reps aggregates）
 for b in bench_css_tokenizer bench_css_parser bench_css_property_lookup; do
   ./build-bench/benchmarks/$b \
-    --benchmark_format=json \
-    --benchmark_min_time=0.5s \
+    --benchmark_format=json --benchmark_min_time=0.5s \
     --benchmark_out="benchmarks/baseline/${b}.json"
+done
+for b in bench_layout_buildtree bench_layout_flex bench_render_record bench_render_replay; do
+  ./build-bench/benchmarks/$b \
+    --benchmark_format=json --benchmark_repetitions=3 \
+    --benchmark_report_aggregates_only=true --benchmark_min_time=0.05s \
+    > "benchmarks/baseline/${b}.json"
 done
 
 # 体检（必须看到 library_build_type=release，否则数字废）
-for j in benchmarks/baseline/bench_css_*.json; do
+for j in benchmarks/baseline/bench_*.json; do
   echo "=== $j ==="
-  python3 -c "import json,sys; d=json.load(open('$j')); print('build_type =', d['context']['library_build_type']); assert d['context']['library_build_type']=='release', 'NOT release!'"
+  python3 -c "import json; d=json.load(open('$j')); print('build_type =', d['context']['library_build_type']); assert d['context']['library_build_type']=='release', 'NOT release!'"
 done
 
 # 同机相对对比（评估改动）
@@ -77,4 +95,5 @@ python3 build-bench/_deps/benchmark-src/tools/compare.py \
 
 | 日期 | TASK | 触发原因 | 涉及 BM |
 |------|------|---------|---------|
-| 2026-04-19 | TASK-20260419-03 | 初次入仓（CSS 基准首次落地） | 全部 30 行 (10 + 11 + 9) |
+| 2026-04-19 | TASK-20260419-03 | 初次入仓（CSS 基准首次落地） | CSS 30 行 (10 + 11 + 9) |
+| 2026-04-19 | TASK-20260419-05 | 入仓 Layout + Render 4 个 baseline | Layout 14 + 6 = 20 行；Render 5 + 5 = 10 行；共 30 行 |

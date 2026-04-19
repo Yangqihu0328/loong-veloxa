@@ -2,7 +2,113 @@
 
 ## 当前任务
 
-无（等待 `/van` 启动新任务）
+_无活跃任务 — 等待 `/van` 接受新任务_
+
+<details>
+<summary>TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe） — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe）
+
+- **复杂度级别：** Level 2-3（4 文件新建 + CMakeLists 更新 + README + 4 baseline JSON 入仓）
+- **状态：** ✅ 已完成（已合并到 main，详见 `archive-TASK-20260419-05.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-05.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-05.md`
+- **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
+- **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h / 7 commits）
+- **分支：** `feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
+- **创建日期：** 2026-04-19
+- **来源：** TASK-20260419-02 归档 P1 后续任务 + TASK-20260419-03 baseline 模式延伸应用
+- **Sticky ID 说明：** 候选区固定 ID TASK-05（自 TASK-02 归档以来），与当天序号 08 不同；按候选区一致性使用 sticky ID（参考 TASK-04 同样反向插入先例）
+
+#### 目标 API（已验证）
+
+| API | bench 用途 |
+|---|---|
+| `vx::layout::LayoutEngine::Layout(doc, ctx)` | `bench_layout_buildtree` — 构造 BlockBox / InlineBox 树 + 完整 layout（默认 block flow） |
+| `vx::layout::LayoutEngine::Layout(doc, ctx)` （带 `display: flex` DOM） | `bench_layout_flex` — 触发 flex code path（行/列、子项数、尺寸约束）|
+| `vx::render::Record(root)` → `DisplayList` | `bench_render_record` — 树→ DisplayList 转换 |
+| `vx::render::Replay(list, canvas)` | `bench_render_replay` — DisplayList → Canvas 命令重放 |
+
+#### 衔接 TASK-03 模式（可复用）
+
+- ✅ `vx_add_benchmark()` CMake 函数已支持额外链接库（TASK-03 引入）
+- ✅ baseline JSON 入仓 + `benchmarks/baseline/README.md` 4-piece 失真兜底协议（TASK-03 沉淀）
+- ✅ RangeMultiplier 公式 `ceil(log_m(hi/lo))+1`（TASK-03 实证）
+- ✅ 程序化 corpus 构造 + 静态 cache（TASK-03 `StylesheetCorpus` / `InlineStyleCorpus` 模式可复刻为 `LayoutCorpus`）
+- ✅ 「带否定判据的发现型 phase」模板（TASK-03 cluster 度量；本任务可用于发现 layout 慢路径）
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|------|------|
+| 依赖可获取性 | ✅ 4 API 全在 main，`vx_core` 已链 |
+| 环境就绪 | ✅ `build-bench/` 复用，**无需 FetchContent → P0 git proxy 不触发** |
+| 已有 artifact | ✅ 7 现存 bench（4 Foundation + 3 CSS）；新增 4 bench 文件名不冲突 |
+| 待处理事项关联 | ✅ 落实 `activeContext.md` 长期项 P1 「Layout + Render 基准」 |
+
+#### 4 决策（头脑风暴产出）
+
+| # | 维度 | 选择 |
+|---|------|------|
+| 1 | Corpus 构造 | **A** 纯程序化 DOM API（`CreateElement` + `AppendChild` + `SetInlineDeclaration`） |
+| 2 | Flex 输入维度 | **B** 二维 `BENCHMARK_TEMPLATE(rows, cols)` 5 固定多维点 + 1 嵌套 flex |
+| 3 | ImageCache 覆盖 | **B** Record / Replay 各加 1 个 img-only 对比 BM（含 ImgVsNoImg/Cache vs /NoCache 判定 hot path） |
+| 4 | baseline 入仓 | **A** 4 个全入仓 + 复用 TASK-03 baseline/README 4-piece 失真兜底协议 |
+
+#### Phase 划分（7 phase，详见 plan §1-7）
+
+| Phase | 时间 | 文件 | BM 数 | 提交主题 |
+|-------|------|------|-------|---------|
+| 1 | 30min | CMakeLists + 4 smoke .cc | 4 | wip phase-1 |
+| 2 | 30min | layout_corpus.h | 0 | wip phase-2 |
+| 3 | 45min | bench_layout_buildtree.cc | 9 → 14 行 | feat phase-3 |
+| 4 | 45min | bench_layout_flex.cc | 6 | feat phase-4 |
+| 5 | 30min | bench_render_record.cc | 5 | feat phase-5 |
+| 6 | 45min | bench_render_replay.cc | 5-6 | feat phase-6 |
+| 7 | 30min | README + baseline + MB | 0 | docs phase-7 |
+
+#### 验收标准（design §9 完整版 — 全部已验证 ✅）
+
+1. ✅ 4 bench exe Release build 0 errors
+2. ✅ 各 bench BM 数量符合设计：buildtree 14 行 / flex 6 / record 5 / replay 5
+3. ✅ 4 bench 全 exit 0 + 数字非零（含 Replay 修正后 list 非空，~10 ns/cmd FillRect）
+4. ✅ 全 7+4=11 bench targets 共存、零冲突
+5. ✅ Debug ctest 890/890 不变（`build/` 重新 build 验证）
+6. ✅ 4 baseline JSON 入仓（全 release 体检 ✅）+ baseline/README + benchmarks/README 更新
+7. ✅ techContext.md「Layout 性能基线」+「Render 性能基线」段已补（/reflect 阶段落实改进建议 #1，与 CSS 性能基线段并列）
+8. ⚠️ ImageCache 对比 BM 给出明确判定 — **回答「不是 hot path」但**真测路径 layout→Record→Replay 三阶段都不传 cache → list 内 0 个 kDrawImage。改用 Replay TextHeavy 通路实测出真正 hot path = `DrawText`（820× FillRect）。ImageCache 真测推 TASK-09。验收意图（量化是否 hot path）已满足。
+- 安全相关：否（性能测量任务，无外部输入/无认证/无新依赖）
+
+#### 关键发现（5 项 → /reflect 输入）
+
+| # | 发现 | 数值 | 后续 |
+|---|------|------|------|
+| K1 | Replay hot path = `DrawText` | 8200 ns/cmd vs FillRect 10 ns/cmd = 820× | 立 TASK-20260419-09（候选）DrawText / shaping micro-benches |
+| K2 | Layout buildtree-flat super-linear knee | N=128→256 时 7.7→70 µs（10× for 2× N）| 调查 cache miss / arena grow |
+| K3 | Layout flex 同源 super-linear | 8x8→16x16 时 4.9→73 µs（14.9× for 4× cells）| 同 K2 |
+| K4 | Record 对 image 元素无额外开销 | image_handle=0 → RecordBox 跳过；ImgVsNoImg 16 ≈ Medium 64/4 | 设计正确 |
+| K5 | ImageCache 真测 fixture 缺失 | DecodeFromFile I/O；layout 不传 cache → 三阶段链断 | 推 TASK-20260419-09 |
+
+#### 提交清单（7 commits, on `feature/TASK-20260419-05-...`）
+
+| # | SHA | 主题 |
+|---|-----|------|
+| 1 | `3eb9070` | docs(plan): TASK-20260419-05 layout/render benchmarks design + plan |
+| 2 | (phase 1) | wip phase-1 register 4 smoke benches |
+| 3 | (phase 2) | wip phase-2 add layout_corpus.h |
+| 4 | (phase 3) | feat phase-3 bench_layout_buildtree full suite |
+| 5 | (phase 4) | feat phase-4 bench_layout_flex 2D matrix |
+| 6 | (phase 5) | feat phase-5 bench_render_record full suite |
+| 7 | (phase 6) | feat phase-6 bench_render_replay + hot-path finding |
+| 8 | (phase 7) | docs(bench): 4 layout/render baselines + README updates |
+| 9 | `81d85cc` | chore(build): finalize TASK-20260419-05 memory bank state |
+| 10 | `01833c6` | docs(reflect): add reflection for TASK-20260419-05 |
+
+#### 安全相关
+
+否（性能测量任务，无外部输入/无认证/无新依赖）。
+
+</details>
 
 <details>
 <summary>TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处） — ✅ 已归档（点开查看历史）</summary>
@@ -48,14 +154,16 @@
 
 ### 待立项候选
 
-- **TASK-20260419-05（建议，P1）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-02 归档；可用 TASK-03 baseline 反推性能预算锚）
+- ~~TASK-20260419-05：已立项为当前任务，详见上方「当前任务」段~~
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
+- **TASK-20260419-09（新增，TASK-05 K1 + K5 触发，建议 P1）：** Replay hot path 深度基准 — 真实 ImageCache 通路（含解决 DecodeFromFile fixture 文件依赖：在 build-bench 期 `configure_file()` 复制 1×1 PNG 到 `${CMAKE_BINARY_DIR}/benchmarks/fixtures/`）+ `DrawText` 微基准（拆解 SimpleTextShaper / glyph cache lookup / SoftwareCanvas DrawTextFallback）。目标量化「Text 是否真的是 820× FillRect 慢的根因」+ 「ImageCache 是否走真路径仍 < DrawText」。来源：TASK-20260419-05 K1 hot path 实证 + K5 fixture 缺失工程问题
 
 ## 任务历史
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
 | TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
 | TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |
 | TASK-20260419-04 | 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（解锁 TASK-03 Phase 1） | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-04.md` |

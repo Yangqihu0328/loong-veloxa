@@ -150,6 +150,82 @@ alwaysApply: false
 
 此段产出物：「注入点核对表」一节进入设计文档。
 
+## 性能基准任务必检项（涉及 google/benchmark 新 .cc / 新 BM 时**必填**）
+
+> 反复出现升级 P0（TASK-20260419-02 → TASK-20260419-03 → TASK-20260419-05，至少 3 次）：性能基准任务的特殊前置条件未在 plan 阶段识别，导致 build 阶段返工或假阳性。
+
+在任务分解**之前**回答以下 5 项：
+
+### 1. Release + 独立 build 目录
+
+- **必须**：plan §0 全局约束段写明 `-DCMAKE_BUILD_TYPE=Release` + 独立 `build-bench/` 目录（与 Debug `build/` 隔离）
+- **反例**：TASK-20260419-02 首次未指定 → Debug 编译跑出微秒级假数字（O0 不优化）
+
+### 2. CMake helper 函数实际签名验证
+
+- **必须**：grep 项目内 `vx_add_benchmark` / `add_benchmark` / `add_test` 等自定义 CMake 函数的真实签名（不靠印象/复制其它项目）
+- **反例**：TASK-20260419-05 plan §1.1 写成三参 `vx_add_benchmark(name file libs)`，实际签名 `vx_add_benchmark(name [extra_libs...])`（文件名硬编码）
+
+### 3. 目标 API 的发射/触发条件 grep（**最关键**，反复模式 #3 第 9+ 次升 P0）
+
+> 反复出现（TASK-07 候选方案根因假设未验证 + TASK-05 Phase 6 styled-corpus 假阳性 = 第 2 次同型）
+
+性能基准的 hot path 函数（`Record` / `Replay` / `Tokenize` / `Match` 等）通常带 **emit gating**：
+
+- `RecordBox` 仅在 `bg.a > 0` 时 emit `FillRect`
+- `RecordBox` 仅在 `image_handle != 0` 时 emit `kDrawImage`
+- `SelectorMatcher` 仅在 selector 含 `:hover` 时走伪类路径
+- ...
+
+**必须**：plan 阶段对每个目标 BM 的 hot path 函数执行 grep（30 秒成本）：
+
+```bash
+# 例：bench 目标是 render::Record 的 FillRect 路径
+rg "PaintCommand::FillRect|emit.*FillRect|background_color" veloxa/core/render/renderer.cc
+```
+
+确认 emit 触发条件后**反推 corpus 构造要求**（如「default div 不会 emit FillRect → 必须用 styled corpus 设 inline `background-color`」）。
+
+**反例：**
+- TASK-20260419-05 Phase 1 smoke `BM_ReplaySmoke = 1.65 ns + items_per_second=0/s`，假阳性持续到 Phase 6 才被发现：default div alpha=0 → 空 list
+- TASK-20260419-07 候选方案 B3 `__builtin_memcpy` 假设根因是 fortify wrapper，未先 grep `string_fortified.h` 验证 → BUILD 试验才发现 IPA 在中端先于 fortify 展开
+
+**落实**：候选方案 ≥ 3 项时强制要求每方案附「≤30 秒根因验证操作」（grep / 读 1 个头 / 跑 1 个 build）。性能基准任务**全程强制**。
+
+### 4. Bench Smoke 验收三件套（避免空 list 假阳性）
+
+「数字非零」单独**不充分**。Phase 1 smoke 验收必须 ≥ 3 项：
+
+1. **数字非零** — 基础（避免 BM 没跑）
+2. **`SetItemsProcessed(N)` 或 `SetBytesProcessed(N)` 给非零 N** — 强迫 bench 作者在 BM 体内写 `state.SetItemsProcessed(state.iterations() * collection.size())` 之类，把"非空"语义入到 metric 中
+3. **JSON 输出校验 items_per_second > 0**：
+   ```bash
+   ./bench --benchmark_format=json --benchmark_min_time=0.001s | jq '.benchmarks[] | select(.items_per_second == 0)'
+   ```
+   预期空输出（无 0 项）
+
+### 5. RangeMultiplier 案例数预估（避免 BM 数与 plan 数不一致）
+
+google/benchmark `RangeMultiplier(m)->Range(lo, hi)` 的精确 case 数为：
+
+> **`ceil(log_m(hi / lo)) + 1`**
+
+例：
+- `RangeMultiplier(2)->Range(8, 512)` → `log2(64) + 1 = 7` cases
+- `RangeMultiplier(2)->Range(2, 64)` → `log2(32) + 1 = 6` cases
+- `RangeMultiplier(4)->Range(64, 4096)` → `log4(64) + 1 = 4` cases
+
+plan 的「BM 数预估表」必须用此公式，**不要肉眼数**（TASK-20260419-03 实证 13 个 Range case 0 偏差，TASK-20260419-05 14 行同样命中）。
+
+### 6. 渲染/绘制 bench 前置清单（render 系列任务专用）
+
+如本次 bench 涉及 `vx::render::Record` / `vx::render::Replay` / `SoftwareCanvas` / `gfx::Canvas` 等渲染 API，参见 `memory-bank/systemPatterns.md`「Render Bench 前置清单」段，逐条核对：
+
+- FillRect / FillRoundedRect / StrokeRoundedRect / DrawText / DrawImage 各自的 emit 条件
+- 两个隐式契约：`ctx.stylesheets` 非空（StyleResolver gate）+ ImageCache 三阶段同传
+
+---
+
 ## 小块任务粒度
 
 **每一步是一个动作（2-5 分钟）：**
