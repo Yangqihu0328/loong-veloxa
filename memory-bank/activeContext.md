@@ -1,11 +1,25 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+规划中
 
 ## 当前任务
 
-_无活跃任务 — 等待 `/van` 接受新任务_
+**TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）**
+
+- **复杂度级别：** Level 2-3（2 bench exe + 复用 layout_corpus.h + 2 baseline JSON）
+- **分支：** `feature/TASK-20260419-09-replay-deepbench`（基于 main `bfe44ae`）
+- **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md` ✅（5 phase / ~15 BMs / ~3.5h / 7 commits）
+- **范围决策（VAN）：** 原候选含 3 子目标，VAN 范围检查后**拆为 A+B 本任务（bench 类）+ TASK-10 后续（C 研究类 layout super-linear 调查）**
+- **VAN 阶段重大发现（推翻 TASK-05 K1/K5 假设）：**
+  - F1：K5「ImageCache 需 fixture 文件复制」❌ — `image_decoder_test.cc::CreateTestPng()` 已有程序化 PNG 构造写 `/tmp`，复用即可（节省 ~30 min cmake 工程）
+  - F2：K1「DrawText 8200 ns/cmd 是 FreeType+HarfBuzz 真路径」⚠️ — 实际走 fallback（line 145 `font_manager==nullptr` gate）→ A 子目标核心命题改为「fallback vs 真路径谁是 820× 根因」
+  - F3：K2/K3「ArenaAllocator chunk grow 是 super-linear 根因」❌ — 默认 4096 不 grow，量级不符 → C 拆为 TASK-10
+- **Plan 阶段补 grep 验证（第二轮 P0 规则预防）：** `Element::SetAttribute(InternedString, String)` ✅ + `InternedString::Intern(StringView)` ✅ + `Brush::Solid(Color)` ✅ + `SoftwareCanvas` ctor 后两参可选 ✅ → design §5.3 代码可直接照写，build 阶段无需返工
+- **5 决策（D1-D5，用户确认）：** A1+A2 / cold+warm 维度 / B1×3 cache size + B2×2 + B3 / 多张 distinct PNG fixture / 5 phase
+- **意义：** 「方案根因假设未先验证」P0 在 TASK-05 /archive 落实新规（`writing-plans.mdc` §3 强制 grep）后**第一+第二次产生预防价值** — VAN+Plan 双阶段共 grep 7 处，一次性发现 3 个原假设全错 + 4 个 API 签名验证通过
+- **下一步：** `/build` 开始 Phase 1（无 `/creative` 需要）
 
 ## 最近归档
 
@@ -24,7 +38,8 @@ _无活跃任务 — 等待 `/van` 接受新任务_
 - ~~TASK-20260419-07：已归档（`archive-TASK-20260419-07.md`）~~
 - **TASK-20260419-06（建议，P3 降级）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射。**降级理由（TASK-03 P4 实测）：** PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证 cluster 问题主要见于 **int key + 大规模**场景。**触发条件**：「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报；目前不主动改避免引入不必要内联开销（来源 TASK-20260419-07 副发现）
-- **TASK-20260419-09（建议 P1，TASK-05 K1 + K5 触发）：** Replay hot path 深度基准 — 真实 ImageCache 通路（含解决 `DecodeFromFile` fixture 文件依赖：在 build-bench 期 `configure_file()` 复制 1×1 PNG 到 `${CMAKE_BINARY_DIR}/benchmarks/fixtures/`）+ `DrawText` 微基准（拆解 SimpleTextShaper / glyph cache lookup / SoftwareCanvas DrawTextFallback）。**目标量化**：「Text 是否真的是 820× FillRect 慢的根因」+「ImageCache 走真路径是否仍 < DrawText」+ Layout super-linear knee 根因（K2 + K3 同源调查）。来源：TASK-05 K1 hot path 实证 + K5 fixture 缺失工程问题 + K2/K3 super-linear
+- ~~TASK-20260419-09：已立项为当前任务（A+B 子集，分支 `feature/TASK-20260419-09-replay-deepbench`）；C 拆出为 TASK-10~~
+- **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` `Vector<LayoutBox*> children` 扩容序列；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 / prefetch break。**预期产出**：调查报告 +（可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后
 
 ### 长期项（按优先级）
 
