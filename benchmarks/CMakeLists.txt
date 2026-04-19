@@ -1,8 +1,8 @@
 # benchmarks/CMakeLists.txt
 #
-# Foundation performance benchmarks. Enabled via -DVX_BUILD_BENCHMARKS=ON
+# Foundation + CSS performance benchmarks. Enabled via -DVX_BUILD_BENCHMARKS=ON
 # (see root CMakeLists.txt). Each .cc file becomes its own executable; add
-# more with vx_add_benchmark(<name>).
+# more with vx_add_benchmark(<name> [extra_lib1 extra_lib2 ...]).
 
 # Mark Google Benchmark headers as SYSTEM on every consumer so the strict
 # -Werror -Wpedantic from the root CMakeLists.txt does not flag third-party
@@ -15,14 +15,28 @@ if(_bench_includes)
     INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_bench_includes}")
 endif()
 
+# vx_add_benchmark(<name> [extra_lib1 extra_lib2 ...])
+#   Adds a benchmark executable from <name>.cc and links vx_foundation +
+#   benchmark::benchmark plus any extra libraries passed via ARGN (e.g.
+#   vx_core for CSS benches that need parser/tokenizer symbols).
 function(vx_add_benchmark name)
+  set(extra_libs ${ARGN})
   add_executable(${name} ${name}.cc)
-  target_link_libraries(${name} PRIVATE vx_foundation benchmark::benchmark)
+  target_link_libraries(${name} PRIVATE
+    vx_foundation
+    benchmark::benchmark
+    ${extra_libs})
   set_target_properties(${name} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/benchmarks")
 endfunction()
 
+# Foundation benches (TASK-20260419-02): single-arg form is back-compatible.
 vx_add_benchmark(bench_allocators)
 vx_add_benchmark(bench_containers)
 vx_add_benchmark(bench_hash_map)
 vx_add_benchmark(bench_strings)
+
+# CSS benches (TASK-20260419-03): need vx_core for tokenizer/parser/property symbols.
+vx_add_benchmark(bench_css_tokenizer        vx_core)
+vx_add_benchmark(bench_css_parser           vx_core)
+vx_add_benchmark(bench_css_property_lookup  vx_core)

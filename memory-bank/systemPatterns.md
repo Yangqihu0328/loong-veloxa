@@ -490,6 +490,114 @@ StringView LookupImpl(const char* const* table, std::size_t n, u16 v) {
 
 **反向教训：** 引入 `template<usize N>` / CRTP / SFINAE 等模板特化技巧时，必须在 PR 阶段验证 Release `-O2 -Werror` 通路 — Debug 验证不充分（已固化为 `activeContext.md` 待处理事项 P1）。
 
+## 已验证的模式（来自 TASK-20260419-03 Round 1 CSS 基准 — 多 phase 任务工作流）
+
+### 长任务暂停后 rebase main 时 MB 三件套冲突的标准处理法
+
+**问题模式：** Level 2+ 长任务（多 phase / 多 commit）暂停期间，main 上其他任务的 plan/commit/archive 活动会持续触摸 Memory Bank 三件套（`activeContext.md` / `tasks.md` / `progress.md`）。续接时 `git rebase main` 必触发 MB 文件冲突，因为：
+- feature 端：plan commit / WIP commit / pause commit 各自摸过这 3 个文件，反映「该 task 在该时点的视角」
+- main 端：归档/合并/重置活动留下「此时点 idle 状态」的 MB 真相
+
+**反例（容易踩的坑）：**
+- 手动逐处合并冲突，把 feature 端的「过期任务视角」与 main 端的「当前 idle 真相」拼起来 — 产生混乱的 MB 状态，需要后续 cleanup commit
+- `git rebase --abort` 改用 merge — 历史变非线性，且冲突不会少
+
+**标准处理法：**
+```bash
+git checkout feature/TASK-X
+git rebase main
+
+# 每次 MB 冲突（plan / WIP / 其他 chore commit）：
+git checkout --ours memory-bank/activeContext.md \
+                    memory-bank/tasks.md \
+                    memory-bank/progress.md
+git add memory-bank/
+git rebase --continue
+
+# pause commit（chore(mb): pause TASK-X pending TASK-Y）专门处理：
+git rebase --skip   # 因为 pause 信息已无意义，TASK-Y 已解锁
+
+# rebase 完成后单独写一个续接 commit：
+# chore(mb): resume TASK-X — phase to BUILD after TASK-Y unblock
+```
+
+**关键原则：**
+1. **MB 三件套总是接受 main 端**（`--ours` 在 rebase 上下文 = main side）— 因为归档后的 idle 状态总是更新真相
+2. **feature 端的 plan/WIP/pause 视角已通过 commit 自身 + plan/spec 文档保留** — 不需要 MB 文件再次承载
+3. **pause commit 一律 skip** — 它的整个语义就是「依赖 TASK-Y」，依赖解锁后 commit 失去存在意义
+4. **rebase 完成后写续接 commit** — 一次性把"当前要做什么"重写到 MB，不要试图逐 commit 修复
+
+**适用场景：** 任何被 pause 后被 main 上其他活动追上的长任务续接。已应用：TASK-20260419-03（被 TASK-04 中断后续接）。
+
+### 多 phase 任务的「轮次完成」工作流（待固化到规则）
+
+**问题模式：** Level 2+ 任务（phase 数 ≥ 5）天然适合分轮次 build — 用户可能在某些 phase 之间想中断做其他高优先级任务，或者只想拿"最直接收益"的几 phase。但当前 `/build` → `/reflect` → `/archive` 命令链假设「一轮即完成」：
+- `/reflect` 把阶段从「构建中」切到「回顾中」
+- 「回顾中」隐含 invariant 是「下一步只能 `/archive`」
+- 但任务还没整体完成，archive 不行；下轮 `/build` 又要把阶段切回「构建中」 — 违反隐含 invariant
+
+**当前临时缓解（TASK-03 Round 1 已用）：**
+- Reflection 文件命名 `reflection-TASK-X-roundN.md`（明确标 round 号，避免后续 round 覆盖）
+- `activeContext.md` 阶段字段写「回顾中（TASK-X 第 N 轮已 reflect；任务整体未完成；不可 /archive）」
+- 下轮 `/build` 启动时，命令文档的阶段守卫会拒绝；需要先手动把阶段切回「构建中」（或者 `/build` 自身识别此状态自动切）
+
+**长期方案（P1 改进建议，见 `activeContext.md` 待处理事项）：**
+- `complexity-levels.mdc` 增加「多轮次 Build 工作流」段
+- 命令阶段守卫识别「构建中（轮次N完成，待续）」中间态
+- 或引入 `/round` 命令显式标记轮次切换
+
+**适用场景：** Level 2+ 多 phase 任务（典型 phase 数 ≥ 5）的分轮次实现。已应用：TASK-20260419-03（计划 6 phase，第 1 轮做了 0+1+2，第 2 轮做 3-6）。
+
+### Plan「Phase 表」附加「轮次切分建议」列
+
+**问题模式：** Plan 阶段的 Phase 表通常只列「目标 / 任务 / 验收 / 提交」，不告诉读者「哪几 phase 适合一轮做完、哪些适合分轮做」。结果是 BUILD 阶段时用户只能凭直觉/经验决定本轮做哪几 phase，容易要么做太少（频繁切换上下文）要么做太多（疲劳/失误）。
+
+**改进做法（建议固化到 `writing-plans.mdc`）：** Phase 表追加「轮次切分建议」列：
+
+| Phase | 内容 | 验收 | 提交 | 轮次切分建议 |
+|-------|------|------|------|------------|
+| P1 | scaffold | 编译过 | feat | 与 P2 同轮（验证 + 实施一气呵成） |
+| P2 | 完整套件 | 10 BM 行 | feat | 与 P1 同轮 |
+| P3 | parser 套件 | 11 BM 行 | feat | 单独 1 轮（独立模块） |
+| P4 | property + cluster | 9 BM 行 + 度量 | feat | 与 P5/P6 同轮（依赖 P3 数据） |
+| P5 | README | 文档审查 | docs | 与 P4 同轮 |
+| P6 | baseline JSON + 收尾 | 全量回归 | feat | 与 P4/P5 同轮（收尾批次） |
+
+**收益：** 用户和 BUILD 模式的 AI 都能看到清晰的「单元」边界，避免本轮范围决策的反复试探。
+
+## 已验证的模式（来自 TASK-20260419-03 整体回顾 — 基准设计 + 失真兜底）
+
+### 入仓基线数字的失真兜底设计
+
+**问题：** 基准 JSON 数字与硬件 / OS 调度器 / 编译器版本强相关，跨机漂移可达 2-10×；但完全不入仓又失去「形态参考锚」。
+
+**模式：** 入仓 baseline JSON 时**强制配套**独立 README 含以下 4 段（缺一不可）：
+
+1. **失真警告 4 条**：枚举漂移来源 + 不可作 SLA / CI 卡点 + 正确用法 = 同机相对比较
+2. **当前生成环境表 4-8 行**：host_name / OS / CPU / 编译器 / google/benchmark 版本 / 构建模式 / `--benchmark_min_time` / 生成日期 — 任何 baseline 更新必须同步刷新
+3. **更新协议 5 条硬规**：(a) 算法/数据结构/hash 函数变更才更新（**禁止**rebase 后小幅波动入仓）；(b) Release 独立 `build-bench/`；(c) `--benchmark_min_time=0.5s`；(d) 同步刷新环境表；(e) PR 描述写明触发原因 + BM 量级变化 + `compare.py` 对比输出
+4. **命令模板**：Release rebuild + JSON 体检（验证 `context.library_build_type=="release"`）+ `compare.py` 同机对比工作流
+
+**适用场景：** 任何性能基准 JSON / 基准数据入仓。已应用：TASK-20260419-03 入仓 3 份 CSS baseline JSON + `benchmarks/baseline/README.md`（30 BMs，~15 KB JSON）。
+
+**反模式（要避免）：** 入仓 baseline JSON 但不写失真说明 → 后续维护者拿数字做 ±10% CI 卡点 → 大量假阳性 → 卡点被禁用 → baseline 形同虚设。
+
+### 「带否定判据的发现型 phase」的 plan 模板
+
+**问题：** 部分 phase 的目的是「实测可能否定预期假设」（如 cluster 度量），plan 阶段需要预设两路结果对应的下一步动作；否则实测否定预期时容易陷入「这数据不对吗？」的犹豫。
+
+**模式：** plan §风险预案表中对该 phase 必须有一行写出**两路结果的明确动作**：
+
+```
+| Phase X 实测数据偏离预期假设 | <具体阈值条件> | 接受结果；在回顾文档把『<预期被否定的具体表述>，<下游 task 优先级调整>』作为产出 |
+```
+
+**已验证样本：** TASK-20260419-03 Phase 4 cluster 度量，plan 风险预案 row 2 写明：「HitSingle 各 key 与 HitHot5 量级差 < 2× → 接受结果；在回顾文档把 'PropertyMap 实测均匀，TASK-05 优先级降为 P3' 作为产出」。实测确实未触发，预案直接照搬，零纠结决策出 TASK-06 P1→P3 降级。
+
+**适用场景：** 「立项时基于已有发现假设新问题存在 → 用基准/测量证伪/证实」型 phase；常见于性能优化候选项的实证降级、技术债假设验证、API 性能特性探查。
+
+**反模式：** 仅写「Phase X 实测可能不符合预期」而不写两路动作 → 实测否定预期时只能临时决策。
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

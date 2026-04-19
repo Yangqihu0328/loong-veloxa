@@ -70,7 +70,14 @@ cmake --build build -j
 - **代理**：与 quickjs-ng 同步，需 `http_proxy`/`https_proxy` 或 `git config --global http.proxy ...`
 - **`-Werror -Wpedantic` 隔离**：`benchmarks/CMakeLists.txt` 通过把 `benchmark` 目标的 include 路径标记为 `INTERFACE_SYSTEM_INCLUDE_DIRECTORIES` 屏蔽第三方头文件 warning（`benchmark::benchmark` 是 ALIAS，需操作底层 `benchmark` target）
 - **DEBUG 警告**：默认配置不指定 `CMAKE_BUILD_TYPE`，运行时 google/benchmark 会输出 `***WARNING*** Library was built as DEBUG`，数据失真——基线测量必须显式 `-DCMAKE_BUILD_TYPE=Release`
-- **结果留存**：不提交 baseline JSON；本地需要对比时按 `benchmarks/README.md` 用 `--benchmark_format=json --benchmark_out=...` + `tools/compare.py` 流程
+- **结果留存**（已修订，TASK-20260419-03）：
+  - **Foundation 4 个 bench**（`bench_allocators` / `bench_containers` / `bench_hash_map` / `bench_strings`）：仍**不**入仓 baseline；本地按需用 `--benchmark_format=json --benchmark_out=...` + `tools/compare.py`
+  - **CSS 3 个 bench**（`bench_css_tokenizer` / `bench_css_parser` / `bench_css_property_lookup`）：入仓 `benchmarks/baseline/*.json` 共 3 份（TASK-03 P6 入仓，~15 KB），仅作「形态参考」**不**作 CI 卡点。任何 baseline 更新必须：
+    1. 由真实算法 / 数据结构 / hash 函数变更触发（不接受跨机数字漂移更新）
+    2. 走 Release 独立 `build-bench/` + `--benchmark_min_time=0.5s`
+    3. 同步刷新 `benchmarks/baseline/README.md` 「当前生成环境」表 4 行
+    4. JSON 体检确认 `context.library_build_type == "release"`
+  - 详细更新协议见 `benchmarks/baseline/README.md`
 
 ### 已知首次配置失败模式
 
@@ -83,6 +90,55 @@ cmake --build build -j
 | `set_target_properties can not be used on an ALIAS target` | 第三方 target 用 `::` 形式（如 `benchmark::benchmark`、`Freetype::Freetype`、`GTest::gtest`）多为 ALIAS | 先 `get_target_property(_real <alias> ALIASED_TARGET)` 取底层名，对真实 target 操作（参考 TASK-20260419-02 反思 #2） |
 | 第三方头文件触发本项目 `-Werror -Wpedantic` | 第三方头通过 `INTERFACE_INCLUDE_DIRECTORIES` 传播但未标 SYSTEM | `set_target_properties(<real-tgt> PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${INTERFACE_INCLUDE_DIRECTORIES}")` 一次性把头标为 SYSTEM，下游所有 target 自动屏蔽 warning（参考 TASK-20260419-02 P1） |
 | google/benchmark 输出 `***WARNING*** Library was built as DEBUG` | `cmake -B build` 不指定 `CMAKE_BUILD_TYPE` 默认 Debug | 性能基准必须 `cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON`，且独立 `build-bench/` 目录避免污染 Debug 测试 build（参考 TASK-20260419-02 反思 #1） |
+| `rm -rf build-bench` 报 `Read-only file system` / `Device or resource busy` 错误 | Cursor 沙箱把 FetchContent clone 进来的 `build-bench/_deps/<lib>-src/.git` 目录设为只读 | `chmod -R u+w build-bench/_deps && rm -rf build-bench`（需要 `all` 权限）（参考 TASK-20260419-03 P6） |
+| `cmake --build build-bench -j` 整体失败但单个 bench target 干净 | main 上某些 .cc / 测试代码隐藏了 Release `-Werror` 失败（仅 Debug 通过），fresh Release build 暴露 | (a) 临时绕行：`cmake --build build-bench --target <仅需要的目标> -j`；(b) 中长期：立 fix 任务（参考 TASK-20260419-03 P6 → TASK-20260419-07 候选）|
+
+## CSS 性能基线（来源 TASK-20260419-03，2026-04-19）
+
+入仓 `benchmarks/baseline/bench_css_*.json`，**形态参考**而非 SLA。基础数量级（Release / WSL2 8 核 ~2.92 GHz / gcc 11.4 / `--benchmark_min_time=0.5s`）：
+
+### Tokenizer（`bench_css_tokenizer`，10 BMs）
+
+| 形态 | 吞吐 |
+|------|------|
+| `BM_TokenizeAll/Range(64,4096)` 7 case 全规模 | **297-340 MiB/s**（变异 ±7%，无 quadratic 退化） |
+| `BM_TokenizeNumericHeavy` | **372 MiB/s**（数字解析多分支） |
+| `BM_TokenizeStringHeavy` | **603 MiB/s**（字符 copy 状态保持） |
+| `BM_TokenizeWhitespaceHeavy` | **614 MiB/s**（skip 路径短） |
+
+> Tokenizer 摊还成本恒定；StringHeavy / WhitespaceHeavy 比 NumericHeavy 高约 1.6×，反映分支预测与码路径长度差异。
+
+### Parser（`bench_css_parser`，11 BMs）
+
+| 形态 | 吞吐 |
+|------|------|
+| `BM_ParseStylesheet` Small/Medium/Large/Wide | **102-136 MiB/s** |
+| `BM_ParseDeclarationListInline/Range(1,32)` 6 case | inline 单 decl 解析 ~µs 级 |
+| `BM_ParseSelectorListMixed` | compound + descendant combinator 形态 |
+
+> Parser ≈ Tokenizer 1/3 吞吐，**AST 构造主导时间**（含 selector 解析 + decl 解析 + AST 节点分配）。
+
+### PropertyLookup（`bench_css_property_lookup`，9 BMs）
+
+| 场景 | ns | 相对 HitHot5 |
+|------|----|----|
+| HitAll（60 keys 轮转） | 14.9 | 1.43× |
+| HitHot5（5 keys 轮转） | 10.4 | 1.00×（基准） |
+| HitSingle/display | 7.97 | 0.77× |
+| HitSingle/color | 7.26 | 0.70× |
+| HitSingle/margin-top | 9.51 | 0.91× |
+| HitSingle/border-radius | 13.5 | 1.30× |
+| HitSingle/transition-timing-function | **28.6** | **2.75×**（最慢） |
+| Miss | 10.1 | 0.97× |
+
+**Cluster 判定（cluster 阈值 5×）：** 最慢 single key 仅 2.75× HitHot5，**远低于阈值** → PropertyMap (60-entry HashMap<StringView, PropertyId> + djb2 hash + H1=h>>7 probing) **未触发 cluster 问题**；~3.6× single key 跨度由 key 长度（djb2 O(len) + StringView 比较 O(len)）主导。
+
+**对 TASK-20260419-06（HashMap Hash Mixing）影响：** 优先级 **P1→P3 降级**；触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项。TASK-20260419-02 测得的 std::hash<int> identity-mapping cluster 问题对 **int key + n=16384** 真实存在（n=16384=9µs vs n=64=69ns），但**对短字串 + 60 entry 场景免疫**。
+
+### 用途
+
+- 任何后续 CSS 模块优化（SIMD scan / SOA token / ParserPool / hash 函数替换）必须以这些数字为对照
+- TASK-20260419-05（候选）Layout/Render bench 立项时，可用这些数据反推 CSS 解析占整体 layout pipeline 时间预算的 ~5-10%；若 layout 时间 << CSS 解析时间，需怀疑 layout 本身有问题
 
 ## Sciter 架构分析摘要
 
