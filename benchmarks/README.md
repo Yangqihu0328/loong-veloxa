@@ -42,6 +42,8 @@ git config --global https.proxy http://<host>:<port>
 | `bench_layout_flex` | `LayoutEngine::Layout` flex (BENCHMARK_TEMPLATE rows×cols + nested flex) | 6 |
 | `bench_render_record` | `render::Record` (Small/Medium/Large flat / TextHeavy / Image, image_cache=nullptr) | 5 |
 | `bench_render_replay` | `render::Replay` to SoftwareCanvas 256×256 (matches Record shapes) | 5 |
+| `bench_drawtext` | `SoftwareCanvas::DrawText` fallback vs FreeType+HarfBuzz cold/warm + end-to-end TextHeavy | 8 |
+| `bench_imagecache` | `ImageCache::Load` hit/miss × {1,16,256} + end-to-end image Replay + `Get` | 7 |
 
 ## 运行
 
@@ -55,11 +57,12 @@ git config --global https.proxy http://<host>:<port>
 # 过滤用例（regex）
 ./build/benchmarks/bench_hash_map --benchmark_filter='Lookup'
 
-# 跑全部 11 个 exe
+# 跑全部 13 个 exe
 for b in bench_allocators bench_containers bench_hash_map bench_strings \
          bench_css_tokenizer bench_css_parser bench_css_property_lookup \
          bench_layout_buildtree bench_layout_flex \
-         bench_render_record bench_render_replay; do
+         bench_render_record bench_render_replay \
+         bench_drawtext bench_imagecache; do
   ./build/benchmarks/$b
 done
 ```
@@ -88,7 +91,7 @@ python3 build/_deps/benchmark-src/tools/compare.py \
 
 ## 基线 JSON（已入仓）
 
-本仓库**保留** 7 份基线 JSON（CSS 3 份 + Layout 2 份 + Render 2 份）在 `benchmarks/baseline/` 下，作为「形态参考」（不是绝对性能契约）。Foundation 4 份**不入仓**（数字与 hash/allocator 实现紧耦合且变化频繁，每次跑就是 hot-reload baseline，无沉淀价值）：
+本仓库**保留** 9 份基线 JSON（CSS 3 + Layout 2 + Render 2 + Replay-deepbench 2）在 `benchmarks/baseline/` 下，作为「形态参考」（不是绝对性能契约）。Foundation 4 份**不入仓**（数字与 hash/allocator 实现紧耦合且变化频繁，每次跑就是 hot-reload baseline，无沉淀价值）：
 
 ```
 benchmarks/baseline/
@@ -99,6 +102,8 @@ benchmarks/baseline/
   bench_layout_flex.json
   bench_render_record.json
   bench_render_replay.json
+  bench_drawtext.json       ← TASK-09 phase-3 (8 BMs, K1 verdict data)
+  bench_imagecache.json     ← TASK-09 phase-2 (7 BMs, K6 finding data)
   README.md  ← 失真警告 + key findings + 更新协议 + 命令模板
 ```
 
@@ -130,6 +135,11 @@ benchmarks/baseline/
 | `BM_RecordLargeTree` (512 div) | ~16 µs（31 ns/box）| 线性 O(N) — Large/Small = 64.7x ≈ 64x 期望 |
 | `BM_ReplayMediumList` (~64 cmds) | ~630 ns（10 ns/cmd, 100 M/s）| FillRect/纯几何，线性 O(N) 完美 |
 | **`BM_ReplayTextHeavy`** (~96 cmds w/ DrawText) | **~784 µs** | ⚠️ DrawText ~8200 ns/cmd ≈ FillRect 的 **820×** — Replay 真正 hot path |
+| **`BM_DrawTextFallback_Medium`** (19 char) | ~3647 ns（192 ns/char） | TASK-09 K1 修正：8200 ns/cmd 真实路径 = **fallback FillRect ×19**，非 FT+HB |
+| **`BM_DrawTextReal_Cold_Medium`** (19 char) | ~52763 ns（**14× of fallback**） | TASK-09 K1 真根因：FT_Load_Glyph + FT_Render_Glyph 是冷路径主要成本 → glyph_cache 价值 9.1× |
+| **`BM_DrawTextReal_Warm_Medium`** (19 char) | ~5807 ns（**1.6× of fallback**） | TASK-09 K7 新发现：warm 真路径 > fallback；`hb_shape` 固定开销 + glyph memcpy 待优化 |
+| **`BM_ImageCacheLoad_Hit<256>`** | **1162 ns** | TASK-09 K6 新发现：O(N) 字符串扫描，cache size 256 时 **比整个 ReplayImageReal<16> (595 ns) 还慢** → HashMap<String, Handle> 改写 ROI 极高 |
+| **`BM_ReplayImageReal<64>`** | ~2390 ns（37 ns/cmd, 53 M/s） | 真 ImageCache 通路稳定线性，与 fallback Replay 同量级 |
 
 ## 注意事项
 
@@ -139,6 +149,7 @@ benchmarks/baseline/
 - **CSS Corpus** 由 `benchmarks/css_corpus.h` 程序化生成（`StylesheetCorpus(rules, decls)` / `InlineStyleCorpus(decls)`），**首次调用** O(rules×decls) 构造、缓存到 static map，后续 O(1)；BM 计时区间内不再重复生成。
 - **Layout/Render Corpus** 由 `benchmarks/layout_corpus.h` 程序化构造 `dom::Document`（7 种 shape：flat / nested / mixed / text-heavy / flex / nested-flex / image，每种再分裸版与 Styled 版）；同样 mutex-protected static map 缓存，跨 BM 复用同一 Document 指针。Render bench **必须**用 `*Styled*` 版本，否则 `RecordBox` 在默认 alpha=0 下不 emit `FillRect`，Replay list 为空。
 - **Render bench 的 layout 阶段**必须传 `ctx.stylesheets = &<empty Vector>`（非 nullptr），否则 LayoutEngine 走默认 ComputedStyle 路径，inline `background-color` 不会落到 `box->style`，效果同上。
-- **Record/Replay 的 image_cache 路径**未真测：layout 不传 `ctx.image_cache` → `image_handle = 0` → `RecordBox` 不 emit `kDrawImage` → Replay 没东西可 dispatch。Replay hot path 实测是 `DrawText`（见上表 / baseline/README K1）。真 ImageCache 通路推 TASK-20260419-09 候选（需要解决 `DecodeFromFile` 的 fixture 文件依赖）。
+- **Record/Replay 的 image_cache 路径**已在 TASK-09 phase-2 真测（见 `bench_imagecache`）：layout 传 `ctx.image_cache` + DOM `<img src="...">` → `RecordBox` emit `kDrawImage` → Replay 真路径 dispatch。fixture 用 libpng 程序化构造 1×1 RGBA 写到 `/tmp/vx_bench_<pid>_<i>.png`（无 `configure_file()` 工程）。结果 `BM_ReplayImageReal<64>` ≈ 53 M cmd/s，与 fallback Replay 同量级；`Load` 命中路径 O(N) 是 K6 命题。
+- **DrawText 真 vs fallback 路径**：`SoftwareCanvas::DrawText` 在 `font_manager == nullptr || glyph_cache == nullptr` 时走 `DrawTextFallback`（每字符一个 `FillRect`）。要走 FreeType + HarfBuzz 真路径必须在 ctor 显式传 `&FontManager + &GlyphCache`。`bench_render_replay` 不传，所以测的是 fallback；`bench_drawtext` 显式分两路对比（见 K1 verdict + K7）。
 - **PropertyMap 一次性 lazy build**（~60 entries 插入）由各 CSS property lookup BM 的 `Warmup()` 在第一行 BM 之前完成，不会污染单个 BM 的稳态 ns/op。
 - **`bench_css_tokenizer` / `bench_css_parser`** 中的 IIFE-built `static const std::string css = []{...}()` 把 corpus 一次性烘到 BSS，避免 `Stylesheet/Inline` corpus map 的查表开销混入热路径。
