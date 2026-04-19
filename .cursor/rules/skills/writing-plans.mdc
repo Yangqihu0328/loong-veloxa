@@ -43,6 +43,41 @@ alwaysApply: false
 
 如果上述分析得出"改 CMakeLists.txt"结论，把 CMake 变更作为独立 Phase 前置任务（而非后补），列出具体的 `target_link_libraries(X PUBLIC/PRIVATE …)` 修改行。
 
+## 静态库循环依赖审计（涉及"已有库 A 提供新符号给已 link 它的 B"时**必填**）
+
+> 反复出现（TASK-20260414-01、TASK-20260419-01）：当 `A` 已 `target_link_libraries(... B)`，本次又让 `A` 暴露符号给 `B` 调用，linker 会报 `undefined reference`。CMake 对静态库循环可处理，但需要双向 link。
+
+在任务分解**之前**回答：
+
+1. **新符号归属**：本次新增的导出符号（函数/类）属于哪个静态库？例：`vx::css::EnumValueToCssString` 属于 `vx_core`。
+2. **新符号被谁调用**：列出本次将要 `#include` 该符号头文件并调用它的 .cc 所属目标。例：`dom_bindings.cc` 属于 `vx_script`。
+3. **当前 link 拓扑**：grep 现有 `target_link_libraries`，确认 #1 与 #2 之间的 link 方向。
+   - 若 `B → A`（B 已链 A）：无需新增，已通。
+   - 若 `A → B`（A 已链 B）且 #2 为 B：**循环！必须新增 `target_link_libraries(B PRIVATE A)`**，让 linker 双向扫描。
+   - 若两者无 link 关系：决定从哪边新增 link（一般下游加上游 PRIVATE）。
+4. **结论**：把 CMake 变更作为该 Phase 的步骤 1（不是 RED 之后），避免实现写完才发现链接失败。
+
+## Web 标准 API 多重载形态清单（接入 WHATWG/DOM/Fetch/MDN 标准 API 时**必填**）
+
+> 反复出现（TASK-20260414-01 addEventListener、TASK-20260419-01 removeEventListener）：标准 Web API 通常有多种 overload 形态（0/1/2/3 args，参数可选，意义随参数数量变化），头脑风暴只设计单一形态会在实施时返工。
+
+在任务分解**之前**列出表格：
+
+| 调用形态 | 参数语义 | C++ 路径 | 边界/错误 |
+|---------|---------|---------|---------|
+| `api()` | 无参兜底 | ... | ... |
+| `api(arg1)` | 单参（按 type 批量？按 key 单查？） | ... | ... |
+| `api(arg1, arg2)` | 主用法 | ... | 未匹配如何处理？ |
+| `api(arg1, arg2, options)` | 含可选 options | ... | 未知 options key 是否报错？ |
+
+每行对应 1 个测试。表格直接复制到对应 Phase 的"任务步骤 1"。
+
+参考 spec 来源（按优先级）：
+- WHATWG Living Standard（HTML/DOM/Fetch）
+- W3C Recommendation
+- MDN Web Docs（实现行为）
+- 主流引擎源码（Gecko / WebKit / Blink）确认实际行为
+
 ## FetchContent C 子项目编译选项审计（涉及 FetchContent + 第三方源码时**必填**）
 
 > 反复出现（TASK-20260413-01）：根 `add_compile_options` 的严格告警标志会污染上游 C 源，触发 `-Werror=pedantic` 等失败。

@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-反思待归档
+回顾中
 
 ## 当前任务
 
@@ -44,6 +44,7 @@
 
 ### 长期项（不在本任务范围）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
+- **P1**：跨子库新增符号引用前 grep link graph，确认是否触发循环依赖（来源 TASK-20260419-01 反思 #1，已固化到 `writing-plans.mdc` 「静态库循环依赖审计」段）
 - **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
 
 ### 已落实（本任务完成）

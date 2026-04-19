@@ -17,6 +17,7 @@
   - B6：`EventManager` 引入 `DestructionObserver` 机制（token 化 add/remove）；`DomBindings::Bind/Unbind` 注册/注销观察者，反向析构（EM 先于 DB 析构）安全。
   - B7：`EventDispatcher::AddEventListener` 返回 `ListenerToken`（u64）；新增 `RemoveEventListenerByToken`；`DomBindings` 维护 `(Element*, type, JSValuePtr)→Token` 映射，实现 JS `removeEventListener(type, handler)` 精确语义；保留零参/单参兜底。
 - 2026-04-19 `/build` Phase 8 收尾验证：全量重建零警告，890/890 tests PASS（基线 856 + 新增 34，>= 验收阈 878 ✅）。
+- 2026-04-19 `/reflect` 完成：回顾文档 `memory-bank/reflection/reflection-TASK-20260419-01.md`。关键发现：21/21 提交完美匹配、+34 测试超预估、TDD 严格度+提交粒度+测试隔离三个反复模式本次完全规避；新发现两条规则缺口（静态库循环依赖、Web 标准 API 多重载）已固化到 `writing-plans.mdc`；新模式（u64 token 句柄、反向析构 DestructionObserver）已入 `systemPatterns.md`；StatusOr API 表面入 `techContext.md`。
 
 ## 已完成任务
 

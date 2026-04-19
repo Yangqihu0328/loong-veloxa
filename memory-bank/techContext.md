@@ -101,6 +101,13 @@ cmake -B build
 
 ## Foundation 实现经验（2026-04-05）
 
+### StatusOr 接口表面（项目自实现，非 absl::StatusOr）
+- 本项目 `vx::StatusOr<T>` 提供 `ok()` / `value()` / 错误状态构造
+- **不提供** `error_message()` / `status()` / `code()` 等 absl 风格接口
+- 测试中 `ASSERT_TRUE(r.ok()) << r.error_message();` 写法会编译失败
+- 推荐写法：`ASSERT_TRUE(r.ok());` 或仅在 `ok()` 为 true 时取 `value()`
+- 来源：TASK-20260419-01 测试编译失败教训
+
 ### 编译器约束
 - `-Wpedantic` 禁止 C99 柔性数组成员（`char data[]`），需用偏移计算替代
 - `-Wtype-limits` 与编译时常量比较冲突，需 `-Wno-type-limits` 豁免

@@ -5,7 +5,7 @@
 ### TASK-20260419-01 — 流程规则沉淀 + P2 功能技术债收口
 
 - **复杂度级别：** Level 3（中等功能；跨「.cursor 规则」+ 「Script/CSS/Event」子系统）
-- **当前阶段：** 规划中
+- **当前阶段：** 回顾中（待归档）
 - **分支：** `feature/TASK-20260419-01-rules-and-debt`（基线 `main`）
 - **创建日期：** 2026-04-19
 - **设计规格：** `docs/specs/2026-04-19-rules-and-debt-design.md`
