@@ -2,7 +2,9 @@
 
 ## 当前任务
 
-无活跃任务。
+### TASK-20260419-04 — 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报
+
+- **2026-04-19 VAN：** 复杂度评估 Level 1（单文件 / 修复路径明确）。前置验证全部通过：错误已 100% 复现（TASK-03 Phase 1 已确认）；影响范围 = 单文件 `veloxa/core/css/enum_serialization.cc`（107 行）；现有测试覆盖 = `tests/core/css/enum_serialization_test.cc` 166 行 / 60 处 `EnumValueToCssString` 断言（无需新增测试）；A/B/C 三个候选方案技术可行性确认（GCC pragma / CMake `set_source_files_properties` / 去模板化）。已创建分支 `feature/TASK-20260419-04-array-bounds-fix`（基线 main `861070e`）。下一步 `/build` — 用户用 1-2 句话确认 A/B/C 方向后立即开干（推荐 A 方案）。
 
 ## 暂停中任务
 

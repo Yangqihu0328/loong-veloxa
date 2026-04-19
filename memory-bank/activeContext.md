@@ -1,17 +1,49 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲（TASK-20260419-03 已开工但暂停于 Phase 1，等待 TASK-20260419-04 解锁）
+初始化
 
 ## 当前任务
-无活跃任务。建议下一步：`/van TASK-04` 处理 `enum_serialization.cc` Release `-Warray-bounds` 误报，解锁 TASK-03 续接。
+
+**TASK-20260419-04** — 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（解锁 TASK-03 Phase 1）
+
+- **复杂度：** Level 1（小修小补 / 单文件 / 修复路径明确）
+- **基线分支：** `main`（commit `861070e`）
+- **功能分支：** `feature/TASK-20260419-04-array-bounds-fix`（已创建）
+- **来源：** TASK-20260419-03 Phase 1 BUILD 副发现
+- **目标：** GCC Release `-O2 -Werror=array-bounds` 下 `vx_core` 干净编译；不影响 Debug、不削弱告警、保持 `Lookup<N>` 行为契约
+- **错误现场：**
+  ```
+  veloxa/core/css/enum_serialization.cc:63:15: error: array subscript ‘const char* const [5][0]’
+  is partly outside array bounds of ‘const char* const [2]’ [-Werror=array-bounds]
+     63 |   const char* s = table[v];
+  ```
+- **根因：** `template<usize N> Lookup(const char* const (&table)[N], u16 v)` 在 13 个 `case` 中按不同 `N` 内联出 5+ 个 clone；GCC IPA 跨 clone 做值域传播时，将「某 case 实际类型为 `[5]` 的访问」错误地匹配到「另一 case 类型为 `[2]/[4]` 的 table」，未识别 `if (v >= N) return` 已先行守住。Debug `-O0` 不做该层优化故不触发。
+- **TDD 模式：** 现有 GTest 覆盖（`tests/core/css/enum_serialization_test.cc` 166 行 / 60 个 `EnumValueToCssString` 断言）即为本任务的回归验收基线 — Level 1 不新增测试，复用既有覆盖
+- **候选方案（待 BUILD 阶段确认）：**
+  - **A) 文件局部 pragma**：`enum_serialization.cc` 顶部 `#pragma GCC diagnostic push` + `#pragma GCC diagnostic ignored "-Warray-bounds"` 包裹 `Lookup<N>` 模板 + `pop`；附详尽注释解释抑制原因（≈ 5 行；推荐）
+  - **B) CMake 单文件豁免**：`veloxa/core/CMakeLists.txt` 对该 .cc 加 `set_source_files_properties(... PROPERTIES COMPILE_OPTIONS "-Wno-array-bounds")`（≈ 3 行；CMake 层）
+  - **C) 去模板化**：把 `Lookup<N>` 改为 `LookupImpl(const char* const* table, std::size_t n, u16 v)`，13 处调用点显式传 `std::size(arr)`；消除 IPA clone 触发条件（≈ 30 行；与 Level 1 工作量边界吃紧）
+- **焦点：** VAN 完成；下一步 `/build` — 1-2 句话与用户确认 A/B/C 方向后立即开干
+
+**前置验证：**
+
+| 维度 | 结果 |
+|------|------|
+| 错误复现 | ✅ TASK-03 Phase 1 已确认（Release `-O2 -Werror=array-bounds` 100% 必现） |
+| 影响文件 | ✅ 单文件 `veloxa/core/css/enum_serialization.cc`（107 行） |
+| 现有测试覆盖 | ✅ `tests/core/css/enum_serialization_test.cc` 166 行 / 60 处 `EnumValueToCssString` 调用，任何方案都被回归覆盖 |
+| 候选方案可行性 | ✅ A/B/C 均技术可行；GCC pragma 与 `set_source_files_properties COMPILE_OPTIONS` 在 GCC 9+/CMake 3.x 早已支持 |
+| Clang 兼容性 | A 方案 GCC pragma 在 Clang 下被静默忽略（Clang 不报 `-Warray-bounds` 该误报）；B 方案 `-Wno-array-bounds` Clang 也接受 — 双编译器无副作用 |
+| 安全相关 | ❌ 否（纯编译告警修复，不涉及输入/认证/部署） |
+| 待处理事项关联 | 解锁 TASK-20260419-03 Phase 1 |
 
 ## 暂停中任务
 
 **TASK-20260419-03** — CSS 解析性能基准
-- 分支：`feature/TASK-20260419-03-css-benchmarks`（已 ahead-of-main 4 commits：plan + WIP Phase 1 + 2 chore）
+- 分支：`feature/TASK-20260419-03-css-benchmarks`（ahead-of-main 3 commits：plan + WIP Phase 1 + chore）
 - Phase 0 ✅ Phase 1 ⛔（vx_core Release `-Werror=array-bounds` 阻塞）
-- 续接：TASK-04 合并后 `git checkout feature/TASK-20260419-03-css-benchmarks` → `/build`
+- 续接：本 TASK-04 合并到 main 后 → `git checkout feature/TASK-20260419-03-css-benchmarks` → `git rebase main` → `/build` 续 Phase 1 验证
 
 ## 最近归档
 
