@@ -103,7 +103,7 @@ benchmarks/baseline/
   bench_render_record.json
   bench_render_replay.json
   bench_drawtext.json       ← TASK-09 phase-3 (8 BMs, K1 verdict data)
-  bench_imagecache.json     ← TASK-09 phase-2 (7 BMs, K6 finding data)
+  bench_imagecache.json     ← TASK-11 phase-3 重生成 (7 BMs × repetitions=3, K6 已解决)
   README.md  ← 失真警告 + key findings + 更新协议 + 命令模板
 ```
 
@@ -138,7 +138,7 @@ benchmarks/baseline/
 | **`BM_DrawTextFallback_Medium`** (19 char) | ~3647 ns（192 ns/char） | TASK-09 K1 修正：8200 ns/cmd 真实路径 = **fallback FillRect ×19**，非 FT+HB |
 | **`BM_DrawTextReal_Cold_Medium`** (19 char) | ~52763 ns（**14× of fallback**） | TASK-09 K1 真根因：FT_Load_Glyph + FT_Render_Glyph 是冷路径主要成本 → glyph_cache 价值 9.1× |
 | **`BM_DrawTextReal_Warm_Medium`** (19 char) | ~5807 ns（**1.6× of fallback**） | TASK-09 K7 新发现：warm 真路径 > fallback；`hb_shape` 固定开销 + glyph memcpy 待优化 |
-| **`BM_ImageCacheLoad_Hit<256>`** | **1162 ns** | TASK-09 K6 新发现：O(N) 字符串扫描，cache size 256 时 **比整个 ReplayImageReal<16> (595 ns) 还慢** → HashMap<String, Handle> 改写 ROI 极高 |
+| **`BM_ImageCacheLoad_Hit<256>`** | **~46 ns** | **K6 已由 TASK-20260419-11 解决**：`ImageCache::Load` hit 路径改为 `HashMap<String, ImageHandle>` O(1)，Hit<256> 1151.77 ns → 45.70 ns（**25.2×↓**）；Hit<16> 50.87 ns → 44.05 ns；anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」消失 |
 | **`BM_ReplayImageReal<64>`** | ~2390 ns（37 ns/cmd, 53 M/s） | 真 ImageCache 通路稳定线性，与 fallback Replay 同量级 |
 
 ## 注意事项

@@ -64,6 +64,32 @@ TEST(ImageCacheTest, DeduplicateSamePath) {
   std::remove(path.c_str());
 }
 
+TEST(ImageCacheTest, ClearAndReloadDeduplicates) {
+  // TASK-20260419-11 D3 regression: Clear() must drop both the Vector entries
+  // and the path_to_handle_ HashMap, so a re-Load after Clear gets a fresh
+  // 1-based handle and still deduplicates.
+  auto path = CreateTestPng();
+  ImageCache cache;
+  auto h1 = cache.Load(StringView(path.c_str()));
+  ASSERT_TRUE(h1.ok());
+  EXPECT_EQ(cache.size(), 1u);
+
+  cache.Clear();
+  EXPECT_EQ(cache.size(), 0u);
+
+  auto h2 = cache.Load(StringView(path.c_str()));
+  ASSERT_TRUE(h2.ok());
+  EXPECT_EQ(cache.size(), 1u);
+  EXPECT_EQ(h2.value(), static_cast<gfx::ImageHandle>(1));
+
+  auto h3 = cache.Load(StringView(path.c_str()));
+  ASSERT_TRUE(h3.ok());
+  EXPECT_EQ(h3.value(), h2.value());
+  EXPECT_EQ(cache.size(), 1u);
+
+  std::remove(path.c_str());
+}
+
 TEST(ImageCacheTest, LoadInvalidPath) {
   ImageCache cache;
   auto result = cache.Load("/nonexistent.png");

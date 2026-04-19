@@ -135,6 +135,21 @@ cmake --build build -j
 
 **对 TASK-20260419-06（HashMap Hash Mixing）影响：** 优先级 **P1→P3 降级**；触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项。TASK-20260419-02 测得的 std::hash<int> identity-mapping cluster 问题对 **int key + n=16384** 真实存在（n=16384=9µs vs n=64=69ns），但**对短字串 + 60 entry 场景免疫**。
 
+### HashMap 不是金科玉律：极小 N 下线性扫的 cache locality 仍胜（TASK-11 反思 #5）
+
+**TASK-11 实证**：`ImageCache::Load` Hit<1>（cache 仅 1 entry）改造前后：
+- 旧：`for (i: 0..size) if images_[i].path.view() == path` — N=1 时仅 1 次 view()==path 比较 + cache-line 命中 = **10.35 ns**
+- 新：`String key(path); path_to_handle_.Find(key)` — 必须 djb2(O(strlen)) + H1 probing + Slot 间接 = **43.27 ns（4×↑）**
+
+**结论**：HashMap 在 N=1 上的 ~32 ns 固有开销（djb2 hash + probe + Slot 间接）**永远大于**单元素线性扫的一次 memcmp。本任务因 N 分布偏向 16/256 端（生产场景：> 30 张图片的真实页面），Hit<256> 25.2× 净增益完全压倒 Hit<1> 32 ns 微回归 → 整体 ROI 极高。
+
+**未来决策提示**：若引入新的 cache 场景且**N 永远 ≤ 4**（如「最近 N 调用 token cache」、「父链短路缓存」、「fallback registry」等），**不应套用同构 HashMap 方案**；考虑：
+- (a) 保留 `Vector<Entry>` 线性扫
+- (b) 用 fixed-size `array<pair, N>` + 分支预测友好的 unrolled 比较
+- (c) 若 key 是数值（`u32` / `Handle`），直接 `array<V, N>` 下标查找
+
+**判据**：N 中位数 ≤ 4 且 95th percentile ≤ 8 时，用线性扫；否则 HashMap 化。
+
 ### 用途
 
 - 任何后续 CSS 模块优化（SIMD scan / SOA token / ParserPool / hash 函数替换）必须以这些数字为对照
@@ -236,20 +251,20 @@ cmake --build build -j
 
 | 形态 | 时间 / 单位 |
 |------|------------|
-| `BM_ImageCacheLoad_Miss` | 3692 ns（含 1×1 RGBA decode + Vector push） |
-| `BM_ImageCacheLoad_Hit<1>` | 9.99 ns（最佳） |
-| `BM_ImageCacheLoad_Hit<16>` | 48.5 ns |
-| `BM_ImageCacheLoad_Hit<256>` | **1162 ns（116× of Hit<1>）— K6 hot point** |
-| `BM_ReplayImageReal<16>`（end-to-end） | 595 ns（37 ns/cmd） |
-| `BM_ReplayImageReal<64>`（end-to-end） | 2390 ns（37 ns/cmd，完美线性） |
-| `BM_ImageCacheGet` | 0.94 ns（O(1) 数组下标确认） |
+| `BM_ImageCacheLoad_Miss` | 3344 ns（含 1×1 RGBA decode + Vector push） |
+| `BM_ImageCacheLoad_Hit<1>` | 43.27 ns（HashMap djb2 + probe 固有开销，绝对量微小）|
+| `BM_ImageCacheLoad_Hit<16>` | 44.05 ns（O(1) 起效）|
+| `BM_ImageCacheLoad_Hit<256>` | **45.70 ns（O(1) 平台化，原 1162 ns 25.2×↓）— K6 已解决** |
+| `BM_ReplayImageReal<16>`（end-to-end） | 597.86 ns（37 ns/cmd） |
+| `BM_ReplayImageReal<64>`（end-to-end） | 2398.12 ns（37 ns/cmd，完美线性） |
+| `BM_ImageCacheGet` | 1.16 ns（O(1) 数组下标，未改）|
 
-> **K6 发现（最高 ROI 优化候选）**：`ImageCache::Load` hit 路径是 O(N) 字符串扫描；cache size = 256 时单次 Load = 1162 ns，**比整个 ReplayImageReal<16>（595 ns）还慢**。改 `HashMap<String, ImageHandle>` 是高 ROI 候选优化（任何 > 30 张图片的真实页面都直接受益）。
+> **K6（TASK-20260419-11 已解决）**：`ImageCache::Load` hit 路径已升级为双索引 `Vector<Entry>`（保留 ABI / Get O(1)）+ `HashMap<String, gfx::ImageHandle, StringHash, StringEq>`（O(1) path lookup）。Hit<256> 1151.77 ns → 45.70 ns（**25.2×↓**），Hit<16> 50.87 ns → 44.05 ns（**1.16×↓**），anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」消失。Hit<1> 10.35 ns → 43.27 ns 是 HashMap 固有 ~32 ns 开销（djb2 + probe），绝对量微小，被 256 路径净增益完全压倒。详见 `archive-TASK-20260419-11.md`。
 
 ### 用途
 
 - DrawText 路径修改（FreeType / HarfBuzz / glyph cache 重构）以 K1 修正归因 + K7 为基线
-- ImageCache 改造（HashMap 化）以 K6 + `BM_ImageCacheGet` 0.94 ns 为对照
+- ImageCache 改造（HashMap 化）已由 TASK-20260419-11 完成：双索引 + custom StringHash/StringEq，未来可对照 `BM_ImageCacheGet` 1.16 ns 评估进一步优化空间
 - 跨硬件比较见 `benchmarks/baseline/README.md` 失真警告
 
 ### 用途

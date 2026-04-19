@@ -2,7 +2,87 @@
 
 ## 当前任务
 
-无活动任务，等待 `/van` 启动新任务。
+### TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化）
+
+- **复杂度级别：** Level 2（多文件：image_cache.{h,cc} + tests + bench 复跑验证；机械替换 + 数据双索引设计；无 UI/架构空白）
+- **状态：** 🟢 回顾完成（待 `/archive`）
+- **当前阶段：** 回顾中（`activeContext.md`）
+- **分支：** `feature/TASK-20260419-11-imagecache-hashmap`（含 6 commits：VAN `e7a9162`、Plan `dbdcffc`、P1 `ae72800`、P2 `47ecb1d`、P3 `1a1ceb5`、P4 `bfff464` + reflect 即将提交）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-11.md`
+- **设计文档：** `docs/specs/2026-04-19-imagecache-hashmap-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-imagecache-hashmap.md` ✅（4 phase / 1 GTest 新增 / ~55-80 min plan 估时 / 5 commits 含 VAN）
+- **创建日期：** 2026-04-19
+- **来源：** TASK-20260419-09 K6 拆出（`ImageCache::Load` hit 路径 O(N) 字符串扫描；Hit<256> 1151.77 ns > `ReplayImageReal<16>` 595 ns）；候选区已立项 P1 高 ROI
+- **预期工作量：** ~1-2h（含 baseline 同机对比 + 单测 + bench 复跑确认 K6 命题已解）
+
+#### 4 决策（D1-D4，plan 阶段头脑风暴用户确认）
+
+| # | 维度 | 选择 | 理由 |
+|---|------|------|------|
+| D1 | HashMap key 类型 | **owned `String`** + 自定义 `StringHash` + `StringEq` | VAN F2 + plan 补 grep（`string.h:30-56` SSO 内联确认）：StringView key 在 vector resize 时悬挂；`std::equal_to<String>` 类型推导不确定 → 自定义 functor 兜底 |
+| D2 | HashMap 初始容量 | 沿用 `kDefaultCapacity = 16`，不 reserve | 生产场景不频繁增长；TASK-09 K6 baseline 极端 256 entry 仅 ~4 次 rehash，分摊代价远低于命中收益 |
+| D3 | 边界测试 | 加 1 个 `ClearAndReloadDeduplicates` GTest（~5 行） | 双索引最易出 bug 点 = `Clear()` 漏清 HashMap → 此测试是「双索引同步」回归安全网 |
+| D4 | Phase 划分 | **4 phase**（细粒度提交）：P1 仅加字段 / P2 切 Load 路径 + 新测试 / P3 bench + baseline / P4 文档 | Incremental 改造模式；P1 引入字段不影响行为，「数据结构改造与行为切换分离」便于独立 review/回滚 |
+
+#### Phase 划分（4 phase，详见 plan §2）
+
+| Phase | 估时 | 文件 | 提交主题 |
+|-------|------|------|---------|
+| 1 | 10-15 min | image_cache.h（加字段 + functor） | wip phase-1 |
+| 2 | 20-30 min | image_cache.cc（切 Load + Clear）+ test（+1 用例） | feat phase-2 |
+| 3 | 15-20 min | bench 同机复跑 + baseline JSON + 2 README | docs phase-3 |
+| 4 | 10-15 min | techContext + MB 收尾 | chore phase-4 |
+
+#### 核心目标
+
+将 `vx::image::ImageCache` 的 `Load(path)` hit 路径从 O(N) 字符串线性扫升级为 O(1) HashMap 查找，**同时保持现有 ABI 不变**（`gfx::ImageHandle` 仍是 1-based vector 下标，`Get(handle)` 保持 O(1)）。
+
+| 指标 | 当前（baseline） | 目标 |
+|------|----------------|------|
+| `BM_ImageCacheLoad_Hit<1>` | 10.35 ns | 保持 ~10-30 ns |
+| `BM_ImageCacheLoad_Hit<16>` | 50.87 ns | **降到 ~10-30 ns**（5×↓） |
+| `BM_ImageCacheLoad_Hit<256>` | 1151.77 ns | **降到 ~10-30 ns**（38-115×↓） |
+| `BM_ImageCacheLoad_Miss` | （不变，由 DecodeFromFile 主导） | 不退化 |
+| `BM_ImageCacheGet` | （不变） | 不退化 |
+
+#### VAN 阶段重大发现（5 项 grep 实证，落实「方案根因假设未先验证」P0 #4 完整应用）
+
+| # | 命题 | grep 实证 | 影响设计 |
+|---|------|----------|---------|
+| F1 | 「`gfx::ImageHandle` 可改为不透明 token」 | ❌ 错。`graphics/image.h:49` `using ImageHandle = u32;` + `image_cache.cc:30` `&images_[handle - 1].image` — handle **必须保持 1-based vector 下标**否则破坏 `Get` O(1) 语义 + ABI | 必须**双索引设计**：保留 `Vector<Entry>` 提供 handle→image O(1) + 新增 `HashMap<String, Handle>` 提供 path→handle O(1) |
+| F2 | 「`std::equal_to<String>` 默认可用」 | ⚠️ 风险。`string.h:178/190` 仅有 `operator==(BasicString, StringView)` + 反向，**无** `operator==(BasicString, BasicString)` 直接版本（依赖隐式转换）— `std::equal_to<String>` 实例化是否成功需 plan 阶段试编译验证 | 设计 `StringEq` 自定义 functor（仿 `property.cc:94 StringViewEq`）作为兜底 |
+| F3 | 「需要新写 djb2 hash」 | ❌ 错。`property.cc:84-92 StringViewHash` 已是现成 djb2，可机械复刻为 `StringHash`（仅参数类型 `StringView` → `const String&`） | hash functor 工作量 ≈ 5 行复刻 |
+| F4 | 「修改可能影响多个调用方」 | ❌ 错。`application.cc:67/118` 是**唯一调用方**（仅作为指针字段 + `&image_cache_` 引用传递）— 无 handle 数值递增/连续性的外部依赖 | 回归风险接近零 |
+| F5 | 「需新加 dedup 测试用例」 | ❌ 错。`image_cache_test.cc:55-65 DeduplicateSamePath` 已覆盖 — 改造后必须保持「同 path Load 返回相同 handle」契约即可 | 现有 3 个测试用例（LoadAndGet / DeduplicateSamePath / LoadInvalidPath）已充分覆盖正确性 |
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ `HashMap<K,V,Hash,Eq>` API 完整（`hash_map.h` Insert/Find/Erase/clear/reserve）；djb2 hash 模板（`property.cc:84`）已现成 |
+| 环境就绪 | ✅ `build/` + `build-bench/` 复用，无 FetchContent → P0 git proxy 不触发 |
+| 已有 artifact | ✅ `bench_imagecache.json` baseline 已入仓（TASK-09），改造后可直接同机对比 |
+| 调用方影响 | ✅ 仅 `application.cc` 1 处持有指针，无 handle 数值依赖 |
+| 测试覆盖 | ✅ 3 个 GTest 已覆盖核心契约（dedup 是 K6 改造关键回归点，已覆盖） |
+| 待处理事项关联 | ✅ 落实 candidate TASK-11（候选区 P1 高 ROI）；与 TASK-10/12 不冲突 |
+| Sticky ID 一致性 | ✅ 候选区 ID = TASK-20260419-11，本任务沿用 |
+
+#### 验收标准（构建完成，10/10 ✅）
+
+1. ✅ 双索引数据结构（`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`）实现，handle 保持 1-based vector 下标
+2. ✅ `ImageCache::Load` hit 路径全部走 HashMap O(1)，O(N) 字符串扫被消除（Hit<256> 1151.77 → 45.70 ns，**25.2×↓**）
+3. ✅ 现有 3 个 GTest 全部通过（含 `DeduplicateSamePath` dedup 契约）
+4. ✅ ctest 全量回归 **891/891** 通过（新增 `ClearAndReloadDeduplicates` 1 项，D3 RED probe 验证有效）
+5. ✅ Release `-O3 -DNDEBUG` 通路（`build-bench/`）零编译失败 / 零 -Wall 警告
+6. ✅ `bench_imagecache` 同机复跑：Hit<16> = 44.05 ns（< 50 ns ✓）；Hit<256> = 45.70 ns（< 100 ns ✓）— K6 量化命题完全解
+7. ✅ Miss 3833 → 3344 ns（不退化）；Get 0.94 → 1.16 ns（噪声级，实现未改动）；ReplayImageReal<16/64> 持平
+8. ✅ baseline JSON 重生成入仓（带 repetitions=3 / mean+median+stddev/cv，library_build_type=release），baseline/README 加 K6-resolved 行 + 历史项；benchmarks/README ImageCache 量级行已更新
+9. ✅ techContext.md「Replay-Deepbench 性能基线」段 K6 状态从"待优化"改为"已解决"，含双索引架构 + 实测对比数字
+10. ✅ Memory Bank 更新（tasks/activeContext/progress 推进到「构建完成」；K6 候选标记结案；1-2h 实绩待 `/reflect` 评估，目前实测 P1+P2+P3+P4 ~35-40 min vs plan 估 ~55-80 min）
+
+#### 安全相关
+
+否（性能优化任务，无外部输入新增/无认证路径/无新依赖；`HashMap` 已是 vx_core 内部成熟容器）。
 
 <details>
 <summary>TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集） — ✅ 已归档（点开查看历史）</summary>
@@ -272,7 +352,7 @@
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 - ~~TASK-20260419-09：已立项为当前任务（A+B 子集），详见上方「当前任务」段。VAN 阶段 grep 推翻 K5「需 fixture 文件复制」假设（复用 `image_decoder_test.cc::CreateTestPng()` 程序化构造写 /tmp）+ K1「DrawText 真路径」假设（实际走 fallback FillRect）~~
 - **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**，非 bench 类）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear（10×～15×）。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` 内 `Vector<LayoutBox*> children` 扩容序列（首发→第 N 次扩容产生连续 reallocate）；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 cache miss（256 box × ~100 byte = 25.6 KB ≤ L1d 32KB，但 prefetch pattern 可能 break）。**预期产出**：调查报告 + （可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后立项；如新增 layout 性能问题先于 TASK-09 完成出现可优先此项
-- **TASK-20260419-11（新增，TASK-09 K6 拆出，建议 P1 高 ROI 优化）：** `ImageCache::Load` HashMap 化（**优化类**，机械替换）— 现状 hit 路径 O(N) 字符串扫，cache size = 256 时 1162 ns 单次 Load > `ReplayImageReal<16>` 595 ns（K6 量化数据）。改 `HashMap<String, ImageHandle>` 后 hit 路径预期稳定 ~10-30 ns 不论 cache size。**预期工作量**：~1-2h（含同机 baseline 对比 + 单测 + bench 复跑确认 K6 命题已解）。**触发条件**：可即立项（K6 修复独立 + 工作量小，建议在 TASK-10 之前优先做）
+- ~~TASK-20260419-11：已立项为当前任务（分支 `feature/TASK-20260419-11-imagecache-hashmap`），详见上方「当前任务」段。**VAN 阶段重大发现**：handle 必须保持 1-based vector 下标（保 Get O(1) + ABI），改造路径定为**双索引**（Vector + HashMap）；djb2 模板可复刻自 `property.cc:84 StringViewHash`~~
 - **TASK-20260419-12（新增，TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选：(a) `hb_buffer` 复用避免每次 alloc/free；(b) glyph bitmap 直接 raster 到 canvas 避免 GlyphCache → 中间 buffer → blit 两次拷贝。**预期产出**：warm 真路径 < 3000 ns 后默认真路径开关。**触发条件**：当真路径默认化提上日程时
 
 ## 任务历史

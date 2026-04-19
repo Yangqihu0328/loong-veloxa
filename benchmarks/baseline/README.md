@@ -15,7 +15,7 @@
      - **Layout** — buildtree flat ~ 117 ns/box (small)、512 box flat ~ 196 µs（super-linear knee 在 N=128~256 之间）、flex 8x8 ~ 4.9 µs / 16x16 ~ 73 µs（super-linear）
      - **Render** — Record ~26 ns/box (linear)、Replay FillRect ~10 ns/cmd (~100 M/s)、**Replay DrawText ~8200 ns/cmd（fallback 路径 hot — TASK-09 K1 已修正归因，见 §key findings）**
      - **DrawText** — fallback ~192 ns/char、real cold ~2777 ns/char（FT_Load+FT_Render，9.1× of warm）、real warm ~305 ns/char（hb_shape + glyph cache hit；当前 1.6× of fallback — K7）
-     - **ImageCache** — `Get` ~0.94 ns（O(1)）、`Load` hit/1 ~10 ns、hit/256 **~1162 ns**（O(N) 字符串扫，K6）、`ReplayImageReal<64>` ~37 ns/cmd
+     - **ImageCache** — `Get` ~1.16 ns（O(1)）、`Load` hit/1 ~43 ns、hit/16 ~44 ns、hit/256 **~46 ns**（HashMap O(1)，K6 已由 TASK-20260419-11 解决）、`ReplayImageReal<64>` ~37 ns/cmd
    - 跨任务做对照参考时的形态锚点
    - reflection / archive 文档引用时有具体数字可指
 
@@ -38,6 +38,7 @@
 | K1' | TASK-05 K1「DrawText 8200 ns/cmd 是 FT+HB 真路径」**修正归因** | TASK-05 测的是 fallback（`font_manager == nullptr` gate）：`Fallback_Medium` 3647 ns / 19 char = 192 ns/char ≈ FillRect ×19；"820×" 实为「1 cmd 含 N 字符 painting」vs「1 cmd 单 FillRect」的 per-cmd 工作不可比 | 文档化（已更新 systemPatterns Render Bench 前置清单） |
 | K1'' | DrawText 真路径冷路径才是真正贵的 | `Real_Cold_Medium` 52763 ns vs `Real_Warm` 5807 ns = 9.1×；vs `Fallback` = 14× | glyph_cache 已是 ROI 极高的存量优化；冷启动场景仍可考虑 pre-warm |
 | K6 | `ImageCache::Load` hit 路径 O(N) 字符串扫描；cache size 256 时单次 1162 ns | hit/1 9.99 ns → hit/16 48.5 ns → hit/256 **1162 ns**（116×）；**比 ReplayImageReal<16> 595 ns 还慢** | **强烈推荐**改 `HashMap<String, ImageHandle>`（O(1) 查表）— ROI 极高 |
+| K6 ✅ | **K6 已由 TASK-20260419-11 解决**：`ImageCache::Load` hit 路径已改为 `HashMap<String, ImageHandle>` O(1) 查表（djb2 hash + owned String key + custom StringHash/StringEq 规避 SSO 悬空指针） | Hit<16>: 50.87 ns → **44.05 ns**（1.16×↓）；Hit<256>: 1151.77 ns → **45.70 ns**（**25.2×↓**）；Miss/ReplayImageReal/Get 不退化；Hit<1> 10.35 ns → 43.27 ns 小回归（HashMap 固有 ~32 ns 开销，绝对量微小，被 256 净增益完全压倒） | 入仓新 baseline；K6 量化命题完全满足；anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」已消失 |
 | K7 | DrawText 真路径 warm > fallback（1.6×） | `Real_Warm_Medium` 5807 ns vs `Fallback_Medium` 3647 ns | 如未来默认开真路径需先优化：(a) `hb_buffer` 复用避免每次 alloc / (b) glyph bitmap 直接 raster 到 canvas 避免中间 memcpy |
 
 ## 当前生成环境
@@ -116,3 +117,4 @@ python3 build-bench/_deps/benchmark-src/tools/compare.py \
 | 2026-04-19 | TASK-20260419-03 | 初次入仓（CSS 基准首次落地） | CSS 30 行 (10 + 11 + 9) |
 | 2026-04-19 | TASK-20260419-05 | 入仓 Layout + Render 4 个 baseline | Layout 14 + 6 = 20 行；Render 5 + 5 = 10 行；共 30 行 |
 | 2026-04-19 | TASK-20260419-09 | 入仓 DrawText + ImageCache 2 个 baseline；K1 修正归因 + K6/K7 新发现 | DrawText 8 BMs；ImageCache 7 BMs；共 15 行 |
+| 2026-04-19 | TASK-20260419-11 | K6 已解决：ImageCache::Load HashMap 化，重生成 bench_imagecache 同机基线（带 repetitions=3 / mean+median+stddev） | ImageCache 7 BMs ×（1 main + mean + median + stddev + cv）|
