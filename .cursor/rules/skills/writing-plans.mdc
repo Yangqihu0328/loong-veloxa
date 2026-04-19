@@ -43,6 +43,21 @@ alwaysApply: false
 
 如果上述分析得出"改 CMakeLists.txt"结论，把 CMake 变更作为独立 Phase 前置任务（而非后补），列出具体的 `target_link_libraries(X PUBLIC/PRIVATE …)` 修改行。
 
+## FetchContent C 子项目编译选项审计（涉及 FetchContent + 第三方源码时**必填**）
+
+> 反复出现（TASK-20260413-01）：根 `add_compile_options` 的严格告警标志会污染上游 C 源，触发 `-Werror=pedantic` 等失败。
+
+在任务分解**之前**回答：
+
+1. **第三方代码语言**：本次 `FetchContent_Declare` 拉取的代码是否包含 C 源（QuickJS、libuv、zlib 等）？
+2. **全局选项作用域**：根 `CMakeLists.txt` 的 `add_compile_options(...)` 是否对 C 源生效？特别检查 `-Werror`、`-Wpedantic`、`-Werror=pedantic` 等。
+3. **冲突预测**：第 1+2 都为是 → 计划必须包含**前置 Phase**，将严格告警限制为 C++：
+   - 推荐：`add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Werror>")` 等
+   - 备选：对自有目标用 `target_compile_options(my_target PRIVATE -Werror)`，避免全局注入
+4. **验证方式**：在前置 Phase 末尾 `cmake -B build && cmake --build build --target <第三方目标>` 验证无新告警。
+
+如本节得出「需要改根 CMakeLists」结论，把 CMake 变更作为独立 Phase 前置任务。
+
 ## 小块任务粒度
 
 **每一步是一个动作（2-5 分钟）：**
