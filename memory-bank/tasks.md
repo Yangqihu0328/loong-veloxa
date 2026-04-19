@@ -2,11 +2,17 @@
 
 ## 当前任务
 
+_无活跃任务 — 等待 `/van` 接受新任务_
+
+<details>
+<summary>TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe） — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260419-05：Layout + Render 性能基准（4 个 bench exe）
 
 - **复杂度级别：** Level 2-3（4 文件新建 + CMakeLists 更新 + README + 4 baseline JSON 入仓）
-- **状态：** 🔵 回顾完成（待 `/archive`）
+- **状态：** ✅ 已完成（已合并到 main，详见 `archive-TASK-20260419-05.md`）
 - **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-05.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-05.md`
 - **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
 - **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h / 7 commits）
 - **分支：** `feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
@@ -95,6 +101,14 @@
 | 6 | (phase 5) | feat phase-5 bench_render_record full suite |
 | 7 | (phase 6) | feat phase-6 bench_render_replay + hot-path finding |
 | 8 | (phase 7) | docs(bench): 4 layout/render baselines + README updates |
+| 9 | `81d85cc` | chore(build): finalize TASK-20260419-05 memory bank state |
+| 10 | `01833c6` | docs(reflect): add reflection for TASK-20260419-05 |
+
+#### 安全相关
+
+否（性能测量任务，无外部输入/无认证/无新依赖）。
+
+</details>
 
 <details>
 <summary>TASK-20260419-07：修复 main Release `-Werror` 编译失败（2 处） — ✅ 已归档（点开查看历史）</summary>
@@ -149,6 +163,7 @@
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
 | TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
 | TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |
 | TASK-20260419-04 | 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（解锁 TASK-03 Phase 1） | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-04.md` |
