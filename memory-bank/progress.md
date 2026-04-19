@@ -10,6 +10,8 @@
   - 实现计划：`docs/plans/2026-04-19-rules-and-debt.md`（21 个提交计划，9 个 Phase）
   - 三个设计决策点全部固化（B5/B6/B7），无需 `/creative`
 - 下一步：`/build` 直接进入实现。Phase 0（基线验证）→ Phase A1-A4（流程规则）→ Phase B5-B7（代码）→ Phase 8（收尾）。
+- 2026-04-19 `/build` Phase 0：基线验证通过（856/856 tests PASS，构建零警告）。
+- 2026-04-19 `/build` Part A 完成：14 条 P1 流程规则全部固化（writing-plans 5 段、subagent-development 3 段、新建 integration-testing.mdc + 注册、techContext FetchContent 段）。共 11 个提交（含本条 MB 收尾）。
 
 ## 已完成任务
 
