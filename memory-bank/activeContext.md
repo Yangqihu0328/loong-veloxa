@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+回顾中
 
 ## 当前任务
 
@@ -9,24 +9,26 @@
 
 - **复杂度：** Level 2（简单增强）
 - **基线分支：** `main`
-- **功能分支（待创建）：** `feature/TASK-20260419-02-benchmarks`
-- **代理：** `192.168.101.217:7890`（已验证 git clone google/benchmark v1.9.1 8.3s 成功）
+- **功能分支：** `feature/TASK-20260419-02-benchmarks`
+- **代理：** `192.168.101.217:7890`（验证有效；本次构建期间临时 `git config --global http.proxy`，Phase 7 已 unset）
 - **设计规格：** `docs/specs/2026-04-19-benchmarks-design.md`
 - **实现计划：** `docs/plans/2026-04-19-benchmarks.md`
 
-**关键决策（4×A，已锁定）：**
-- 范围：仅 Foundation（allocators / containers / strings / hash_map）
-- 结构：一文件一可执行（4 个 exe）
-- 深度：每组件覆盖核心操作 + 1-2 个梯度（~25 BM，按 Range 展开 ~42）
-- 留存：仅控制台 + README 给出 JSON 导出方法（不提交 baseline）
+**构建结果（Phase 0–7 全绿）：**
+- 7 个提交：plan + scaffold(P1) + 4×bench(P2-5) + docs(P6) — Phase 7 仅验证未产生新代码
+- 4 个 exe：bench_allocators(13 BM) / bench_containers(8) / bench_hash_map(10) / bench_strings(9) = **40 BM**
+- 全测试 890/890 通过；全量构建 0 警告 0 错误（Debug）
+- CVE 审计：google/benchmark v1.9.1 GitHub Security Advisories 0 条
+- Bonus 发现（DEBUG WSL 数据）：`HashMap::Find` 对小整数 key + `H1=h>>7` 在 cap≥1024 时所有起始探测位置挤在 [0,127]，LookupHit/16384 = 9µs（vs 64 = 69ns），已记入 `benchmarks/README.md` 留待后续优化
 
-**焦点：** 等待用户审查 `docs/specs/...` + `docs/plans/...`，确认后执行 `/build` 进入 Phase 0 基线验证。
+**焦点：** 进入 `/reflect`，从决策准确率、TDD 适配（Benchmark 非 GTest 走"覆盖补充"模式）、SYSTEM include 屏蔽 -Werror 技巧、git 临时代理等维度沉淀经验。
 
 **后续任务（待 02 归档后立项）：**
 - TASK-20260419-03（建议）：CSS 解析基准（bench_css_tokenizer / bench_css_parser / bench_property_lookup）
 - TASK-20260419-04（建议）：Layout + Render 基准（bench_layout_buildtree / bench_render_record / bench_render_replay）
+- 候选债：HashMap 大容量 cluster 问题（独立优化任务）
 
-**下一步：** `/build`（按 `docs/plans/2026-04-19-benchmarks.md` 7 个 phase 顺序执行）
+**下一步：** `/reflect`
 
 ## 最近归档
 
