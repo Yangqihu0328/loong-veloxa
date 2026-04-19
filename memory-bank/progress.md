@@ -2,42 +2,11 @@
 
 ## 当前任务
 
-### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
-
-**当前阶段：** 回顾完成（待 `/archive`）
-
-**里程碑：**
-- ✅ VAN（2026-04-19）：分支创建（基于 main `bfe44ae`），范围拆分（A+B 本任务 / C 拆 TASK-10 候选），4 处 grep 推翻 K1/K5 三个原假设
-- ✅ Plan（2026-04-19）：design + plan 双文档落地，5 决策（D1-D5）确认，3 处补 grep 验证 API 签名（`Element::SetAttribute` / `InternedString::Intern` / `Brush::Solid`），无需 `/creative`
-- ✅ Build（2026-04-19，5 phase / 15 BMs / 5 commits + finalize；估时 3.5h，实际 ~50 min）：
-  - phase-1 `f767231` corpus 扩 + 2 smoke + CMake 注册（PNG::PNG find_package 1 处工程修正）
-  - phase-2 `c19dc97` bench_imagecache 全套 7 BMs（K6 新发现）
-  - phase-3 `8e55337` bench_drawtext 全套 8 BMs（K1 修正归因 + K7 新发现）
-  - phase-4 `913bf01` 2 baseline JSON + 2 README
-  - phase-5 (本 commit) techContext + systemPatterns + MB 收尾
-- ✅ Reflect（2026-04-19）：`memory-bank/reflection/reflection-TASK-20260419-09.md` 落地，5 项改进建议（P0×1 / P1×2 / P2×2）全部闭环：
-  - **P0 #1**（已落实）：`writing-plans.mdc` §3 grep 增补「CMake 链接可见性 PUBLIC/PRIVATE/INTERFACE 必查」（PNG::PNG 工程意外的根本预防）
-  - **P1 #2**（已迁入 activeContext）：bench 类任务 plan 估时模板（含复用率 + 单 BM 3-5 min 经验值）；连续 2 次 4× 高估
-  - **P1 #4**（已迁入 tasks 候选）：TASK-20260419-11 `ImageCache::Load` HashMap 化（K6 高 ROI 优化）
-  - **P2 #3**（已沉淀 systemPatterns）：「带否定判据的发现型 Phase」标记 4/4 成熟实践
-  - **P2 #5**（已沉淀 systemPatterns）：bench 估时校准段（双实证 4× 高估，触发升级阈值）
-- ⏳ Archive
-
-**核心数据成果（K1/K6/K7 三大判定）：**
-- **K1 修正归因**：TASK-05 8200 ns/cmd 实为 fallback FillRect ×19/cmd；"820×"是 per-cmd 工作不可比，非真路径慢源
-- **K1 真根因**：Real_Cold_Medium 52763 ns / 19 char = FT_Load+FT_Render（vs warm 9.1×、vs fallback 14×）
-- **K6 新发现（最高 ROI 候选）**：ImageCache::Load hit 路径 O(N) 字符串扫，size=256 时 1162 ns > ReplayImageReal<16> 595 ns
-- **K7 新发现**：当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），未来若默认开真路径需先优化 hb_buffer 复用 + 直接 raster
-
-**关键观察：**
-- 「方案根因假设未先验证」P0 规则（TASK-05 /archive 落实）**全流程产生量化预防价值**：
-  - VAN 阶段 grep 4 处推翻 K1/K5 三个假设（节省 ~30 min cmake fixture 工程 + 整轮 fallback 误报）
-  - Plan 阶段补 grep 3 处验证 API 签名（避免 ~10 min build 阶段 link error 返工）
-  - **结果**：Build 阶段实际 ~50 min（plan 估 3.5h），其中工程意外仅 1 处（PNG::PNG `find_package` 需在 benchmarks/CMakeLists.txt 顶部 — 因 vx_core PRIVATE 链接不传递）
-- 「带否定判据的发现型 Phase」方法论 4 次应用全部"否定原假设 + 意外定位真问题"（TASK-03 cluster / TASK-05 DrawText / TASK-09 K1' real cold / TASK-09 K6 Load O(N)）— 已写入 systemPatterns 表
+无活动任务，等待 `/van` 启动新任务。
 
 ## 已完成任务
 
+- TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集；2 bench exe / 15 BMs / 2 baseline JSON 入仓；K1 修正归因（fallback 非真路径）+ 真冷路径 14× 慢；K6 新发现 ImageCache::Load O(N) hit 路径 → 推 TASK-11 P1 高 ROI；K7 新发现 warm 真路径 1.6× 慢 fallback → 推 TASK-12 P2 触发型；落实「方案根因假设未先验证」P0 第 2 次完整应用 + grep 规则覆盖 CMake 链接可见性）→ 归档 `memory-bank/archive/archive-TASK-20260419-09.md`
 - TASK-20260419-05：Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON 入仓 + K1 实测 DrawText 是 Replay hot path 820× FillRect / ImageCache 不是 → 推 TASK-09 候选；落实 P0 `writing-plans.mdc`「性能基准任务必检项」段）→ 归档 `memory-bank/archive/archive-TASK-20260419-05.md`
 - TASK-20260419-07：修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报；与 TASK-04 同元模式不同手法 noinline）→ 归档 `memory-bank/archive/archive-TASK-20260419-07.md`
 - TASK-20260419-03：CSS 解析性能基准（Tokenizer 10 BM / Parser 11 BM / PropertyLookup 9 BM = 30 BMs + 3 baseline JSON 入仓 + Cluster 度量证 PropertyMap 均匀 → TASK-06 P1→P3 降级） → 归档 `memory-bank/archive/archive-TASK-20260419-03.md`

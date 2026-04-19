@@ -2,14 +2,19 @@
 
 ## 当前任务
 
+无活动任务，等待 `/van` 启动新任务。
+
+<details>
+<summary>TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集） — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260419-09：Replay hot path 深度基准 + 真 ImageCache 通路（A+B 子集）
 
 - **复杂度级别：** Level 2-3（2 个新 bench exe + 复用 layout_corpus.h + 2 baseline JSON 入仓 + README 更新）
-- **状态：** 🟢 回顾完成（待 `/archive`）
-- **当前阶段：** 回顾中（`activeContext.md`）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-09.md` ✅
-- **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md` ✅
-- **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md` ✅（5 phase / ~15 BMs / ~3.5h / 7 commits）
+- **状态：** ✅ 已完成（已合并到 main，详见 `archive-TASK-20260419-09.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-09.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-09.md`
+- **设计文档：** `docs/specs/2026-04-19-replay-deepbench-imagecache-design.md`
+- **实现计划：** `docs/plans/2026-04-19-replay-deepbench-imagecache.md`（5 phase / 15 BMs / **plan 估 3.5h / 实际 ~50 min** / 7 commits）
 
 #### 5 决策（D1-D5，plan 阶段头脑风暴用户确认）
 
@@ -46,9 +51,13 @@
 
 #### 不需要 `/creative` 阶段
 
-理由：所有设计决策已在 plan 阶段头脑风暴 D1-D5 完成；无 UI/算法/架构空白
+理由：所有设计决策已在 plan 阶段头脑风暴 D1-D5 完成；无 UI/算法/架构空白。
+
+#### 元数据
+
 - **分支：** `feature/TASK-20260419-09-replay-deepbench`（基于 main `bfe44ae`）
 - **创建日期：** 2026-04-19
+- **归档日期：** 2026-04-19
 - **来源：** TASK-20260419-05 K1（DrawText 真路径未验证）+ K5（ImageCache 三阶段链断）触发；候选区已立项 P1
 
 #### 范围决策（VAN /van 阶段拆分，2026-04-19）
@@ -80,6 +89,27 @@
 | 已有 artifact | ✅ TASK-05 4 bench 已在 main；新增 2 bench 文件名（`bench_drawtext.cc` / `bench_imagecache.cc` 或同等命名）不冲突 |
 | 待处理事项关联 | ✅ 落实 candidate TASK-09（候选区 P1）；推 TASK-10（候选） |
 | Sticky ID 一致性 | ✅ 候选区 ID = TASK-20260419-09，本任务沿用 |
+
+#### 关键发现（4 项 → /reflect 输入）
+
+| # | 发现 | 数值 | 后续 |
+|---|------|------|------|
+| K1' | TASK-05 「DrawText 8200 ns/cmd 是 FT+HB 真路径」**修正归因** | fallback 192 ns/char ≈ FillRect ×19；"820×"是 per-cmd 工作不可比性 | 已写入 techContext + systemPatterns DrawText fallback gate 隐式契约 |
+| K1'' | DrawText 真路径**冷路径**才是 hot | `Real_Cold_Medium` 52763 ns / 19 char（**14× of fallback / 9.1× of warm**） | glyph_cache 已是 ROI 极高存量优化 |
+| K6 | `ImageCache::Load` hit 路径 O(N) 字符串扫；size=256 时 1162 ns | hit/1 9.99 ns → hit/256 1162 ns（116×）；**比 ReplayImageReal<16> 595 ns 还慢** | 立 **TASK-20260419-11**（候选 P1 高 ROI）：HashMap 改造 |
+| K7 | warm 真路径 5807 ns > fallback 3647 ns（1.6×） | hb_shape 固定开销 + glyph bitmap memcpy > 19 个 FillRect | 立 **TASK-20260419-12**（候选 P2 触发型）：hb_buffer 复用 + 直接 raster |
+
+#### 提交清单（7 commits, on `feature/TASK-20260419-09-replay-deepbench`）
+
+| # | SHA | 主题 |
+|---|-----|------|
+| 1 | `71e01ab` | docs(plan): TASK-20260419-09 replay deepbench design + plan |
+| 2 | `f767231` | wip(TASK-20260419-09): phase-1 register bench_drawtext + bench_imagecache smoke |
+| 3 | `c19dc97` | feat(bench): add bench_imagecache full suite (TASK-20260419-09 phase-2) |
+| 4 | `8e55337` | feat(bench): add bench_drawtext full suite + K1 verdict (TASK-20260419-09 phase-3) |
+| 5 | `913bf01` | docs(bench): TASK-20260419-09 phase-4 baselines + READMEs |
+| 6 | `8cdb36c` | chore(build): finalize TASK-20260419-09 memory bank state (phase-5) |
+| 7 | `6e0f775` | docs(reflect): add reflection for TASK-20260419-09 |
 
 #### 安全相关
 
@@ -249,6 +279,7 @@
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |
 | TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
 | TASK-20260419-07 | 修复 main Release `-Werror` 编译失败（fgets unused-result + BasicString copy ctor IPA array-bounds 误报）— 与 TASK-04 同元模式不同手法 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-07.md` |
 | TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |
