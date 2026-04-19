@@ -39,6 +39,7 @@
 | libwebp | WebP 图片解码 | 未接入（系统缺少 -dev 包），延期 |
 | zlib | 压缩 | 待接入（资源打包） |
 | libuv | 异步 I/O | 待接入（事件循环） |
+| google/benchmark | 性能基准 | **已接入** v1.9.1（TASK-20260419-02），`FetchContent`，仅在 `-DVX_BUILD_BENCHMARKS=ON` 时拉取 |
 
 ## FetchContent 与代理（开发环境注意）
 
@@ -56,14 +57,32 @@ cmake -B build
 
 若需完全离线构建，预先把 `_deps` 目录从可联网机器拷贝到 `build/_deps`，再运行 `cmake -B build`，FetchContent 会跳过下载。
 
+### Benchmark 启用（TASK-20260419-02）
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON
+cmake --build build -j
+./build/benchmarks/bench_allocators   # 同理 bench_containers / bench_hash_map / bench_strings
+```
+
+启用 `VX_BUILD_BENCHMARKS=ON` 时根 `CMakeLists.txt` 通过 `FetchContent` 拉取 `google/benchmark v1.9.1`。注意点：
+
+- **代理**：与 quickjs-ng 同步，需 `http_proxy`/`https_proxy` 或 `git config --global http.proxy ...`
+- **`-Werror -Wpedantic` 隔离**：`benchmarks/CMakeLists.txt` 通过把 `benchmark` 目标的 include 路径标记为 `INTERFACE_SYSTEM_INCLUDE_DIRECTORIES` 屏蔽第三方头文件 warning（`benchmark::benchmark` 是 ALIAS，需操作底层 `benchmark` target）
+- **DEBUG 警告**：默认配置不指定 `CMAKE_BUILD_TYPE`，运行时 google/benchmark 会输出 `***WARNING*** Library was built as DEBUG`，数据失真——基线测量必须显式 `-DCMAKE_BUILD_TYPE=Release`
+- **结果留存**：不提交 baseline JSON；本地需要对比时按 `benchmarks/README.md` 用 `--benchmark_format=json --benchmark_out=...` + `tools/compare.py` 流程
+
 ### 已知首次配置失败模式
 
 | 现象 | 原因 | 解决 |
 |------|------|------|
-| `Could not resolve host: github.com` | 无代理 | 设置 `http_proxy` / `https_proxy` |
+| `Could not resolve host: github.com` | 无代理；或父 shell `export http_proxy` 未传到 cmake 子进程（Cursor 沙箱会把 `HTTP_PROXY/HTTPS_PROXY` 强制覆盖为本地 SOCKS 跳板 `127.0.0.1:40601`，覆盖用户值） | **首选** `git config --global http.proxy ...` + `https.proxy`；任务收尾必须 `--unset` 恢复（参考 TASK-20260419-02 反思 #3） |
 | `error: '#pragma' is not allowed here` (QuickJS) | 全局 `-Werror=pedantic` 污染 C 源 | 用 `add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>")` 限制为仅 C++ |
 | `Unknown arguments specified` (FindPkgConfig) | 子目录重复 `pkg_check_modules` | 提供方一次声明 + `target_link_libraries(... PUBLIC ...)` 传播 |
 | 第三方库 include 路径在测试目标找不到 | 通过 `INTERFACE` 链接但下游 target 没传播 | 改用 `PUBLIC` 链接（参考 TASK-20260418-01 P1#1）|
+| `set_target_properties can not be used on an ALIAS target` | 第三方 target 用 `::` 形式（如 `benchmark::benchmark`、`Freetype::Freetype`、`GTest::gtest`）多为 ALIAS | 先 `get_target_property(_real <alias> ALIASED_TARGET)` 取底层名，对真实 target 操作（参考 TASK-20260419-02 反思 #2） |
+| 第三方头文件触发本项目 `-Werror -Wpedantic` | 第三方头通过 `INTERFACE_INCLUDE_DIRECTORIES` 传播但未标 SYSTEM | `set_target_properties(<real-tgt> PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${INTERFACE_INCLUDE_DIRECTORIES}")` 一次性把头标为 SYSTEM，下游所有 target 自动屏蔽 warning（参考 TASK-20260419-02 P1） |
+| google/benchmark 输出 `***WARNING*** Library was built as DEBUG` | `cmake -B build` 不指定 `CMAKE_BUILD_TYPE` 默认 Debug | 性能基准必须 `cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON`，且独立 `build-bench/` 目录避免污染 Debug 测试 build（参考 TASK-20260419-02 反思 #1） |
 
 ## Sciter 架构分析摘要
 
@@ -312,7 +331,7 @@ cmake -B build
 - 决策准则：**公开 header 中前向声明的类型**（`struct hb_font_t;`）即使在 .h 里不 include，只要 **测试或下游需要定义并调用这些类型的 API**，依赖就必须 `PUBLIC`
 
 ### 技术债务清单
-1. Benchmark 延期（需 google benchmark）
+1. ~~Benchmark 延期（需 google benchmark）~~ ✅ 已接入 v1.9.1（TASK-20260419-02），覆盖 Foundation 4 子模块共 40 个 BM 用例
 2. HashMap SIMD Group 探测未实现（当前标量线性探测）
 3. InternedString 全局表非线程安全
 4. BasicString 含 Alloc* 指针，sizeof 为 32 而非纯 24

@@ -429,6 +429,28 @@ veloxa/
 - 不要在下游 `CMakeLists.txt` 用 `pkg_check_modules` 补链接——`pkg_check_modules` 不应跨文件重复调用同一模块（`FindPkgConfig: Unknown arguments specified`）
 - 正确动作：在提供方升 `PRIVATE → PUBLIC`
 
+## 已验证的模式（来自 TASK-20260419-02 Benchmark 集成）
+
+### 性能基准目录结构（一文件一可执行）
+- 每个被测子模块对应一个 `benchmarks/bench_<module>.cc`，独立编译为单 exe，输出至 `${CMAKE_BINARY_DIR}/benchmarks/`
+- `benchmarks/CMakeLists.txt` 提供 `vx_add_benchmark(name)` 函数封装 `add_executable + target_link_libraries(... vx_<lib> benchmark::benchmark) + RUNTIME_OUTPUT_DIRECTORY`
+- 新增模块只需 `bench_xxx.cc` + 一行 `vx_add_benchmark(bench_xxx)`
+- 崩溃隔离：单 exe 故障不影响其他基准
+- 适用：`bench_allocators / bench_containers / bench_hash_map / bench_strings`（已落地 4 个）；规划中 `bench_css_*` / `bench_layout_*` / `bench_render_*`
+
+### 第三方头文件 SYSTEM 隔离 -Werror
+- 我方 target 全局 `-Werror -Wpedantic`（限定 `$<COMPILE_LANGUAGE:CXX>`），第三方头通过 `INTERFACE_INCLUDE_DIRECTORIES` 传播会被打到我方编译命令上触发 warning-as-error
+- 标准做法：在引入第三方 target 后，把其 include 目录改为 `INTERFACE_SYSTEM_INCLUDE_DIRECTORIES`，下游所有 target 自动以 `-isystem` 形式 include，warning 全部抑制
+  ```cmake
+  get_target_property(_inc <real-tgt> INTERFACE_INCLUDE_DIRECTORIES)
+  if(_inc)
+    set_target_properties(<real-tgt> PROPERTIES
+      INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_inc}")
+  endif()
+  ```
+- 注意：`<real-tgt>` 必须是真实 target 名，不是 ALIAS（如对 `benchmark::benchmark` 操作会报 "ALIAS target 不可写"）
+- 已应用：`benchmark`（TASK-20260419-02）；下次接入新 FetchContent C++ 库可复用
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

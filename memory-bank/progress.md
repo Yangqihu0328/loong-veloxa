@@ -2,7 +2,13 @@
 
 ## 当前任务
 
-无。使用 `/van` 开始新任务。
+### TASK-20260419-02 — 补充 Google Benchmark 集成与 Foundation 性能基准
+
+- **2026-04-19 VAN：** 复杂度评估 Level 2；前置验证通过（代理 192.168.101.217:7890 可用，benchmark v1.9.1 可拉取，CMake 接入点已就绪）。
+- **2026-04-19 PLAN：** 头脑风暴 4 轮（范围/结构/深度/留存）全部 A 方案锁定；产出设计规格 `docs/specs/2026-04-19-benchmarks-design.md` 与实现计划 `docs/plans/2026-04-19-benchmarks.md`（Phase 0-7，预估 7 提交，~2h）。待用户审查后 `/build`。
+- **2026-04-19 BUILD：** 7 个 phase 全部完成。Phase 0 基线 890/890；Phase 1 创建 `feature/TASK-20260419-02-benchmarks` 分支 + `benchmarks/CMakeLists.txt`（含 `vx_add_benchmark()` + `benchmark` target 的 `INTERFACE_SYSTEM_INCLUDE_DIRECTORIES` 屏蔽 `-Werror -Wpedantic`）+ 4 个 smoke .cc；Phase 2-5 依次实现 allocators(13)/containers(8)/hash_map(10)/strings(9) = **40 BM**，每 phase 一次提交并本机跑通；Phase 6 `benchmarks/README.md`（启用、运行、JSON 导出、compare.py、Release 强提示） + `techContext.md`（依赖表 +1 行、Benchmark 启用段、技术债 #1 标记 ✅）；Phase 7 全量构建 + 890/890 + 4×bench BM 行计数验证 + google/benchmark v1.9.1 CVE 审计（GitHub Security Advisories 0 条） + git 临时代理恢复（`--unset http.proxy`/`https.proxy`）。
+- **2026-04-19 BUILD 副发现：** `HashMap::Find` 对小整数 key 在 cap≥1024 时严重 cluster（LookupHit/16384=9µs，vs 64=69ns）；根因 `H1(h)=h>>7` + `std::hash<int>` 恒等映射，所有起始探测位置压在 [0,127]。已写入 `benchmarks/README.md` 量级表"已知量级"段，留作独立优化任务候选。
+- **2026-04-19 REFLECT：** 产出 `memory-bank/reflection/reflection-TASK-20260419-02.md`。计划 100% 文件清单匹配；提交 8/预估 7（多 1 个收尾）；时间 ~1.5h/预估 2h。7 项历史反复模式中 6 项未重复，1 项「前置环境验证未到子进程粒度」部分重复，已升 P1 进 activeContext。新沉淀技术经验 3 项进入 techContext「FetchContent 与代理」段：CMake ALIAS target 不可写、Cursor 沙箱代理子进程不继承、benchmark 必须 Release。
 
 ## 已完成任务
 
