@@ -1,22 +1,36 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+构建完成
 
 ## 当前任务
 
 **TASK-20260419-05：Layout + Render 性能基准（4 bench exe）**
 
-- 级别：Level 2-3（4 文件新建 + 1 共享 CMakeLists 修改 + README + 4 baseline JSON）
+- 级别：Level 2-3（4 bench .cc + 1 共享 corpus header + CMakeLists + 2 README + 4 baseline JSON）
 - 分支：`feature/TASK-20260419-05-layout-render-benchmarks`（基于 main `2985220`）
-- 目标 4 bench：`bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`
 - **设计文档：** `docs/specs/2026-04-19-layout-render-benchmarks-design.md`
-- **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`（7 phase / ~25 BMs / ~4.25h）
-- **4 决策已定（头脑风暴）：** (1) corpus 用纯程序化 DOM API；(2) flex 二维 BENCHMARK_TEMPLATE 5 固定点 + 1 嵌套 flex；(3) ImageCache 在 Record/Replay 各加 1 个 img-only 对比 BM；(4) 4 baseline JSON 全入仓 + 复用 TASK-03 baseline/README 协议
-- 衔接 TASK-03 模式（plan §TASK-03 模式复刻清单）：`vx_add_benchmark()` 三参 + baseline 协议 + RangeMultiplier 公式 + 程序化 corpus + 带否定判据 phase
-- 前置验证全 ✅（无 FetchContent → P0 git proxy 不触发）
-- Sticky ID：候选区固定 TASK-05（与 TASK-04 同样反向插入）
-- **下一步：** `/build` 进入实现（Phase 1：CMake 注册 + 4 smoke .cc）
+- **实现计划：** `docs/plans/2026-04-19-layout-render-benchmarks.md`
+- **构建结果（7 phase 全完成 / 7 commits）：**
+  - Phase 1：CMakeLists `vx_add_benchmark` 注册 4 + 4 smoke .cc，11 bench 全 build green
+  - Phase 2：`benchmarks/layout_corpus.h` 头文件 inline 7 种 builder（含 Styled 子集）+ mutex-protected static cache
+  - Phase 3：`bench_layout_buildtree` 3 BM × 14 rows（Flat/Nested/Mixed）
+  - Phase 4：`bench_layout_flex` 6 BMs（5 fixed `BENCHMARK_TEMPLATE<rows,cols>` + 1 NestedFlex）
+  - Phase 5：`bench_render_record` 5 BMs（Small/Medium/Large/TextHeavy/ImgVsNoImg）
+  - Phase 6：`bench_render_replay` 5 BMs；揭示 hot path = **DrawText**（820× FillRect），非 ImageCache
+  - Phase 7：4 baseline JSON 入仓（全 release 体检通过）+ baseline/README key findings + benchmarks/README 升级到 11 exe
+- **关键发现（5 项 → /reflect 输入）：**
+  - K1 — Replay hot path = `DrawText` ~8200 ns/cmd vs FillRect ~10 ns/cmd（820×，远超 5× 阈值）→ 立 TASK-09 候选
+  - K2 — Layout buildtree-flat N=128→256 super-linear knee（7.7→70 µs，10× for 2× N）
+  - K3 — Layout flex 8x8→16x16 同源 super-linear（4.9→73 µs，14.9× for 4× cells）
+  - K4 — Record 对 image 元素无额外开销（image_handle=0 时 RecordBox 直接跳过）
+  - K5 — ImageCache 真测无法在 bench 内构造（DecodeFromFile 需 I/O fixture）→ 推 TASK-09
+- **完成验证（证据）：**
+  - Release build：11/11 bench 全 build green，全 exit 0
+  - Debug ctest：890/890 通过
+  - baseline JSON：4 份均 `library_build_type=release`
+  - baseline 协议：完全复刻 TASK-03 4-piece 失真兜底
+- **下一步：** `/reflect` 进入回顾（重点处理 K1~K5 + 沉淀「styled corpus 必要性」+「ctx.stylesheets 非空 gating」+ 「image_cache 三阶段协同」三条 lessons）
 
 ## 最近归档
 
