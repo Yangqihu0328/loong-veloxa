@@ -2,40 +2,19 @@
 
 ## 当前任务
 
-### TASK-20260419-03 — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
+无（等待 `/van` 启动新任务）
 
-- **复杂度级别：** Level 2
-- **状态：** REFLECT 完成 ✅（整体回顾覆盖 plan 全 7 phase；待 `/archive`）
-- **整体回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-03.md`（含 round 1 独立反思 `reflection-TASK-20260419-03-round1.md` 引用）
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（feature ahead-of-main 9-10 commits）
-- **TDD 模式：** 覆盖补充
-- **第 1 轮（已完成）：** Phase 0 验证 + Phase 1（3 smoke bench 编译/运行）+ Phase 2（Tokenizer 10 BM）
-  - 提交：plan `0a9c6fd` + WIP `430a61e` + chore(mb) resume `dfdf556` + feat tokenizer `4d014ec` + chore(build) finalize `fb9f8eb` + 第 1 轮 reflect `86b1495`
-  - 回顾：`memory-bank/reflection/reflection-TASK-20260419-03-round1.md`
-- **第 2 轮（已完成）：** Phase 3（Parser 11 BM）+ Phase 4（PropertyLookup 9 BM + cluster 度量）+ Phase 5（README + baseline/README）+ Phase 6（3 baseline JSON 入仓 + TBD 回填 + Release 全量验证）
-  - 提交：feat parser P3 `1e896d3`（含本轮启动 MB 切阶段）+ feat property lookup P4 `66f0a10` + docs P5 `36c7e9c` + （待 commit）feat baselines P6
-  - **关键产出**：cluster 判定 = **未触发**（最慢 single key vs HitHot5 = 2.75×，远低于 5× 阈值）→ TASK-06 候选 P1→P3
-  - **副发现**：main 已存在 2 个 Release `-Werror` 编译失败（`memory_surface_test.cc fgets` + `string_test.cc array-bounds`）→ 建议 TASK-07
-- **整体产出：** 30 BMs 入仓（10 + 11 + 9）+ 3 baseline JSON 入仓（~15 KB，全 release）+ techContext baseline 工作流段 + benchmarks/README CSS 章节 + benchmarks/baseline/README 完整协议
-- **整体回顾关键产出：**
-  - **plan 完成度 8/8 全绿**；4/4 风险预案命中 2 行（cluster + 编译时长），ROI 极高
-  - **Cluster 度量**：PropertyMap 实测均匀（最慢 2.75× HitHot5 < 5× 阈值）→ TASK-06 P1→P3 降级
-  - **Plan Range 公式 13 case 0 偏差**（`ceil(log_m(hi/lo))+1`）
-  - **Tokenizer 297-340 MiB/s 跨 64-4096 byte 范围稳定**；Parser ~1/3 Tokenizer 吞吐
-  - **TASK-04 修复 2 次实地确认**（Round 1 + Round 2 fresh build）
-- **整体改进项落实状态：**
-  - **🔴 P0 #1：** Cursor 沙箱 git proxy 反复 9+ 次破例升 P0（详见 activeContext 长期项首条）
-  - **🟠 P1 #2：** 待立项 TASK-20260419-07（修复 main 已存在 2 个 Release `-Werror` 失败）
-  - **🟠 P3 #3：** TASK-06 优先级 P1→P3 降级（实测均匀依据）
-  - **P1 #4/#8：** Round 1 已记 P1 本次复确（多轮工作流守卫 + WIP commit subject 中性化）
-  - **P2 #5/#6/#7/#10：** 沉淀到 `systemPatterns.md` / `techContext.md`
-  - **#9 关闭：** rebase MB 冲突标准处理已在 round 1 沉淀且本次二次验证有效
-- **下一步：** `/archive`
+### 待立项候选
+
+- **TASK-20260419-05（建议，P1）：** Layout + Render 基准 — `bench_layout_buildtree` / `bench_layout_flex` / `bench_render_record` / `bench_render_replay`（来源 TASK-02 归档；可用 TASK-03 baseline 反推性能预算锚）
+- **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
+- **TASK-20260419-07（建议，P1，Level 1）：** 修复 main 已存在 2 个 Release `-Werror` 失败 — (a) `tests/platform/memory_surface_test.cc` `fgets -Wunused-result`；(b) `tests/foundation/strings/string_test.cc` `-Werror=array-bounds`（GCC IPA 误报，参考 TASK-04 detemplatize / pragma 套路）（来源 TASK-03 P6 fresh build 副发现）
 
 ## 任务历史
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-03 | CSS 解析性能基准（Tokenizer / Parser / PropertyLookup）— 30 BMs + 3 baseline JSON + Cluster 度量证 PropertyMap 均匀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-03.md` |
 | TASK-20260419-04 | 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报（解锁 TASK-03 Phase 1） | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-04.md` |
 
 <details>

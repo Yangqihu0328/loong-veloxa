@@ -1,49 +1,15 @@
 # 活跃上下文
 
 ## 当前阶段
-回顾中（TASK-20260419-03 整体回顾完成 ✅，覆盖 plan 全 7 phase；下一步 `/archive`）
+空闲
 
 ## 当前任务
 
-**TASK-20260419-03** — CSS 解析性能基准（Tokenizer / Parser / Property Lookup）
-
-- **复杂度：** Level 2
-- **分支：** `feature/TASK-20260419-03-css-benchmarks`（基于 main `a09ad1e` rebase，feature ahead 10 commits 共 7 个 phase + 收尾）
-- **TDD 模式：** 覆盖补充（既有 GTest 作正确性基线，本任务不新增 GTest）
-- **整体进度：** Phase 0/1/2/3/4/5/6 全 ✅，30 BMs（10 tokenizer + 11 parser + 9 property lookup）入仓 + 3 baseline JSON 入仓
-- **第 2 轮（本轮）范围与产出：**
-  - Phase 3 — `bench_css_parser.cc` 11 BMs 完整套件（4 stylesheet template + 6 inline Range + 1 selector）
-  - Phase 4 — `bench_css_property_lookup.cc` 9 BMs 完整套件（含 5 cluster probes）+ **关键产出**：cluster 判定 = **未触发**（最慢 single key 仅 2.75× HitHot5，远低于 5× 阈值），TASK-06 候选优先级 P1→P3
-  - Phase 5 — `benchmarks/README.md` 扩展（CSS 章节 + 5 行已知量级 + 3 行注意事项）+ 新建 `benchmarks/baseline/README.md`（失真警告 + 5 条更新协议 + 命令模板）
-  - Phase 6 — Release 全量 fresh rebuild build-bench/ + 3 baseline JSON（共 ~15 KB，全 release）入仓 + README/baseline TBD 数字回填
-- **本轮验证证据：**
-  - 7 bench exe Release 编译干净（含 fresh rm + reconfigure 路径）
-  - 3 baseline JSON 体检：context.library_build_type=release ✅，BM count = 10 + 11 + 9 = 30 ✅
-  - Debug 全测试 890/890 ✅（regression 通过）
-  - 7 bench exe（4 foundation + 3 css）全 exit 0
-  - lint 0
-  - 关键数字（baseline JSON 实测）：BM_TokenizeAll/4096 ~10.8 µs (~265 MiB/s)、BM_ParseStylesheetMedium ~18.5 µs、BM_PropertyLookupHitHot5 ~13 ns、HitSingle/transition-timing-function ~33 ns
-- **本轮提交（feature ahead 6→10）：**
-  - `1e896d3` feat(benchmarks): CSS parser suite [P3]（含本轮启动 MB 阶段切换）
-  - `66f0a10` feat(benchmarks): CSS property lookup + cluster probe [P4]
-  - `36c7e9c` docs(benchmarks): document CSS suite + baseline retention policy [P5]
-  - 待 commit：3 baseline JSON + README 数字回填 + MB 收尾（本步骤的 finalize commit）
-- **关键发现 — Release 全量 build 副发现（main 已存在）：**
-  - `tests/platform/memory_surface_test.cc:102/105/108` — `fgets` `-Werror=unused-result`
-  - `tests/foundation/strings/string_test.cc` — `-Werror=array-bounds` GCC IPA 误报（与 TASK-04 同类，作用于 `BasicString` 而非 `Lookup<N>`）
-  - 这些**不阻塞本任务**（bench 目标不依赖 tests）；建议立 TASK-07 修复（与 TASK-04 系列同源 — Release 通路验证缺失）
-- **整体回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-03.md`（覆盖 plan 全 7 phase；round 1 独立反思 `reflection-TASK-20260419-03-round1.md` 仍保留作为轮次回顾历史）
-- **整体回顾关键发现：**
-  1. **Cluster 度量产出**（最高价值）— PropertyMap 实测均匀（最慢 2.75× < 5× 阈值），TASK-06 优先级 P1→P3
-  2. **TASK-04 修复 2 次实地确认**（Round 1 + Round 2 fresh build 两次过 0 `-Werror=array-bounds`）= 选 C 方案最强 ROI 证据
-  3. **Plan Range 公式 13 个 case 全部命中**，`ceil(log_m(hi/lo))+1` 0 偏差
-  4. **Tokenizer/Parser 性能基线建立**（30 BMs + 3 baseline JSON 入仓），可作 TASK-05 Layout/Render 立项性能预算参考
-  5. **风险预案 4 行命中 2 行**（cluster 实测均匀 + Release 全量耗时长），预案 ROI 极高
-- **整体改进项落实状态：** P0 #1 + P1 #2/#3/#4/#8 入本文件「待处理事项」段；P2 #5/#6/#7/#10 沉淀到 `systemPatterns.md` / `techContext.md`；#9 关闭
-- **下一步：** `/archive` — 创建 archive 文档 + 合并到 main + 删除 feature 分支 + 收尾
+无
 
 ## 最近归档
 
+- `memory-bank/archive/archive-TASK-20260419-03.md`（TASK-20260419-03 CSS 解析性能基准 — 30 BMs + 3 baseline JSON 入仓 + Cluster 度量证 PropertyMap 均匀 → TASK-06 P1→P3，已 `--no-ff` 合并到 main `660313a`）
 - `memory-bank/archive/archive-TASK-20260419-04.md`（TASK-20260419-04 修复 `enum_serialization.cc` Release `-Warray-bounds` 误报，已合并到 main `a09ad1e`）
 - `memory-bank/archive/archive-TASK-20260419-02.md`（TASK-20260419-02 Google Benchmark 集成 + Foundation 性能基线，已合并到 main）
 - `memory-bank/archive/archive-TASK-20260419-01.md`（TASK-20260419-01 流程规则沉淀 + P2 功能技术债收口，已合并到 main）
