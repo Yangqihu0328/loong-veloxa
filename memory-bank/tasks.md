@@ -2,15 +2,22 @@
 
 ## 当前任务
 
-### TASK-20260419-01 — 流程规则沉淀 + P2 功能技术债收口
+无。使用 `/van` 开始新任务。
+
+<details>
+<summary>已归档：TASK-20260419-01 — 流程规则沉淀 + P2 功能技术债收口（点开查看历史细节）</summary>
 
 - **复杂度级别：** Level 3（中等功能；跨「.cursor 规则」+ 「Script/CSS/Event」子系统）
-- **当前阶段：** 回顾中（待归档）
-- **分支：** `feature/TASK-20260419-01-rules-and-debt`（基线 `main`）
+- **状态：** ✅ 已完成（已合并到 main）
+- **分支：** `feature/TASK-20260419-01-rules-and-debt`（已删除）
 - **创建日期：** 2026-04-19
+- **归档日期：** 2026-04-19
 - **设计规格：** `docs/specs/2026-04-19-rules-and-debt-design.md`
 - **实现计划：** `docs/plans/2026-04-19-rules-and-debt.md`
-- **预估提交：** 21 个；预估新增测试：+22（基线 856 → ≥ 878）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-01.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-01.md`
+- **预估提交：** 21 个；**实际：** 23 个（含 reflect + archive）
+- **预估新增测试：** +22；**实际：** +34（基线 856 → 890）
 
 #### 需要创意阶段的组件
 
@@ -74,10 +81,13 @@
 
 否（纯内部技术债 + 流程规则；不涉及外部输入/认证/存储/部署）
 
+</details>
+
 ## 任务历史
 
 | ID | 描述 | 最终状态 | 归档日期 |
 |----|------|---------|---------|
+| TASK-20260419-01 | 流程规则沉淀 + P2 功能技术债收口（14 条 P1 流程规则 + CSS Enum 序列化 / EventManager 反向析构 / removeEventListener 精确移除） | ✅ 已完成 | 2026-04-19 |
 | TASK-20260418-01 | 消化关键技术债务（#45 dom_bindings 全局状态 / #46 StyleGetProp 读路径 / #48 hb_font 缓存 / #50 addEventListener 生命周期） | ✅ 已完成 | 2026-04-18 |
 | TASK-20260414-01 | 功能补全（border-radius / 字体渲染 / 图片支持 / JS-DOM 绑定） | ✅ 已完成 | 2026-04-14 |
 | TASK-20260413-02 | 消化技术债务子集（#41 `HashMap` const 迭代、#39 测试像素头、`active_count_` 移除） | ✅ 已完成 | 2026-04-13 |

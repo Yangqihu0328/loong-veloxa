@@ -2,25 +2,11 @@
 
 ## 当前任务
 
-**TASK-20260419-01** — 流程规则沉淀 + P2 功能技术债收口（Level 3）
-
-- 2026-04-19 `/van`：完成初始化。分支 `feature/TASK-20260419-01-rules-and-debt` 已从 `main` 创建。前置验证通过。
-- 2026-04-19 `/plan`：完成头脑风暴 + 设计规格 + 实现计划。
-  - 设计文档：`docs/specs/2026-04-19-rules-and-debt-design.md`（462 行）
-  - 实现计划：`docs/plans/2026-04-19-rules-and-debt.md`（21 个提交计划，9 个 Phase）
-  - 三个设计决策点全部固化（B5/B6/B7），无需 `/creative`
-- 下一步：`/build` 直接进入实现。Phase 0（基线验证）→ Phase A1-A4（流程规则）→ Phase B5-B7（代码）→ Phase 8（收尾）。
-- 2026-04-19 `/build` Phase 0：基线验证通过（856/856 tests PASS，构建零警告）。
-- 2026-04-19 `/build` Part A 完成：14 条 P1 流程规则全部固化（writing-plans 5 段、subagent-development 3 段、新建 integration-testing.mdc + 注册、techContext FetchContent 段）。共 11 个提交（含本条 MB 收尾）。
-- 2026-04-19 `/build` Part B 完成：3 条 P2 功能债全部修复。
-  - B5：新建 `veloxa/core/css/enum_serialization.{h,cc}`，覆盖 13 个 CSS Enum 反查；`dom_bindings.cc` `SerializeCssValue` 接入 `PropertyId`；`element.style.display` 等 Enum 读路径恢复正确。
-  - B6：`EventManager` 引入 `DestructionObserver` 机制（token 化 add/remove）；`DomBindings::Bind/Unbind` 注册/注销观察者，反向析构（EM 先于 DB 析构）安全。
-  - B7：`EventDispatcher::AddEventListener` 返回 `ListenerToken`（u64）；新增 `RemoveEventListenerByToken`；`DomBindings` 维护 `(Element*, type, JSValuePtr)→Token` 映射，实现 JS `removeEventListener(type, handler)` 精确语义；保留零参/单参兜底。
-- 2026-04-19 `/build` Phase 8 收尾验证：全量重建零警告，890/890 tests PASS（基线 856 + 新增 34，>= 验收阈 878 ✅）。
-- 2026-04-19 `/reflect` 完成：回顾文档 `memory-bank/reflection/reflection-TASK-20260419-01.md`。关键发现：21/21 提交完美匹配、+34 测试超预估、TDD 严格度+提交粒度+测试隔离三个反复模式本次完全规避；新发现两条规则缺口（静态库循环依赖、Web 标准 API 多重载）已固化到 `writing-plans.mdc`；新模式（u64 token 句柄、反向析构 DestructionObserver）已入 `systemPatterns.md`；StatusOr API 表面入 `techContext.md`。
+无。使用 `/van` 开始新任务。
 
 ## 已完成任务
 
+- TASK-20260419-01：流程规则沉淀 + P2 功能技术债收口 → 归档 `memory-bank/archive/archive-TASK-20260419-01.md`
 - TASK-20260418-01：消化关键技术债务（#45/#46/#48/#50） → 归档 `memory-bank/archive/archive-TASK-20260418-01.md`
 - TASK-20260414-01：功能补全 → 归档 `memory-bank/archive/archive-TASK-20260414-01.md`
 - TASK-20260413-02：消化技术债务子集 → 归档 `memory-bank/archive/archive-TASK-20260413-02.md`
