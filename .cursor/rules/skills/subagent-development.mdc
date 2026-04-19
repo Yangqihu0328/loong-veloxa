@@ -141,6 +141,24 @@ alwaysApply: false
 [具体任务描述]
 ```
 
+### 跨模块数据格式（涉及共享数据结构时**必填**）
+
+> 来源 TASK-02：缺少格式 prompt 触发 24 小时返工（像素格式假设矛盾）。
+
+当子代理任务读写跨模块共享数据时，prompt 必须包含：
+
+- **格式精确定义**：bit 布局、字节序、单位、范围
+  - 例：`RGBA32 = R[0:7] | G[8:15] | B[16:23] | A[24:31]`
+  - 例：`CSS color = u32 0xRRGGBBAA`（与上面**不同**！黑色 CSS=0x000000FF，gfx=0xFF000000）
+- **格式引用位置**：上游/下游模块在哪里使用？文件 + 函数
+- **已知不一致**：如有跨格式风险（CSS color vs gfx::Color），明示桥接函数（如 `CssColorToGfx`）
+
+反例（不要给子代理这种描述）：
+> "把 CSS background-color 应用到 PaintCommand"
+
+正例：
+> "把 ComputedStyle::background_color (u32 RRGGBBAA) 通过 render_utils.h::CssColorToGfx 转换为 gfx::Color，再写入 PaintCommand::FillRect{color, ...}"
+
 ## 与 Memory Bank 集成
 
 - 每个任务完成后更新 `memory-bank/progress.md`
