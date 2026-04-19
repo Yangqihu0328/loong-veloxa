@@ -12,6 +12,11 @@
 - 下一步：`/build` 直接进入实现。Phase 0（基线验证）→ Phase A1-A4（流程规则）→ Phase B5-B7（代码）→ Phase 8（收尾）。
 - 2026-04-19 `/build` Phase 0：基线验证通过（856/856 tests PASS，构建零警告）。
 - 2026-04-19 `/build` Part A 完成：14 条 P1 流程规则全部固化（writing-plans 5 段、subagent-development 3 段、新建 integration-testing.mdc + 注册、techContext FetchContent 段）。共 11 个提交（含本条 MB 收尾）。
+- 2026-04-19 `/build` Part B 完成：3 条 P2 功能债全部修复。
+  - B5：新建 `veloxa/core/css/enum_serialization.{h,cc}`，覆盖 13 个 CSS Enum 反查；`dom_bindings.cc` `SerializeCssValue` 接入 `PropertyId`；`element.style.display` 等 Enum 读路径恢复正确。
+  - B6：`EventManager` 引入 `DestructionObserver` 机制（token 化 add/remove）；`DomBindings::Bind/Unbind` 注册/注销观察者，反向析构（EM 先于 DB 析构）安全。
+  - B7：`EventDispatcher::AddEventListener` 返回 `ListenerToken`（u64）；新增 `RemoveEventListenerByToken`；`DomBindings` 维护 `(Element*, type, JSValuePtr)→Token` 映射，实现 JS `removeEventListener(type, handler)` 精确语义；保留零参/单参兜底。
+- 2026-04-19 `/build` Phase 8 收尾验证：全量重建零警告，890/890 tests PASS（基线 856 + 新增 34，>= 验收阈 878 ✅）。
 
 ## 已完成任务
 

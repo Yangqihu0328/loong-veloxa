@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+反思待归档
 
 ## 当前任务
 
@@ -42,14 +42,12 @@
 
 ## 待处理事项
 
-### 本任务进行中（Part B，TASK-20260419-01）
-- **P2**：`StyleGetProp` Enum 读路径（display 等）——需要 `PropertyId→enum string` 反查表（来源 TASK-20260418-01 #46，本任务 B5）
-- **P2**：`DomBindings`/`EventManager` 析构顺序硬约束——反向场景需弱引用机制（来源 TASK-20260418-01 #50，本任务 B6）
-- **P2**：`removeEventListener` 按 `(type, handler)` 精确移除，需 `EventManager` 扩展 API（原 #47，本任务 B7）
-
 ### 长期项（不在本任务范围）
 - **P1**：补充 Benchmark（网络恢复后，来源 TASK-01）
 - **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`，并在该头注释示例 hex→RGBA（来源 TASK-20260413-02）
 
-### 已落实（本任务 Part A 完成）
-- ~~14 条 P1 流程规则~~ ✅ 已固化到 `writing-plans.mdc` / `subagent-development.mdc` / 新建 `integration-testing.mdc` / `techContext.md`
+### 已落实（本任务完成）
+- ~~14 条 P1 流程规则~~ ✅ Part A：`writing-plans.mdc` / `subagent-development.mdc` / 新建 `integration-testing.mdc` / `techContext.md`
+- ~~`StyleGetProp` Enum 读路径~~ ✅ B5：新建 `enum_serialization.{h,cc}`，覆盖全部 13 个 Enum
+- ~~`DomBindings`/`EventManager` 析构反向~~ ✅ B6：`EventManager::AddDestructionObserver` + 弱引用
+- ~~`removeEventListener` 精确移除~~ ✅ B7：`ListenerToken` API + `RemoveByToken`
