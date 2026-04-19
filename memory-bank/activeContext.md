@@ -11,10 +11,14 @@
 - **分支：** `feature/TASK-20260419-03-css-benchmarks`（已 rebase 到 main `a09ad1e`，feature ahead 2 commits：plan `0a9c6fd` + WIP Phase 1 `430a61e`）
 - **TDD 模式：** 覆盖补充（既有 GTest 作正确性基线，本任务不新增 GTest）
 - **本轮范围：** Phase 1 验证（编译/运行 3 个 smoke bench）+ Phase 2（Tokenizer 完整 ~10 BM 套件）；Phase 3-6 留待下轮
-- **进度：** Phase 0 ✅（暂停前）；Phase 1 文件 WIP commit ✅，待编译/运行验证；Phase 2-6 ⬜
+- **进度：** Phase 0 ✅；Phase 1 ✅（3 smoke bench Release 编译干净 + 各跑 1 BM 非零 ns/op + exit 0）；Phase 2 ✅（Tokenizer 10 BM 完整套件验证通过）；Phase 3-6 ⬜（留待下轮 `/build`）
 - **rebase 冲突处理：** plan 与 WIP 两个 commit 在 MB 文件出现冲突，全部接受 main 端版本（TASK-04 归档后 idle 是更新真相）；pause commit (`679efaf`) skip（已无意义）
 - **WIP commit subject 注：** `wip(TASK-03): Phase 1 CSS bench scaffolding (BLOCKED on TASK-04)` — 字面已不准（TASK-04 已解锁），但保留不动避免动 commit 历史；归档时在文档说明
-- **焦点：** 1) Phase 1 编译 + 运行验证；2) 替换 Tokenizer smoke 为完整套件并验证
+- **本轮验证证据：**
+  - Phase 1：Release `cmake --build build-bench --target bench_css_{tokenizer,parser,property_lookup} -j` 干净 ✅；3 exe 各 1 BM 行（635 / 1821 / 10.4 ns）；TASK-04 修复（`enum_serialization.cc` LookupImpl）实地生效 — vx_core Release 链接成功无 `-Werror=array-bounds`
+  - Phase 2：Tokenizer 10 BM（7 Range + 3 single）；BM_TokenizeAll 297-340 MiB/s 稳定（无 quadratic 退化）；StringHeavy 603 / WhitespaceHeavy 614 / NumericHeavy 372 MiB/s
+  - Debug 全测试 890/890 ✅；3 CSS bench Release exit 0 + BM 行数符合预期（10 / 1 / 1）
+- **本轮提交：** chore(mb) resume + feat(benchmarks) tokenizer suite
 
 ## 最近归档
 
