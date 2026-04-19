@@ -76,10 +76,13 @@ cmake --build build -j
 
 | 现象 | 原因 | 解决 |
 |------|------|------|
-| `Could not resolve host: github.com` | 无代理 | 设置 `http_proxy` / `https_proxy` |
+| `Could not resolve host: github.com` | 无代理；或父 shell `export http_proxy` 未传到 cmake 子进程（Cursor 沙箱会把 `HTTP_PROXY/HTTPS_PROXY` 强制覆盖为本地 SOCKS 跳板 `127.0.0.1:40601`，覆盖用户值） | **首选** `git config --global http.proxy ...` + `https.proxy`；任务收尾必须 `--unset` 恢复（参考 TASK-20260419-02 反思 #3） |
 | `error: '#pragma' is not allowed here` (QuickJS) | 全局 `-Werror=pedantic` 污染 C 源 | 用 `add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>")` 限制为仅 C++ |
 | `Unknown arguments specified` (FindPkgConfig) | 子目录重复 `pkg_check_modules` | 提供方一次声明 + `target_link_libraries(... PUBLIC ...)` 传播 |
 | 第三方库 include 路径在测试目标找不到 | 通过 `INTERFACE` 链接但下游 target 没传播 | 改用 `PUBLIC` 链接（参考 TASK-20260418-01 P1#1）|
+| `set_target_properties can not be used on an ALIAS target` | 第三方 target 用 `::` 形式（如 `benchmark::benchmark`、`Freetype::Freetype`、`GTest::gtest`）多为 ALIAS | 先 `get_target_property(_real <alias> ALIASED_TARGET)` 取底层名，对真实 target 操作（参考 TASK-20260419-02 反思 #2） |
+| 第三方头文件触发本项目 `-Werror -Wpedantic` | 第三方头通过 `INTERFACE_INCLUDE_DIRECTORIES` 传播但未标 SYSTEM | `set_target_properties(<real-tgt> PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${INTERFACE_INCLUDE_DIRECTORIES}")` 一次性把头标为 SYSTEM，下游所有 target 自动屏蔽 warning（参考 TASK-20260419-02 P1） |
+| google/benchmark 输出 `***WARNING*** Library was built as DEBUG` | `cmake -B build` 不指定 `CMAKE_BUILD_TYPE` 默认 Debug | 性能基准必须 `cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON`，且独立 `build-bench/` 目录避免污染 Debug 测试 build（参考 TASK-20260419-02 反思 #1） |
 
 ## Sciter 架构分析摘要
 
