@@ -2,12 +2,18 @@
 
 ## 当前任务
 
+_（无活跃任务，等待 `/van` 启动新任务）_
+
+<details>
+<summary>TASK-20260424-01：Layout super-linear knee 根因调查 — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260424-01：Layout super-linear knee 根因调查
 
 - **复杂度级别：** Level 2-3（研究/调查类；**可能**产出小型性能补丁或 arena 默认配置调整）
-- **状态：** 🟣 Reflect 完成，等待 `/archive`（Phase 0-5 Build 完成 + 回顾文档入仓，验收 10/10，3 个 warning 项已确认接受；5 条改进建议沉淀）
-- **分支：** `feature/TASK-20260424-01-layout-knee-root-cause`（6 commits，包含回顾文档 commit，未合并到 main）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-01.md`（10 段，含 plan×0.6 第 5 数据点 0.29× / K8 新发现 / RED 反向探针 2nd / 测试哲学 / 脚本化扫描模板共 5 项沉淀）
+- **状态：** ✅ 已完成（详见 `archive-TASK-20260424-01.md`）
+- **分支：** `feature/TASK-20260424-01-layout-knee-root-cause`（7 commits 含 archive）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-01.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260424-01.md`
 
 #### Build 阶段成果
 
@@ -134,6 +140,8 @@
 - `/creative`：**视情况**（若需要在多个修复方案间做架构决策）
 - `/build`：实施 fix 或输出研究报告
 - `/reflect` + `/archive`
+
+</details>
 
 <details>
 <summary>TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环） — ✅ 已归档（点开查看历史）</summary>
@@ -556,6 +564,7 @@
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260424-01 | Layout super-linear knee 根因调查（研究类）— 根因定位 (d) ArenaAllocator 4KB block malloc/free churn；默认 block_size 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40×；3 文件核心 + 7 commits；新增 `DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；K8 新发现（65K block > L1D 触发抖动）；plan × 0.6 第 5 数据点 0.29×（历史最快，「最窄路径」子档样板）；3 新模式沉淀 systemPatterns；残余 ~40% super-linear 拆出 TASK-20260424-02 | ✅ 已完成 | 2026-04-24 | `archive-TASK-20260424-01.md` |
 | TASK-20260419-13 | 流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）— P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链 grep / P1 多轮次 Build 中间态；9 文件 / 8 commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议；5 新模式沉淀 systemPatterns | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-13.md` |
 | TASK-20260419-11 | ImageCache::Load HashMap 化（K6 高 ROI 修复）— 双索引 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`)；保 ABI / Get O(1)；Hit<256> 1151.77 ns → 45.70 ns（25.2×↓）；ctest 891/891 PASS；新增 `ClearAndReloadDeduplicates` D3 回归网（RED 反向探针验证有效）；3 P1 + 3 P2 改进沉淀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-11.md` |
 | TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |
