@@ -1,11 +1,37 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+初始化
 
 ## 当前任务
 
-_无活跃任务。使用 `/van [task description]` 开始新任务。_
+**TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）**
+
+- **复杂度级别：** Level 2（3 个规则文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
+- **基线分支：** `main`（3 个目标规则文件全在 main）
+- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（即将创建）
+- **安全相关：** ❌ 否（纯流程规则文档）
+
+### 待沉淀 3 条
+
+| # | 优先级 | 来源 | 目标文件 | 内容 |
+|:-:|:-:|---|---|---|
+| 1 | 🔴 **P0** | 反复 9+ 次（TASK-02/03/04 反思） | `.cursor/rules/skills/writing-plans.mdc` + `main.mdc` 可能联动 | FetchContent 任务 VAN 阶段**强制重设 git 全局代理**；需 (a) 写入 `writing-plans.mdc`「FetchContent 任务前置 checklist」强制条目；(b) `main.mdc` 会话启动或 VAN 命令守卫提醒 proxy 状态 |
+| 2 | 🟠 **P1** | TASK-11 反思 #2 | `.cursor/rules/skills/writing-plans.mdc` §5.4 邻段新增 §5.7 | Plan 阶段**必须 grep `which <tool>`** 验证 smoke 工具链可用性（jq / bc / valgrind / awk / xmllint 等） |
+| 3 | 🟠 **P1** | TASK-03 Round 1 首发 + TASK-11 复确 | `.cursor/rules/workflow/complexity-levels.mdc` | Level 2+ 多 phase 任务（≥ 5 phase）支持**「轮次完成」中间态** — `/reflect` / `/build` / `/archive` 阶段守卫调整说明 |
+
+### VAN 阶段关键核查（已完成）
+
+- ✅ 3 条目插入点已精确定位且不存在重复（grep 实证）
+- ✅ `writing-plans.mdc` 已有 6 个「XX 前置条件必填」段成熟模板可直接复刻（覆盖 CMake 链接 / 循环依赖 / Web API 多重载 / FetchContent C 编译选项 / 测试基础设施 / 边界输入 / 调用链 / 管线注入 / 性能基准，第 7 段为 proxy 守卫同构插入）
+- ✅ `complexity-levels.mdc` Level 4 已有「迭代机制」段可参考（L56/L66）；新增「轮次完成中间态」作为对 `/reflect` `/build` `/archive` 阶段守卫的补充，而非新级别
+- ✅ 纯文档类任务，无 TDD 要求 — 但遵循「写规则前 grep 验证不重复」`self-TDD` 样式（VAN 已做）
+
+### 参考长期待办
+
+- 已并入本任务的 3 条来自 `activeContext.md` 下方「长期项」段：P0 proxy / P1 smoke 工具链 / P1 多轮次 Build — 本任务完成后应从待处理事项中标记「已落实」
+
+**下一步：** 使用 `/plan` 进入规划阶段（Level 2 需要 plan）
 
 ## 最近归档
 
