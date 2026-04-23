@@ -12,7 +12,7 @@
 - ✅ Build P0 基线（~5 min）：锚点 5/5 grep 符合 spec / YAML frontmatter 完整 / **工具链 dogfooding 发现 jq/rg/valgrind/xmllint MISS — 条目 2 规则的现场自证**
 - ✅ Build P1 proxy 守卫（~15 min，低于 plan 25-30 min 估时）：writing-plans.mdc L96 新段 + van.md §1 子项 + techContext.md L98 交叉引用子段；4/4 反例追溯通过（TASK-13-01/02/04/07）
 - ✅ Build P2 smoke 工具链 grep（~8 min，低于 plan 15 min）：writing-plans.mdc §4 末尾新增 `#### smoke 工具链可用性检查` 子块（6 行工具兜底表 + 执行时机 + 与 verification.mdc 协同）；1/1 反例追溯通过（TASK-11 P3 jq MISS）
-- ⏳ Build P3 多轮次 Build 中间态
+- ✅ Build P3 多轮次 Build 中间态（~15 min，低于 plan 30-35 min）：complexity-levels.mdc L68 跨级别新段（触发条件 / 子状态协议 / 向前兼容 / 恢复路径 / git 关系 5 小节）+ build.md §6.5 轮次完成判断（含轮次完成报告模板）+ reflect.md §0 守卫放宽（识别子状态标签立即返回）；2/2 反例追溯通过（TASK-19-03 Round 1 / TASK-19-04）
 - ⏳ Build P4 收尾
 - ⏳ Reflect
 - ⏳ Archive
