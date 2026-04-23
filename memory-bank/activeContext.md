@@ -1,16 +1,18 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化
+规划中
 
 ## 当前任务
 
 **TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）**
 
-- **复杂度级别：** Level 2（3 个规则文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
-- **基线分支：** `main`（3 个目标规则文件全在 main）
-- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（即将创建）
+- **复杂度级别：** Level 2（6 个规则/命令文件 + 2 MB 文件 = 8 文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
+- **基线分支：** `main`（6 个目标规则/命令文件全在 main）
+- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（已创建 VAN `ec78f1c`）
 - **安全相关：** ❌ 否（纯流程规则文档）
+- **设计文档：** `docs/specs/2026-04-19-process-rules-sunk-in-design.md` ✅（用户已批准）
+- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估）
 
 ### 待沉淀 3 条
 
@@ -25,13 +27,24 @@
 - ✅ 3 条目插入点已精确定位且不存在重复（grep 实证）
 - ✅ `writing-plans.mdc` 已有 6 个「XX 前置条件必填」段成熟模板可直接复刻（覆盖 CMake 链接 / 循环依赖 / Web API 多重载 / FetchContent C 编译选项 / 测试基础设施 / 边界输入 / 调用链 / 管线注入 / 性能基准，第 7 段为 proxy 守卫同构插入）
 - ✅ `complexity-levels.mdc` Level 4 已有「迭代机制」段可参考（L56/L66）；新增「轮次完成中间态」作为对 `/reflect` `/build` `/archive` 阶段守卫的补充，而非新级别
-- ✅ 纯文档类任务，无 TDD 要求 — 但遵循「写规则前 grep 验证不重复」`self-TDD` 样式（VAN 已做）
+- ✅ `.cursor/commands/*.md` 经 Plan 阶段二次核查发现**是 workspace 可编辑文件**（非只读系统提示），扩大了条目 1 和条目 3 的实施范围到真正的「可执行守卫」
+- ✅ 纯文档类任务，无 TDD 要求 — 规则文案写完后用「反例追溯表」验证有效性（每条规则 ≥ 3 历史任务 case 追溯）
+
+### Plan 阶段设计结论（3 决策 + 10 验收标准）
+
+| 决策 | 选择 | 理由 |
+|---|---|---|
+| **D1** 代理地址处理 | **占位符 `<开发环境代理地址>`** | 用户 Plan 阶段直接拍板；规则零硬编码 IP，地址在 `techContext.md` 单一真相来源 |
+| **D2** 条目 3 子状态实现 | **子状态标签 `构建中·轮次 N 完成`** | 保持 5 主阶段骨架不变；对未感知命令视作 `构建中` 扩展，向后兼容 |
+| **D3** Phase 提交粒度 | **每 Phase 1 commit**（5-6 commits） | 与 TASK-01/11 同模式；每条目可独立 review/回滚 |
+
+**Phase 拆分：** P0 基线 5min → P1 proxy 25-30min → P2 smoke 15min → P3 多轮次 30-35min → P4 收尾 10min = **85-95 min 合计**
 
 ### 参考长期待办
 
 - 已并入本任务的 3 条来自 `activeContext.md` 下方「长期项」段：P0 proxy / P1 smoke 工具链 / P1 多轮次 Build — 本任务完成后应从待处理事项中标记「已落实」
 
-**下一步：** 使用 `/plan` 进入规划阶段（Level 2 需要 plan）
+**下一步：** 使用 `/build` 按计划执行 5 个 Phase
 
 ## 最近归档
 

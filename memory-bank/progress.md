@@ -2,7 +2,29 @@
 
 ## 当前任务
 
-_无活跃任务。_
+### TASK-20260419-13：流程规则 P0/P1 沉淀冲刺
+
+**当前阶段：** 规划完成（待 `/build`）
+
+**里程碑：**
+- ✅ VAN（2026-04-19）：复杂度评估 Level 2，3 条目插入锚点 grep 实证定位，分支 `feature/TASK-20260419-13-process-rules-sunk-in` 创建
+- ✅ Plan（2026-04-19）：设计 spec + 实现计划双文档落地，3 决策（D1 占位符 / D2 子状态标签 / D3 每 Phase 1 commit）确认，**发现 `.cursor/commands/*.md` 是可编辑文件**扩大实施范围，5 phase 计划 / 85-95 min 预估 / 10 验收标准
+- ⏳ Build（P0 proxy + P1 smoke + P1 多轮次，5 phase 顺序执行）
+- ⏳ Reflect
+- ⏳ Archive
+
+**Plan 阶段关键设计决策：**
+- D1 代理地址处理：占位符 `<开发环境代理地址>`（规则零硬编码 IP，地址沉淀 `techContext.md` 单一真相来源）
+- D2 子状态实现：`构建中·轮次 N 完成` 作为 `构建中` 的子状态（非独立阶段，保 5 主阶段骨架不变）
+- D3 Phase 提交粒度：每 Phase 1 commit（5-6 commits 与 TASK-01/11 同模式）
+
+**反例追溯覆盖（无 TDD 的验证替代）：**
+- 条目 1 P0 proxy：TASK-02/04/07/13-01 共 4 case
+- 条目 2 P1 smoke：TASK-11 P3 共 1 case
+- 条目 3 P1 多轮次：TASK-03 Round 1 / TASK-04 共 2 case
+- 总计：7/7 case 若规则当时生效均可预防/改善
+
+## 已完成任务
 
 ## 已完成任务
 

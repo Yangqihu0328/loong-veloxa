@@ -4,12 +4,15 @@
 
 ### TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）
 
-- **复杂度级别：** Level 2（3 个规则文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
-- **状态：** 🟡 初始化（VAN 完成）
-- **当前阶段：** 初始化（`activeContext.md`）
+- **复杂度级别：** Level 2（6 个规则/命令文件 + 2 MB 文件 = 8 文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
+- **状态：** 🟡 规划完成（Plan 阶段产出 spec + plan 双文档 + 3 决策 + 10 验收）
+- **当前阶段：** 规划中（`activeContext.md`）
 - **基线分支：** `main`
-- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`
+- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（commits: VAN `ec78f1c` + Plan 即将）
 - **安全相关：** ❌ 否（纯流程规则文档，不涉及外部输入/认证/数据存储/部署）
+- **设计文档：** `docs/specs/2026-04-19-process-rules-sunk-in-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估）
+- **需要创意阶段：** ❌ 否（3 条目均遵循 `writing-plans.mdc` 已有段模式，零架构/UI/算法决策）
 
 #### 待沉淀 3 条
 
