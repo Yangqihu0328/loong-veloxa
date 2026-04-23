@@ -16,7 +16,15 @@
   - smoke 工具矩阵（plan Phase 0 强制入清单）：`jq MISS → python3 兜底` / `rg MISS → Grep 工具` / `perf MISS → /usr/bin/time -v 兜底`；python3 / bc / awk OK
   - 前置守卫核对：**FetchContent 代理守卫 ❌ 不触发**（`build-bench/_deps/` 已离线缓存 benchmark + quickjs-ng 源码，命中「跳过条件」）；**CMake 链接方向 ❌ 不适用**（仅改头文件默认参数）；**测试基础设施 ✅ 通过**（`bytes_allocated()` 公开 getter 足够间接观测 block 边界）
   - 核心修复设计收敛为最小粒度：`arena_allocator.h:13` **1 行改动** + `arena_allocator_test.cc` **+1 GTest（`DefaultBlockSizeLocked` + RED 反向探针）** + **2 baseline JSON 刷新**
-- ⏳ **下一步：** `/build` 执行 Phase 0（建分支 + 基线核验）
+- 🟢 **Build 已完成**（2026-04-24，Phase 0-5，Phase 1B 未触发）
+  - **Phase 0**（~3 min）：分支 `feature/TASK-20260424-01-layout-knee-root-cause` 建立；基线复现 R256=9.42× / R_flex=16.49× 与 VAN 数字匹配；smoke 工具 jq/rg/perf MISS 均命中预期兜底；commit `a46ff81`（docs(van+plan)）
+  - **Phase 1**（~4 min）：临时改 arena 默认 4096→65536，rebuild bench，R256=3.61× / R_flex=8.36×；plan 判据落在 2.5×-6× 中间区间 → **(d) malloc churn 部分确认**，进 Phase 2
+  - **Phase 2**（~5 min）：5 档扫描（4096/8192/16384/32768/65536）自动化 for 循环脚本一次跑完；**发现 K8：65K block 在 Flex 回弹（R_flex 7.40→8.36）**暗示 L1D 抖动（L1D 48KB 边界）；用户确认 **OPT_SIZE=32768**（Flex sweet spot），接受 plan 阈值 R256≤2.5/R_flex≤5 过严需实证调整；剩余 ~40% super-linear 立 **TASK-20260424-02**
+  - **Phase 3**（~8 min）：RED → GREEN → 反向探针 TDD 完整闭环。`DefaultBlockSizeFitsLargeAllocations` 测试设计利用**指针连续性**（2× 16K 分配若 default≥32K 则连续，反之跨 malloc 块）；red 验证 p2-p1=16448（16K block header），green 验证 p2-p1=16384，revert 反向探针 FAIL，restore PASS；全量 ctest 892/892 PASS；commits `782d22d`（wip red）+ `0ad275d`（green fix）
+  - **Phase 4**（~5 min）：build-bench Release 全量 rebuild 0 err/warn；bench_layout_{buildtree,flex} `--repetitions=3 --min_time=0.5s` 正式 baseline 入仓；3-reps 平均 R256=4.18× / R_flex=6.40×；README 更新「当前生成环境」+ K2/K3/K8 findings 段 + 2026-04-24 变更历史行；commit `102c7e5`（docs(bench)）
+  - **Phase 5**（~8 min）：techContext Layout 性能基线段补 K2/K3 resolved + K8 新发现；activeContext → 构建完成；tasks.md 验收 10/10 + 候选区立 TASK-24-02；progress.md 里程碑（本段）；收尾 commit（进行中）
+- **plan × 0.6 校准第 5 数据点**：115 min plan / ~33 min 实测 = **0.29×**（历史最快），研究型小补丁（脚本化实验 + 1 行改动 + 1 GTest）可作为「最窄路径任务」样板
+- ⏳ **下一步：** `/reflect` 回顾（验收 10/10，3 个 warning 已与用户确认接受；未合并分支等待 archive）
 
 ## 已完成任务
 

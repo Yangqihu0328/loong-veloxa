@@ -176,6 +176,17 @@ cmake --build build -j
 | `BM_LayoutBuildTreeMixed`（3-level × 4-fanout + text） | 6.2 µs（53 box，~117 ns/box）|
 
 > **K2 发现：N=128→256 出现 super-linear knee（10× for 2× N）**；候选根因：(a) ArenaAllocator chunk grow（默认 4096 byte 边界）；(b) SmallVector<LayoutBox*, 16> 阈值降级；(c) cache miss。待 TASK-09 调查。
+>
+> **K2 大幅解决（TASK-20260424-01，2026-04-24）**：根因 **(d) ArenaAllocator 4KB block malloc/free churn**（非 (a) chunk grow、非 (b) Vector 扩容——`LayoutBox` 实为侵入式链表，见 `layout_box.h:26-29`）；Phase 2 block-size 扫描 {4K,8K,16K,32K,65K} 实证 32K 为 Flex 最优。`ArenaAllocator` 默认 block_size **4096 → 32768**。新基线（同机、同参数）：
+>
+> | 形态 | 修复前 | 修复后 | 改善 |
+> |---|---:|---:|---|
+> | `BM_LayoutBuildTreeFlat/128` | 7.7 µs | 10.1 µs | +31%（稍慢；大 block 首次 malloc 稍贵） |
+> | `BM_LayoutBuildTreeFlat/256` | **70 µs** | **42.3 µs** | **1.66× 快** |
+> | `BM_LayoutBuildTreeFlat/512` | 196 µs | 140 µs | 1.40× 快 |
+> | **R256（knee 强度）** | **9.42×** | **4.18×** | **2.25× 降** |
+>
+> 剩余 super-linear（R256=4.18× 仍 > 理想 2×）由 **TASK-20260424-02** per-phase BM 调查承接（定位 BuildTree / LayoutBlock / ApplyPositioning 哪一阶段残留 (e) L1D 抖动 / (f) 隐藏算法因素）。
 
 ### Flex（`bench_layout_flex`，6 BMs，BENCHMARK_TEMPLATE<rows, cols>）
 
@@ -189,12 +200,15 @@ cmake --build build -j
 | `BM_LayoutFlexNested`（3-level × 4-fanout） | 5.4 µs |
 
 > **K3 发现：8×8→16×16 同源 super-linear**，与 K2 形态一致 → 强烈暗示共享根因。
+>
+> **K3 大幅解决（TASK-20260424-01，2026-04-24）**：共享根因 (d) 同 K2。同一 fix（`ArenaAllocator` 默认 4096→32768）作用于 Flex 路径：`BM_LayoutFlex<16,16>` **82.5 µs → 44.2 µs**（1.87× 快）；R_flex（`<16,16>÷<8,8>`）**16.49× → 6.40×**（2.58× 降）。剩余超线性同 K2 交 TASK-24-02。另有 **K8 新发现**：Phase 2 扫描中 65K block 让 R_flex 回弹（7.40→8.36），暗示 block 过大触发 **L1D 抖动**（L1D 48 KB 边界）→ 32K 是 layout 路径的 sweet spot，未来若需更大 arena 应用显式 per-use-case block_size（如 `LayoutEngine::Layout` 静态 arena 已显式 8192）。
 
 ### 用途
 
 - Layout 改动（margin collapsing / line box 模型 / inline-flow 重构）必须以这些数字为对照
-- super-linear knee 是 Layout 优化的天然下一步研究问题（K2 + K3）
+- super-linear knee 的主要部分已由 TASK-20260424-01 解决（K2/K3 收敛 2.25-2.58×）；剩余 ~40% 由 TASK-20260424-02 per-phase 拆分 BM 承接
 - 若引入新 layout 路径（grid / multi-column）需在该 .json 后追加新 bench 并入仓
+- **ArenaAllocator 默认 block_size = 32768**（生产配置）；改动需：(1) 跑 layout bench 确认 R256 < 5 + R_flex < 8；(2) 同步刷新 baseline README「当前生成环境」的 block_size 行
 
 ## Render 性能基线（来源 TASK-20260419-05，2026-04-19）
 

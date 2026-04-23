@@ -1,54 +1,82 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+构建完成
 
 ## 当前任务
 
 **TASK-20260424-01：Layout super-linear knee 根因调查（TASK-05 K2/K3 + TASK-09 VAN 拆出）**
 
-- 复杂度级别：Level 2-3（研究/调查类；**可能**产出 layout 算法或 arena 配置的重构 PR）
-- 状态：🔵 Plan 已完成，等待 `/build` 执行
+- 复杂度级别：Level 2-3（研究/调查 + 小性能补丁）
+- 状态：🟢 Build 完成（Phase 0-5 全部完成，Phase 1B 未触发；5 commits on `feature/TASK-20260424-01-layout-knee-root-cause`）
 - 设计文档：`docs/specs/2026-04-24-layout-knee-root-cause-design.md` ✅
-- 实现计划：`docs/plans/2026-04-24-layout-knee-root-cause.md` ✅（6 Phase 骨架 / ~115 min plan / plan × 0.6 预期 ~70 min / 含 Phase 1B 升级分支）
-- 用户决策：
-  - **D1 = A（阶梯验证）**：先测假设 (d) malloc churn（1 行改动 + rerun）；命中则止步修复；否则升 Phase 1B per-phase 拆分
-  - **D2 = A（全局 bump）**：如 (d) 确认，`ArenaAllocator` 默认 block_size 4096 → Phase 2 扫描输出的最优值（预期 16384）
-- 核心修复设计：**1 行改动**（`arena_allocator.h:13` 默认值）+ **1 GTest**（`DefaultBlockSizeLocked` 含 RED 反向探针）+ **2 baseline JSON 刷新**
-- Phase 1B 升级分支：若 Phase 1 R256 ≥ 6× 否定 (d) → 新建 `bench_layout_phases.cc` 拆分 BuildTree / LayoutBlock / ApplyPositioning 定位 super-linear 所属阶段 → 产出调查报告 + 立 TASK-02 跟进
-- 来源：候选区 TASK-20260419-10，本次正式立项；sticky ID 原为 `-10`，但新日起序号 `-01` 复用 Memory Bank 约定「当天序号从 01 开始」
-- 基线实测（2026-04-24，main `e3952dc`，build-bench 同机）：
-  - `BM_LayoutBuildTreeFlat/8→128` 线性（534 → 7901 ns，每倍增 ~2×）
-  - `BM_LayoutBuildTreeFlat/128→256` **9.67× for 2×N**（7901 → 76375 ns）— knee 位置明确
-  - `BM_LayoutBuildTreeFlat/256→512` 回归线性（76375 → 208027 ns，~2.72×）
-  - `BM_LayoutFlex<16,16>` 对比 `<8,8>`：4× cells → 17× time（92023 vs 5359 ns）— flex 同源
-- 关键数据（VAN 阶段 grep 实证）：
-  - `sizeof(LayoutBox) = 144` 字节 / `sizeof(ComputedStyle) = 408` 字节 / 单元素 **552** 字节
-  - N=128 工作集 ≈ 71 KB（超 L1D 48 KB，但远低于 L2 1280 KB）
-  - N=256 工作集 ≈ 142 KB（仍远低于 L2 1280 KB）— **L2 cache 不是 knee 根因**
-  - `ArenaAllocator` 默认 block 4096 字节；bench 每迭代 `vx::ArenaAllocator arena;` 新建 → N=128 需 ~19 block / N=256 需 ~37 block
-  - `LayoutBox` 用**侵入式双向链表**（`first_child / next_sibling`，`layout_box.h:26-29`）— **不是 `Vector<LayoutBox*>`**
-- VAN 推翻候选根因（落实 P0「方案根因假设未先验证」规则）：
-  - (a) ❌ **`Vector<LayoutBox*> children` 扩容** — grep 实证 LayoutBox 用侵入式链表，零 vector 相关分配
-  - (b) ❌ **ArenaAllocator chunk grow 为 2×** — 源码确认默认 4096，每次都新建同尺寸 block，无 2× 增长（TASK-09 VAN 已否定）
-  - (c) ❌ **L2 cache 溢出** — 工作集 142KB << L2 1280KB
-- VAN 保留候选根因（待 `/plan` 实证）：
-  - (d) **Arena block 4096 malloc/free 高频 churn** — N=256 每迭代 ~37 次 malloc + 37 次 free，可能跨越 glibc ptmalloc 某阈值或触发 sbrk/mmap
-  - (e) **L1D 抖动** — 单元素 552B > L1D 1 个 set，N 大后每个 style 访问跨多个 cache line
-  - (f) **LayoutBlock / ApplyPositioning 两遍 O(N) walk** — 总 pass 数量 3（BuildTree + LayoutBlock + ApplyPositioning），但均为 O(N)，非 super-linear
-  - (g) **CPU 分支预测器饱和 / L1I miss** — 硬件级效应，难定位
-- 前置验证（全部 ✅）：
-  - 依赖：google/benchmark 已在 `build-bench/_deps/benchmark-src`，FetchContent 不触发 → P0 git proxy 不触发
-  - 环境：build-bench/ 可用，`bench_layout_buildtree` + `bench_layout_flex` 可直接跑
-  - 已有 artifact：`benchmarks/baseline/bench_layout_{buildtree,flex}.json` 入仓
-  - 待处理事项关联：✅ 落实候选区 TASK-20260419-10
-- 待选实验方向（留给 `/plan`）：
-  1. **block-size 扫描实验**：`ArenaAllocator` 默认 4096 → {16K, 64K, 256K}；若 knee 消失 → 根因 = malloc churn；若 knee 保留 → 其它根因
-  2. **per-phase 拆分基准**：将 BuildTree / LayoutBlock / ApplyPositioning 分开计时，定位 super-linear 在哪个 phase
-  3. **perf stat 硬件计数器**：cache-misses / branch-misses / page-faults 在 N=128 vs 256 的变化
+- 实现计划：`docs/plans/2026-04-24-layout-knee-root-cause.md` ✅
+
+### 核心成果
+
+**根因定位：(d) ArenaAllocator 4KB block malloc/free churn** — Phase 1 单点探针（block=65536）R256 从 9.42× → 3.61×，Phase 2 扫描 {4K,8K,16K,32K,65K} 定位 32K 为最优（Flex 在 65K 回弹暗示 L1D 抖动）。
+
+**修复：** `ArenaAllocator` 默认 block_size **4096 → 32768**（单行 + 注释），`veloxa/foundation/memory/arena_allocator.h`。
+
+**正式 baseline（3-reps 平均，build-bench Release，同机）：**
+
+| BM | 修复前 | 修复后 | 改善 |
+|---|---:|---:|---|
+| `BM_LayoutBuildTreeFlat/128` | 7.7 µs | 10.1 µs | +31%（稍慢）|
+| `BM_LayoutBuildTreeFlat/256` | 70 µs | **42.3 µs** | **1.66×** |
+| `BM_LayoutBuildTreeFlat/512` | 196 µs | 140 µs | 1.40× |
+| **R256（knee 强度）** | **9.42×** | **4.18×** | **2.25× ↓** |
+| `BM_LayoutFlex<16,16>` | 82.5 µs | **44.2 µs** | **1.87×** |
+| **R_flex** | **16.49×** | **6.40×** | **2.58× ↓** |
+
+### 关键决策点
+
+- **Phase 1 判定**：R256=3.61× 落在 plan 2.5×-6× 中间区间，(d) 部分确认（贡献 ~60% 改善）
+- **Phase 2 最优选定**：32K（用户选择 A），剩余 ~40% super-linear 立 **TASK-20260424-02** 跟进
+- **plan 阈值调整（实证微调 spec）**：原 plan 阈值 `R256≤2.5, R_flex≤5` 过于严苛，实测表明单靠 arena bump 不可能达标；按用户确认接受「可得最大改善 + 残余调查」
+
+### 验收 10/10 ✅
+
+1. ✅ Phase 1 判据命中（R256=3.61 < 6×，(d) 部分确认）
+2. ✅ Phase 2 定位 OPT_SIZE=32768
+3. ⚠️ R256=4.18×（>2.5，plan 过严阈值；实证最优，已与用户确认调整）
+4. ⚠️ R_flex=6.40×（>5，同上）
+5. ✅ `ctest -j` 892/892 PASS（新增 1 测试）
+6. ✅ build-bench Release 全量 rebuild 0 errors / 0 warnings
+7. ✅ `DefaultBlockSizeFitsLargeAllocations` GTest PASS + RED 反向探针验证（revert→FAIL，restore→PASS）
+8. ✅ 2 bench baseline JSON 刷新（`library_build_type=release`）
+9. ✅ `benchmarks/baseline/README.md` 环境表 + 变更历史更新 + K2/K3/K8 段
+10. ✅ `techContext.md` Layout 性能基线段补 K2/K3 resolved 记录
+
+### Commits（5）
+
+1. `a46ff81` `docs(van+plan): TASK-20260424-01 layout knee root-cause design + plan`
+2. `782d22d` `wip(TASK-20260424-01): red — lock ArenaAllocator default block >= 32768`
+3. `0ad275d` `fix(foundation/memory): bump ArenaAllocator default block 4096 → 32768 (TASK-20260424-01)`
+4. `102c7e5` `docs(bench): refresh layout baselines after TASK-20260424-01 knee fix`
+5. _(即将) `chore(build): finalize TASK-20260424-01 memory bank state`_
+
+### Phase 耗时对比（plan × 0.6 校准）
+
+| Phase | plan | 实测 | 比例 |
+|:-:|:-:|:-:|:-:|
+| 0 | 10 min | ~3 min | 0.30× |
+| 1 | 20 min | ~4 min | 0.20× |
+| 2 | 25 min | ~5 min | 0.20× |
+| 3 | 25 min | ~8 min | 0.32× |
+| 4 | 20 min | ~5 min | 0.25× |
+| 5 | 15 min | ~8 min | 0.53× |
+| **合计** | **115 min** | **~33 min** | **0.29×** |
+
+实测比 plan × 0.6 预期（70 min）还快约一半 — 得益于实验阶段脚本化 + 测试/修复路径极窄（1 行改动 + 1 GTest）。
+
+### 后续任务立项
+
+**TASK-20260424-02（Plan 阶段 Phase 1B 升级路径的正式立项）：** 候选区新增 — 承接剩余 ~40% super-linear 调查（R256=4.18× 仍 > 理想 2×）。方向：per-phase 拆分 BM（BuildTree / LayoutBlock / ApplyPositioning），定位 (e) L1D 抖动 / (f) 隐藏算法因素所属阶段。
 
 ## 未合并分支
-_无（main 干净，上一任务 `feature/TASK-20260419-13-process-rules-sunk-in` 已合并并删除）_
+
+- `feature/TASK-20260424-01-layout-knee-root-cause`（本任务，5 commits，等待 `/reflect` → `/archive` 合并到 main）
 
 ## 最近归档
 
@@ -68,7 +96,8 @@ _无（main 干净，上一任务 `feature/TASK-20260419-13-process-rules-sunk-i
 
 - **TASK-20260419-06（建议，P3 降级）：** HashMap Hash Mixing 优化（cluster 问题）— `BM_HashMapLookupHitInt/16384=9µs` vs n=64 时 69ns，根因 `H1=h>>7` + `std::hash<int>` 恒等映射。**降级理由（TASK-03 P4 实测）：** PropertyMap 60-entry HashMap<StringView, PropertyId> + djb2 hash 在最差 single key 下仅 2.75× HitHot5（远低于 5× cluster 阈值），证 cluster 问题主要见于 **int key + 大规模**场景。**触发条件**：「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报；目前不主动改避免引入不必要内联开销（来源 TASK-20260419-07 副发现）
-- **TASK-20260419-10（TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear。**TASK-09 VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` `Vector<LayoutBox*> children` 扩容序列；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 / prefetch break。**预期产出**：调查报告 +（可能）layout 算法重构 PR。**触发条件**：建议在 TASK-11 之后立项（K6 修复独立且小，先做）
+- ~~TASK-20260419-10：已立项为 TASK-20260424-01 并完成 build 阶段（分支未合并）。根因 (d) ArenaAllocator malloc churn 定位 + 32K 落地，knee 收敛 ~60%~~
+- **TASK-20260424-02（新增，TASK-24-01 Phase 1B 升级路径拆出，建议 P3 触发型）：** Layout 残余 super-linear 调查（per-phase 拆分 BM 定位 (e) L1D 抖动 / (f) 隐藏算法因素）— 承接 TASK-24-01 解决后剩余 ~40% super-linear（R256 仍 4.18× / R_flex 仍 6.40×）+ Phase 2 K8 新发现（65K block Flex 回弹暗示 L1D 抖动）。**触发条件**：下次 layout 性能需求（grid / multi-column）或主动预算
 - ~~TASK-20260419-11：已完成并合并到 main `8515c25`，详见 `archive-TASK-20260419-11.md~~`
 - **TASK-20260419-12（TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选优化：(a) `hb_buffer` 复用（避免 hb_buffer_create/destroy 每帧分配）；(b) glyph bitmap 直接 raster 到 canvas（避免 GlyphCache → 中间 buffer → blit 的两次拷贝）。**预期产出**：warm 真路径 < 3000 ns（小于 fallback）后默认真路径。**触发条件**：当真路径默认化提上日程时
 
