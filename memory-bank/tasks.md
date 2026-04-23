@@ -2,7 +2,86 @@
 
 ## 当前任务
 
-_无活跃任务。使用 `/van [task description]` 开始新任务。_
+### TASK-20260424-01：Layout super-linear knee 根因调查
+
+- **复杂度级别：** Level 2-3（研究/调查类；**可能**产出小型性能补丁或 arena 默认配置调整）
+- **状态：** 🔵 Plan 已完成，等待 `/build` 执行
+- **分支：** 尚未创建（Phase 0 任务 0.1 建 `feature/TASK-20260424-01-layout-knee-root-cause`，基线 main `e3952dc`）
+- **创建日期：** 2026-04-24
+- **来源：** 候选区 TASK-20260419-10（TASK-05 K2/K3 + TASK-09 VAN 拆出，activeContext 标为 P2 触发型）
+- **设计文档：** `docs/specs/2026-04-24-layout-knee-root-cause-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-24-layout-knee-root-cause.md` ✅（6 Phase 骨架 / 115 min plan / plan × 0.6 预期 ~70 min / 5 commits 含 Phase 1B 升级分支）
+- **需要创意阶段：** ❌ 否（用户决策 D1=A 阶梯验证 + D2=A 全局 bump 已锁定；所有架构/算法空白均无）
+- **安全相关：** ❌ 否（性能测量/优化任务，无外部输入/无认证/无新依赖）
+
+#### 用户决策（Plan 头脑风暴产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | 实验策略 | **A — 阶梯验证** | 先测最可能 (d) malloc churn（实验成本 < 5 min），命中即止步；否则升 Phase 1B |
+| D2 | 修复交付范围 | **A — 全局 ArenaAllocator 默认 bump** | grep 穷举 4 处使用点：仅 `Document::arena_` 受影响（+12KB/instance 可接受） |
+
+#### Phase 划分（6 Phase 骨架）
+
+| Phase | 名称 | plan (min) | plan × 0.6 (min) | commits |
+|:-:|---|:-:|:-:|:-:|
+| 0 | 基线核验 + smoke 工具 + 分支 | 10 | 6 | 1 |
+| 1 | 假设 (d) 单点探针 65536 | 20 | 12 | 0 |
+| 2 | block size 5 档扫描 | 25 | 15 | 0 |
+| 3 | 实施 fix + RED 反向探针 | 25 | 15 | 2 |
+| 4 | Bench baseline 刷新 | 20 | 12 | 1 |
+| 5 | techContext + MB 收尾 | 15 | 9 | 1 |
+| **合计** | — | **115** | **~70** | **5** |
+| **1B（升级，条件触发）** | per-phase 拆分 BM | +60-90 | +40-55 | +1-2 |
+
+#### 基线实测（VAN Phase，main `e3952dc`）
+
+| BM | Time | items/s |
+|---|---:|---:|
+| `BM_LayoutBuildTreeFlat/8`   | 534 ns | 15.0M |
+| `BM_LayoutBuildTreeFlat/16`  | 982 ns | 16.3M |
+| `BM_LayoutBuildTreeFlat/32`  | 1871 ns | 17.1M |
+| `BM_LayoutBuildTreeFlat/64`  | 3906 ns | 16.4M |
+| `BM_LayoutBuildTreeFlat/128` | 7901 ns | 16.2M |
+| **`BM_LayoutBuildTreeFlat/256`** | **76375 ns** | **3.4M** ← knee |
+| `BM_LayoutBuildTreeFlat/512` | 208027 ns | 2.5M |
+
+**knee 命题：** N=128→256 时 9.67× for 2×N（预期 2×），throughput 跌 ~4.8×。
+
+#### VAN 已实证（落实 P0「方案根因假设未先验证」规则）
+
+| 候选根因 | 状态 | 实证依据 |
+|---|:-:|---|
+| (a) `Vector<LayoutBox*> children` 扩容 | ❌ 推翻 | `layout_box.h:26-29` 用侵入式 `first_child/next_sibling` 双向链表 |
+| (b) `ArenaAllocator` chunk 2× 增长 | ❌ 推翻 | `arena_allocator.h:13,39` 固定 4096 字节 block，TASK-09 VAN 已否定 |
+| (c) L2 cache 溢出 | ❌ 推翻 | N=256 工作集 142KB << L2 1280KB |
+| (d) Arena 4KB block malloc churn | 🔬 保留 | N=256 每迭代 ~37 次 malloc+free，需实验验证 |
+| (e) L1D 抖动 | 🔬 保留 | 单元素 552B > cache line 跨度，需 perf 验证 |
+| (f) layout 算法内部 O(N²) | 🔬 保留（低概率） | grep 未见显式 O(N²)，但需 per-phase 拆分实证 |
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ google/benchmark 在 `build-bench/_deps/` 已缓存，FetchContent 不触发 → P0 git proxy 不触发 |
+| 环境就绪 | ✅ `build-bench/` Release 构建可用；`bench_layout_buildtree` + `bench_layout_flex` 可直接运行 |
+| 已有 artifact | ✅ `benchmarks/baseline/bench_layout_{buildtree,flex}.json` 已入仓（TASK-05） |
+| 待处理事项关联 | ✅ 落实候选区 TASK-20260419-10（P2 触发型） |
+| Sticky ID 一致性 | ⚠️ 原候选区 ID = TASK-20260419-10；本次按 Memory Bank 约定「当天序号从 01 开始」用 TASK-20260424-01，在任务描述中交叉引用原 ID |
+
+#### 关键数据（VAN Phase 沉淀）
+
+- 环境：Linux 6.6.87.2 WSL2 / 8 CPU @ 2.92 GHz / L1D 48KB(x4) / L2 1280KB(x4) / L3 12288KB / gcc 11.4
+- `sizeof(LayoutBox)`：**144 字节**
+- `sizeof(ComputedStyle)`：**408 字节**（18 `LengthValue` + transitions `SmallVector<_,2>` 等）
+- 每元素内存：**552 字节**
+
+#### 后续工作流
+
+- `/plan`：设计 2-3 个可证伪实验（block-size 扫描 / per-phase 拆分 / perf stat），给出验收判据
+- `/creative`：**视情况**（若需要在多个修复方案间做架构决策）
+- `/build`：实施 fix 或输出研究报告
+- `/reflect` + `/archive`
 
 <details>
 <summary>TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环） — ✅ 已归档（点开查看历史）</summary>

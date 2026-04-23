@@ -1,11 +1,54 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+构建中
 
 ## 当前任务
 
-_无活跃任务。使用 `/van [task description]` 开始新任务。_
+**TASK-20260424-01：Layout super-linear knee 根因调查（TASK-05 K2/K3 + TASK-09 VAN 拆出）**
+
+- 复杂度级别：Level 2-3（研究/调查类；**可能**产出 layout 算法或 arena 配置的重构 PR）
+- 状态：🔵 Plan 已完成，等待 `/build` 执行
+- 设计文档：`docs/specs/2026-04-24-layout-knee-root-cause-design.md` ✅
+- 实现计划：`docs/plans/2026-04-24-layout-knee-root-cause.md` ✅（6 Phase 骨架 / ~115 min plan / plan × 0.6 预期 ~70 min / 含 Phase 1B 升级分支）
+- 用户决策：
+  - **D1 = A（阶梯验证）**：先测假设 (d) malloc churn（1 行改动 + rerun）；命中则止步修复；否则升 Phase 1B per-phase 拆分
+  - **D2 = A（全局 bump）**：如 (d) 确认，`ArenaAllocator` 默认 block_size 4096 → Phase 2 扫描输出的最优值（预期 16384）
+- 核心修复设计：**1 行改动**（`arena_allocator.h:13` 默认值）+ **1 GTest**（`DefaultBlockSizeLocked` 含 RED 反向探针）+ **2 baseline JSON 刷新**
+- Phase 1B 升级分支：若 Phase 1 R256 ≥ 6× 否定 (d) → 新建 `bench_layout_phases.cc` 拆分 BuildTree / LayoutBlock / ApplyPositioning 定位 super-linear 所属阶段 → 产出调查报告 + 立 TASK-02 跟进
+- 来源：候选区 TASK-20260419-10，本次正式立项；sticky ID 原为 `-10`，但新日起序号 `-01` 复用 Memory Bank 约定「当天序号从 01 开始」
+- 基线实测（2026-04-24，main `e3952dc`，build-bench 同机）：
+  - `BM_LayoutBuildTreeFlat/8→128` 线性（534 → 7901 ns，每倍增 ~2×）
+  - `BM_LayoutBuildTreeFlat/128→256` **9.67× for 2×N**（7901 → 76375 ns）— knee 位置明确
+  - `BM_LayoutBuildTreeFlat/256→512` 回归线性（76375 → 208027 ns，~2.72×）
+  - `BM_LayoutFlex<16,16>` 对比 `<8,8>`：4× cells → 17× time（92023 vs 5359 ns）— flex 同源
+- 关键数据（VAN 阶段 grep 实证）：
+  - `sizeof(LayoutBox) = 144` 字节 / `sizeof(ComputedStyle) = 408` 字节 / 单元素 **552** 字节
+  - N=128 工作集 ≈ 71 KB（超 L1D 48 KB，但远低于 L2 1280 KB）
+  - N=256 工作集 ≈ 142 KB（仍远低于 L2 1280 KB）— **L2 cache 不是 knee 根因**
+  - `ArenaAllocator` 默认 block 4096 字节；bench 每迭代 `vx::ArenaAllocator arena;` 新建 → N=128 需 ~19 block / N=256 需 ~37 block
+  - `LayoutBox` 用**侵入式双向链表**（`first_child / next_sibling`，`layout_box.h:26-29`）— **不是 `Vector<LayoutBox*>`**
+- VAN 推翻候选根因（落实 P0「方案根因假设未先验证」规则）：
+  - (a) ❌ **`Vector<LayoutBox*> children` 扩容** — grep 实证 LayoutBox 用侵入式链表，零 vector 相关分配
+  - (b) ❌ **ArenaAllocator chunk grow 为 2×** — 源码确认默认 4096，每次都新建同尺寸 block，无 2× 增长（TASK-09 VAN 已否定）
+  - (c) ❌ **L2 cache 溢出** — 工作集 142KB << L2 1280KB
+- VAN 保留候选根因（待 `/plan` 实证）：
+  - (d) **Arena block 4096 malloc/free 高频 churn** — N=256 每迭代 ~37 次 malloc + 37 次 free，可能跨越 glibc ptmalloc 某阈值或触发 sbrk/mmap
+  - (e) **L1D 抖动** — 单元素 552B > L1D 1 个 set，N 大后每个 style 访问跨多个 cache line
+  - (f) **LayoutBlock / ApplyPositioning 两遍 O(N) walk** — 总 pass 数量 3（BuildTree + LayoutBlock + ApplyPositioning），但均为 O(N)，非 super-linear
+  - (g) **CPU 分支预测器饱和 / L1I miss** — 硬件级效应，难定位
+- 前置验证（全部 ✅）：
+  - 依赖：google/benchmark 已在 `build-bench/_deps/benchmark-src`，FetchContent 不触发 → P0 git proxy 不触发
+  - 环境：build-bench/ 可用，`bench_layout_buildtree` + `bench_layout_flex` 可直接跑
+  - 已有 artifact：`benchmarks/baseline/bench_layout_{buildtree,flex}.json` 入仓
+  - 待处理事项关联：✅ 落实候选区 TASK-20260419-10
+- 待选实验方向（留给 `/plan`）：
+  1. **block-size 扫描实验**：`ArenaAllocator` 默认 4096 → {16K, 64K, 256K}；若 knee 消失 → 根因 = malloc churn；若 knee 保留 → 其它根因
+  2. **per-phase 拆分基准**：将 BuildTree / LayoutBlock / ApplyPositioning 分开计时，定位 super-linear 在哪个 phase
+  3. **perf stat 硬件计数器**：cache-misses / branch-misses / page-faults 在 N=128 vs 256 的变化
+
+## 未合并分支
+_无（main 干净，上一任务 `feature/TASK-20260419-13-process-rules-sunk-in` 已合并并删除）_
 
 ## 最近归档
 

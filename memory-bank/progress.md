@@ -2,7 +2,21 @@
 
 ## 当前任务
 
-_无活跃任务。_
+### TASK-20260424-01：Layout super-linear knee 根因调查（研究类）
+
+- 🔵 **VAN 已完成**（2026-04-24）
+  - 基线实测确认 knee：Flat/128→256 = 9.67× for 2×N（16.2M/s → 3.4M/s）
+  - 关键 grep 实证：`LayoutBox` 用侵入式链表（非 Vector）→ 推翻候选根因 (a)
+  - 关键数据：单元素 552B，N=256 工作集 142KB 远低于 L2 1280KB → 推翻候选根因 (c) cache 溢出
+  - 保留候选根因：(d) malloc churn / (e) L1D 抖动 / (f) 算法内隐藏 O(N²)
+- 🔵 **Plan 已完成**（2026-04-24）
+  - 头脑风暴产出用户决策：**D1=A（阶梯验证）+ D2=A（全局 ArenaAllocator 默认 bump 4096 → Phase 2 扫描最优值）**
+  - 设计文档：`docs/specs/2026-04-24-layout-knee-root-cause-design.md`（4 章节：现象/推翻证据/研究策略/文件变更清单）
+  - 实现计划：`docs/plans/2026-04-24-layout-knee-root-cause.md`（6 Phase / 5 commits / plan 115 min / plan × 0.6 预期 ~70 min / 含 Phase 1B 升级分支）
+  - smoke 工具矩阵（plan Phase 0 强制入清单）：`jq MISS → python3 兜底` / `rg MISS → Grep 工具` / `perf MISS → /usr/bin/time -v 兜底`；python3 / bc / awk OK
+  - 前置守卫核对：**FetchContent 代理守卫 ❌ 不触发**（`build-bench/_deps/` 已离线缓存 benchmark + quickjs-ng 源码，命中「跳过条件」）；**CMake 链接方向 ❌ 不适用**（仅改头文件默认参数）；**测试基础设施 ✅ 通过**（`bytes_allocated()` 公开 getter 足够间接观测 block 边界）
+  - 核心修复设计收敛为最小粒度：`arena_allocator.h:13` **1 行改动** + `arena_allocator_test.cc` **+1 GTest（`DefaultBlockSizeLocked` + RED 反向探针）** + **2 baseline JSON 刷新**
+- ⏳ **下一步：** `/build` 执行 Phase 0（建分支 + 基线核验）
 
 ## 已完成任务
 
