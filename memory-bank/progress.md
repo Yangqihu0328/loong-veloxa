@@ -13,9 +13,13 @@
 - ✅ Build P1 proxy 守卫（~15 min，低于 plan 25-30 min 估时）：writing-plans.mdc L96 新段 + van.md §1 子项 + techContext.md L98 交叉引用子段；4/4 反例追溯通过（TASK-13-01/02/04/07）
 - ✅ Build P2 smoke 工具链 grep（~8 min，低于 plan 15 min）：writing-plans.mdc §4 末尾新增 `#### smoke 工具链可用性检查` 子块（6 行工具兜底表 + 执行时机 + 与 verification.mdc 协同）；1/1 反例追溯通过（TASK-11 P3 jq MISS）
 - ✅ Build P3 多轮次 Build 中间态（~15 min，低于 plan 30-35 min）：complexity-levels.mdc L68 跨级别新段（触发条件 / 子状态协议 / 向前兼容 / 恢复路径 / git 关系 5 小节）+ build.md §6.5 轮次完成判断（含轮次完成报告模板）+ reflect.md §0 守卫放宽（识别子状态标签立即返回）；2/2 反例追溯通过（TASK-19-03 Round 1 / TASK-19-04）
-- ⏳ Build P4 收尾
+- ✅ Build P4 收尾（~8 min，低于 plan 10 min）：activeContext 长期项 3 条标记已落实（`~~...~~` + ✅ 落实位置 + 占位符策略）+ 整体 self-review（6 项 grep 全绿）+ 10 验收标准逐条对照（9 ✅ + 1 改进，工具表合并更易用）；**反例追溯总计 7/7 通过**（P1 4 + P2 1 + P3 2）
 - ⏳ Reflect
 - ⏳ Archive
+
+**Build 阶段总耗时估算：** P0 5 + P1 15 + P2 8 + P3 15 + P4 8 = **~51 min**，vs plan 85-95 min = **~60% 提前**（与 P1 区间一致，plan 文档估时校准下次收敛目标 ≤ 1.3×）
+
+**构建完成状态：** 5 Phase 全部 ✅ / 4 独立 commit（P1→P4 各 1，P0 并入 P1）/ working tree 待 P4 最终提交
 
 **Build 阶段持续观察：**
 - **Meta-dogfooding**：Phase 0 `rg` 和 `jq` 在终端缺失直接触发 P2 规则的现场验证；sandbox 终端环境与 Cursor 工具 Grep 不对等（Grep 工具可用 ripgrep，shell 没装），规则 §5.4 子块正是针对这个 gap

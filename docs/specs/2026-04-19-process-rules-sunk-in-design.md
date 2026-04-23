@@ -13,11 +13,13 @@
 
 **3 条规则条目：**
 
-| # | 优先级 | 来源 | 核心问题 |
-|:-:|:-:|---|---|
-| 1 | 🔴 P0 | 反复 9+ 次（TASK-02/04/07 反思反复识别但只升 P1，TASK-03 Round 2 破例升 P0） | FetchContent 任务未先设 git 全局代理 → 首次 cmake 超时挂死，单次 5-10 min × N = 累计 ≥ 1h |
-| 2 | 🟠 P1 | TASK-11 反思 #2 新增 | Plan 阶段假设 smoke 工具链可用（jq / bc / valgrind 等），Build 才发现缺失返工 |
-| 3 | 🟠 P1 | TASK-03 Round 1 首发 + TASK-11 反思复确 3+ 次 | Level 2+ phase ≥ 5 任务无「轮次完成」中间态，用户被迫等整个任务完成才能看回顾 |
+
+| #   | 优先级   | 来源                                                         | 核心问题                                                                  |
+| --- | ----- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| 1   | 🔴 P0 | 反复 9+ 次（TASK-02/04/07 反思反复识别但只升 P1，TASK-03 Round 2 破例升 P0） | FetchContent 任务未先设 git 全局代理 → 首次 cmake 超时挂死，单次 5-10 min × N = 累计 ≥ 1h |
+| 2   | 🟠 P1 | TASK-11 反思 #2 新增                                           | Plan 阶段假设 smoke 工具链可用（jq / bc / valgrind 等），Build 才发现缺失返工             |
+| 3   | 🟠 P1 | TASK-03 Round 1 首发 + TASK-11 反思复确 3+ 次                     | Level 2+ phase ≥ 5 任务无「轮次完成」中间态，用户被迫等整个任务完成才能看回顾                      |
+
 
 ### 1.2 非目标
 
@@ -100,28 +102,22 @@
 2. **检测当前代理状态**（VAN 或 Plan Phase 0 执行）：
    ```bash
    git config --global --get http.proxy
-   ```
-   - 有返回 → 记录到 `progress.md` 进入下一步核对
-   - 空返回 → **必须在 VAN 阶段补设**（见 3）
+```
 
-3. **补设代理（VAN 阶段强制）**：
-   开发环境代理地址的**单一真相来源**是 `memory-bank/techContext.md`「FetchContent 与代理」段。规则文件中**严禁硬编码** IP，用占位符：
-   ```bash
-   # 从 techContext.md 读取实际地址，替换占位符后执行
-   git config --global http.proxy <开发环境代理地址>
-   git config --global https.proxy <开发环境代理地址>
-   ```
+- 有返回 → 记录到 `progress.md` 进入下一步核对
+- 空返回 → **必须在 VAN 阶段补设**（见 3）
+
+1. **补设代理（VAN 阶段强制）**：
+  开发环境代理地址的**单一真相来源**是 `memory-bank/techContext.md`「FetchContent 与代理」段。规则文件中**严禁硬编码** IP，用占位符：
    执行后再次 `git config --global --get http.proxy` 确认生效并记录到 `progress.md`。
+2. **Plan Phase 0 固化**：
+  plan 文档必须包含 Phase 0「代理状态核验」步骤，执行 grep 并把输出作为制品写入 `progress.md`，以便 `/reflect` 阶段回溯。
+3. **Archive 阶段决策**：
+  `/archive` 阶段询问用户：保留代理 / unset (`git config --global --unset http.proxy`)。默认**保留**（下一任务多半也需要）。
+4. **交叉引用**：
+  - 开发环境代理地址：`memory-bank/techContext.md`「FetchContent 与代理」段
+  - VAN 命令守卫：`.cursor/commands/van.md` 步骤 1「FetchContent 代理状态检查」子项
 
-4. **Plan Phase 0 固化**：
-   plan 文档必须包含 Phase 0「代理状态核验」步骤，执行 grep 并把输出作为制品写入 `progress.md`，以便 `/reflect` 阶段回溯。
-
-5. **Archive 阶段决策**：
-   `/archive` 阶段询问用户：保留代理 / unset (`git config --global --unset http.proxy`)。默认**保留**（下一任务多半也需要）。
-
-6. **交叉引用**：
-   - 开发环境代理地址：`memory-bank/techContext.md`「FetchContent 与代理」段
-   - VAN 命令守卫：`.cursor/commands/van.md` 步骤 1「FetchContent 代理状态检查」子项
 ```
 
 #### 3.1.2 `.cursor/commands/van.md` 步骤 1 子项（插入现有"检查 git 状态"之后）
@@ -175,14 +171,17 @@ done
 
 如有 `[MISS]` 工具被 plan 脚本引用 → plan 必须切换为已验证可用的替代方案：
 
-| 缺失工具 | 常见替代 |
-|---------|---------|
-| `jq` | `python3 -c "import json,sys; ..."` heredoc |
-| `bc` | `python3 -c "print(...)"` 或 `awk 'BEGIN{...}'` |
-| `xmllint` | `python3 -c "import xml.etree.ElementTree as ET; ..."` |
-| `valgrind` | `sanitizers` (ASan/UBSan) |
+
+| 缺失工具       | 常见替代                                                   |
+| ---------- | ------------------------------------------------------ |
+| `jq`       | `python3 -c "import json,sys; ..."` heredoc            |
+| `bc`       | `python3 -c "print(...)"` 或 `awk 'BEGIN{...}'`         |
+| `xmllint`  | `python3 -c "import xml.etree.ElementTree as ET; ..."` |
+| `valgrind` | `sanitizers` (ASan/UBSan)                              |
+
 
 **反例（TASK-20260419-11 P3）：** plan §3 写 `jq '.benchmarks[] ...'` 做 smoke 自检，沙箱实际无 jq，Build 阶段临时改 python heredoc 损耗 ~3 min；本属"前置依赖未验证"反复模式，核心 API 已 5 处 grep 抑制，smoke 工具链漏验。
+
 ```
 
 ### 3.3 条目 3：多轮次 Build 中间态
@@ -271,11 +270,13 @@ commit subject **严禁**包含外部任务状态字样（`BLOCKED on ...` / `WA
 
 ### 4.1 反例追溯表（每条规则逐条回溯 ≥ 3 相关任务）
 
-| 规则 | 反例追溯任务 | 若规则当时生效，是否会捕获？ |
-|---|---|:-:|
-| 条目 1（proxy） | TASK-02, TASK-04, TASK-07, TASK-13-01（QuickJS 接入）| 4/4 ✅ 均会通过 Phase 0 代理状态核验预防 |
-| 条目 2（工具链 grep） | TASK-11 P3 jq 缺失 | 1/1 ✅ 会在 Plan 阶段捕获 |
-| 条目 3（轮次完成） | TASK-03 Round 1（10 phase, 2 轮）, TASK-04 多 phase | 2/2 ✅ 均可用 `构建中·轮次 N 完成` 状态代替 WIP 提交 |
+
+| 规则             | 反例追溯任务                                            | 若规则当时生效，是否会捕获？                      |
+| -------------- | ------------------------------------------------- | ----------------------------------- |
+| 条目 1（proxy）    | TASK-02, TASK-04, TASK-07, TASK-13-01（QuickJS 接入） | 4/4 ✅ 均会通过 Phase 0 代理状态核验预防         |
+| 条目 2（工具链 grep） | TASK-11 P3 jq 缺失                                  | 1/1 ✅ 会在 Plan 阶段捕获                  |
+| 条目 3（轮次完成）     | TASK-03 Round 1（10 phase, 2 轮）, TASK-04 多 phase   | 2/2 ✅ 均可用 `构建中·轮次 N 完成` 状态代替 WIP 提交 |
+
 
 ### 4.2 YAML frontmatter 完整性
 
@@ -309,24 +310,28 @@ rg "FetchContent 网络代理守卫" --type-add 'mdc:*.{mdc,md}' -t mdc .cursor/
 
 ## 5. 风险与缓解
 
-| 风险 | 概率 | 严重度 | 缓解 |
-|---|:-:|:-:|---|
-| **R1** 规则文案过长导致 `.mdc` 超 700 行难阅读 | 低 | 中 | 本次新增 ~180 行，现有 `writing-plans.mdc` 473 行 → 650 行内，在 Cursor 系统提示预算内 |
-| **R2** 命令文件守卫新增破坏既有 VAN/Build/Reflect 流程 | 中 | 高 | P0 基线 grep 现有守卫文案 → 用「追加」而非「替换」模式；每 Phase 末复跑 `/van` `/build` 流程读通确认无语义歧义 |
-| **R3** 条目 3 子状态 `构建中·轮次 N 完成` 引入其他命令文件未兼容的 bug | 中 | 中 | 仅 `reflect.md` 需调整；`plan.md` / `archive.md` / `debug.md` 前置守卫 grep 验证与新子状态兼容（它们只检查 `空闲` / `初始化` / `构建中` / `回顾中` / `归档中`，对子状态 `·轮次 N 完成` 视为 `构建中` 的扩展）|
-| **R4** 交叉引用链路断裂（P0 段 3 处引用不一致） | 低 | 中 | §4.3 交叉引用一致性 grep + 每 Phase 末复跑 |
+
+| 风险                                             | 概率  | 严重度 | 缓解                                                                                                                                                    |
+| ---------------------------------------------- | --- | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1** 规则文案过长导致 `.mdc` 超 700 行难阅读              | 低   | 中   | 本次新增 ~180 行，现有 `writing-plans.mdc` 473 行 → 650 行内，在 Cursor 系统提示预算内                                                                                    |
+| **R2** 命令文件守卫新增破坏既有 VAN/Build/Reflect 流程       | 中   | 高   | P0 基线 grep 现有守卫文案 → 用「追加」而非「替换」模式；每 Phase 末复跑 `/van` `/build` 流程读通确认无语义歧义                                                                             |
+| **R3** 条目 3 子状态 `构建中·轮次 N 完成` 引入其他命令文件未兼容的 bug | 中   | 中   | 仅 `reflect.md` 需调整；`plan.md` / `archive.md` / `debug.md` 前置守卫 grep 验证与新子状态兼容（它们只检查 `空闲` / `初始化` / `构建中` / `回顾中` / `归档中`，对子状态 `·轮次 N 完成` 视为 `构建中` 的扩展） |
+| **R4** 交叉引用链路断裂（P0 段 3 处引用不一致）                 | 低   | 中   | §4.3 交叉引用一致性 grep + 每 Phase 末复跑                                                                                                                       |
+
 
 ---
 
 ## 6. 预估成本
 
-| Phase | 内容 | 预估 |
-|:-:|---|:-:|
-| P0 | 基线验证（grep 3 处锚点 + YAML frontmatter md5） | 5 min |
-| P1 | 条目 1 proxy（3 文件：writing-plans + van + techContext）+ 反例追溯 | 25-30 min |
-| P2 | 条目 2 smoke（1 文件）+ 反例追溯 | 15 min |
-| P3 | 条目 3 多轮次（3 文件：complexity-levels + build + reflect）+ 反例追溯 | 30-35 min |
-| P4 | 收尾（activeContext 长期项标记 + MB 同步 + 自审） | 10 min |
+
+| Phase | 内容                                                       | 预估        |
+| ----- | -------------------------------------------------------- | --------- |
+| P0    | 基线验证（grep 3 处锚点 + YAML frontmatter md5）                  | 5 min     |
+| P1    | 条目 1 proxy（3 文件：writing-plans + van + techContext）+ 反例追溯 | 25-30 min |
+| P2    | 条目 2 smoke（1 文件）+ 反例追溯                                   | 15 min    |
+| P3    | 条目 3 多轮次（3 文件：complexity-levels + build + reflect）+ 反例追溯 | 30-35 min |
+| P4    | 收尾（activeContext 长期项标记 + MB 同步 + 自审）                     | 10 min    |
+
 
 **合计：** **85-95 min**（1.4-1.6h）
 
@@ -334,11 +339,13 @@ rg "FetchContent 网络代理守卫" --type-add 'mdc:*.{mdc,md}' -t mdc .cursor/
 
 ## 7. 决策清单（D1-D3）
 
-| # | 决策 | 选项 | 选择 | 理由 |
-|:-:|---|---|---|---|
-| **D1** | 代理地址处理 | 占位符 / 环境变量 / techContext 位置引用 | **占位符 `<开发环境代理地址>`** | 最安全，具体地址已沉淀在 techContext.md 单一真相来源；规则文件零硬编码 IP（用户决策） |
-| **D2** | 条目 3 子状态实现方式 | 新阶段名 / 子状态标签 / 命令参数 | **子状态标签 `构建中·轮次 N 完成`** | 子状态而非新阶段，保持 5 主阶段骨架不变；对未感知此状态的命令（plan/archive/debug）视为 `构建中` 扩展，向后兼容 |
-| **D3** | Phase 提交粒度 | 每 phase 1 commit / 每条目 1 commit / 1 big commit | **每 Phase 1 commit**（共 5 commits + 收尾） | 与 TASK-01/11 同模式；每条目规则可独立 review / 回滚 |
+
+| #      | 决策           | 选项                                             | 选择                                     | 理由                                                                   |
+| ------ | ------------ | ---------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------- |
+| **D1** | 代理地址处理       | 占位符 / 环境变量 / techContext 位置引用                  | **占位符 `<开发环境代理地址>`**                   | 最安全，具体地址已沉淀在 techContext.md 单一真相来源；规则文件零硬编码 IP（用户决策）                 |
+| **D2** | 条目 3 子状态实现方式 | 新阶段名 / 子状态标签 / 命令参数                            | **子状态标签 `构建中·轮次 N 完成`**                | 子状态而非新阶段，保持 5 主阶段骨架不变；对未感知此状态的命令（plan/archive/debug）视为 `构建中` 扩展，向后兼容 |
+| **D3** | Phase 提交粒度   | 每 phase 1 commit / 每条目 1 commit / 1 big commit | **每 Phase 1 commit**（共 5 commits + 收尾） | 与 TASK-01/11 同模式；每条目规则可独立 review / 回滚                                |
+
 
 ---
 
