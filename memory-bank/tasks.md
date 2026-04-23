@@ -2,7 +2,40 @@
 
 ## 当前任务
 
-_无活跃任务。使用 `/van [task description]` 开始新任务。_
+### TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）
+
+- **复杂度级别：** Level 2（6 个规则/命令文件 + 3 MB 文件 = 9 文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
+- **状态：** 🔵 回顾完成（5 Phase 构建完成 / 反例追溯 7/7 通过 / 10 验收 9✅+1 改进 / Reflection 5 新模式沉淀 systemPatterns）
+- **当前阶段：** 回顾中（`activeContext.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-13.md`（含 6 改进建议 P1×3 / P2×3）
+- **基线分支：** `main`
+- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（commits: VAN `ec78f1c` + Plan 即将）
+- **安全相关：** ❌ 否（纯流程规则文档，不涉及外部输入/认证/数据存储/部署）
+- **设计文档：** `docs/specs/2026-04-19-process-rules-sunk-in-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估）
+- **需要创意阶段：** ❌ 否（3 条目均遵循 `writing-plans.mdc` 已有段模式，零架构/UI/算法决策）
+
+#### 待沉淀 3 条
+
+| # | 优先级 | 来源 | 目标文件 | 内容摘要 |
+|:-:|:-:|---|---|---|
+| 1 | 🔴 **P0** | 反复 9+ 次（TASK-02/03/04 反思） | `writing-plans.mdc` + 可能联动 `main.mdc` | FetchContent 任务 VAN 阶段**强制重设 git 全局代理** + 归档时决定是否 unset |
+| 2 | 🟠 **P1** | TASK-11 反思 #2 | `writing-plans.mdc` §5.4 邻段新增 §5.7 | Plan 阶段**必须 grep `which <tool>`** 验证 smoke 工具链可用性（jq / bc / valgrind / awk / xmllint 等）|
+| 3 | 🟠 **P1** | TASK-03 Round 1 首发 + TASK-11 复确 | `complexity-levels.mdc` | Level 2+ 多 phase 任务（≥ 5 phase）支持**「轮次完成」中间态** — `/reflect` / `/build` / `/archive` 阶段守卫调整 |
+
+#### VAN 阶段核查（grep 实证 3 处）
+
+- ✅ `writing-plans.mdc` L81-94 「FetchContent C 子项目编译选项审计」段不含网络代理守卫 → 可新增相邻段 7
+- ✅ `writing-plans.mdc` §5.4 Bench Smoke 验收三件套未覆盖工具链可用性 → 可新增 §5.7
+- ✅ `complexity-levels.mdc` L56/L66 Level 4 有「迭代机制」段但 Level 2/3 多轮次 Build 无独立说明 → 可新增作为通用段（非限定级别）
+- ✅ 3 条插入点均已精确定位且不存在重复
+
+#### 关联待处理事项（`activeContext.md` 长期项段）
+
+本任务完成后应从长期项中**标记「已落实」**：
+- P0 🔴 FetchContent proxy 规则（反复 9+ 次）
+- P1 🟠 TASK-11 反思 #2 smoke 工具链 grep
+- P1 🟠 TASK-03 Round 1 多轮次 Build 工作流
 
 <details>
 <summary>TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化） — ✅ 已归档（点开查看历史）</summary>

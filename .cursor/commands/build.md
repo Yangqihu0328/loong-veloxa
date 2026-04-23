@@ -105,6 +105,37 @@ REFACTOR — 清理代码（保持测试绿色）
 - 更新 `memory-bank/progress.md` — 记录进度和观察
 - 更新 `memory-bank/activeContext.md` — 更新当前焦点
 
+### 6.5 轮次完成判断（多 Phase 任务支持中途暂停）
+
+遵循 `.cursor/rules/workflow/complexity-levels.mdc`「多轮次 Build 中间态」段。
+
+完成当前 Phase 的任务列表后，判断是否继续下一 Phase：
+
+**触发中途暂停**（满足任一）：
+- 用户明确要求暂停（"先到这里 / 明天继续 / 先提交"）
+- 已达到预定的"分批分段"边界（plan 在 Phase 列表明确分组，如 Level 4 子系统）
+- 会话时长 / 上下文 / 疲劳等实际约束需要切断
+
+**暂停时执行：**
+1. 当前 Phase 的代码 + MB 更新正常 commit（遵循 §3 TDD commit 规范）
+2. 在 `memory-bank/activeContext.md` 当前阶段段写入子状态标签：
+   ```markdown
+   ## 当前阶段
+   构建中·轮次 N 完成（Phase P1-P3 of P5 ✅；下次进入 P4）
+   ```
+   其中 `N` 为本次会话完成的 Phase 分组号
+3. `memory-bank/progress.md` 里程碑表保留未完成 Phase 的 ⏳ 标签
+4. **不**进入 §7 完成验证、**不**输出构建完成报告，代之以「轮次完成报告」：
+   ```markdown
+   ## ⏸️ 轮次 N 完成
+
+   **本轮完成 Phase：** [P1, P2, P3]
+   **剩余 Phase：** [P4, P5]
+   **下次恢复：** 重新 `/build`（识别子状态标签 → 跳过前置守卫 → 续上）
+   ```
+
+**不触发暂停时：** 直接进入 §7 完成验证。
+
 ### 7. 所有任务完成后
 
 执行**完成验证**（来自 `.cursor/rules/skills/verification.mdc`）：

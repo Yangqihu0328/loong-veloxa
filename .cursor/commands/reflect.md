@@ -12,6 +12,7 @@ description: "对已完成的实现进行结构化回顾，记录经验教训。
 
 读取 `memory-bank/activeContext.md`，验证：
 - 当前阶段必须是 `构建中`（由 `/build` 设置）
+  - **例外**：若当前阶段形如 `构建中·轮次 N 完成（...）`，说明任务处于多轮次 Build 中间态（见 `.cursor/rules/workflow/complexity-levels.mdc`「多轮次 Build 中间态」），**禁止**进入 `/reflect`，提示用户「任务尚未完成所有 Phase，先 `/build` 续上剩余 Phase」并立即返回
 - 如果阶段是 `空闲` 或 `初始化` → 提示用户尚未开始构建，先完成前置步骤
 - 如果阶段是 `回顾中` → 提示用户回顾已完成，可以使用 `/archive`
 - 验证 `progress.md` 中有实现记录（如果为空，提示数据不足以进行有意义的回顾）

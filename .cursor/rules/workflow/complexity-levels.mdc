@@ -65,6 +65,46 @@ alwaysApply: false
 
 **迭代机制：** Level 4 的 `/build` 阶段按子系统分轮实施。每轮迭代包含：实现子系统 → 验证子系统 → 集成测试 → 更新 `progress.md`。所有子系统完成后再统一进入 `/reflect`。
 
+## 多轮次 Build 中间态（跨 Level 2-4，来源 TASK-20260419-13）
+
+> 反复出现（TASK-20260419-03 Round 1 合并暂停 ~30 min / TASK-20260419-04 多 Phase 停歇期状态漂移）：长 plan（Phase ≥ 5）拆多天执行时，单个 `构建中` 状态覆盖跨度过粗，本轮完成但未进入 `/reflect` 的时段里 `activeContext.md` 无中间锚点，重新召回需重读 plan 全文 + 差异 diff，~10-20 min 恢复成本。
+
+### 触发条件
+
+任一命中即适用：
+- Level 4 迭代机制的每轮子系统结束
+- Level 2-3 plan 包含 **≥ 5 Phase** 且单次 session 只完成部分 Phase
+- 用户明确要求中途暂停（如"先提交到这里明天继续"）
+
+### 子状态协议
+
+- **`activeContext.md` 当前阶段**：沿用 `构建中`（**不新增独立状态**）
+- **子状态标签**：在 `构建中` 下方显式追加一行，形如：
+  ```markdown
+  ## 当前阶段
+  构建中·轮次 N 完成（Phase P1-P3 of P5 ✅；下次进入 P4）
+  ```
+  其中 `N` 对应 Level 4 子系统迭代号 或 Level 2-3 的 Phase 分段组号
+- **`progress.md`**：在任务里程碑列表里对已完成 Phase 打 ✅，**保留**未完成 Phase 为 ⏳
+- **`tasks.md`**：状态保持 `🟡 构建中`，**不**改为 `规划完成` / `回顾中`
+
+### 向前兼容
+
+- 未触发多轮次机制（Phase < 5 且一次性完成）→ 完全不受影响，保持原 5 主阶段骨架
+- 已有 Level 4 迭代机制段是**特化描述**，本段是**跨 Level 的通用扩展**
+- `/build` 命令守卫在每 Phase commit 后可选输出"继续下一 Phase / 暂停等待"，由本段授权的 `构建中·轮次 N 完成` 作为暂停态合法标签
+
+### 进入 `/reflect` 的恢复路径
+
+- 下次 session 启动时识别 `构建中·轮次 N 完成` 子状态 → 跳过 `/van` `/plan` 守卫 → 直接续 `/build` 余下 Phase
+- 所有 Phase 完成后 `/build` 末尾清除子状态标签 → 回到正常 `构建中` → 才允许 `/reflect` 进入
+
+### 与 git 的关系
+
+- `wip` 游离 commit 仅允许在**同 Phase 内部**（测试红 / green / refactor 之间）
+- Phase 结束必须 squash 或直接 `docs(...): <task> P<N> — <subject>` 常规 commit；**子状态切换不使用游离 wip**
+- 参考 `.cursor/rules/skills/git-workflow.mdc`「提交粒度」
+
 ## 复杂度决策树
 
 **从高到低检查，取最高匹配级别：**

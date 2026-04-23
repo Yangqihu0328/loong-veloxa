@@ -93,6 +93,10 @@ cmake --build build -j
 | `rm -rf build-bench` 报 `Read-only file system` / `Device or resource busy` 错误 | Cursor 沙箱把 FetchContent clone 进来的 `build-bench/_deps/<lib>-src/.git` 目录设为只读 | `chmod -R u+w build-bench/_deps && rm -rf build-bench`（需要 `all` 权限）（参考 TASK-20260419-03 P6） |
 | `cmake --build build-bench -j` 整体失败但单个 bench target 干净 | main 上某些 .cc / 测试代码隐藏了 Release `-Werror` 失败（仅 Debug 通过），fresh Release build 暴露 | (a) 临时绕行：`cmake --build build-bench --target <仅需要的目标> -j`；(b) 中长期：立 fix 任务（参考 TASK-20260419-03 P6 → TASK-20260419-07 候选）|
 
+### Plan/VAN 阶段守卫（来源 TASK-20260419-13）
+
+规则文件 `.cursor/rules/skills/writing-plans.mdc` 的「FetchContent 网络代理守卫」段要求每个 FetchContent 任务在 VAN / Plan Phase 0 检查并（必要时）补设 git 全局代理；`.cursor/commands/van.md` 步骤 1 已有对应自动检查子项。**本段是代理地址的单一真相来源**，规则文件中**严禁硬编码** IP 地址，统一用占位符 `<开发环境代理地址>`。
+
 ## CSS 性能基线（来源 TASK-20260419-03，2026-04-19）
 
 入仓 `benchmarks/baseline/bench_css_*.json`，**形态参考**而非 SLA。基础数量级（Release / WSL2 8 核 ~2.92 GHz / gcc 11.4 / `--benchmark_min_time=0.5s`）：
