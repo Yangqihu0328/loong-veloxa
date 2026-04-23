@@ -2,11 +2,16 @@
 
 ## 当前阶段
 
-构建中（5 Phase 全完成，待 `/reflect`）
+回顾中
 
-**TDD 模式：** 文档类任务无 TDD — 以「反例追溯表」替代（plan §4.1 已记录，`/reflect` 时标注）
+**TDD 模式：** 文档类任务无 TDD — 以「反例追溯表」替代（已实证 7/7 通过，作为新范式沉淀）
 
-**构建产出：** 3 条规则落地到 6 个规则/命令文件 + 2 MB 文件 = 8 文件修改 / 4 独立 commit（P1→P4）/ 反例追溯 7/7 通过 / 10 验收 9✅+1 改进
+**构建产出：** 3 条规则落地到 6 个规则/命令文件 + 3 MB 文件 = 9 文件修改 / 4 独立 commit（P1→P4）/ 反例追溯 7/7 通过 / 10 验收 9✅+1 改进
+
+**Reflection 产出：** `memory-bank/reflection/reflection-TASK-20260419-13.md`
+- **5 新模式沉淀** `systemPatterns.md`：Meta-dogfooding Phase 0 / 基础假设核查 VAN/Plan 前置清单 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展为跨类型（plan × 0.6 通用目标）
+- **6 改进建议：** P1×3（#1 Meta-dogfooding 标配 / #2 跨类型估时校准 / #3 基础假设核查清单）+ P2×3（#4 单一真相来源通用 / #5 实证微调 spec / #6 .editorconfig 观察）
+- **反复模式扫描：** "前置依赖/环境/API 能力未验证"（频率 8+）本次 meta-dogfooding 自证触发 + 沉淀的条目 2 规则直接针对，**自闭环**；新记录模式「.cursor/commands/* 可编辑性假设错误」(本次 1 次，纳入 L3 基础假设核查)
 
 ## 当前任务
 
@@ -81,7 +86,7 @@
 - ~~**🔴 P0（紧急升级，反复 9+ 次，TASK-07 已验有效预防）：** Cursor 沙箱内任何 FetchContent 任务的 VAN 阶段**必须**强制重设 git 全局代理~~ → ✅ **已于 TASK-20260419-13 P1 落实**：`writing-plans.mdc` L96「FetchContent 网络代理守卫」段（6 小节）+ `van.md` §1 子项「FetchContent 代理状态检查」+ `techContext.md` L98「Plan/VAN 阶段守卫」交叉引用；代理地址单一真相来源为 `techContext.md`，规则零硬编码 IP，统一占位符 `<开发环境代理地址>`
 - ~~**🔴 P0（TASK-07 + TASK-05 第 2 次实证）：** `writing-plans.mdc` 「目标 API 的发射/触发条件 grep」段~~ → ✅ **已于 TASK-20260419-05 /archive 落实**；TASK-09 /reflect 二次升级覆盖 **CMake 链接可见性**（PUBLIC/PRIVATE/INTERFACE，含 PNG::PNG 反例）
 - **🟠 P2（频率升级，TASK-07 + TASK-05 + TASK-09 = 3 次）：** `/reflect` 命令 §3.5 反复模式表「方案根因假设未先验证」频率升至 3 次（已被 P0 grep 规则有效抑制；TASK-09 全程 7 处 grep 仅遗漏 1 处链接可见性盲点 → 已通过 TASK-09 reflection 建议 #1 把链接 PUBLIC/PRIVATE/INTERFACE 检查写入 P0 规则）
-- **P1（TASK-09 反思建议 #2，TASK-11 部分实证）：** bench 类任务 plan 估时模板 — 含「复用率假设 + 单 BM 3-5 min 经验值」段。TASK-05 plan 4.25h vs 实际 75 min（3.4×）；TASK-09 plan 3.5h vs 实际 50 min（4.2×）；**TASK-11 plan 55-80 min vs 实际 ~~35-40 min（~~1.5-2.0×，protocol 首次实证生效，偏差从 4× 收敛到 ~2×）**。**落实方式**：下次 bench/性能任务再做一次校准；如 ≤ 1.5× 即可收敛到「准确档」，写入 `writing-plans.mdc` 作为基线协议。
+- **P1（TASK-09 反思建议 #2 + TASK-11/13 实证，已跨类型扩展）：** **通用 plan × 0.6 目标倍率协议**（原 bench 类任务专属已泛化）— TASK-05 3.4× / TASK-09 4.2× / TASK-11 1.5-2.0× / **TASK-13 文档类 1.67-1.86×** 跨 4 任务稳定收敛 ~2×。**落实方式**：✅ 已于 TASK-13 /reflect 扩写 `systemPatterns.md`「bench 估时校准」段为跨类型统一；下次任一类型任务 ≤ 1.5× 即视为「准确档」，写入 `writing-plans.mdc` 强制条目。
 - **P1（新增, TASK-11 反思 #1）：** bench plan 阈值表对**超低 ns BM**（baseline < 50ns）应用「绝对增量兜底」，避免噪声误警。建议公式：`判定阈值 = max(baseline × 1.2, baseline + 0.5ns for <5ns / +5ns for [5,50)ns)`。**落实方式**：追加附录到 `systemPatterns.md` "bench 类任务估时校准" 段（已沉淀 ✅）+ 下次 bench plan 阈值表必引。**根因**：TASK-11 P3 实测 Get 0.94→1.16 ns（1.23×，超 1.2× 阈值）但实现完全没改动，纯属测量噪声；Hit<1> 10.35→43.27 ns 是 HashMap 固有 ~32ns 开销，绝对量微小但乘法判定显示「4×」。
 - ~~**P1（新增, TASK-11 反思 #2）：** Plan 阶段需 grep `which <tool>` 验证 smoke 工具链可用性~~ → ✅ **已于 TASK-20260419-13 P2 落实**：`writing-plans.mdc` §4 末尾新增 `#### smoke 工具链可用性检查` 子块（jq/bc/valgrind/awk/xmllint/rg 6 工具兜底矩阵 + Plan Phase 0 一次性 batch grep + Build 严禁临时换栈 + 与 `verification.mdc` 协同定位）
 - **P1（新增, TASK-11 反思 #3）：** Mixed TDD 模式下「为预防特定 bug 而新增的回归测试」（D3 类）**标配 RED 反向探针验证**（临时破坏实现确认 FAIL → 恢复确认 PASS）。**落实方式**：沉淀到 `systemPatterns.md` 新模式段「Mixed TDD RED 反向探针实践」（已沉淀 ✅）。**根因**：TASK-11 D3 `ClearAndReloadDeduplicates` 通过反向探针证实测试在「实现已正确」时也能精准 FAIL（注释 `path_to_handle_.clear()` → 立即 FAIL → 恢复 → PASS），耗时 < 3 min 但避免「测试因实现恰巧正确而成为永远不报警的死代码」最大风险。
@@ -95,4 +100,9 @@
 - **P2**：将 `renderer_test` / `render_integration_test` 等剩余手写像素位移断言迁到 `tests/test_pixel_utils.h`（来源 TASK-20260413-02）
 - ~~**P2**：google/benchmark `RangeMultiplier(m)->Range(lo,hi)` 的精确数量为 `ceil(log_m(hi/lo))+1~~` → ✅ **已于 TASK-05 /archive 阶段落实**：`writing-plans.mdc`「性能基准任务必检项」§5 强制条目
 - ~~**P2（新增, TASK-05）：** 「Render bench 前置清单」+「带否定判据的发现型 Phase」+「跨阶段管道型 API default-nullptr 反模式」~~ → ✅ **已于 TASK-05 /reflect 阶段沉淀到 `systemPatterns.md`**（4 段）+ /archive 阶段交叉引用入 `writing-plans.mdc`「性能基准任务必检项」§6；TASK-09 /reflect 升级「带否定判据」标签为 4/4 成熟实践
+- **P1（新增, TASK-13 反思 #1）：** **Meta-dogfooding 作为规则沉淀类任务的 Phase 0 标配动作** — 基线验证时刻意检验新规则触发路径，命中即 T-0 实时自证。**落实方式**：✅ 已沉淀 `systemPatterns.md`「规则沉淀类任务的 Meta-dogfooding Phase 0 模式」段（本任务自证，TASK-13 `rg`/`jq` MISS 触发条目 2 规则）；下次流程规则沉淀类任务 plan Phase 0 直接引用。
+- **P1（新增, TASK-13 反思 #2）：** **基础假设核查 — VAN/Plan 前置清单**：对非标准目录/约定（如 `.cursor/commands/*`）做 Glob/Read 实证，避免 plan 建立在错误假设上。**落实方式**：✅ 已沉淀 `systemPatterns.md`「基础假设核查 — VAN/Plan 前置清单」段；下次涉及非 `src/`/`tests/`/`build*/` 目录的任务 VAN 阶段必做。
+- **P2（新增, TASK-13 反思 #4）：** **单一真相来源占位符模式**：环境敏感/跨项目复用/可变配置值用占位符，实际值集中 `techContext.md` 等单一真相来源。**落实方式**：✅ 已沉淀 `systemPatterns.md`「配置管理 — 单一真相来源占位符模式」段；下次涉及代理/端口/token 等配置的任务参照。
+- **P2（新增, TASK-13 反思 #5）：** **实证微调 spec 范式**：plan 执行时允许基于实证数据微调 spec 细节（非核心意图），在 progress/reflection 标注依据。**落实方式**：✅ 已沉淀 `systemPatterns.md`「计划执行 — 实证微调 spec 范式」段；下次 build 阶段遇实证偏差直接用 "9 ✅ + N 改进" 格式标记。
+- **P2（新增, TASK-13 反思 #6）：** **`.editorconfig` / prettier 统一 markdown 表格格式**：避免编辑器 auto-reformat 表格列宽污染 diff。**触发条件**：累计 3+ 任务再出现即立项；当前仅 TASK-13 spec §1 表格 auto-reformat 1 次，暂记观察。
 

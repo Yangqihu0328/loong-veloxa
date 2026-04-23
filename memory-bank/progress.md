@@ -4,7 +4,7 @@
 
 ### TASK-20260419-13：流程规则 P0/P1 沉淀冲刺
 
-**当前阶段：** 规划完成（待 `/build`）
+**当前阶段：** 回顾完成（待 `/archive`）
 
 **里程碑：**
 - ✅ VAN（2026-04-19）：复杂度评估 Level 2，3 条目插入锚点 grep 实证定位，分支 `feature/TASK-20260419-13-process-rules-sunk-in` 创建
@@ -14,7 +14,7 @@
 - ✅ Build P2 smoke 工具链 grep（~8 min，低于 plan 15 min）：writing-plans.mdc §4 末尾新增 `#### smoke 工具链可用性检查` 子块（6 行工具兜底表 + 执行时机 + 与 verification.mdc 协同）；1/1 反例追溯通过（TASK-11 P3 jq MISS）
 - ✅ Build P3 多轮次 Build 中间态（~15 min，低于 plan 30-35 min）：complexity-levels.mdc L68 跨级别新段（触发条件 / 子状态协议 / 向前兼容 / 恢复路径 / git 关系 5 小节）+ build.md §6.5 轮次完成判断（含轮次完成报告模板）+ reflect.md §0 守卫放宽（识别子状态标签立即返回）；2/2 反例追溯通过（TASK-19-03 Round 1 / TASK-19-04）
 - ✅ Build P4 收尾（~8 min，低于 plan 10 min）：activeContext 长期项 3 条标记已落实（`~~...~~` + ✅ 落实位置 + 占位符策略）+ 整体 self-review（6 项 grep 全绿）+ 10 验收标准逐条对照（9 ✅ + 1 改进，工具表合并更易用）；**反例追溯总计 7/7 通过**（P1 4 + P2 1 + P3 2）
-- ⏳ Reflect
+- ✅ Reflect（2026-04-19）：`reflection-TASK-20260419-13.md` 落地；5 新模式沉淀 `systemPatterns.md`（Meta-dogfooding Phase 0 / 基础假设核查 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展为跨类型 plan × 0.6 通用）；6 改进建议（P1×3 + P2×3）；反复模式扫描"前置依赖未验证"频率 8+ **自闭环**
 - ⏳ Archive
 
 **Build 阶段总耗时估算：** P0 5 + P1 15 + P2 8 + P3 15 + P4 8 = **~51 min**，vs plan 85-95 min = **~60% 提前**（与 P1 区间一致，plan 文档估时校准下次收敛目标 ≤ 1.3×）
@@ -32,9 +32,23 @@
 
 **反例追溯覆盖（无 TDD 的验证替代）：**
 - 条目 1 P0 proxy：TASK-02/04/07/13-01 共 4 case
-- 条目 2 P1 smoke：TASK-11 P3 共 1 case
+- 条目 2 P1 smoke：TASK-11 P3 + TASK-13 Phase 0 meta-dogfooding 共 2 case（T-0 实时自证）
 - 条目 3 P1 多轮次：TASK-03 Round 1 / TASK-04 共 2 case
 - 总计：7/7 case 若规则当时生效均可预防/改善
+
+**Reflect 阶段关键发现（3 项核心）：**
+
+1. **Meta-dogfooding 模式成立**：Phase 0 `rg`/`jq` MISS 直接触发条目 2 P1 规则，形成规则**自证闭环**，应作为规则沉淀类任务的**标配 Phase 0 动作**（P1 #1 沉淀 systemPatterns）
+2. **跨类型估时收敛到 plan × 0.6 通用目标**：TASK-13 文档类 1.67-1.86× 与 TASK-11 bench 类 1.5-2.0× 同区间；从 TASK-09 4.2× → TASK-13 1.86× 跨 4 任务稳定收敛（P1 #2 扩写 systemPatterns「bench 估时校准」为跨类型）
+3. **Plan 阶段"关键认知升级"（`.cursor/commands/*.md` 可编辑）ROI 放大 2-3×**：规则从被动文档升级为主动守卫，触发 L3 "基础假设核查" 清单沉淀（P1 #3）
+
+**6 改进建议（P1×3 + P2×3）：** 详见 `reflection-TASK-20260419-13.md` §9
+- P1 #1 Meta-dogfooding 标配 → ✅ 已沉淀 `systemPatterns.md`
+- P1 #2 跨类型估时校准 plan × 0.6 → ✅ 已扩写 `systemPatterns.md`「bench 估时校准」段
+- P1 #3 基础假设核查清单 → ✅ 已沉淀 `systemPatterns.md`
+- P2 #4 单一真相来源占位符 → ✅ 已沉淀 `systemPatterns.md`
+- P2 #5 实证微调 spec 范式 → ✅ 已沉淀 `systemPatterns.md`
+- P2 #6 `.editorconfig` / prettier 统一 markdown 表格 → 🟢 观察 3+ 任务（本次记入 activeContext 长期项）
 
 ## 已完成任务
 
