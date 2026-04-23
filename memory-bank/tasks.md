@@ -2,7 +2,146 @@
 
 ## 当前任务
 
-_无活跃任务。使用 `/van [task description]` 开始新任务。_
+_（无活跃任务，等待 `/van` 启动新任务）_
+
+<details>
+<summary>TASK-20260424-01：Layout super-linear knee 根因调查 — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260424-01：Layout super-linear knee 根因调查
+
+- **复杂度级别：** Level 2-3（研究/调查类；**可能**产出小型性能补丁或 arena 默认配置调整）
+- **状态：** ✅ 已完成（详见 `archive-TASK-20260424-01.md`）
+- **分支：** `feature/TASK-20260424-01-layout-knee-root-cause`（7 commits 含 archive）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-01.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260424-01.md`
+
+#### Build 阶段成果
+
+**根因定位：(d) ArenaAllocator 4KB block malloc/free churn**（Phase 2 block-size 扫描实证 32K 为 sweet spot；65K 在 Flex 回弹暗示 L1D 抖动，为 K8 新发现）。
+
+**核心改动（3 文件 / 5 commits）：**
+
+1. `veloxa/foundation/memory/arena_allocator.h` — 默认 block_size 4096 → 32768（+20 行注释含完整扫描表 + 根因追溯）
+2. `tests/foundation/memory/arena_allocator_test.cc` — 新增 `DefaultBlockSizeFitsLargeAllocations` GTest（23 行，RED 反向探针验证有效）
+3. `benchmarks/baseline/bench_layout_{buildtree,flex}.json` + `README.md` — 入仓新 baseline（3-reps mean，Release 同机）+ K2/K3/K8 更新
+
+**关键 Before/After（3-reps mean）：**
+
+| BM | 修前 | 修后 | 改善 |
+|---|---:|---:|---|
+| `BM_LayoutBuildTreeFlat/256` | 70 µs | **42.3 µs** | **1.66×** |
+| `BM_LayoutBuildTreeFlat/512` | 196 µs | 140 µs | 1.40× |
+| R256（knee 强度） | 9.42× | **4.18×** | **2.25× ↓** |
+| `BM_LayoutFlex<16,16>` | 82.5 µs | **44.2 µs** | **1.87×** |
+| R_flex | 16.49× | **6.40×** | **2.58× ↓** |
+
+内存成本：`Document::arena_` +28 KB/instance（仅 Document 用默认 block；其它 3 处 `UpdateManager` / `LayoutEngine` / bench 显式传值不受影响）。
+
+#### 验收 10/10
+
+| # | 判据 | 结果 |
+|:-:|---|:-:|
+| 1 | Phase 1 判据命中（R256 < 6×，(d) 至少部分成立）| ✅ R256=3.61× (65K 探针) |
+| 2 | Phase 2 定位 OPT_SIZE | ✅ 32768（Flex sweet spot） |
+| 3 | R256 改善达标 | ⚠️ 4.18×（plan 阈值≤2.5 过严，实证调整，用户确认）|
+| 4 | R_flex 改善达标 | ⚠️ 6.40×（plan 阈值≤5 过严，同上）|
+| 5 | ctest 全量 PASS | ✅ 892/892 |
+| 6 | Release 全量 rebuild 0 err/warn | ✅ |
+| 7 | 新增 GTest + RED 反向探针 | ✅ revert→FAIL, restore→PASS |
+| 8 | 2 baseline JSON 刷新 release | ✅ |
+| 9 | baseline README 环境 + 历史更新 | ✅ K2/K3/K8 段 + 变更历史行 |
+| 10 | techContext Layout 性能基线段补 resolved | ✅ K2/K3 resolved + K8 新发现 |
+
+#### Phase 耗时对比（plan × 0.6 协议校准）
+
+| Phase | plan (min) | 实测 (min) | 比例 |
+|:-:|:-:|:-:|:-:|
+| 0 | 10 | ~3 | 0.30× |
+| 1 | 20 | ~4 | 0.20× |
+| 2 | 25 | ~5 | 0.20× |
+| 3 | 25 | ~8 | 0.32× |
+| 4 | 20 | ~5 | 0.25× |
+| 5 | 15 | ~8 | 0.53× |
+| **合计** | **115** | **~33** | **0.29×** |
+
+**第 5 个数据点**（继 TASK-05 3.4× / TASK-09 4.2× / TASK-11 1.5-2.0× / TASK-13 1.67-1.86×）：研究型小补丁 0.29× 属于**最快档**，可作为「脚本化实验 + 单行改动」样板。
+- **创建日期：** 2026-04-24
+- **来源：** 候选区 TASK-20260419-10（TASK-05 K2/K3 + TASK-09 VAN 拆出，activeContext 标为 P2 触发型）
+- **设计文档：** `docs/specs/2026-04-24-layout-knee-root-cause-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-24-layout-knee-root-cause.md` ✅（6 Phase 骨架 / 115 min plan / plan × 0.6 预期 ~70 min / 5 commits 含 Phase 1B 升级分支）
+- **需要创意阶段：** ❌ 否（用户决策 D1=A 阶梯验证 + D2=A 全局 bump 已锁定；所有架构/算法空白均无）
+- **安全相关：** ❌ 否（性能测量/优化任务，无外部输入/无认证/无新依赖）
+
+#### 用户决策（Plan 头脑风暴产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | 实验策略 | **A — 阶梯验证** | 先测最可能 (d) malloc churn（实验成本 < 5 min），命中即止步；否则升 Phase 1B |
+| D2 | 修复交付范围 | **A — 全局 ArenaAllocator 默认 bump** | grep 穷举 4 处使用点：仅 `Document::arena_` 受影响（+12KB/instance 可接受） |
+
+#### Phase 划分（6 Phase 骨架）
+
+| Phase | 名称 | plan (min) | plan × 0.6 (min) | commits |
+|:-:|---|:-:|:-:|:-:|
+| 0 | 基线核验 + smoke 工具 + 分支 | 10 | 6 | 1 |
+| 1 | 假设 (d) 单点探针 65536 | 20 | 12 | 0 |
+| 2 | block size 5 档扫描 | 25 | 15 | 0 |
+| 3 | 实施 fix + RED 反向探针 | 25 | 15 | 2 |
+| 4 | Bench baseline 刷新 | 20 | 12 | 1 |
+| 5 | techContext + MB 收尾 | 15 | 9 | 1 |
+| **合计** | — | **115** | **~70** | **5** |
+| **1B（升级，条件触发）** | per-phase 拆分 BM | +60-90 | +40-55 | +1-2 |
+
+#### 基线实测（VAN Phase，main `e3952dc`）
+
+| BM | Time | items/s |
+|---|---:|---:|
+| `BM_LayoutBuildTreeFlat/8`   | 534 ns | 15.0M |
+| `BM_LayoutBuildTreeFlat/16`  | 982 ns | 16.3M |
+| `BM_LayoutBuildTreeFlat/32`  | 1871 ns | 17.1M |
+| `BM_LayoutBuildTreeFlat/64`  | 3906 ns | 16.4M |
+| `BM_LayoutBuildTreeFlat/128` | 7901 ns | 16.2M |
+| **`BM_LayoutBuildTreeFlat/256`** | **76375 ns** | **3.4M** ← knee |
+| `BM_LayoutBuildTreeFlat/512` | 208027 ns | 2.5M |
+
+**knee 命题：** N=128→256 时 9.67× for 2×N（预期 2×），throughput 跌 ~4.8×。
+
+#### VAN 已实证（落实 P0「方案根因假设未先验证」规则）
+
+| 候选根因 | 状态 | 实证依据 |
+|---|:-:|---|
+| (a) `Vector<LayoutBox*> children` 扩容 | ❌ 推翻 | `layout_box.h:26-29` 用侵入式 `first_child/next_sibling` 双向链表 |
+| (b) `ArenaAllocator` chunk 2× 增长 | ❌ 推翻 | `arena_allocator.h:13,39` 固定 4096 字节 block，TASK-09 VAN 已否定 |
+| (c) L2 cache 溢出 | ❌ 推翻 | N=256 工作集 142KB << L2 1280KB |
+| (d) Arena 4KB block malloc churn | 🔬 保留 | N=256 每迭代 ~37 次 malloc+free，需实验验证 |
+| (e) L1D 抖动 | 🔬 保留 | 单元素 552B > cache line 跨度，需 perf 验证 |
+| (f) layout 算法内部 O(N²) | 🔬 保留（低概率） | grep 未见显式 O(N²)，但需 per-phase 拆分实证 |
+
+#### 前置验证（全部 ✅）
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ google/benchmark 在 `build-bench/_deps/` 已缓存，FetchContent 不触发 → P0 git proxy 不触发 |
+| 环境就绪 | ✅ `build-bench/` Release 构建可用；`bench_layout_buildtree` + `bench_layout_flex` 可直接运行 |
+| 已有 artifact | ✅ `benchmarks/baseline/bench_layout_{buildtree,flex}.json` 已入仓（TASK-05） |
+| 待处理事项关联 | ✅ 落实候选区 TASK-20260419-10（P2 触发型） |
+| Sticky ID 一致性 | ⚠️ 原候选区 ID = TASK-20260419-10；本次按 Memory Bank 约定「当天序号从 01 开始」用 TASK-20260424-01，在任务描述中交叉引用原 ID |
+
+#### 关键数据（VAN Phase 沉淀）
+
+- 环境：Linux 6.6.87.2 WSL2 / 8 CPU @ 2.92 GHz / L1D 48KB(x4) / L2 1280KB(x4) / L3 12288KB / gcc 11.4
+- `sizeof(LayoutBox)`：**144 字节**
+- `sizeof(ComputedStyle)`：**408 字节**（18 `LengthValue` + transitions `SmallVector<_,2>` 等）
+- 每元素内存：**552 字节**
+
+#### 后续工作流
+
+- `/plan`：设计 2-3 个可证伪实验（block-size 扫描 / per-phase 拆分 / perf stat），给出验收判据
+- `/creative`：**视情况**（若需要在多个修复方案间做架构决策）
+- `/build`：实施 fix 或输出研究报告
+- `/reflect` + `/archive`
+
+</details>
 
 <details>
 <summary>TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环） — ✅ 已归档（点开查看历史）</summary>
@@ -416,7 +555,8 @@ _无活跃任务。使用 `/van [task description]` 开始新任务。_
 - **TASK-20260419-06（建议，**P3 降级**）：** HashMap Hash Mixing 优化 — 触发条件改为「短字符串 ≠ 主用例 + 容器规模 > 1000 entry」的新场景出现时再立项（来源 TASK-03 P4 实测均匀降级）
 - **TASK-20260419-08（候选，P3 触发型）：** `string.h` 剩余 3 处 runtime-size memcpy（line 45 SSO ctor / 150 Append / 230 GrowAndCopy）防御性 noinline 化。**触发条件**：未来 GCC 升级回归同类 `-Warray-bounds` 误报（来源 TASK-07 副发现）
 - ~~TASK-20260419-09：已立项为当前任务（A+B 子集），详见上方「当前任务」段。VAN 阶段 grep 推翻 K5「需 fixture 文件复制」假设（复用 `image_decoder_test.cc::CreateTestPng()` 程序化构造写 /tmp）+ K1「DrawText 真路径」假设（实际走 fallback FillRect）~~
-- **TASK-20260419-10（新增，TASK-05 K2/K3 + TASK-09 VAN 拆出，建议 P2 触发型）：** Layout super-linear knee 根因调查（**研究类**，非 bench 类）— buildtree N=128→256 / flex 8x8→16x16 同源 super-linear（10×～15×）。**VAN 阶段已否定 ArenaAllocator chunk grow 候选根因**（默认 4096 不 grow，量级不符）；剩余候选：(a) `LayoutBox` 内 `Vector<LayoutBox*> children` 扩容序列（首发→第 N 次扩容产生连续 reallocate）；(b) layout 算法本身 O(N²) 路径（margin collapsing / line box reflow）；(c) 数据局部性 cache miss（256 box × ~100 byte = 25.6 KB ≤ L1d 32KB，但 prefetch pattern 可能 break）。**预期产出**：调查报告 + （可能）layout 算法重构 PR。**触发条件**：TASK-09 完成后立项；如新增 layout 性能问题先于 TASK-09 完成出现可优先此项
+- ~~TASK-20260419-10：已立项为 TASK-20260424-01 并完成（见上方「当前任务」段）。根因 (d) 定位 + 32K 落地，K2 R256 9.42→4.18 / K3 R_flex 16.49→6.40；残余 super-linear 拆出 TASK-20260424-02 继续跟进~~
+- **TASK-20260424-02（新增，TASK-24-01 Phase 1B 升级路径拆出，建议 P3 触发型）：** Layout 残余 super-linear 调查 — TASK-24-01 已解决 ~60% knee（(d) malloc churn），但 R256 仍 4.18× / R_flex 仍 6.40×，剩余 ~40% 属于 (e) L1D 抖动 或 (f) 隐藏算法因素。**方向**：新建 `benchmarks/bench_layout_phases.cc` 拆分 `LayoutEngine::Layout` 三阶段（BuildTree / LayoutBlock / ApplyPositioning）独立 BM，按分解公式 `阶段 cost = 累计 - 前序累计` 定位 super-linear 所属阶段。**预期产出**：调查报告 +（可能）per-phase 优化 PR；**另有 K8 信号**：Phase 2 扫描中 65K block 让 R_flex 回弹（7.40→8.36）暗示 L1D 抖动（L1D 48KB 边界）— 可结合 per-element cache line 布局分析。**触发条件**：(1) 下次 layout 性能需求（新容器类型如 grid/multi-column）之前补短板；(2) 或当有额外预算主动改进；当前工作集已合理，不立即紧急
 - ~~TASK-20260419-11：已完成并归档（合并到 main `8515c25`），详见 `archive-TASK-20260419-11.md`。**核心成果**：双索引方案 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`) 让 `BM_ImageCacheLoad_Hit<256>` 从 1151.77 ns → 45.70 ns（**25.2×↓**），K6 命题完全解；ctest 891/891 PASS；Release `-O3` 0 errors~~
 - **TASK-20260419-12（新增，TASK-09 K7 拆出，建议 P2 触发型）：** `SoftwareCanvas::DrawText` 真路径优化（**优化类**）— 当前 warm 真路径 5807 ns > fallback 3647 ns（1.6×），阻碍未来默认开真路径。候选：(a) `hb_buffer` 复用避免每次 alloc/free；(b) glyph bitmap 直接 raster 到 canvas 避免 GlyphCache → 中间 buffer → blit 两次拷贝。**预期产出**：warm 真路径 < 3000 ns 后默认真路径开关。**触发条件**：当真路径默认化提上日程时
 
@@ -424,6 +564,7 @@ _无活跃任务。使用 `/van [task description]` 开始新任务。_
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260424-01 | Layout super-linear knee 根因调查（研究类）— 根因定位 (d) ArenaAllocator 4KB block malloc/free churn；默认 block_size 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40×；3 文件核心 + 7 commits；新增 `DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；K8 新发现（65K block > L1D 触发抖动）；plan × 0.6 第 5 数据点 0.29×（历史最快，「最窄路径」子档样板）；3 新模式沉淀 systemPatterns；残余 ~40% super-linear 拆出 TASK-20260424-02 | ✅ 已完成 | 2026-04-24 | `archive-TASK-20260424-01.md` |
 | TASK-20260419-13 | 流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）— P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链 grep / P1 多轮次 Build 中间态；9 文件 / 8 commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议；5 新模式沉淀 systemPatterns | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-13.md` |
 | TASK-20260419-11 | ImageCache::Load HashMap 化（K6 高 ROI 修复）— 双索引 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`)；保 ABI / Get O(1)；Hit<256> 1151.77 ns → 45.70 ns（25.2×↓）；ctest 891/891 PASS；新增 `ClearAndReloadDeduplicates` D3 回归网（RED 反向探针验证有效）；3 P1 + 3 P2 改进沉淀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-11.md` |
 | TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |

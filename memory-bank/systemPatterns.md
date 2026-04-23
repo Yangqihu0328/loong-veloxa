@@ -693,6 +693,23 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 
 **跨类型收敛结论**：偏差稳定落在 **~2×** 区间，与任务类型无关。**通用目标倍率：plan × 0.6**（警戒线 plan × 0.4 视为极端偏差需调查）。应用场景从"bench 类专属"扩展为**所有任务类型的 plan 估时校准基线**。下次任一类型任务 ≤ 1.5× 即视为"准确档"，写入 `writing-plans.mdc` 作为强制条目。
 
+**TASK-24-01 极端数据点（2026-04-24）**：plan 115 min / 实测 ~33 min = **0.29×**（历史最快档）。首次突破 ≥1.5× 下限 → 触发**「路径宽度」子档分化**：
+
+| 路径宽度 | 样本 | 典型倍率 | 预估指南 | 识别特征 |
+|---|---|:-:|---|---|
+| 全新系统 | TASK-05 / TASK-09 | 3-4× | plan × 0.25-0.3 | 首次集成某类基础设施，多文件 + CMake 新 target |
+| 中等（2-5 文件） | TASK-11 / TASK-13 | 1.5-2× | plan × 0.5-0.6 | 扩展已有基础设施 / 文档沉淀 / 单模块重构 |
+| **最窄（1-3 文件 + 100% 基础设施复用）** | **TASK-24-01** | **0.29×** | **plan × 0.3** | 单行代码修改 + 1 GTest + baseline 刷新；无 CMake 变更；脚本化扫描可替代手工实验 |
+
+**「最窄路径」识别清单**（满足全部 → 按 plan × 0.3 预估）：
+- 核心改动 ≤ 3 文件
+- 测试基础设施 100% 就绪（新增测试复用既有 test target，无新 CMake）
+- 实验阶段可脚本化（for 循环 + python3 聚合）
+- 无新第三方依赖 / 无 CMake 新 target / 无 FetchContent
+- 无 API 变更 / 无接口破坏
+
+**触发条件**：下次若识别出「最窄路径」特征而 plan 估时按「中等」档（1.5-2×）给出 → plan 阶段直接下调预算 40-50%；反之若发现意外耗时膨胀需立即切换诊断模式。
+
 ### bench plan 阈值表对超低 ns BM 的「绝对增量兜底」附录（TASK-11 反思 #1）
 
 **问题**：`< baseline × 1.2` 形式阈值在超低 ns BM 上对测量噪声极敏感，触发误警。
@@ -900,6 +917,99 @@ grep FetchContent_Declare CMakeLists.txt  # 命中 → 条目 1 触发条件 OK
   3. **跑 smoke 后用 `--benchmark_format=json | jq .benchmarks[].items_per_second` 校验全 > 0**
 
 **落实**：写入 `writing-plans.mdc`「性能基准任务必检项」段；下次任何 bench plan 必加。
+
+### 扫描型研究任务脚本化模板 + 双指标交叉验证模式（TASK-24-01 反思 #3 — 新模式）
+
+**适用场景**：研究/调查类任务中需对单变量（block_size、buffer_size、cache 容量、超参 N 等）做多档扫描以定位最优值时。
+
+**样板脚本**：
+
+```bash
+# 设定扫描域（3-5 档为宜；过多噪声，过少不成曲线）
+for VAR in VALUE_1 VALUE_2 VALUE_3 VALUE_4 VALUE_5; do
+  # 单变量变更（仅修改目标参数）
+  sed -i "s/PATTERN/${VAR}/" SOURCE_FILE
+
+  # 静默 rebuild，仅保留错误/警告尾行
+  cmake --build BUILD_DIR --target TARGET -j 2>&1 | tail -1
+
+  # bench 以 json 输出到 /tmp 以便聚合
+  ./BENCH_BINARY --benchmark_filter="BM_KEY" \
+    --benchmark_format=json \
+    --benchmark_out=/tmp/result_${VAR}.json \
+    > /dev/null
+done
+
+# python3 fallback 聚合为 markdown 表（无 jq 依赖）
+python3 - <<'EOF'
+import json, glob, os
+rows = []
+for f in sorted(glob.glob('/tmp/result_*.json')):
+    var = os.path.basename(f).removeprefix('result_').removesuffix('.json')
+    data = json.load(open(f))
+    # 提取目标 metric，如 time / items_per_second / ratio
+    bm = next(b for b in data['benchmarks'] if 'YOUR_KEY' in b['name'])
+    rows.append((var, bm['real_time']))
+for var, t in rows:
+    print(f'| {var} | {t:.2f} ns |')
+EOF
+```
+
+**双指标交叉验证原则**：
+
+- 单指标扫描会选到「某项最优但副作用指标恶化」的点 → 必然存在 sweet spot 但会误选
+- **必须同时跑 ≥ 2 指标交叉**：如 `R256` 看 tree build 单项，`R_flex` 看 flex layout，二者联合判定才能识别真正最优档
+
+**TASK-24-01 实证**：Phase 2 扫描 arena block_size ∈ {4K, 8K, 16K, 32K, 65K}：
+- 单看 R256：{9.42, 4.68, 4.05, 3.84, 3.61} → 单调下降，65K 最优
+- 同时看 R_flex：{16.49, 10.54, 8.10, **7.40**, 8.36} → 32K 最优，65K **回弹**
+- 交叉判定：32K 为 sweet spot，65K R_flex 回弹是新发现（K8 L1D 抖动信号），**若只看 R256 会漏掉 L1D 约束**
+
+**效率收益**：3 档扫描 + 聚合表 < 1 分钟，零手工粘贴。**反之**若每档手工 `sed / rebuild / bench / 粘数字 / 算比率` 则 5-10 min/档、5 档 = 30+ min 且易错。
+
+**触发条件**：研究型任务的 plan 阶段若涉及扫描 ≥ 3 档的参数域 → plan Phase §步骤必带脚本化 for 循环 + python3 聚合样板 + ≥ 2 指标交叉判定列。
+
+### 测试设计 — 公开行为锚定内部约束模式（TASK-24-01 反思 #5 — 新模式）
+
+**问题**：如何测试一个**只能从外部观测内部行为**的约束（如「默认 block_size ≥ 某值」），当该内部值**没有公开 getter**、也**不希望为了测试加 getter/friend/`#define private public`**？
+
+**方案**：设计一个**只有在内部约束成立时才会成功的公开行为测试**。
+
+**TASK-24-01 样板**：
+
+```cpp
+TEST(ArenaAllocatorTest, DefaultBlockSizeFitsLargeAllocations) {
+  // 约束：default block_size >= 32768
+  // 不扩 API、不 friend，靠指针连续性间接观测：
+  // 若 default block >= 32768，两次 16K 分配落入同一 block 连续区
+  // 若 default block < 32768，第二次 16K 触发 oversized-block 路径（新 malloc），
+  //   指针跨 block → p2 - p1 != 16384
+  ArenaAllocator arena;
+  constexpr usize kChunk = 16384;
+  char* p1 = static_cast<char*>(arena.Allocate(kChunk));
+  char* p2 = static_cast<char*>(arena.Allocate(kChunk));
+  EXPECT_EQ(p2 - p1, static_cast<ptrdiff_t>(kChunk))
+      << "Two 16 KB allocations must fit contiguously...";
+}
+```
+
+**设计哲学**：
+- ✅ **不扩 API**：`ArenaAllocator` 无需加 `default_block_size()` getter
+- ✅ **不扩可见性**：无需 `friend` / `protected` / `#define private public`
+- ✅ **实证约束**：通过**公开行为** `Allocate()` 返回指针的连续性，间接约束**内部不变量** block 容量
+- ✅ **回归敏感**：任何降低默认 block 到 < 32K 的回归都会被该测试精准抓住（RED 反向探针已验证）
+
+**适用识别**：
+- 目标约束是「内部资源容量」「内部阈值」「内部调度策略」等**实现细节**
+- 存在**公开行为**（分配/访问/查询）其结果受该内部约束**必然影响**
+- 约束失败时公开行为的变化**确定性可观测**（非概率性/非计时相关）
+
+**反模式**：
+- ❌ 为测试加 `size_t block_size() const { return block_size_; }` — 污染 public API
+- ❌ `friend class ArenaAllocatorTest` — 破坏封装
+- ❌ `#define private public` 前置 include — 脏破解
+
+**触发条件**：任何需要测试 private/implementation-detail 约束时，**先尝试本模式**；仅当公开行为无法观测该约束时才考虑扩 API。
 
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
