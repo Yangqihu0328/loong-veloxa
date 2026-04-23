@@ -252,6 +252,27 @@ rg "PaintCommand::FillRect|emit.*FillRect|background_color" veloxa/core/render/r
    ```
    预期空输出（无 0 项）
 
+#### smoke 工具链可用性检查（plan 使用 `jq` / `bc` / `valgrind` / `xmllint` 等前**必做**）
+
+> 反复出现（TASK-20260419-11 P3）：smoke 自检脚本 `jq` 在 Cursor 沙箱终端 `command -v jq` 返回 127，被迫临时切换 `python3` 重写脚本；破坏 plan 原子性，~5 min 恢复，但污染 progress.md 与 Phase 提交粒度。
+
+**规则：** plan 里任何 smoke / 自检 / CI 脚本如使用下列工具，写 plan 之时**必须**同步 grep 验证可用性：
+
+| 工具 | 验证命令 | 缺失兜底方案 |
+|------|---------|-------------|
+| `jq` | `command -v jq \|\| echo MISS` | `python3 -c "import json, sys; ..."` heredoc |
+| `bc` | `command -v bc \|\| echo MISS` | `awk 'BEGIN{print ...}'` |
+| `valgrind` | `command -v valgrind \|\| echo MISS` | AddressSanitizer / 跳过或降级为单元测试 |
+| `awk` | `command -v awk \|\| echo MISS` | `python3 -c` 替代 |
+| `xmllint` | `command -v xmllint \|\| echo MISS` | `python3 -c "from xml.etree import ..."` |
+| `rg` / `ripgrep` | `command -v rg \|\| echo MISS` | POSIX `grep -rn` 降级 |
+
+**执行时机：**
+- **Plan 阶段 Phase 0「基线核验」步骤**：一次性 batch grep 本 plan 所需全部工具，输出命中/缺失矩阵写入 `progress.md`
+- **Build 阶段 Phase N 执行脚本前**：若 plan Phase 0 标记该工具 MISS，直接使用兜底方案，**严禁**临时切换技术栈后再补 plan
+
+**与 `verification.mdc` 的协同：** verification 只要求「运行后才声明通过」；本子块是 verification 的**前置条件**（跑都跑不起来就谈不上验证）。
+
 ### 5. RangeMultiplier 案例数预估（避免 BM 数与 plan 数不一致）
 
 google/benchmark `RangeMultiplier(m)->Range(lo, hi)` 的精确 case 数为：

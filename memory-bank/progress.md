@@ -11,7 +11,7 @@
 - ✅ Plan（2026-04-19）：设计 spec + 实现计划双文档落地，3 决策（D1 占位符 / D2 子状态标签 / D3 每 Phase 1 commit）确认，**发现 `.cursor/commands/*.md` 是可编辑文件**扩大实施范围，5 phase 计划 / 85-95 min 预估 / 10 验收标准
 - ✅ Build P0 基线（~5 min）：锚点 5/5 grep 符合 spec / YAML frontmatter 完整 / **工具链 dogfooding 发现 jq/rg/valgrind/xmllint MISS — 条目 2 规则的现场自证**
 - ✅ Build P1 proxy 守卫（~15 min，低于 plan 25-30 min 估时）：writing-plans.mdc L96 新段 + van.md §1 子项 + techContext.md L98 交叉引用子段；4/4 反例追溯通过（TASK-13-01/02/04/07）
-- ⏳ Build P2 smoke 工具链 grep
+- ✅ Build P2 smoke 工具链 grep（~8 min，低于 plan 15 min）：writing-plans.mdc §4 末尾新增 `#### smoke 工具链可用性检查` 子块（6 行工具兜底表 + 执行时机 + 与 verification.mdc 协同）；1/1 反例追溯通过（TASK-11 P3 jq MISS）
 - ⏳ Build P3 多轮次 Build 中间态
 - ⏳ Build P4 收尾
 - ⏳ Reflect
