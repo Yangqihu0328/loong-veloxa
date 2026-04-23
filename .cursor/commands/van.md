@@ -30,6 +30,12 @@ description: "初始化项目、检测环境、确定任务复杂度、路由到
 - 检查 git 状态
   - 如果不是 git 仓库，询问用户是否需要 `git init`
   - 如果 git 不可用，跳过 git 相关步骤并记录
+- **FetchContent 代理状态检查**（如项目含 `FetchContent_Declare`）：
+  - grep 验证：`grep -r "FetchContent_Declare" --include="CMakeLists.txt" .`（命中即触发检查）
+  - 运行 `git config --global --get http.proxy`
+    - 有输出 → 记录到初始化报告并继续
+    - 空输出且环境为 Cursor 沙箱 / WSL → **触发 `.cursor/rules/skills/writing-plans.mdc`「FetchContent 网络代理守卫」段步骤 3**，从 `memory-bank/techContext.md`「FetchContent 与代理」段读取开发环境代理地址，询问用户确认后执行 `git config --global http.proxy <地址>`
+  - 如 `_deps/` 已完整离线预置 → 跳过检查
 
 ### 2. 验证 Memory Bank
 

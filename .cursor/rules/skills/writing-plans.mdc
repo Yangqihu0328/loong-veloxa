@@ -93,6 +93,46 @@ alwaysApply: false
 
 如本节得出「需要改根 CMakeLists」结论，把 CMake 变更作为独立 Phase 前置任务。
 
+## FetchContent 网络代理守卫（涉及 FetchContent 且未离线 `_deps` 的任务**必填**）
+
+> 反复出现 9+ 次（TASK-20260413-01 / TASK-20260419-02 / -04 / 反思反复识别）：Cursor 沙箱 / WSL 环境首次 `cmake -B build` 触发 FetchContent 因 git 全局代理未设而超时挂死；单次 5-10 min 恢复，累计 ≥ 1h。
+
+在任务分解**之前**回答：
+
+1. **是否触发 FetchContent 拉取**（命中任一即触发本段守卫）：
+   - 根或子 `CMakeLists.txt` 已存在 `FetchContent_Declare`（grep 验证）
+   - **且** 以下任一：
+     - `build/` 或 `build-bench/` 目录不存在
+     - `build*/_deps/` 未包含目标依赖源码
+   - **或** 本次 plan 新增 `FetchContent_Declare`
+   - **跳过条件**：已离线预置 `_deps/` 完整目录（含目标依赖）
+
+2. **检测当前代理状态**（VAN 或 Plan Phase 0 执行）：
+   ```bash
+   git config --global --get http.proxy
+   ```
+   - 有返回 → 记录到 `progress.md` 进入下一步核对
+   - 空返回 → **必须在 VAN 阶段补设**（见 3）
+
+3. **补设代理（VAN 阶段强制）**：
+   开发环境代理地址的**单一真相来源**是 `memory-bank/techContext.md`「FetchContent 与代理」段。规则文件中**严禁硬编码** IP，用占位符：
+   ```bash
+   # 从 techContext.md 读取实际地址，替换占位符后执行
+   git config --global http.proxy <开发环境代理地址>
+   git config --global https.proxy <开发环境代理地址>
+   ```
+   执行后再次 `git config --global --get http.proxy` 确认生效并记录到 `progress.md`。
+
+4. **Plan Phase 0 固化**：
+   plan 文档必须包含 Phase 0「代理状态核验」步骤，执行 grep 并把输出作为制品写入 `progress.md`，以便 `/reflect` 阶段回溯。
+
+5. **Archive 阶段决策**：
+   `/archive` 阶段询问用户：保留代理 / unset (`git config --global --unset http.proxy`)。默认**保留**（下一任务多半也需要）。
+
+6. **交叉引用**：
+   - 开发环境代理地址：`memory-bank/techContext.md`「FetchContent 与代理」段
+   - VAN 命令守卫：`.cursor/commands/van.md` 步骤 1「FetchContent 代理状态检查」子项
+
 ## 测试基础设施审计（任何 Phase 包含新写测试时**必填**）
 
 > 反复出现（TASK-11 多次）：测试需要访问的内部状态没有访问路径，临时塞 friend 或 `#define private public`。

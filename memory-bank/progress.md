@@ -9,9 +9,17 @@
 **里程碑：**
 - ✅ VAN（2026-04-19）：复杂度评估 Level 2，3 条目插入锚点 grep 实证定位，分支 `feature/TASK-20260419-13-process-rules-sunk-in` 创建
 - ✅ Plan（2026-04-19）：设计 spec + 实现计划双文档落地，3 决策（D1 占位符 / D2 子状态标签 / D3 每 Phase 1 commit）确认，**发现 `.cursor/commands/*.md` 是可编辑文件**扩大实施范围，5 phase 计划 / 85-95 min 预估 / 10 验收标准
-- ⏳ Build（P0 proxy + P1 smoke + P1 多轮次，5 phase 顺序执行）
+- ✅ Build P0 基线（~5 min）：锚点 5/5 grep 符合 spec / YAML frontmatter 完整 / **工具链 dogfooding 发现 jq/rg/valgrind/xmllint MISS — 条目 2 规则的现场自证**
+- ✅ Build P1 proxy 守卫（~15 min，低于 plan 25-30 min 估时）：writing-plans.mdc L96 新段 + van.md §1 子项 + techContext.md L98 交叉引用子段；4/4 反例追溯通过（TASK-13-01/02/04/07）
+- ⏳ Build P2 smoke 工具链 grep
+- ⏳ Build P3 多轮次 Build 中间态
+- ⏳ Build P4 收尾
 - ⏳ Reflect
 - ⏳ Archive
+
+**Build 阶段持续观察：**
+- **Meta-dogfooding**：Phase 0 `rg` 和 `jq` 在终端缺失直接触发 P2 规则的现场验证；sandbox 终端环境与 Cursor 工具 Grep 不对等（Grep 工具可用 ripgrep，shell 没装），规则 §5.4 子块正是针对这个 gap
+- **Phase 估时准确性**：P0 5 min + P1 15 min vs plan P0 5 + P1 25-30 = **~50% 提前完成**，与 TASK-11 收敛趋势一致（bench 估时校准 4.2×→2.0× → 文档估时 ~2×，协议仍需下次校准）
 
 **Plan 阶段关键设计决策：**
 - D1 代理地址处理：占位符 `<开发环境代理地址>`（规则零硬编码 IP，地址沉淀 `techContext.md` 单一真相来源）
