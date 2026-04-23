@@ -24,7 +24,17 @@
   - **Phase 4**（~5 min）：build-bench Release 全量 rebuild 0 err/warn；bench_layout_{buildtree,flex} `--repetitions=3 --min_time=0.5s` 正式 baseline 入仓；3-reps 平均 R256=4.18× / R_flex=6.40×；README 更新「当前生成环境」+ K2/K3/K8 findings 段 + 2026-04-24 变更历史行；commit `102c7e5`（docs(bench)）
   - **Phase 5**（~8 min）：techContext Layout 性能基线段补 K2/K3 resolved + K8 新发现；activeContext → 构建完成；tasks.md 验收 10/10 + 候选区立 TASK-24-02；progress.md 里程碑（本段）；收尾 commit（进行中）
 - **plan × 0.6 校准第 5 数据点**：115 min plan / ~33 min 实测 = **0.29×**（历史最快），研究型小补丁（脚本化实验 + 1 行改动 + 1 GTest）可作为「最窄路径任务」样板
-- ⏳ **下一步：** `/reflect` 回顾（验收 10/10，3 个 warning 已与用户确认接受；未合并分支等待 archive）
+- 🟣 **Reflect 已完成**（2026-04-24）
+  - 回顾文档 `memory-bank/reflection/reflection-TASK-20260424-01.md`（10 段，Level 2-3 详细回顾）
+  - **关键发现 5 项**：
+    1. plan×0.6 第 5 数据点 0.29× 历史最快档 → 「最窄路径任务」子档（plan×0.3 预估基线）
+    2. K8 新发现：ArenaAllocator block 过大触发 L1D 抖动（65K 让 Flex 回弹）→ Arena 设计守则「block ≤ L1D」
+    3. RED 反向探针第 2 次成熟实践（TASK-11 首发）→ Mixed TDD 标配
+    4. 阶梯验证 + 脚本化实验协同高效（Phase 1B 零触发，Phase 2 for 循环 40s 扫 3 档）
+    5. 「公开行为锚定内部约束」测试哲学（指针连续性替代 getter/friend）
+  - **改进建议**：2 P1（研究类任务阈值三段式 / test binary 路径矩阵）+ 3 P2（扫描型模板 / 路径宽度子档 / 测试设计模式）→ 追加 `activeContext.md` 待处理事项 + 沉淀 `systemPatterns.md` 3 段 + `techContext.md` K8（构建阶段已做）
+  - **反复模式识别**：7 已知模式无本次重复（含TDD 严格度 11+ / 子代理返工 7+ / 计划一致性 9+ 等）；新变种「plan 验收阈值凭直觉凿实 + 部分达标无预设处理」记为观察项
+- ⏳ **下一步：** `/archive` 归档 + merge 到 main（验收 10/10 已闭环）
 
 ## 已完成任务
 

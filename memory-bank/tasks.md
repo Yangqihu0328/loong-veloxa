@@ -5,8 +5,9 @@
 ### TASK-20260424-01：Layout super-linear knee 根因调查
 
 - **复杂度级别：** Level 2-3（研究/调查类；**可能**产出小型性能补丁或 arena 默认配置调整）
-- **状态：** 🟢 Build 完成，等待 `/reflect`（Phase 0-5 完成，Phase 1B 未触发；验收 10/10，3 个 warning 项已与用户确认接受）
-- **分支：** `feature/TASK-20260424-01-layout-knee-root-cause`（5 commits，head `102c7e5`，未合并到 main）
+- **状态：** 🟣 Reflect 完成，等待 `/archive`（Phase 0-5 Build 完成 + 回顾文档入仓，验收 10/10，3 个 warning 项已确认接受；5 条改进建议沉淀）
+- **分支：** `feature/TASK-20260424-01-layout-knee-root-cause`（6 commits，包含回顾文档 commit，未合并到 main）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-01.md`（10 段，含 plan×0.6 第 5 数据点 0.29× / K8 新发现 / RED 反向探针 2nd / 测试哲学 / 脚本化扫描模板共 5 项沉淀）
 
 #### Build 阶段成果
 
