@@ -1,67 +1,15 @@
 # 活跃上下文
 
 ## 当前阶段
-
-回顾中
-
-**TDD 模式：** 文档类任务无 TDD — 以「反例追溯表」替代（已实证 7/7 通过，作为新范式沉淀）
-
-**构建产出：** 3 条规则落地到 6 个规则/命令文件 + 3 MB 文件 = 9 文件修改 / 4 独立 commit（P1→P4）/ 反例追溯 7/7 通过 / 10 验收 9✅+1 改进
-
-**Reflection 产出：** `memory-bank/reflection/reflection-TASK-20260419-13.md`
-- **5 新模式沉淀** `systemPatterns.md`：Meta-dogfooding Phase 0 / 基础假设核查 VAN/Plan 前置清单 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展为跨类型（plan × 0.6 通用目标）
-- **6 改进建议：** P1×3（#1 Meta-dogfooding 标配 / #2 跨类型估时校准 / #3 基础假设核查清单）+ P2×3（#4 单一真相来源通用 / #5 实证微调 spec / #6 .editorconfig 观察）
-- **反复模式扫描：** "前置依赖/环境/API 能力未验证"（频率 8+）本次 meta-dogfooding 自证触发 + 沉淀的条目 2 规则直接针对，**自闭环**；新记录模式「.cursor/commands/* 可编辑性假设错误」(本次 1 次，纳入 L3 基础假设核查)
+空闲
 
 ## 当前任务
 
-**TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）**
-
-- **复杂度级别：** Level 2（6 个规则/命令文件 + 2 MB 文件 = 8 文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
-- **基线分支：** `main`（6 个目标规则/命令文件全在 main）
-- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（已创建 VAN `ec78f1c`）
-- **安全相关：** ❌ 否（纯流程规则文档）
-- **设计文档：** `docs/specs/2026-04-19-process-rules-sunk-in-design.md` ✅（用户已批准）
-- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估）
-
-### 待沉淀 3 条
-
-
-| #   | 优先级       | 来源                              | 目标文件                                                       | 内容                                                                                                                                             |
-| --- | --------- | ------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 🔴 **P0** | 反复 9+ 次（TASK-02/03/04 反思）       | `.cursor/rules/skills/writing-plans.mdc` + `main.mdc` 可能联动 | FetchContent 任务 VAN 阶段**强制重设 git 全局代理**；需 (a) 写入 `writing-plans.mdc`「FetchContent 任务前置 checklist」强制条目；(b) `main.mdc` 会话启动或 VAN 命令守卫提醒 proxy 状态 |
-| 2   | 🟠 **P1** | TASK-11 反思 #2                   | `.cursor/rules/skills/writing-plans.mdc` §5.4 邻段新增 §5.7    | Plan 阶段**必须 grep `which <tool>`** 验证 smoke 工具链可用性（jq / bc / valgrind / awk / xmllint 等）                                                        |
-| 3   | 🟠 **P1** | TASK-03 Round 1 首发 + TASK-11 复确 | `.cursor/rules/workflow/complexity-levels.mdc`             | Level 2+ 多 phase 任务（≥ 5 phase）支持**「轮次完成」中间态** — `/reflect` / `/build` / `/archive` 阶段守卫调整说明                                                    |
-
-
-### VAN 阶段关键核查（已完成）
-
-- ✅ 3 条目插入点已精确定位且不存在重复（grep 实证）
-- ✅ `writing-plans.mdc` 已有 6 个「XX 前置条件必填」段成熟模板可直接复刻（覆盖 CMake 链接 / 循环依赖 / Web API 多重载 / FetchContent C 编译选项 / 测试基础设施 / 边界输入 / 调用链 / 管线注入 / 性能基准，第 7 段为 proxy 守卫同构插入）
-- ✅ `complexity-levels.mdc` Level 4 已有「迭代机制」段可参考（L56/L66）；新增「轮次完成中间态」作为对 `/reflect` `/build` `/archive` 阶段守卫的补充，而非新级别
-- ✅ `.cursor/commands/*.md` 经 Plan 阶段二次核查发现**是 workspace 可编辑文件**（非只读系统提示），扩大了条目 1 和条目 3 的实施范围到真正的「可执行守卫」
-- ✅ 纯文档类任务，无 TDD 要求 — 规则文案写完后用「反例追溯表」验证有效性（每条规则 ≥ 3 历史任务 case 追溯）
-
-### Plan 阶段设计结论（3 决策 + 10 验收标准）
-
-
-| 决策                | 选择                                | 理由                                                   |
-| ----------------- | --------------------------------- | ---------------------------------------------------- |
-| **D1** 代理地址处理     | **占位符 `<开发环境代理地址>`**              | 用户 Plan 阶段直接拍板；规则零硬编码 IP，地址在 `techContext.md` 单一真相来源 |
-| **D2** 条目 3 子状态实现 | **子状态标签 `构建中·轮次 N 完成`**           | 保持 5 主阶段骨架不变；对未感知命令视作 `构建中` 扩展，向后兼容                  |
-| **D3** Phase 提交粒度 | **每 Phase 1 commit**（5-6 commits） | 与 TASK-01/11 同模式；每条目可独立 review/回滚                    |
-
-
-**Phase 拆分：** P0 基线 5min → P1 proxy 25-30min → P2 smoke 15min → P3 多轮次 30-35min → P4 收尾 10min = **85-95 min 合计**
-
-### 参考长期待办
-
-- 已并入本任务的 3 条来自 `activeContext.md` 下方「长期项」段：P0 proxy / P1 smoke 工具链 / P1 多轮次 Build — 本任务完成后应从待处理事项中标记「已落实」
-
-**下一步：** 使用 `/build` 按计划执行 5 个 Phase
+_无活跃任务。使用 `/van [task description]` 开始新任务。_
 
 ## 最近归档
 
+- `memory-bank/archive/archive-TASK-20260419-13.md`（TASK-20260419-13 流程规则 P0/P1 沉淀冲刺 — 3 条积压条目一次性闭环：P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链可用性 grep（TASK-11 #2）/ P1 多轮次 Build 中间态（TASK-03 Round 1 首发）；9 文件修改（6 规则/命令 + 3 MB）/ 4 phase commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议（TASK-05/09/11/13 四数据点）；5 新模式沉淀 `systemPatterns.md`（Meta-dogfooding Phase 0 / 基础假设核查 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展跨类型）；已 `--no-ff` 合并到 main `8a436ed`）
 - `memory-bank/archive/archive-TASK-20260419-11.md`（TASK-20260419-11 ImageCache::Load HashMap 化 — K6 高 ROI 修复 — 双索引方案（`Vector<Entry>` 保 ABI/Get O(1) + `HashMap<String, ImageHandle, StringHash, StringEq>` 提供 O(1) path 查询）；Hit<256> 1151.77 ns → 45.70 ns（**25.2×↓**），Hit<16> 50.87 → 44.05 ns；ctest 891/891 PASS（含 `ClearAndReloadDeduplicates` D3 回归网，RED 反向探针验证有效）；Release `-O3` 0 errors；3 P1 沉淀：bench 阈值表绝对增量兜底 / Plan grep `which <tool>` / Mixed TDD RED 反向探针；3 P2 沉淀：P1+P2 拆分模式 / HashMap 不是金科玉律 / bench 估时校准 4.2×→2.0× 收敛；已 `--no-ff` 合并到 main `8515c25`）
 - `memory-bank/archive/archive-TASK-20260419-09.md`（TASK-20260419-09 Replay 深度基准 + 真 ImageCache 通路 — 2 bench exe / 15 BMs / 2 baseline JSON 入仓；K1 修正归因（fallback 非真路径）+ 真冷路径 14× 慢；K6 新发现 ImageCache::Load O(N) hit 路径（size=256 时 1162 ns）→ 推 TASK-11 P1 高 ROI；K7 新发现 warm 真路径 1.6× 慢 fallback → 推 TASK-12 P2 触发型；落实「方案根因假设未先验证」P0 第 2 次完整应用 + 升级 grep 规则覆盖 CMake 链接可见性）
 - `memory-bank/archive/archive-TASK-20260419-05.md`（TASK-20260419-05 Layout + Render 性能基准 — 4 bench exe / 30 BMs / 4 baseline JSON 入仓；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-20260419-09 候选；落实 P0 #2 `writing-plans.mdc`「性能基准任务必检项」段；已 `--no-ff` 合并到 main `d0999e8`）

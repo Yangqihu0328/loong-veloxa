@@ -2,40 +2,64 @@
 
 ## 当前任务
 
+_无活跃任务。使用 `/van [task description]` 开始新任务。_
+
+<details>
+<summary>TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环） — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260419-13：流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）
 
 - **复杂度级别：** Level 2（6 个规则/命令文件 + 3 MB 文件 = 9 文件修改；遵循 `writing-plans.mdc` 已有段式样；纯文档无代码）
-- **状态：** 🔵 回顾完成（5 Phase 构建完成 / 反例追溯 7/7 通过 / 10 验收 9✅+1 改进 / Reflection 5 新模式沉淀 systemPatterns）
-- **当前阶段：** 回顾中（`activeContext.md`）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-13.md`（含 6 改进建议 P1×3 / P2×3）
-- **基线分支：** `main`
-- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（commits: VAN `ec78f1c` + Plan 即将）
-- **安全相关：** ❌ 否（纯流程规则文档，不涉及外部输入/认证/数据存储/部署）
+- **状态：** ✅ 已完成（已 `--no-ff` 合并到 main `8a436ed`，详见 `archive-TASK-20260419-13.md`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260419-13.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260419-13.md`
+- **分支：** `feature/TASK-20260419-13-process-rules-sunk-in`（共 8 commits 含 archive；已删除）
 - **设计文档：** `docs/specs/2026-04-19-process-rules-sunk-in-design.md` ✅
-- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估）
+- **实现计划：** `docs/plans/2026-04-19-process-rules-sunk-in.md` ✅（5 phase / 85-95 min 预估 / 实际 ~51 min = 1.67-1.86× plan）
 - **需要创意阶段：** ❌ 否（3 条目均遵循 `writing-plans.mdc` 已有段模式，零架构/UI/算法决策）
+- **安全相关：** ❌ 否（纯流程规则文档）
 
-#### 待沉淀 3 条
+#### 3 条规则落地
 
-| # | 优先级 | 来源 | 目标文件 | 内容摘要 |
-|:-:|:-:|---|---|---|
-| 1 | 🔴 **P0** | 反复 9+ 次（TASK-02/03/04 反思） | `writing-plans.mdc` + 可能联动 `main.mdc` | FetchContent 任务 VAN 阶段**强制重设 git 全局代理** + 归档时决定是否 unset |
-| 2 | 🟠 **P1** | TASK-11 反思 #2 | `writing-plans.mdc` §5.4 邻段新增 §5.7 | Plan 阶段**必须 grep `which <tool>`** 验证 smoke 工具链可用性（jq / bc / valgrind / awk / xmllint 等）|
-| 3 | 🟠 **P1** | TASK-03 Round 1 首发 + TASK-11 复确 | `complexity-levels.mdc` | Level 2+ 多 phase 任务（≥ 5 phase）支持**「轮次完成」中间态** — `/reflect` / `/build` / `/archive` 阶段守卫调整 |
+| # | 优先级 | 来源 | 目标文件 | 状态 |
+|:-:|:-:|---|---|:-:|
+| 1 | 🔴 P0 | 反复 9+ 次 | `writing-plans.mdc` L96 + `van.md` §1 + `techContext.md` L98 | ✅ |
+| 2 | 🟠 P1 | TASK-11 反思 #2 | `writing-plans.mdc` §4 末尾子块 L255 | ✅ |
+| 3 | 🟠 P1 | TASK-03 Round 1 首发 | `complexity-levels.mdc` L68 + `build.md` §6.5 + `reflect.md` §0 | ✅ |
 
-#### VAN 阶段核查（grep 实证 3 处）
+#### 核心成果
 
-- ✅ `writing-plans.mdc` L81-94 「FetchContent C 子项目编译选项审计」段不含网络代理守卫 → 可新增相邻段 7
-- ✅ `writing-plans.mdc` §5.4 Bench Smoke 验收三件套未覆盖工具链可用性 → 可新增 §5.7
-- ✅ `complexity-levels.mdc` L56/L66 Level 4 有「迭代机制」段但 Level 2/3 多轮次 Build 无独立说明 → 可新增作为通用段（非限定级别）
-- ✅ 3 条插入点均已精确定位且不存在重复
+- **反例追溯 7/7 通过**（含 meta-dogfooding Phase 0 实时自证：`rg`/`jq`/`valgrind`/`xmllint` MISS 触发条目 2 规则）
+- **10 验收标准 9 ✅ + 1 改进**（§5.4 工具表合并同表兜底，Phase 0 实证驱动加入 rg）
+- **跨类型估时收敛 plan × 0.6 通用协议**（TASK-05/09/11/13 四数据点）
+- **5 新模式沉淀 `systemPatterns.md`**（+106 行）：Meta-dogfooding Phase 0 / 基础假设核查 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展跨类型
+- **3 条 activeContext 长期项标记已落实** + 新增 P1×3 + P2×3 待处理（P2×2 已沉淀 systemPatterns，P2 #6 .editorconfig 观察）
+- **Plan 阶段关键认知升级**：`.cursor/commands/*.md` 可编辑性假设纠正，ROI 放大 2-3×
 
-#### 关联待处理事项（`activeContext.md` 长期项段）
+#### 4 核心决策
 
-本任务完成后应从长期项中**标记「已落实」**：
-- P0 🔴 FetchContent proxy 规则（反复 9+ 次）
-- P1 🟠 TASK-11 反思 #2 smoke 工具链 grep
-- P1 🟠 TASK-03 Round 1 多轮次 Build 工作流
+| # | 维度 | 选择 |
+|:-:|---|---|
+| D1 | 代理地址 | 占位符 `<开发环境代理地址>`（零硬编码 IP，`techContext.md` 单一真相来源）|
+| D2 | 子状态实现 | `构建中·轮次 N 完成` 子状态标签（保 5 主阶段骨架不变）|
+| D3 | Phase 提交粒度 | 每 Phase 1 commit（实际 4 commits，P0 并入 P1）|
+| CU | `.cursor/commands/*` 可编辑 | Plan 阶段 Glob 验证纠正 → ROI 放大 2-3× |
+
+#### 提交清单（8 commits + 1 merge）
+
+| # | SHA | 主题 |
+|:-:|-----|------|
+| 1 | `ec78f1c` | docs(van): TASK-20260419-13 init process rules sunk-in sprint |
+| 2 | `db833ce` | docs(plan): TASK-20260419-13 process rules sunk-in design + plan |
+| 3 | `76ed4e0` | docs(rules): P1 — FetchContent proxy guard (P0) |
+| 4 | `b8ca9b4` | docs(rules): P2 — smoke toolchain grep (P1) |
+| 5 | `60d047c` | docs(rules): P3 — multi-round build interim state (P1) |
+| 6 | `020e574` | docs(rules): P4 — finalize rules sunk-in sprint |
+| 7 | `ccfce04` | docs(reflect): add reflection for TASK-20260419-13 |
+| 8 | `a9fb547` | docs(archive): add archive for TASK-20260419-13 |
+| 9 | `8a436ed` | Merge branch 'feature/...' into main (`--no-ff`) |
+
+</details>
 
 <details>
 <summary>TASK-20260419-11：ImageCache::Load HashMap 化（K6 高 ROI 优化） — ✅ 已归档（点开查看历史）</summary>
@@ -400,6 +424,7 @@
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260419-13 | 流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）— P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链 grep / P1 多轮次 Build 中间态；9 文件 / 8 commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议；5 新模式沉淀 systemPatterns | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-13.md` |
 | TASK-20260419-11 | ImageCache::Load HashMap 化（K6 高 ROI 修复）— 双索引 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`)；保 ABI / Get O(1)；Hit<256> 1151.77 ns → 45.70 ns（25.2×↓）；ctest 891/891 PASS；新增 `ClearAndReloadDeduplicates` D3 回归网（RED 反向探针验证有效）；3 P1 + 3 P2 改进沉淀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-11.md` |
 | TASK-20260419-09 | Replay 深度基准（2 bench exe / 15 BMs / 2 baseline JSON）；修正 K1 归因（fallback 非真路径），定位真冷路径 14× 慢；新发现 K6 ImageCache::Load O(N) + K7 warm 真路径 1.6× 慢；推 TASK-11/12 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-09.md` |
 | TASK-20260419-05 | Layout + Render 性能基准（4 bench exe / 30 BMs / 4 baseline JSON）；K1 实测 DrawText 是 Replay hot path（820× FillRect），ImageCache 不是；推 TASK-09 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-05.md` |
