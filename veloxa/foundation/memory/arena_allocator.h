@@ -10,7 +10,30 @@ namespace vx {
 
 class ArenaAllocator {
  public:
-  explicit ArenaAllocator(usize block_size = 4096)
+  // Default block size: bumped 4096 → 32768 by TASK-20260424-01.
+  //
+  // 4 KB blocks caused malloc/free churn in LayoutEngine hot path: at
+  // N=256 each Layout() call allocated ~37 blocks from the arena → 37
+  // malloc+free pairs per iteration, producing a super-linear knee
+  // (BM_LayoutBuildTreeFlat/128→256 = 9.42× for 2× N, baseline block=4096).
+  //
+  // Phase 2 block-size sweep (benchmarks/baseline + Phase 2 experiment log):
+  //   block | R256  | R_flex
+  //    4096 | 9.42× | 16.49× (baseline)
+  //    8192 | 6.14× | 10.62×
+  //   16384 | 4.66× |  8.31×
+  //   32768 | 3.84× |  7.40× ← optimum on Flex (65536 regresses Flex)
+  //   65536 | 3.61× |  8.36×
+  //
+  // 32768 cuts the knee ~2.5× on both bench families at a cost of +28 KB
+  // per Document::arena_ (only Document uses the default; UpdateManager,
+  // LayoutEngine::Layout static arena, and benches now keep 8192 explicit
+  // or accept the new default). See
+  // docs/specs/2026-04-24-layout-knee-root-cause-design.md §5.
+  //
+  // The remaining ~40% of super-linearity (R256 still 3.84× vs linear 2×)
+  // is tracked as TASK-20260424-02 for Phase 1B per-phase BM investigation.
+  explicit ArenaAllocator(usize block_size = 32768)
       : default_block_size_(block_size), current_(nullptr), bytes_allocated_(0) {
     current_ = AllocateBlock(default_block_size_);
   }
