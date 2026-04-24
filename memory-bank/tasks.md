@@ -2,15 +2,20 @@
 
 ## 当前任务
 
+**空闲** — 等待新任务（使用 `/van` 启动）
+
+---
+
+<details>
+<summary>TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）— ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）
 
 - **复杂度级别：** Level 2（单候选方案 (c) hb_shape cache + 精简 FIFO + /plan→/build 直通，跳过 /creative）
-- **状态：** 🟣 回顾完成 — 等待 /archive（所有 6 Phase / 12 Task ✅ + reflection 生成；7 commits）
-- **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（7 commits ahead of main `78cabf4`）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-04.md`（2026-04-25）
-  - 关键发现：(1) plan × 0.6 第 7 数据点 **0.26×**「最窄路径」第 3 次确认；(2) D 模式 <3200 ns 实测 2350 ns mean 意外超额破技术刚性 <3000 ns，根因 hb_shape API 族（6 次）消除收益远超保守估算；(3) `VX_SHAPE_CACHE_OFF` env toggle A/B 精确剥离 cache 贡献（OFF 3542 ns ≈ TASK-24-03 baseline 3499 ns，1.2% 噪音）；(4) Cold_Medium +18.6% 属 FT_Load 噪声非任务范围
-  - 3 新模式入 `systemPatterns.md`：Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`
-  - 改进建议 5 条（P1 × 1 Cache BM 稳态数学推演清单，归档阶段入 `writing-plans.mdc`；P2 × 4 已落实到 `systemPatterns.md`）
+- **状态：** ✅ 已完成（详见 `memory-bank/archive/archive-TASK-20260424-04.md`）
+- **反思文档：** `memory-bank/reflection/reflection-TASK-20260424-04.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260424-04.md`
+- **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（9 commits 含 archive）
 - **创建日期：** 2026-04-24
 - **来源：** TASK-20260424-03 归档 §9.2「残余 499 ns 可能突破点」P3 触发型候选（本任务用 D 模式主动推进，非刚性目标）
 - **设计文档：** `docs/specs/2026-04-24-drawtext-shape-cache-design.md`（11 段，含安全威胁建模 + 契约 + 测试矩阵）
@@ -90,6 +95,17 @@ SoftwareCanvas::DrawText 真路径 **warm Medium** 从 3499 ns → **< 3200 ns**
 | P5 | 完整 bench（WSL2 稳态协议：sleep 10s + warm-up + 10 reps）+ 门槛判决 | 24 min |
 | P6 | baseline.json + README 刷新 | 12 min |
 | **合计** | | **~2h 3m** |
+
+#### 关键成果
+
+- **Warm_Medium：** 3499 → **2350 ns mean / 1877 ns single**（-32.8% / -46.4%；超额门槛 <3200 ns 达 850 ns，意外直破技术刚性 <3000 ns）
+- **Warm_Short：** 677 → 311 ns（-54%）；**Warm_Long：** 10573 → 4333 ns（-59%）
+- **ctest：** 917/917 PASS（+14 new test cases / 4 new targets）
+- **Plan × 0.6：** 第 7 数据点 **0.26×**（「最窄路径」子档第 3 次确认）
+- **新规则：** `writing-plans.mdc` §7.1 Cache BM 稳态访问模式数学推演清单（P1 改进建议归档阶段落实）
+- **新模式：** `systemPatterns.md` × 3（Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式）
+
+</details>
 
 ---
 
