@@ -20,7 +20,13 @@ struct GlyphBitmap {
 class GlyphCache {
  public:
   const GlyphBitmap* Get(FontHandle font, u32 glyph_id, u32 pixel_size) const;
-  void Put(FontHandle font, u32 glyph_id, u32 pixel_size, GlyphBitmap bitmap);
+  // Inserts (or overwrites) a cache entry and returns a pointer to the stored
+  // GlyphBitmap. This removes the need for callers to perform a follow-up
+  // Get() lookup after population — saving one hash map query per glyph on
+  // first-miss paths. Returns nullptr only on allocation failure (not
+  // currently produced by the underlying HashMap).
+  GlyphBitmap* Put(FontHandle font, u32 glyph_id, u32 pixel_size,
+                   GlyphBitmap bitmap);
   usize size() const { return entries_.size(); }
   void Clear() { entries_.clear(); }
 

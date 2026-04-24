@@ -10,7 +10,8 @@
 - ✅ /build Phase 1 A hb_buffer 复用（2026-04-24）— `HbBufferHolder` RAII + `thread_local` + `AcquireThreadLocalHbBuffer()`；`hb_buffer_create/destroy` per-call 消除；stash-swap 同窗口对比 Warm_Medium 5434→5397 ns（**-0.7%, -37 ns**），远低于预期 200-400 ns，**根因**：glibc tcmalloc 对同尺寸频繁 alloc/free 有 thread-cache 优化；Warm_Short 902→828 ns (-8.2%) 说明 fixed overhead 在短文本占比更大；ctest 26/26 PASS；D5 刚性目标 < 3000 ns 仍差 2397 ns，按 D1 阶梯进入 Phase 2
 - ✅ /build Phase 2 C FT_Set_Pixel_Sizes 状态缓存（2026-04-24）— `FontEntry.ft_pixel_size` + `SetFacePixelSize(handle, size)` 幂等公开 API；DrawText 替换 `GetFace + FT_Set_Pixel_Sizes` 组合为单次 `SetFacePixelSize` 调用；stash-swap 同窗口 Warm_Medium 5323→5266 ns（**-1.07%, -57 ns**），Warm_Long 17063→16069 ns (-5.8%)，累计 Phase 0→2 Medium -146 ns (-2.7%)；ctest 26/26 PASS（现有契约测试 `GetHbFontHandlesSizeChange` 不受影响）；仍差 2266 ns，进入 Phase 3
 - ✅ /build Phase 3 E 默认 FontHandle 缓存（2026-04-24）— `SoftwareCanvas.cached_default_font_` 成员（非 thread_local，避免跨 canvas 污染）；首次 DrawText 解析后缓存；stash-swap Warm_Medium 5403→5386 ns（**-0.3%, -17 ns**），Warm_Short 821→806 ns (-1.8%)，累计 Phase 0→3 Medium -26 ns (-0.5%)；ctest 24/24 PASS；**关键观察**：Phase 1-3 三候选累计改善远低于 plan 预期（400-900 ns），说明真瓶颈在内层 blit loop 或 GlyphCache 查找 — Phase 4-6 将直击核心
-- ⏳ /build Phase 4-6 阶梯候选实施（核心 blit/cache 优化）
+- ✅ /build Phase 4 D `GlyphCache::Put` 返回 `GlyphBitmap*`（2026-04-24）— Put 签名 `void`→`GlyphBitmap*`，实现改用 `entries_[key]` 操作单次查找 + 移动赋值；DrawText 用 Put 返回值，消掉紧跟的 Get；4 处测试忽略返回值向后兼容；stash-swap Warm_Medium 5378→5311 ns（**-1.25%, -67 ns**，CV 0.41% 可信）— 单 Phase 改善最大；累计 Phase 0→4 Medium -101 ns (-1.9%)，仍差 2311 ns；ctest 46/46 PASS（Renderer/RenderUtils 全路径绿）
+- ⏳ /build Phase 5-6 核心 blit loop 优化（B1 /255 近似 + B2 预裁剪）
 - ⏳ /build Phase 7 baseline 刷新 + MB 收尾
 - ⏳ /reflect + /archive
 
@@ -22,7 +23,7 @@
 | 1 | A hb_buffer | **5397** | -37 (-0.7%) | -0.7% | ❌ | 26/26 ✅ |
 | 2 | C FT_size | **5266** | -57 (-1.1%) | -2.7% (-146) | ❌ | 26/26 ✅ |
 | 3 | E font cache | **5386** | -17 (-0.3%) | -0.5% (-26) | ❌ | 24/24 ✅ |
-| 4 | D Put→ptr | _待_ | _待_ | _待_ | _待_ | _待_ |
+| 4 | D Put→ptr | **5311** | -67 (-1.25%) | -1.9% (-101) | ❌ | 46/46 ✅ |
 | 5 | B1 /255 | _待_ | _待_ | _待_ | _待_ | _待_ |
 | 6 | B2 pre-clip | _待_ | _待_ | _待_ | _待_ | _待_ |
 

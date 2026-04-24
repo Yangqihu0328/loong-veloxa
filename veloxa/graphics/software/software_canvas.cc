@@ -259,9 +259,10 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
           gbmp.alpha.push_back(bmp.buffer[j * bmp.pitch + k]);
         }
       }
-      glyph_cache_->Put(font, glyph_id, pixel_size,
-                         static_cast<GlyphBitmap&&>(gbmp));
-      cached = glyph_cache_->Get(font, glyph_id, pixel_size);
+      // TASK-03 Phase 4 (D): reuse Put's returned pointer instead of
+      // issuing a second Get() — saves one hash lookup per first-miss glyph.
+      cached = glyph_cache_->Put(font, glyph_id, pixel_size,
+                                  static_cast<GlyphBitmap&&>(gbmp));
     }
 
     if (cached && cached->width > 0 && cached->height > 0) {
