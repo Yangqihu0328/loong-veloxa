@@ -12,7 +12,8 @@
 - ✅ /build Phase 3 E 默认 FontHandle 缓存（2026-04-24）— `SoftwareCanvas.cached_default_font_` 成员（非 thread_local，避免跨 canvas 污染）；首次 DrawText 解析后缓存；stash-swap Warm_Medium 5403→5386 ns（**-0.3%, -17 ns**），Warm_Short 821→806 ns (-1.8%)，累计 Phase 0→3 Medium -26 ns (-0.5%)；ctest 24/24 PASS；**关键观察**：Phase 1-3 三候选累计改善远低于 plan 预期（400-900 ns），说明真瓶颈在内层 blit loop 或 GlyphCache 查找 — Phase 4-6 将直击核心
 - ✅ /build Phase 4 D `GlyphCache::Put` 返回 `GlyphBitmap*`（2026-04-24）— Put 签名 `void`→`GlyphBitmap*`，实现改用 `entries_[key]` 操作单次查找 + 移动赋值；DrawText 用 Put 返回值，消掉紧跟的 Get；4 处测试忽略返回值向后兼容；stash-swap Warm_Medium 5378→5311 ns（**-1.25%, -67 ns**，CV 0.41% 可信）— 单 Phase 改善最大；累计 Phase 0→4 Medium -101 ns (-1.9%)，仍差 2311 ns；ctest 46/46 PASS（Renderer/RenderUtils 全路径绿）
 - ⚠️ /build Phase 5 B1 `/255` 乘移位近似 — **实验回退**（2026-04-24）— 创建 `veloxa/graphics/software/glyph_blend.h` 内联 `DivBy255Approx` + `BlendGlyphPixel` + `tests/graphics/pixel_blend_test.cc` 含 5 个精度契约测试（range 扫描 + 参考实现比对 + 端点极值）+ RED 反向探针（临时 `n>>8` 错公式 → 5/5 FAIL → 恢复 5/5 PASS 完整循环）；但替换 DrawText 内层 blit 后 stash-swap Warm_Medium 5311→5367 ns（**+56 ns, +1.1% 倒退**，CV 0.65% 稳定）；**根因**：GCC `-O3` 对常量除法 `/255` 已应用 Granlund-Montgomery 魔数乘法（imul+shr）比手写 add-shift 链更优 + u8↔u32 扩展打包开销；已回退 blit 代码到 Phase 4 形态，但**保留 helper header + test + CMake 注册**作为未来 SSE2/NEON SIMD pass 的精度参考基础设施；ctest 51/51 PASS（回退后 28/28 验证）；**关键负面发现写入 code comment + progress** 作为 B1 候选的最终结论
-- ⏳ /build Phase 6 B2 预裁剪 / row pointer 优化
+- ✅ /build Phase 6 B2 预裁剪 + row pointer（2026-04-24）— 外层计算 `col_start/end`, `row_start/end` 预裁剪 glyph 与 canvas 交集；内层用 `dst_row` 指针 + `alpha_row` 指针递增，消除 `py*stride+px` 乘法 + 4 次边界比较 + 索引 mul；stash-swap **Warm_Medium 5340→4689 ns (-651 ns, -12.2%)**，Warm_Long 17007→11991 ns (**-5016 ns, -29.5%**) — 多字符场景巨大收益；CV 0.66% 稳定；累计 Phase 0→6 Medium **5412→4689 ns (-723 ns, -13.4%)**；ctest 53/53 PASS（广路径 render/integration/layout/paint_command 全绿）；**仍差 1689 ns (36%)** 未达 D5 刚性目标 → 按 plan R1 触发升级决策点 AskQuestion
+- ⏳ /build Phase 7 收尾（取决于用户是否升级 B3 SIMD 或接受当前）
 - ⏳ /build Phase 7 baseline 刷新 + MB 收尾
 - ⏳ /reflect + /archive
 
@@ -26,6 +27,7 @@
 | 3 | E font cache | **5386** | -17 (-0.3%) | -0.5% (-26) | ❌ | 24/24 ✅ |
 | 4 | D Put→ptr | **5311** | -67 (-1.25%) | -1.9% (-101) | ❌ | 46/46 ✅ |
 | 5 | B1 /255 (**回退**) | 5367 | +56 (+1.1%) ❌ | -1.9% (-101) | ❌ | 51/51 ✅ (含 5 新) |
+| 6 | B2 pre-clip+row ptr | **4689** | **-651 (-12.2%)** | **-13.4% (-723)** | ❌ (差 1689) | 53/53 ✅ |
 | 6 | B2 pre-clip | _待_ | _待_ | _待_ | _待_ | _待_ |
 
 ## 已完成任务
