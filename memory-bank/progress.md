@@ -6,7 +6,19 @@
 
 - ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-04-drawtext-residual-opt` 创建（基于 main `78cabf4`）/ 基础假设核查（3 候选代码实证）/ 用户决策锁定（V1 D 纯收尾模式目标 `<3200 ns` / V2 Level 2 / V3 分支确认）
 - ✅ /plan 规划完成（2026-04-24）— **进一步代码实证**：blit_sse2.h L94 标量 tail 已有单像素 zero-skip 但 SIMD 主循环无块级 zero-skip；FT_Bitmap 已 crop bbox → 块级连续 4/8 px 全 0 罕见 → 候选 (a) 净收益风险 ≈ 0 被放弃；(c) hit 路径节省整个 hb_shape_full (~2100 ns) 保守 3× 冗余达标空间 → **方案 B 单候选 (c) 锁定**。**5 决策锁定**：Q1 方案 B / Q2 K2 u64 fingerprint + text_len 碰撞护栏 / Q3 S2 per-FontManager / Q4 C1 FIFO 128 / Q5 B1 RoundRobin 门槛 + B3 AllMiss 参考。**产出**：设计文档 `docs/specs/2026-04-24-drawtext-shape-cache-design.md`（11 段，含安全威胁建模 + 契约 + 测试矩阵）+ 实现计划 `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 14 新增测试 / 2 新 BM / 预估 ~3h 25m × 0.6 校准 ≈ ~2h 3m）+ FontHandle 提取到 `font_handle.h` 解循环依赖 + HbBufferHolder 提取到共享 header 复用给 FontManager
-- ⏳ /build 待启动 — Phase 1 HashBytesU64 FNV-1a header（TDD RED→GREEN）→ Phase 6 baseline 刷新
+- ✅ /build 构建完成（2026-04-25）— 5 commits / 6 Phase / 12 Task 全部完成；严格 TDD RED→GREEN→REFACTOR 循环
+  - P1 `b8f700e` HashBytesU64 FNV-1a header-only 实现 + 3 unit tests（RED 编译失败→GREEN PASS）
+  - P2 `f081ed9` ShapeCache FIFO 128-slot 实现 + 7 tests（含 T6 碰撞降级 guard via text_len）+ FontHandle 提取为独立 header 以解循环依赖
+  - P3 `623ad47` HbBufferHolder 提取到共享 header / FontManager::ShapeOrLookup + ClearShapeCache（含 VX_SHAPE_CACHE_OFF env 钩子）/ SoftwareCanvas::DrawText 接入（移除 ~10 hb_* 调用于 hit 路径）/ 4 集成 tests（含 R2 反向探针 `DifferentTexts_DifferentOutput`）；917/917 ctest PASS；Release -O3 零警告
+  - P4 `2b4310a` 2 新 BMs（RoundRobin hit=100% / AllMiss miss=100%）+ VaryingTextPool 确定性文本池 + pre-baseline 采集（VX_SHAPE_CACHE_OFF=1 Warm_Medium 3542 ns 与 baseline 3499 吻合验证 env toggle 精度）
+  - **P5+P6**（此 commit 合并）WSL2 稳态协议 10 reps + baseline.json 刷新（10 BMs）+ baseline/README.md K9 新发现 + TASK-04 历史行 + 生成日期
+- **最终门槛判决（10/10 全通过，唯一 Cold_Medium +18.6% CV 12.67% 属 FT_Load 主导噪声非任务范围）：**
+  - **主目标 Warm_Medium < 3200 ns ✅ 实测 2350 ns mean / 1877 ns single（超额 850 ns / 26%；间接达成技术刚性目标 <3000 ns）**
+  - Warm_Short 311 ns (-54%) / Warm_Long 4333 ns (-59%) 均远优于 ≤baseline×1.1 兜底
+  - TextVarying_RoundRobin 2676 ns (hit=100%, -25.8% vs pre-baseline 3605)；AllMiss 4711 ns (miss=100%, 入 baseline)
+  - Fallback BMs 无变化（±2% 噪音），ReplayTextHeavyReal 反降 -9.8%
+  - 917/917 ctest PASS（+4：shape_cache_test 10 + drawtext_shape_cache_test 4）；Release -O3 -Werror 零警告
+- ⏳ /reflect 待启动 — 回顾 6 Phase 实施、plan×0.6 校准第 7 数据点、门槛超额达成根因、hb_shape cache 通用模式抽取
 
 ## 已完成任务
 

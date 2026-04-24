@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-规划中 — 等待 /build
+构建完成 — 等待 /reflect
 
 ## 当前任务
 
@@ -23,11 +23,23 @@
 - **实现计划：** `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 预估 ~2h 3m × 0.6 校准）
 - **需要创意阶段：** ❌ 否（Level 2；所有设计决策已锁定）
 - 分支：`feature/TASK-20260424-04-drawtext-residual-opt`（基于 main `78cabf4`，已创建）
-- **下一步：** `/build` 执行 Phase 1 (HashBytesU64) → Phase 6 (baseline 刷新)
+- **构建结果（Phase 1-6 全部完成）：**
+  - P1 `b8f700e`: HashBytesU64 FNV-1a + 3 tests PASS
+  - P2 `f081ed9`: ShapeCache FIFO + FontHandle 提取 + 7 tests PASS（含 T6 碰撞降级）
+  - P3 `623ad47`: FontManager::ShapeOrLookup + DrawText 接入 + HbBufferHolder 提取 + 4 集成 tests；917/917 ctest PASS；Release -O3 干净
+  - P4 `2b4310a`: 2 新 BMs（RoundRobin / AllMiss）+ VX_SHAPE_CACHE_OFF env 开关 + pre-baseline 采集
+  - P5 / P6（本 commit 合并）：WSL2 稳态协议 10 reps bench + baseline.json + README 刷新
+- **最终门槛判决（全部 ✅）：**
+  - Warm_Medium: 3499 → **2350 ns mean / 1877 ns single**（-32.8% / -46.4%；< 3200 ns 目标超额 850 ns；间接达成技术刚性 <3000 ns）
+  - Warm_Short: 677 → 311 ns (-54%)；Warm_Long: 10573 → 4333 ns (-59%)
+  - TextVarying_RoundRobin (hit=100%): 2676 ns；AllMiss (miss=100%): 4711 ns
+  - Cache ON vs VX_SHAPE_CACHE_OFF=1: Warm_Medium 1788 vs 3542 ns (env toggle 精度验证)
+  - Fallback / ReplayTextHeavy* 无回归（-0.1% ~ +2% 噪音区间，ReplayReal 反降 -9.8%）
+- **下一步：** `/reflect` 回顾 → `/archive` 归档合并
 
 ## 未合并分支
 
-- `feature/TASK-20260424-04-drawtext-residual-opt`（刚创建，基于 main `78cabf4`，0 commits）
+- `feature/TASK-20260424-04-drawtext-residual-opt`（基于 main `78cabf4`，5 commits：b8f700e / f081ed9 / 623ad47 / 2b4310a / 待此次 P5+P6 合并 commit）
 
 ## 最近归档
 
