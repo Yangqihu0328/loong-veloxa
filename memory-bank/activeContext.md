@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·轮次 2（Phase 4 of 7 开始）
+构建中·轮次 2 完成（Phase 4-6 of 7 ✅；下次进入 Phase 7 = B3 SIMD + finalize）
 
 ## 当前任务
 
@@ -23,7 +23,14 @@
   - Phase 3 E 默认 FontHandle 缓存（`cached_default_font_` 成员）→ 5403→5386 ns (-0.3%) → commit `ab0f56d`
   - **累计 Phase 0→3 = -26 ns (-0.5%)**，远低于 plan 预期 400-900 ns
   - **关键洞察**：真正瓶颈不在 HarfBuzz/FreeType API 开销层 → 大概率在内层 blit loop（B1+B2）或 GlyphCache 查找（D）
-- 下一步（轮次 2）：Phase 4 D `GlyphCache::Put` 返回 `GlyphBitmap*`（消掉 Put 后紧跟的 Get 二次查找） + Phase 5 B1 `/255` 乘移位近似（含 RED 反向探针 GTest） + Phase 6 B2 预裁剪 / row pointer 优化；仍不达标则 AskQuestion 走 B3 SIMD 分支
+- **轮次 2 成果（Phase 4-6，3 commits + 1 negative-result infra）：**
+  - Phase 4 D `GlyphCache::Put`→`GlyphBitmap*`（`operator[]` 单次查找 + 移动赋值，消掉 Put 后 Get 二次查找）→ 5378→5311 ns **(-1.25%, -67 ns)** 单 Phase 最大 → commit `2891d9d`
+  - Phase 5 B1 `/255` 乘移位近似 — **实验回退**（GCC -O3 Granlund-Montgomery 魔数乘法已优于手写 add-shift 链）→ +56 ns (+1.1% 倒退) → 保留 `glyph_blend.h` + `pixel_blend_test` 5 契约 + RED 反向探针验证作 SIMD 精度基础设施 → commit `09192c1`
+  - Phase 6 B2 预裁剪 + row pointer（外层计算 col/row start+end，内层 `dst_row++` + `alpha_row++`，消除 4 边界比较 + `py*stride+px` 乘法）→ **5340→4689 ns (-12.2%, -651 ns)** Medium 最大单 Phase + Long 17007→11991 (-29.5%) → commit `05a82ab`
+  - **累计 Phase 0→6 = -723 ns (-13.4%)** Medium；Warm_Long -29.5% 大幅改善；CV 0.66% 稳定
+  - **Phase 6 结束时 Warm_Medium 4689 ns 仍 > 3000 ns 目标**，差 1689 ns (36%) → 按 plan R1 AskQuestion
+  - 用户选 **(A) B3 SIMD 升级路径**（SSE2 blit 4 px/cycle + DivBy255Approx pmulhuw）
+- **下一步（轮次 3）：** Phase 7 = B3 SSE2 SIMD blit + 精度测试扩展（复用 `pixel_blend_test` 契约，新增 SIMD path 4-px tiling 一致性 GTest + 残余标量回退边界测试） + finalize baseline JSON 刷新 + Memory Bank 收尾；关键风险：即便 SSE2 理想再减 500-1500 ns 仍可能**逼近但未必达到** 3000 ns，达标前再 AskQuestion 决定是否接受接近值或引入额外优化
 
 ## 未合并分支
 
