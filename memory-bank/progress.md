@@ -4,8 +4,9 @@
 
 **TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）**（Level 2）
 
-- ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-04-drawtext-residual-opt` 创建（基于 main `78cabf4`）/ 基础假设核查（3 候选代码实证 — (a) 条件命题需 Phase 0 zero-row 占比实测；(b) 基本否决因 Phase 6 B2 已完成；(c) 高收益带空间副作用）/ 用户决策锁定（V1 D 纯收尾模式目标 `<3200 ns` / V2 Level 2 / V3 分支确认）
-- ⏳ /plan 待启动 — 头脑风暴 3 候选顺序 + (c) scope（cache key / invalidation / LRU 必要性）+ Phase 0 实测 zero-row 占比协议
+- ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-04-drawtext-residual-opt` 创建（基于 main `78cabf4`）/ 基础假设核查（3 候选代码实证）/ 用户决策锁定（V1 D 纯收尾模式目标 `<3200 ns` / V2 Level 2 / V3 分支确认）
+- ✅ /plan 规划完成（2026-04-24）— **进一步代码实证**：blit_sse2.h L94 标量 tail 已有单像素 zero-skip 但 SIMD 主循环无块级 zero-skip；FT_Bitmap 已 crop bbox → 块级连续 4/8 px 全 0 罕见 → 候选 (a) 净收益风险 ≈ 0 被放弃；(c) hit 路径节省整个 hb_shape_full (~2100 ns) 保守 3× 冗余达标空间 → **方案 B 单候选 (c) 锁定**。**5 决策锁定**：Q1 方案 B / Q2 K2 u64 fingerprint + text_len 碰撞护栏 / Q3 S2 per-FontManager / Q4 C1 FIFO 128 / Q5 B1 RoundRobin 门槛 + B3 AllMiss 参考。**产出**：设计文档 `docs/specs/2026-04-24-drawtext-shape-cache-design.md`（11 段，含安全威胁建模 + 契约 + 测试矩阵）+ 实现计划 `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 14 新增测试 / 2 新 BM / 预估 ~3h 25m × 0.6 校准 ≈ ~2h 3m）+ FontHandle 提取到 `font_handle.h` 解循环依赖 + HbBufferHolder 提取到共享 header 复用给 FontManager
+- ⏳ /build 待启动 — Phase 1 HashBytesU64 FNV-1a header（TDD RED→GREEN）→ Phase 6 baseline 刷新
 
 ## 已完成任务
 

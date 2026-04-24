@@ -1,21 +1,29 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化 — 等待 /plan
+规划中 — 等待 /build
 
 ## 当前任务
 
 **TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）** — Level 2
 
-- 目标：warm Medium **3499 → < 3200 ns**（-299 ns / -8.5%，新结构性阈值；达成即归档，非 D5 刚性 `<3000 ns` 重启）
+- 目标：warm Medium **3499 → < 3200 ns**（-299 ns / -8.5%，新结构性阈值；达成即归档）
 - 来源：TASK-20260424-03 归档 §9.2 残余 499 ns P3 触发型候选
-- **VAN 基础假设核查产出：**
-  - (a) skip-all-zero AA fast path — 条件命题，-50 ~ -200 ns，需 Phase 0 实测 zero-row 占比
-  - (b) GlyphCache row_ptr 数组 — **基本否决**（Phase 6 B2 已做大头，残余 ≤ 20 ns）
-  - (c) hb_shape cache per-text — 高收益 -200 ~ -500 ns，但有空间 + cache miss 副作用
-- **预判阶梯顺序：** (a) → 达 `<3200 ns` 停 → 否则评估 (c) 空间代价后决策
+- **VAN 基础假设核查（已完成）：**
+  - (a) skip-all-zero AA fast path — 条件命题，/plan 阶段进一步实证：SSE2 主循环无块级 zero-skip，但 FT_Bitmap 已 crop bbox → 净收益 ≈ 0 风险高 → **放弃**
+  - (b) GlyphCache row_ptr 数组 — 基本否决（Phase 6 B2 已做大头，残余 ≤ 20 ns）
+  - (c) hb_shape cache per-text — 高收益 -1000 ~ -2100 ns（hit 路径节省 hb_shape_full 全部成本），**/plan 选定主攻方向**
+- **/plan 头脑风暴 5 决策（已锁定）：**
+  - Q1 候选组合：**方案 B（仅 (c) hb_shape cache + 精简 FIFO LRU）**
+  - Q2 Cache key：**K2（u64 xxhash fingerprint + text_len 碰撞降级护栏）**
+  - Q3 存活范围：**S2（per-FontManager 成员）**，FontManager 生命周期对齐
+  - Q4 容量策略：**C1（固定 128 entry + FIFO 淘汰）**，内存天花板 ~40 KB
+  - Q5 回归护栏：**B1 RoundRobin 256 门槛** + B3 AllMiss 参考（入 baseline CSV 不计门槛）
+- **设计文档：** `docs/specs/2026-04-24-drawtext-shape-cache-design.md`
+- **实现计划：** `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 预估 ~2h 3m × 0.6 校准）
+- **需要创意阶段：** ❌ 否（Level 2；所有设计决策已锁定）
 - 分支：`feature/TASK-20260424-04-drawtext-residual-opt`（基于 main `78cabf4`，已创建）
-- **下一步：** `/plan` 头脑风暴 → 3 候选顺序 + (c) scope 决定（含 cache key / invalidation / LRU 必要性）
+- **下一步：** `/build` 执行 Phase 1 (HashBytesU64) → Phase 6 (baseline 刷新)
 
 ## 未合并分支
 

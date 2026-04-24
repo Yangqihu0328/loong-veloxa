@@ -4,15 +4,15 @@
 
 ### TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）
 
-- **复杂度级别：** Level 2（3 候选阶梯验证 + 1 新 fast path 设计 + /plan→/build 直通，跳过 /creative）
-- **状态：** 🟢 初始化完成 — 等待 /plan
+- **复杂度级别：** Level 2（单候选方案 (c) hb_shape cache + 精简 FIFO + /plan→/build 直通，跳过 /creative）
+- **状态：** 🟢 规划完成 — 等待 /build
 - **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（已创建，基于 main `78cabf4`）
 - **创建日期：** 2026-04-24
 - **来源：** TASK-20260424-03 归档 §9.2「残余 499 ns 可能突破点」P3 触发型候选（本任务用 D 模式主动推进，非刚性目标）
-- **设计文档：** 待 /plan 阶段产出 `docs/specs/2026-04-24-drawtext-residual-opt-design.md`
-- **实现计划：** 待 /plan 阶段产出 `docs/plans/2026-04-24-drawtext-residual-opt.md`
-- **需要创意阶段：** ❌ 否（Level 2；3 候选 scope 已 VAN 锁定，/plan 头脑风暴锁定决策后直接 /build）
-- **安全相关：** ❌ 否（性能优化 / 无外部输入 / 无认证 / 无新依赖）
+- **设计文档：** `docs/specs/2026-04-24-drawtext-shape-cache-design.md`（11 段，含安全威胁建模 + 契约 + 测试矩阵）
+- **实现计划：** `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 14 新增测试 / 2 新 BM）
+- **需要创意阶段：** ❌ 否（Level 2；所有设计决策已于 /plan 头脑风暴 Q1-Q5 锁定）
+- **安全相关：** ❌ 否（性能优化 / 无外部输入 / 无认证 / 无新依赖；但设计文档 §6.2 做了轻量威胁建模覆盖 DoS / 碰撞侧信道 / UAF / Key 溢出）
 
 #### 目标
 
@@ -50,20 +50,42 @@ SoftwareCanvas::DrawText 真路径 **warm Medium** 从 3499 ns → **< 3200 ns**
 | V2 | 复杂度分级 | **Level 2** | 3 候选 scope 已锁定；无架构空白；直接 /plan→/build |
 | V3 | Git 分支 | **feature/TASK-20260424-04-drawtext-residual-opt** | 基于 main `78cabf4`（TASK-24-03 已合并）|
 
-具体优化顺序、组合、阈值由 `/plan` 头脑风暴定，但 VAN 预判推荐阶梯顺序：**(a) → 若达 `<3200 ns` 停 → 否则评估 (c) 的空间副作用后决策**；**(b) 直接不入 scope**。
+#### /plan 头脑风暴决策（2026-04-24 锁定）
 
-#### 初步验收标准（待 /plan 阶段精化）
+| # | 维度 | 锁定选项 | 简述 |
+|:-:|---|---|---|
+| Q1 | 候选组合策略 | **方案 B — 仅 (c) hb_shape cache** | (a) 块级 zero-skip 进一步代码实证净收益 ≈ 0；单 (c) 几乎必达 `<3200 ns` + 长期复用价值（CJK / UI label）|
+| Q2 | Cache key 表示 | **K2 — u64 fingerprint（FNV-1a）+ text_len 碰撞护栏** | 无 String 拷贝；碰撞概率 ~ 2^-96 实际不可达 |
+| Q3 | Cache 存活范围 | **S2 — per-FontManager 成员** | key = (FontHandle, pixel_size, fingerprint, text_len)；font 重载 Clear 安全 |
+| Q4 | 容量 + 淘汰 | **C1 — 固定 128 + FIFO** | 最简实现；~40 KB 内存天花板 |
+| Q5 | Cache miss 回归护栏 | **B1 RoundRobin 256 门槛 BM** + B3 AllMiss 参考 BM | RoundRobin 50% hit 作为门槛（≤ pre-baseline + max(5%, 50 ns)）；AllMiss 入 baseline CSV 不计门槛 |
 
-1. `BM_DrawTextReal_Warm_Medium_mean` < 3200 ns
-2. `BM_DrawTextReal_Warm_Short` / `_Long` 不回归（≤ baseline × 1.1）
-3. `BM_DrawTextReal_Cold_Medium` 不回归（≤ TASK-24-03 baseline 28338 ns × 1.1 = 31172 ns）
-4. `BM_DrawTextFallback_*` / 4 bench baseline 无显著退化（≤ 10%）
-5. ctest 全量 PASS（当前 59+ tests，预计 +2-4 new for (a) zero-skip）
-6. Release `-O3 -Werror` 0 err/warn
-7. **若 (a) 命中：**新增 `BlendGlyphRow_AllZeroAlpha_Skips` GTest + RED 反向探针
-8. **若 (c) 命中：**新增 cache invalidation GTest（font reload / pixel_size change / LRU 满）+ RED 反向探针
-9. `benchmarks/baseline/bench_drawtext.json` 刷新
-10. `benchmarks/baseline/README.md` 追加 TASK-20260424-04 历史行
+#### 需要创意阶段的组件
+
+❌ 无（Level 2；所有设计决策已通过头脑风暴 Q1-Q5 锁定，直接 /build）
+
+#### 接受标准（/plan 精化）
+
+1. `BM_DrawTextReal_Warm_Medium_mean` < 3200 ns（主目标；D 模式下若 3200 ≤ value < 3499 ns 接受"部分达成归档"）
+2. `BM_DrawTextReal_Warm_Short` / `_Long` ≤ baseline × 1.1（677×1.1=744 / 10573×1.1=11630）
+3. `BM_DrawTextReal_Cold_Medium` ≤ 28338 × 1.1 = 31172 ns
+4. **新 `BM_DrawTextReal_Warm_TextVarying_RoundRobin` ≤ pre-baseline + max(5%, 50 ns)**（cache miss 路径护栏）
+5. **新 `BM_DrawTextReal_Warm_TextVarying_AllMiss` 入 baseline CSV，不计门槛**（最坏边界参考）
+6. ctest 全量 PASS（当前 59+ tests → +11-12 new：9 unit + 3 integration + 1 R2 反向探针；R1 手动 checklist）
+7. Release `-O3 -Werror` 0 err/warn
+8. `benchmarks/baseline/bench_drawtext.json` + README 刷新 + 追加 TASK-20260424-04 历史行
+
+#### 实施骨架（6 Phase / 12 Task）
+
+| Phase | 内容 | 工时 × 0.6 |
+|:-:|---|---:|
+| P1 | HashBytesU64 FNV-1a header + 3 单元测试（T8, T9, LengthMatters） | 9 min |
+| P2 | ShapeCache 核心 + 7 单元测试（T1-T7，含 T6 碰撞降级） | 24 min |
+| P3 | FontHandle/HbBufferHolder 提取 + FontManager::ShapeOrLookup + DrawText 接入 + 3 集成测试 + R2 反向探针 | 36 min |
+| P4 | 2 新 BM 骨架（RoundRobin + AllMiss）+ env-toggle `VX_SHAPE_CACHE_OFF=1` pre-baseline 采集 | 18 min |
+| P5 | 完整 bench（WSL2 稳态协议：sleep 10s + warm-up + 10 reps）+ 门槛判决 | 24 min |
+| P6 | baseline.json + README 刷新 | 12 min |
+| **合计** | | **~2h 3m** |
 
 ---
 
