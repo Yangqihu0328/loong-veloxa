@@ -4,15 +4,13 @@
 #include "veloxa/foundation/base/status.h"
 #include "veloxa/foundation/base/types.h"
 #include "veloxa/foundation/strings/string_view.h"
+#include "veloxa/text/font_handle.h"  // FontHandle, kInvalidFont
 
 struct FT_LibraryRec_;
 struct FT_FaceRec_;
 struct hb_font_t;
 
 namespace vx::text {
-
-using FontHandle = u32;
-static constexpr FontHandle kInvalidFont = 0;
 
 class FontManager {
  public:

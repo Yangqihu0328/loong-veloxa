@@ -6,6 +6,7 @@ add_library(vx_text STATIC
   font_manager.cc
   glyph_cache.cc
   freetype_shaper.cc
+  shape_cache.cc
 )
 target_include_directories(vx_text PUBLIC ${CMAKE_SOURCE_DIR})
 # HarfBuzz + Freetype are propagated PUBLIC so downstream test targets
