@@ -38,6 +38,7 @@ void FontManager::Shutdown() {
     if (fonts_[i].face) {
       FT_Done_Face(fonts_[i].face);
       fonts_[i].face = nullptr;
+      fonts_[i].ft_pixel_size = 0;
     }
   }
   font_count_ = 0;
@@ -103,6 +104,22 @@ FT_FaceRec_* FontManager::GetFace(FontHandle handle) const {
 }
 
 usize FontManager::font_count() const { return font_count_; }
+
+FT_FaceRec_* FontManager::SetFacePixelSize(FontHandle handle, u32 pixel_size) {
+  if (handle == kInvalidFont) return nullptr;
+  for (usize i = 0; i < font_count_; ++i) {
+    if (fonts_[i].handle != handle) continue;
+    FontEntry& entry = fonts_[i];
+    if (!entry.face) return nullptr;
+    if (entry.ft_pixel_size != pixel_size) {
+      FT_Error err = FT_Set_Pixel_Sizes(entry.face, 0, pixel_size);
+      if (err != 0) return nullptr;
+      entry.ft_pixel_size = pixel_size;
+    }
+    return entry.face;
+  }
+  return nullptr;
+}
 
 hb_font_t* FontManager::GetHbFont(FontHandle handle, u32 pixel_size) {
   if (handle == kInvalidFont) return nullptr;

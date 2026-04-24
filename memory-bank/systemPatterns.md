@@ -918,6 +918,50 @@ grep FetchContent_Declare CMakeLists.txt  # 命中 → 条目 1 触发条件 OK
 
 **落实**：写入 `writing-plans.mdc`「性能基准任务必检项」段；下次任何 bench plan 必加。
 
+#### WSL2 / 云机 / Docker 稳态协议（TASK-20260424-03 反思 P1 #2 — 附录）
+
+**问题**：WSL2 / 云 VM / Docker 容器内 CPU governor 在不活跃时下调频率（特别是 `ondemand` / `schedutil` governor），冷启动瞬态 + load average 抖动让 google/benchmark 默认 `--benchmark_min_time=0.05s` 单次测量 CV 飙到 8%，远超可作决策门槛。
+
+**TASK-20260424-03 实证**：
+- 首次测 Phase 6 stash baseline 得 6727 ns，CV 7.92%
+- 真实稳态值 4689 ns，**偏离 43%** → 险些得出「Phase 7 倒退」的错误结论
+- 引入 warm-up 协议后 CV 收敛到 ≤ 1%，run-to-run variance 降到噪声底
+
+**稳态协议（4 步固定模板）：**
+
+1. **sleep 等待**：`sleep 10` 让 CPU 进入 idle governor 的快速爬坡区（避免首次 bench 命中低频窗口）
+2. **Warm-up 预热**：单 filter `--benchmark_repetitions=3 --benchmark_min_time=0.2s` **跑一次不记录结果**（让 L1/L2 cache 预热 + governor 升频 + glibc malloc 稳态）
+3. **正式测量**：`--benchmark_repetitions=10 --benchmark_report_aggregates_only=true --benchmark_min_time=0.2s` 取 mean/median/stddev 三聚合行
+4. **CV 门槛**：读取 stddev / mean = CV，`> 2%` 视为噪声不可决策 → 重跑 step 1-3；**连续 2 次 > 2%** 记为环境不可信，延后测量或换机
+
+**样板（stash-swap 同窗口对比）：**
+
+```bash
+# --- BEFORE (先跑) ---
+git stash push -u
+cmake --build build-bench -j --target bench_xxx
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up 丢弃
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s 2>&1 | tee /tmp/before.txt
+
+# --- AFTER ---
+git stash pop
+cmake --build build-bench -j --target bench_xxx
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up 丢弃
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s 2>&1 | tee /tmp/after.txt
+```
+
+**适用识别：** WSL2 / 云 VM (EC2 / GCE 等) / Docker / M1 Rosetta 等 CPU governor 受宿主影响的运行时。**裸机 + 固定频率 (`performance` governor) 可直接跑标准协议。**
+
+**落实：** 已同步到 `writing-plans.mdc`「性能基准任务必检项」§7「WSL2 / 云机 bench 稳态协议」；Plan 阶段 Phase 0 工具核查 + bench 命令模板必引用本段。
+
 ### 扫描型研究任务脚本化模板 + 双指标交叉验证模式（TASK-24-01 反思 #3 — 新模式）
 
 **适用场景**：研究/调查类任务中需对单变量（block_size、buffer_size、cache 容量、超参 N 等）做多档扫描以定位最优值时。
@@ -1010,6 +1054,163 @@ TEST(ArenaAllocatorTest, DefaultBlockSizeFitsLargeAllocations) {
 - ❌ `#define private public` 前置 include — 脏破解
 
 **触发条件**：任何需要测试 private/implementation-detail 约束时，**先尝试本模式**；仅当公开行为无法观测该约束时才考虑扩 API。
+
+## 已验证的模式（来自 TASK-20260424-03 DrawText 真路径 warm 优化）
+
+### 异构工作负载 SIMD 尺寸阈值 dispatch 模式（TASK-24-03 反思 #3 — 新模式）
+
+**问题**：为异构尺寸工作负载选用单一 SIMD 宽度（SSE2 4 px / AVX2 8 px / AVX-512 16 px）时，**宽 SIMD 对短输入摊销不足**（setup + lane 对齐开销 > 单 iter 收益），但对长输入又是显著加速；**一刀切选窄则大输入浪费硬件**，**一刀切选宽则小输入回归**。
+
+**方案**：**按输入尺寸阈值 dispatch**。为每个 SIMD 宽度定义 `kMinPixelsForWidth_N`，runtime 按 `count >= threshold` 选择最优宽度；线性回退到次窄宽度直到标量。
+
+**TASK-24-03 样板**：
+
+```cpp
+// veloxa/graphics/software/blit_avx2.h
+#if defined(__x86_64__) || defined(__i386__)
+
+// Empirically calibrated: ASCII glyph 6-12 px 下 AVX2 cvtepu8_epi16 +
+// permute4x64 setup 每 iter 2-3 cycles 开销 > 8 px/iter 摊销收益。
+// 16 px (典型 CJK 字号 / 大字号 ASCII) 起收益由负转正。
+static constexpr u32 kAVX2MinPixelsPerRow = 16;
+
+static inline void BlendGlyphRow(u32* dst, const u8* alpha, u32 count,
+                                 u8 sr, u8 sg, u8 sb, u8 sa) {
+  static const bool has_avx2 = __builtin_cpu_supports("avx2") != 0;
+  if (has_avx2 && count >= kAVX2MinPixelsPerRow) {
+    BlendGlyphRowAVX2(dst, alpha, count, sr, sg, sb, sa);
+    return;
+  }
+  BlendGlyphRowSSE2(dst, alpha, count, sr, sg, sb, sa);  // 4 px/iter
+}
+#endif
+```
+
+**设计哲学**：
+- ✅ **不 revert 无收益的宽 SIMD 路径** — 保留为 workload evolution（CJK 大字号 / 图形元素 / 未来硬件）的 headroom
+- ✅ **runtime dispatch 单次 static 缓存** — `static const bool` 首次 query CPU capability 零开销
+- ✅ **函数级 target attribute** — `__attribute__((target("avx2")))` 让 binary baseline 仍是 x86-64，AVX2 代码仅在支持时激活
+- ✅ **阈值有 comment rationale** — `kAVX2MinPixelsPerRow=16` 必须注释为什么是 16（实证数据 + workload 特征），而非神秘数字
+
+**适用识别**：
+- 工作负载尺寸分布明显异构（短尾 + 长尾共存）
+- 宽 SIMD 有可观 setup cost（lane 对齐 / 寄存器 spilling / dispatch branch）
+- 实测宽 SIMD 在短输入无净收益甚至回归
+- 存在明确的「尺寸转折点」可实证标定
+
+**反模式**：
+- ❌ 实测宽 SIMD 无收益就直接 revert 删代码 — 丢失 workload evolution headroom
+- ❌ 阈值凭直觉 hardcode `16` 不注释 — 下一个人看不懂为什么
+- ❌ `if constexpr (count >= 16)` 编译期分支 — 运行时 count 变量无法编译期判定，应为运行时 if
+
+**触发条件**：下次任何 SIMD 优化任务（NEON / AVX-512 / WASM SIMD128）如实测宽 SIMD 在部分输入尺寸无收益，**优先实施阈值 dispatch** 而非 revert。
+
+### 负结果资产化模式（TASK-24-03 反思 #4 — 新模式）
+
+**问题**：Mixed TDD D3 类「为预防特定 bug 新增回归测试 + 新增支持 helper」的优化 Phase，在主路径实测**倒退**时如何处理？
+
+**方案**：**保留 helper header + test，仅回退主路径调用**。helper + test 作为未来升级分支的**精度契约对照基础设施**。
+
+**TASK-24-03 样板（Phase 5 /255 乘-移位近似回退）**：
+
+```cpp
+// veloxa/graphics/software/glyph_blend.h（保留）
+// Although GCC -O3 Granlund-Montgomery magic multiply now outperforms
+// this mul-shift approximation on scalar paths, DivBy255Approx + the
+// unified BlendGlyphPixel helper are retained as the ±1 LSB precision
+// contract reference for SSE2 / NEON / AVX2 SIMD fast paths where the
+// compiler can NOT auto-vectorize to pmulhuw-style instructions.
+static inline u8 DivBy255Approx(u32 n) {
+  u32 plus = n + 128u;
+  return static_cast<u8>((plus + (plus >> 8)) >> 8);
+}
+```
+
+```cpp
+// tests/graphics/pixel_blend_test.cc（保留 5 个精度契约测试）
+// Phase 7 (B3 SIMD) 直接复用这些测试作为 SSE2/AVX2 与 scalar ±1 LSB 对照
+TEST(PixelBlendTest, DivBy255ApproxMatchesIntegerDivision) { /* ... */ }
+TEST(PixelBlendTest, BlendGlyphPixelParityWithReferenceScalar) { /* ... */ }
+```
+
+**设计哲学**：
+- ✅ **负结果 ≠ 浪费** — Phase 5 的 helper + test 零成本支撑 Phase 7 SSE2/AVX2 开发
+- ✅ **失效的主路径可 revert，支撑基础设施不 revert** — 降低未来升级分支的认知/实现成本
+- ✅ **在 header 内 doc comment 标注 rationale** — 下一个维护者知道为什么 helper 还在但主路径没用
+
+**适用识别**：
+- 优化 Phase 主路径因实现细节（编译器已做更优 / 硬件分布不匹配）在当前实测回退
+- 伴生的 helper / test 对未来升级路径（SIMD / 新硬件 / 新 workload）有**独立价值**
+- revert 主路径但保留 helper 不引入死代码或维护负担
+
+**反模式**：
+- ❌ 整 Phase 回退含 helper + test 一起删 — 下次升级 SIMD 重复造精度契约轮子
+- ❌ 保留 helper 但 header doc comment 不解释为什么 — 下一个人会质疑死代码并删除
+
+**触发条件**：Mixed TDD D3 类 Phase 实测回退时，评估 helper/test 是否对**将来升级分支**（SIMD/新硬件/新 workload）有独立价值；有则保留 + doc comment 标注 rationale，无则整体 revert。
+
+### 刚性目标 + R1 升级路径 plan 模式（TASK-24-03 反思 #6 — 新模式）
+
+**问题**：多候选优化类任务如何处理 plan 阶段**不确定是否能达成刚性目标**的情况？一次性承诺所有工作量（含 SIMD）会过度设计；silent accept 不达标又违反验收合约。
+
+**方案**：Plan 主线只承诺「便宜候选」+ **显式预留 R1 升级路径 AskQuestion 节点**（触发条件、选项、代价全部 plan 阶段写死）；用户基于**实测数据**做升级决定，而非 plan 阶段凭空决定。
+
+**TASK-24-03 样板（2 次 R1 升级按协议执行）**：
+
+```markdown
+# docs/plans/2026-04-24-drawtext-warm-opt.md §7
+Phase 6 (B2) 完成后跑 bench_drawtext：
+├── warm Medium < 3000 ns → ✅ 进入 Phase 7 收尾
+├── warm Medium ≥ 3000 ns → 🔴 触发 AskQuestion：
+│   ├── (i) 升 B3 SIMD 分支（估加 40-60 min plan，需决策 x86_64-only vs SSE2+NEON）
+│   ├── (ii) 接受当前结果为「中间态」，K7 标为 partial-resolved，留残余入新候选
+│   └── (iii) 搁置本任务（/archive 为 `已搁置`），重规划
+```
+
+**实际执行**：
+- Phase 6 末 warm=4689 ns 触发 AskQuestion → 用户选 (i) 升 B3 SSE2 → Phase 7 warm=3354 ns 仍 ≥ 3000
+- Phase 7 末再次触发 AskQuestion → 用户选 (C) AVX2 dispatch（新候选）→ warm=3499 ns 仍 ≥ 3000，业务目标 (< Fallback) 达成 → 用户知情接受
+
+**设计哲学**：
+- ✅ **主线 plan 不过度承诺** — 避免 plan 阶段估时膨胀到不可管理
+- ✅ **升级触发条件 + 选项 plan 阶段写死** — 不是「到时候再看」而是「实测达标则进 Phase 7，否则 AskQuestion 触发三选项」
+- ✅ **用户数据驱动决策** — 每次升级都是基于**前一阶段实测数据**的用户决定，而非 plan 阶段凭空决定
+- ✅ **升级路径选项包含「接受 + 搁置」** — 不强制持续升级，允许用户基于性价比中止
+
+**适用识别**：
+- 多候选优化类任务，候选从「便宜到贵」排序
+- 刚性目标是否能达成**取决于便宜候选累计效果**（不确定，实测才知）
+- 昂贵候选（SIMD / 架构重构）估时可观，**不值得为 hypothetical 场景一次性承诺**
+
+**反模式**：
+- ❌ Plan 一次性承诺所有候选（便宜 + SIMD + 架构重构）→ 估时膨胀，用户 AskQuestion 选项受限
+- ❌ 不预留 R1 升级节点，Phase 末不达标直接 silent accept → 违反刚性验收合约
+- ❌ 升级触发条件不写死，Phase 末才现场头脑风暴 → 中间态混乱
+
+**触发条件**：任何多候选优化类任务的 plan §验收决策段，如刚性目标达成不确定 → 必须写明 R1 升级路径三选项（升级 / 接受 / 搁置）+ 触发条件 + 各选项代价。
+
+### 编译器已做优化识别 — 位运算近似反模式（TASK-24-03 反思 L1 — 新教训）
+
+**问题**：手写 `/常量 → 位运算` 近似（如 `(x * 257 + 32768) >> 16` 替代 `x / 255`）在标量路径**几乎必然输给编译器**，因 GCC 自 4.x / Clang 自早期版本已对所有常量除法自动应用 **Granlund-Montgomery 魔数乘法**（imul + shr，2 instructions），而手写 add-shift 链（3 adds + 2 shifts = 5 instructions）不优且破坏 u8↔u32 扩展优化。
+
+**教训**：
+- ❌ **标量路径手写 `/常量 → 位运算` 近似几乎必然倒退** — 本任务 Phase 5 实证 +1.1%
+- ✅ **SIMD 场景才值得手写** — 编译器无法 auto-vectorize 到 pmulhuw-style 指令时，手写 `_mm_mulhi_epu16` + 修正项才是真正的加速
+
+**落实**：Plan 阶段任何「`/常量 → 位运算`」「常量模替换」「幂次魔数乘法」类优化候选，**必须 godbolt 确认 GCC `-O3` 原生输出**（是否已应用魔数乘法）；仅 SIMD 路径值得手写。
+
+**适用识别**：
+- `x / C` 或 `x % C`（C 为编译期常量）
+- `x * C / D`（C, D 为编译期常量）
+- 任何「常量位运算近似」候选
+
+**反模式验证方法**：
+```bash
+# godbolt CLI 或 gcc -S 直接看
+echo 'unsigned f(unsigned x) { return x / 255; }' | \
+  gcc -O3 -S -x c - -o - | grep -E 'imul|shr|mul'
+# 预期：imul $0x80808081, ... + shr $0x7, ... → Granlund-Montgomery 已应用
+```
 
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性

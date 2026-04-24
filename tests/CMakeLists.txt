@@ -39,6 +39,9 @@ target_link_libraries(software_path_test PRIVATE vx_graphics)
 vx_add_test(software_canvas_test graphics/software_canvas_test.cc)
 target_link_libraries(software_canvas_test PRIVATE vx_graphics)
 
+vx_add_test(pixel_blend_test graphics/pixel_blend_test.cc)
+target_link_libraries(pixel_blend_test PRIVATE vx_foundation)
+
 vx_add_test(gfx_integration_test graphics/integration_test.cc)
 target_link_libraries(gfx_integration_test PRIVATE vx_graphics vx_platform)
 

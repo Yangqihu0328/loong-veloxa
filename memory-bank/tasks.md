@@ -2,7 +2,163 @@
 
 ## 当前任务
 
-_（无活跃任务，等待 `/van` 启动新任务）_
+（无）
+
+<details>
+<summary>TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化 — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化
+
+- **复杂度级别：** Level 2-3（优化类；多候选路径 + 5 设计决策；7 Phase + 2 次 R1 升级 = 7 文件 + 3 新 SIMD header + 1 新 test）
+- **状态：** ✅ 已完成（详见 `memory-bank/archive/archive-TASK-20260424-03.md`）
+- **反思文档：** `memory-bank/reflection/reflection-TASK-20260424-03.md`（13 段 / 7 改进建议 / plan × 0.6 第 6 数据点 0.34× 最窄档确认）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260424-03.md`
+- **分支：** `feature/TASK-20260424-03-drawtext-warm-opt`（13 commits 含 archive，`--no-ff` 合并到 main）
+- **创建日期：** 2026-04-24
+- **来源：** `activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
+- **设计文档：** `docs/specs/2026-04-24-drawtext-warm-opt-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-24-drawtext-warm-opt.md` ✅（7 Phase 阶梯骨架 / 130 min plan / plan×0.6 预期 ~78 min / 10 commits 含升级分支）
+- **需要创意阶段：** ❌ 否（spec §2 5 决策已锁定；所有架构/算法空白均无；注入点核对表 6/6 可行）
+- **安全相关：** ❌ 否（性能优化 / 无外部输入 / 无认证 / 无新依赖）
+
+#### 目标
+
+SoftwareCanvas::DrawText 真路径（FreeType+HarfBuzz）**warm** 5807 ns → **< 3000 ns**（小于 fallback 3647 ns），使真路径默认化具备性能前置条件。来源：TASK-20260419-09 K7 发现，`benchmarks/baseline/bench_drawtext.json` L279 baseline。
+
+| BM | 当前 warm | 目标 | 倍率 |
+|---|---:|---:|---|
+| `BM_DrawTextReal_Warm_Medium` (19 char) | **5807 ns** | **< 3000 ns** | **≥ 1.94×↓** |
+| `BM_DrawTextReal_Warm_Short` (2 char) | 968 ns | 显著改善（hb_buffer 固定开销显化） | 待测 |
+| `BM_DrawTextReal_Warm_Long` (124 char) | 16852 ns（136 ns/char 最佳摊还） | 线性摊还下应保持 136 ns/char 或更优 | 兜底 |
+
+#### VAN 阶段基础假设核查（代码实证）
+
+| K7 候选 | 代码路径 | 命题状态 |
+|---|---|:-:|
+| (a) `hb_buffer` 每次分配 | `software_canvas.cc` L183 `hb_buffer_create()` + L274 `hb_buffer_destroy()` 每次 DrawText 必然成对调用 | ✅ 命题成立 |
+| (b) "glyph bitmap 两次拷贝" | **需修正**：warm 路径无两次拷贝（L234-268 直接从 `GlyphBitmap::alpha` blit）；cold 路径才有 FT_Bitmap → Vector<u8> 拷贝（L220-224）| ⚠️ 需 plan 重写 |
+
+#### VAN 阶段额外优化候选（代码实证副产品）
+
+| # | 候选 | 代码位置 | 推测收益 |
+|:-:|---|---|---|
+| **A** | `hb_buffer` 复用（static / per-canvas） | `software_canvas.cc` L183/L274 | hb_buffer_create/destroy 每次 ~百 ns 级，短字符串显化 |
+| **B** | Inner blit loop 优化（去 per-pixel bounds / `/255` 替换 / SIMD） | `software_canvas.cc` L234-268（~20 语句 × W×H glyph 像素） | warm 主耗点；医 /255 → `(x*257+128)>>16` 可去整数除 |
+| **C** | `FT_Set_Pixel_Sizes` 状态化缓存 | `software_canvas.cc` L172 每次无条件调用 | 若 FontManager 已跟踪 pixel_size，可省 1 次 face state 写 |
+| **D** | GlyphCache Get 双重查询 | `software_canvas.cc` L206 Get → L225 Put → L227 再 Get | 可改 Put 返回插入指针 |
+| **E** | FindFont("", 400) 每次字符串 lookup | `software_canvas.cc` L154 | 可 cache default_font_handle |
+
+具体优化顺序、组合、阈值由 `/plan` 头脑风暴定。
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | FreeType/HarfBuzz/google-benchmark 均已集成（TASK-20260414-01 / TASK-20260419-02），无新依赖 |
+| 环境就绪 | ✅ | DejaVuSans.ttf 系统文件存在；gcc 11.4 / cmake 3.22.1 / WSL2 |
+| 已有 artifact | ✅ | `bench_drawtext.cc` 6 BM（含 warm/cold/short/medium/long） + `baseline/bench_drawtext.json` 已入仓 |
+| **FetchContent 代理守卫** | ⊘ 跳过 | 本任务**不触发 FetchContent**（仅用已集成依赖）→ `main.mdc` §1 FetchContent 检查子项不适用 |
+| 待处理事项关联 | ✅ | **P1 bench 阈值表绝对增量兜底**（TASK-11 #1）+ **P1 Mixed TDD RED 反向探针**（TASK-11 #3 / TASK-24-01）+ **P1 性能基准必检项**（TASK-05）+ **P1 plan × 0.6 估时校准**（跨 5 任务）全部适用 |
+
+#### 用户决策（/plan 头脑风暴产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | 优化实施策略 | **方案 1 阶梯验证驱动**（7 Phase）| 复用 TASK-24-01 0.29× 样板；便宜先做 A→C→E→D→B1→B2；累计达标即止 |
+| D2 | `hb_buffer` 复用 | **thread_local + RAII** | 零线程风险 + 零 header 污染 + thread exit 自动清理 |
+| D3 | Inner blit loop 深度 | **B1 + B2 组合** | /255 乘-移近似 + pre-clip；SIMD 留触发型 P2（ARM/NEON 兼容性开销）|
+| D4 | `GlyphBitmap` 结构 | **保持 Vector<u8>** | 0 ABI 改动；data() + row ptr 推进即可 |
+| D5 | 验收阈值 | **刚性 < 3000 ns**（用户选严格）| 不设中间带；B1+B2 不达标则 AskQuestion 升 B3 SIMD |
+
+#### Phase 划分（7 Phase 骨架 + 阶梯退出条件）
+
+| Phase | 名称 | plan (min) | plan×0.6 (min) | commits |
+|:-:|---|:-:|:-:|:-:|
+| 0 | 基线核验 + 工具/API grep | 10 | 6 | 1 |
+| 1 | 候选 A — hb_buffer 复用 | 15 | 9 | 1 |
+| 2 | 候选 C — FT_Set_Pixel_Sizes 缓存 | 20 | 12 | 1 |
+| 3 | 候选 E — FindFont 缓存 | 10 | 6 | 1 |
+| 4 | 候选 D — GlyphCache::Put 返回 ptr | 15 | 9 | 1 |
+| 5 | 候选 B1 — /255 乘-移近似 + RED 反向探针 | 25 | 15 | 2 |
+| 6 | 候选 B2 — Pre-clip + row ptr（**条件触发**）| 20 | 12 | 1 |
+| 7 | Baseline 刷新 + MB 构建态收尾 | 15 | 9 | 2 |
+| **合计** | — | **130** | **~78** | **10** |
+| 升级 B3（条件）| SIMD（x86_64 SSE2-only / SSE2+NEON 双版本）| +40-60 | +25-45 | +1-2 |
+
+**阶梯退出：** 任一 Phase 末 `BM_DrawTextReal_Warm_Medium_mean < 3000 ns` 即跳过后续候选 Phase 直接进 Phase 7。
+
+#### 注入点核对表（spec §4，全部 ✅ 可行，无需扩接口透传）
+
+| 候选 | 注入点 | 状态 |
+|---|---|:-:|
+| A hb_buffer 复用 | `software_canvas.cc` L183/L274 | ✅ |
+| C FT_Set_Pixel_Sizes 缓存 | `software_canvas.cc` L172 + `font_manager.{h,cc}` | ✅ |
+| E FindFont 缓存 | `software_canvas.cc` L154 | ✅ |
+| D GlyphCache::Put 返回 ptr | `glyph_cache.{h,cc}` + `software_canvas.cc` L225-227 | ✅ |
+| B1 /255 替换 | `software_canvas.cc` L253-267 | ✅ |
+| B2 Pre-clip + row ptr | `software_canvas.cc` L230-269 | ✅ |
+
+#### 验收标准（plan 阶段精化）
+
+初步（待 plan 细化）：
+1. `BM_DrawTextReal_Warm_Medium` 达到 D5 阈值
+2. `BM_DrawTextReal_Warm_Short` / `_Long` 回归不差于基线（1.1× 内波动可接受）
+3. `BM_DrawTextReal_Cold_Medium` 回归不差于基线（冷路径可能随改动略退化）
+4. `bench_imagecache` / `bench_render_*` / `bench_layout_*` 4 bench baseline 无显著退化（10% 内）
+5. ctest 全量 PASS（预计 892+ tests）
+6. Release `-O3 -Werror` 全量 rebuild 0 err/warn
+7. 若引入对「warm 路径正确性」的改动，新增至少 1 条像素断言 GTest（Mixed TDD D3 + RED 反向探针验证）
+8. `benchmarks/baseline/bench_drawtext.json` 刷新；`baseline/README.md` 更新 K7 → resolved 状态
+9. `techContext.md` Replay-Deepbench 段 K7 段补 resolved + 新 warm 数据表
+
+#### /build 阶段成果（2026-04-24）
+
+**7/7 Phase 完成**，阶梯验证策略 + 2 次 R1 AskQuestion 升级（Phase 6→7 用户选 B3 SSE2；Phase 7 AVX2 实验后用户选智能阈值 dispatch）。
+
+**核心改动（7 文件 / 8 commits 覆盖 Phase 0-7）：**
+
+1. `veloxa/graphics/software/software_canvas.{h,cc}` — Phase 1 hb_buffer thread_local 复用（`HbBufferHolder` RAII）+ Phase 3 default FontHandle 缓存（`cached_default_font_`）+ Phase 6 inner blit pre-clip + row ptr 预计算 + Phase 7 接线 `BlendGlyphRow` runtime dispatch
+2. `veloxa/text/font_manager.{h,cc}` — Phase 2 `SetFacePixelSize` 状态化缓存（`FontEntry::ft_pixel_size`）避免重复 `FT_Set_Pixel_Sizes`
+3. `veloxa/text/glyph_cache.{h,cc}` — Phase 4 `Put` 返回 `GlyphBitmap*` 消除 Put 后冗余 Get
+4. `veloxa/graphics/software/glyph_blend.h` — Phase 5 header-only `DivBy255Approx` + `BlendGlyphPixel`（Phase 5 /255 乘移位试验回退后保留作 SIMD 参考）
+5. `veloxa/graphics/software/blit_sse2.h` — Phase 7 SSE2 4 px/iter `BlendGlyphRowSSE2`（pmullw + DivBy255ApproxU16 + packus + 标量 tail）
+6. `veloxa/graphics/software/blit_avx2.h` — Phase 7 AVX2 8 px/iter `BlendGlyphRowAVX2`（target attribute + permute4x64_epi64 lane 对齐 + cvtepu8_epi16）+ `BlendGlyphRow` 智能 dispatch（`count >= 16 && __builtin_cpu_supports("avx2")` 才走 AVX2）
+7. `tests/graphics/pixel_blend_test.cc` — 11 GTests：DivBy255 精度 / BlendGlyphPixel 契约 / SSE2 4 布局 + zero-alpha + full-opaque + 256 stress / Dispatch AVX2 13 布局 + SSE2 parity 对比，全部 RED 反向探针完整循环验证
+
+**关键 Before/After（同机 Release warm-up + 10 reps 测量）：**
+
+| BM | 修前（baseline） | 修后（Phase 7 AVX2 dispatch） | 改善 |
+|---|---:|---:|---|
+| `BM_DrawTextReal_Warm_Medium` (19 char) | **5905 ns** | **3499 ns** | **-40.7% / -2406 ns** |
+| `BM_DrawTextReal_Warm_Short` (2 char) | 975 ns | 677 ns | -30.6% / -298 ns |
+| `BM_DrawTextReal_Warm_Long` (124 char) | 17456 ns | 10573 ns | -39.4% / -6883 ns |
+| `BM_DrawTextReal_Cold_Medium` | 52873 ns | 28338 ns | -46.4%（副产品：default font + pixel size 缓存对 cold 路径也有效）|
+| `BM_DrawTextFallback_Medium` (对照) | 3813 ns | 3608 ns | -5.4%（basically 噪声，未参与优化）|
+
+**K7 命题评估：**
+- **业务前置条件** 真路径 < fallback：✅ **达成**（3499 ns < 3608 ns，快 3%；warm-up + 10 reps 稳定 CV ≤ 1% 非噪声）
+- **技术刚性目标** D5 `< 3000 ns`：⚠️ 未达（差 499 ns / 14%）— 两次 R1 AskQuestion 升级后仍差；用户知情接受
+- **阶梯验证实证**：Phase 1-4 累计微幅改善（-2% 量级）；**Phase 6 blit 内层优化** 单独贡献 -12%；**Phase 7 SSE2 SIMD** 单独贡献 -29% → 印证 spec 对「inner blit loop 是 warm hot path 大头」的假设；**Phase 5 /255 乘移位试验回退** 印证 GCC Granlund-Montgomery 自动降级已是最优，手写近似不能无脑替换
+- **AVX2 在当前 glyph 宽度分布下无可见收益**（ASCII 6-12 px 偏小），改为 `count >= 16` 智能阈值只对 CJK / 大字号启用，为未来硬件进化保留 headroom
+
+#### Phase 耗时对比（plan × 0.6 协议校准）
+
+| Phase | plan (min) | 实测 (min) | 比例 |
+|:-:|:-:|:-:|:-:|
+| 0 | 10 | ~3 | 0.30× |
+| 1-3 (A+C+E 批) | 45 | ~18 | 0.40× |
+| 4 (D) | 15 | ~4 | 0.27× |
+| 5 (B1 试验回退) | 25 | ~12 | 0.48× |
+| 6 (B2) | 20 | ~6 | 0.30× |
+| 7 (B3 SSE2 + AVX2 dispatch) | 40-60（含升级分支）| ~30 | 0.50-0.75× |
+| finalize | 15 | ~5 | 0.33× |
+| **合计** | **170-190** | **~78** | **~0.42×** |
+
+**第 6 个数据点**（继 TASK-05 0.34× / TASK-09 0.42× / TASK-11 0.15-0.20× / TASK-13 0.17-0.19× / TASK-24-01 0.29×）：性能优化类任务 plan × 0.6 协议稳定落在 **0.20-0.50×**，本任务 0.42× 中位数，含 2 次 R1 升级分支（Phase 7 SSE2 + AVX2）时间仍可控。
+
+---
+
+</details>
 
 <details>
 <summary>TASK-20260424-01：Layout super-linear knee 根因调查 — ✅ 已归档（点开查看历史）</summary>

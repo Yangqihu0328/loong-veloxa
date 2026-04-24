@@ -86,6 +86,12 @@ class SoftwareCanvas : public Canvas {
   bool active_;
   text::FontManager* font_manager_ = nullptr;
   text::GlyphCache* glyph_cache_ = nullptr;
+  // TASK-03 Phase 3 (E): default FontHandle cache. 0 = uncached (kInvalidFont).
+  // Populated on first DrawText call, reused thereafter; resolves the
+  // font_manager_->FindFont("", 400) string-compare on every warm call.
+  // Tied to this canvas instance so a distinct FontManager on another
+  // canvas cannot pollute the cache.
+  vx::u32 cached_default_font_ = 0;
 };
 
 }  // namespace vx::gfx::sw

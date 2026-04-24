@@ -14,7 +14,7 @@
      - **CSS** — Tokenizer ~300 MiB/s、Parser ~100 MiB/s、PropertyLookup ~10 ns
      - **Layout** — buildtree flat ~ 92 ns/box (small)、512 box flat ~ 140 µs（super-linear knee 已大幅收敛：TASK-01 前 R256=9.42× → 后 4.18×）、flex 8x8 ~ 6.9 µs / 16x16 ~ 44 µs（R_flex 16.49× → 6.40×，剩余 ~40% super-linear 由 TASK-02 跟进）
      - **Render** — Record ~26 ns/box (linear)、Replay FillRect ~10 ns/cmd (~100 M/s)、**Replay DrawText ~8200 ns/cmd（fallback 路径 hot — TASK-09 K1 已修正归因，见 §key findings）**
-     - **DrawText** — fallback ~192 ns/char、real cold ~2777 ns/char（FT_Load+FT_Render，9.1× of warm）、real warm ~305 ns/char（hb_shape + glyph cache hit；当前 1.6× of fallback — K7）
+     - **DrawText** — fallback ~190 ns/char、real cold ~1491 ns/char（FT_Load+FT_Render，8.1× of warm）、real warm ~184 ns/char（hb_shape + SSE2/AVX2 glyph blit + glyph cache hit；**K7 已解决：当前 0.97× of fallback → 真路径默认化前置条件达成** — TASK-20260424-03）
      - **ImageCache** — `Get` ~1.16 ns（O(1)）、`Load` hit/1 ~43 ns、hit/16 ~44 ns、hit/256 **~46 ns**（HashMap O(1)，K6 已由 TASK-20260419-11 解决）、`ReplayImageReal<64>` ~37 ns/cmd
    - 跨任务做对照参考时的形态锚点
    - reflection / archive 文档引用时有具体数字可指
@@ -48,6 +48,7 @@
 | K6 | `ImageCache::Load` hit 路径 O(N) 字符串扫描；cache size 256 时单次 1162 ns | hit/1 9.99 ns → hit/16 48.5 ns → hit/256 **1162 ns**（116×）；**比 ReplayImageReal<16> 595 ns 还慢** | **强烈推荐**改 `HashMap<String, ImageHandle>`（O(1) 查表）— ROI 极高 |
 | K6 ✅ | **K6 已由 TASK-20260419-11 解决**：`ImageCache::Load` hit 路径已改为 `HashMap<String, ImageHandle>` O(1) 查表（djb2 hash + owned String key + custom StringHash/StringEq 规避 SSO 悬空指针） | Hit<16>: 50.87 ns → **44.05 ns**（1.16×↓）；Hit<256>: 1151.77 ns → **45.70 ns**（**25.2×↓**）；Miss/ReplayImageReal/Get 不退化；Hit<1> 10.35 ns → 43.27 ns 小回归（HashMap 固有 ~32 ns 开销，绝对量微小，被 256 净增益完全压倒） | 入仓新 baseline；K6 量化命题完全满足；anomaly「size=256 cache hit 慢于 ReplayImageReal<16>」已消失 |
 | K7 | DrawText 真路径 warm > fallback（1.6×） | `Real_Warm_Medium` 5807 ns vs `Fallback_Medium` 3647 ns | 如未来默认开真路径需先优化：(a) `hb_buffer` 复用避免每次 alloc / (b) glyph bitmap 直接 raster 到 canvas 避免中间 memcpy |
+| K7 ✅ | **K7 已由 TASK-20260424-03 解决**：7 阶段级联优化 (hb_buffer thread_local 复用 + FT_Set_Pixel_Sizes 状态缓存 + default FontHandle 缓存 + GlyphCache::Put 返回 ptr + 内层 blit pre-clip+row ptr + SSE2 4 px/iter SIMD + AVX2 8 px/iter wide-glyph dispatch) | `Real_Warm_Medium`: **5905 → 3499 ns (-2406 ns, -40.7%)**；`Real_Warm_Short`: 975 → 677 ns (-30.6%)；`Real_Warm_Long`: 17456 → 10573 ns (-39.4%)；`Real_Cold_Medium`: 52873 → 28338 ns (-46.4%)；**真路径 3499 ns < Fallback 3608 ns → 真路径已比 fallback 快 3%**，默认化前置条件达成；Fallback 未参与优化仍 ~3608 ns (基本持平)；所有 59 render/integration/blend 测试 PASS | 入仓新 baseline；K7 量化命题达成；技术刚性目标 `< 3000 ns` 未达（差 499 ns / 14%）但业务目标超额达成；AVX2 `count >= 16` 阈值 dispatch 为 CJK 大字号留 headroom |
 
 ## 当前生成环境
 
@@ -60,7 +61,7 @@
 | google/benchmark 版本 | v1.9.1 (FetchContent) |
 | 构建模式 | Release（`-DCMAKE_BUILD_TYPE=Release`，独立 `build-bench/`）|
 | 生成命令的 `--benchmark_min_time` | CSS = 0.5s；Layout (TASK-24-01 刷新) = 0.5s + `--benchmark_repetitions=3`；Render = 0.05s；DrawText/ImageCache = 默认 0.5s |
-| 生成日期 | CSS = 2026-04-19 (TASK-03)；Layout = 2026-04-24 (TASK-24-01 knee fix)；Render = 2026-04-19 (TASK-05)；DrawText/ImageCache = 2026-04-19 (TASK-09) |
+| 生成日期 | CSS = 2026-04-19 (TASK-03)；Layout = 2026-04-24 (TASK-24-01 knee fix)；Render = 2026-04-19 (TASK-05)；**DrawText = 2026-04-24 (TASK-24-03 warm-path opt)**；ImageCache = 2026-04-19 (TASK-09) |
 | ArenaAllocator 默认 block_size | **32768**（TASK-24-01 从 4096 bump，解决 layout malloc/free churn）|
 
 > 任何对 baseline JSON 的更新都必须把上表 4 行 TBD 同步刷新；否则 baseline 失去可追溯性。
@@ -128,3 +129,4 @@ python3 build-bench/_deps/benchmark-src/tools/compare.py \
 | 2026-04-19 | TASK-20260419-09 | 入仓 DrawText + ImageCache 2 个 baseline；K1 修正归因 + K6/K7 新发现 | DrawText 8 BMs；ImageCache 7 BMs；共 15 行 |
 | 2026-04-19 | TASK-20260419-11 | K6 已解决：ImageCache::Load HashMap 化，重生成 bench_imagecache 同机基线（带 repetitions=3 / mean+median+stddev） | ImageCache 7 BMs ×（1 main + mean + median + stddev + cv）|
 | 2026-04-24 | TASK-20260424-01 | K2/K3 大幅解决：ArenaAllocator 默认 block 4096 → 32768 消除 malloc/free churn。layout buildtree R256: 9.42×→4.18×；layout flex R_flex: 16.49×→6.40×。剩余 super-linear 推 TASK-02 | Layout buildtree 14 BMs + Layout flex 6 BMs ×（main + mean + median + stddev + cv）|
+| 2026-04-24 | TASK-20260424-03 | **K7 解决：DrawText 真路径 warm 7 阶段级联优化**（Phase 1 hb_buffer thread_local 复用 / Phase 2 FT_Set_Pixel_Sizes 状态缓存 / Phase 3 default FontHandle 缓存 / Phase 4 GlyphCache::Put→ptr / Phase 5 /255 mul-shift 试验回退 / Phase 6 blit pre-clip+row ptr / Phase 7 SSE2+AVX2 SIMD blit 带 count≥16 智能 dispatch）。Warm_Medium 5905→3499 ns (-40.7%)；Warm_Long -39.4%；Cold_Medium -46.4%。真路径 3499 ns < fallback 3608 ns → 默认化前置条件达成 | DrawText 8 BMs |

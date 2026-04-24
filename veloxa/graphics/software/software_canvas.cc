@@ -8,10 +8,34 @@
 #include <hb-ft.h>
 
 #include "veloxa/foundation/base/assert.h"
+#include "veloxa/graphics/software/blit_avx2.h"
 #include "veloxa/text/font_manager.h"
 #include "veloxa/text/glyph_cache.h"
 
 namespace vx::gfx::sw {
+
+namespace {
+
+// TASK-20260424-03 Phase 1 (D2): hb_buffer reuse via thread_local RAII holder.
+// Eliminates per-DrawText hb_buffer_create/destroy (≈ glibc arena malloc +
+// structure init). Thread-safe by construction (each thread owns its own
+// buffer); leak-safe via dtor running at thread exit.
+struct HbBufferHolder {
+  hb_buffer_t* buf = nullptr;
+  HbBufferHolder() : buf(hb_buffer_create()) {}
+  ~HbBufferHolder() {
+    if (buf) hb_buffer_destroy(buf);
+  }
+  HbBufferHolder(const HbBufferHolder&) = delete;
+  HbBufferHolder& operator=(const HbBufferHolder&) = delete;
+};
+
+hb_buffer_t* AcquireThreadLocalHbBuffer() {
+  thread_local HbBufferHolder holder;
+  return holder.buf;
+}
+
+}  // namespace
 
 SoftwareCanvas::SoftwareCanvas(vx::u32* pixels, vx::u32 width, vx::u32 height,
                                vx::u32 stride,
@@ -149,27 +173,36 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
 
   using namespace vx::text;
 
+  // TASK-03 Phase 3 (E): cache default FontHandle per canvas instance.
+  // FindFont("", 400) performs an O(N) string compare against each loaded
+  // family on every warm DrawText call; on this canvas the handle is stable
+  // so a single resolution suffices.
   FontHandle font = kInvalidFont;
-  if (font_manager_->font_count() > 0) {
+  if (cached_default_font_ != 0) {
+    font = cached_default_font_;
+  } else if (font_manager_->font_count() > 0) {
     font = font_manager_->FindFont("", 400);
     if (font == kInvalidFont) {
       font = 1;
     }
+    cached_default_font_ = font;
   }
   if (font == kInvalidFont) {
     DrawTextFallback(text, bounds, font_size, brush);
     return;
   }
 
-  auto* face = font_manager_->GetFace(font);
+  u32 pixel_size = static_cast<u32>(font_size);
+  if (pixel_size == 0) pixel_size = 1;
+
+  // TASK-03 Phase 2 (C): idempotent FT size set — skips the underlying
+  // FT_Set_Pixel_Sizes call on warm paths where the cached ft_pixel_size
+  // already matches, saving an internal FT_Request_Metrics recompute.
+  auto* face = font_manager_->SetFacePixelSize(font, pixel_size);
   if (!face) {
     DrawTextFallback(text, bounds, font_size, brush);
     return;
   }
-
-  u32 pixel_size = static_cast<u32>(font_size);
-  if (pixel_size == 0) pixel_size = 1;
-  FT_Set_Pixel_Sizes(face, 0, pixel_size);
 
   // #48: obtain a cached hb_font_t for this handle instead of the
   // previous per-DrawText hb_ft_font_create_referenced/hb_font_destroy.
@@ -180,7 +213,12 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     return;
   }
 
-  hb_buffer_t* buf = hb_buffer_create();
+  hb_buffer_t* buf = AcquireThreadLocalHbBuffer();
+  if (!buf) {
+    DrawTextFallback(text, bounds, font_size, brush);
+    return;
+  }
+  hb_buffer_reset(buf);
   hb_buffer_add_utf8(buf, text.data(), static_cast<int>(text.size()), 0, -1);
   hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
   hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
@@ -222,56 +260,59 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
           gbmp.alpha.push_back(bmp.buffer[j * bmp.pitch + k]);
         }
       }
-      glyph_cache_->Put(font, glyph_id, pixel_size,
-                         static_cast<GlyphBitmap&&>(gbmp));
-      cached = glyph_cache_->Get(font, glyph_id, pixel_size);
+      // TASK-03 Phase 4 (D): reuse Put's returned pointer instead of
+      // issuing a second Get() — saves one hash lookup per first-miss glyph.
+      cached = glyph_cache_->Put(font, glyph_id, pixel_size,
+                                  static_cast<GlyphBitmap&&>(gbmp));
     }
 
     if (cached && cached->width > 0 && cached->height > 0) {
       i32 gx = static_cast<i32>(pen_x + x_offset) + cached->bearing_x;
       i32 gy = static_cast<i32>(pen_y - y_offset) - cached->bearing_y;
 
-      for (u32 row = 0; row < cached->height; ++row) {
-        for (u32 col = 0; col < cached->width; ++col) {
-          i32 px = gx + static_cast<i32>(col);
-          i32 py = gy + static_cast<i32>(row);
-          if (px < 0 || py < 0 || px >= static_cast<i32>(width_) ||
-              py >= static_cast<i32>(height_))
-            continue;
+      // TASK-03 Phase 6 (B2): pre-clip glyph rect against the canvas so
+      // the per-pixel bounds check (4 compares) and the py*stride+px
+      // index math can be lifted out of the innermost blit loop.
+      // Phase 5 (B1) note: the /255 divisions below are intentionally
+      // left to GCC's Granlund-Montgomery lowering — see glyph_blend.h.
+      const i32 gw = static_cast<i32>(cached->width);
+      const i32 gh = static_cast<i32>(cached->height);
+      const i32 cw = static_cast<i32>(width_);
+      const i32 ch = static_cast<i32>(height_);
 
-          u8 alpha = cached->alpha[row * cached->width + col];
-          if (alpha == 0) continue;
+      i32 col_start = gx < 0 ? -gx : 0;
+      i32 col_end = (gx + gw) > cw ? (cw - gx) : gw;
+      i32 row_start = gy < 0 ? -gy : 0;
+      i32 row_end = (gy + gh) > ch ? (ch - gy) : gh;
 
-          u32 dst_idx =
-              static_cast<u32>(py) * (stride_ / 4) + static_cast<u32>(px);
-          u32 dst_pixel = pixels_[dst_idx];
-          u8 dr = static_cast<u8>(dst_pixel & 0xFF);
-          u8 dg = static_cast<u8>((dst_pixel >> 8) & 0xFF);
-          u8 db = static_cast<u8>((dst_pixel >> 16) & 0xFF);
-          u8 da = static_cast<u8>((dst_pixel >> 24) & 0xFF);
+      if (col_start < col_end && row_start < row_end) {
+        const u32 stride_px = stride_ / 4;
+        const u8* alpha_base = cached->alpha.data();
+        const u32 alpha_stride = cached->width;
+        const u32 run = static_cast<u32>(col_end - col_start);
 
-          u8 sa = static_cast<u8>(
-              (static_cast<u32>(text_color.a) * alpha) / 255);
-          u8 inv_sa = static_cast<u8>(255 - sa);
-          u8 or_ = static_cast<u8>(
-              (text_color.r * sa + dr * inv_sa) / 255);
-          u8 og = static_cast<u8>(
-              (text_color.g * sa + dg * inv_sa) / 255);
-          u8 ob = static_cast<u8>(
-              (text_color.b * sa + db * inv_sa) / 255);
-          u8 oa = static_cast<u8>(sa + (da * inv_sa) / 255);
-
-          pixels_[dst_idx] = static_cast<u32>(or_) |
-                             (static_cast<u32>(og) << 8) |
-                             (static_cast<u32>(ob) << 16) |
-                             (static_cast<u32>(oa) << 24);
+        // TASK-03 Phase 7 (B3): per-row SIMD fast path via runtime
+        // dispatch — AVX2 8 px/iter when available, else SSE2 4 px/iter,
+        // tail 0..7 / 0..3 falls through to scalar BlendGlyphPixel.
+        // Precision contract ±1 LSB per channel (see pixel_blend_test
+        // BlendGlyphRow{,SSE2}* suites).
+        for (i32 row = row_start; row < row_end; ++row) {
+          u32* dst_row = pixels_ +
+                         static_cast<u32>(gy + row) * stride_px +
+                         static_cast<u32>(gx + col_start);
+          const u8* alpha_row = alpha_base +
+                                static_cast<u32>(row) * alpha_stride +
+                                static_cast<u32>(col_start);
+          BlendGlyphRow(dst_row, alpha_row, run, text_color.r,
+                        text_color.g, text_color.b, text_color.a);
         }
       }
     }
     pen_x += x_advance;
   }
 
-  hb_buffer_destroy(buf);
+  // TASK-03 Phase 1: buf is owned by thread_local HbBufferHolder; do not
+  // destroy here. Contents will be cleared via hb_buffer_reset on next call.
   // hb_font is owned by FontManager; do not destroy here.
 }
 

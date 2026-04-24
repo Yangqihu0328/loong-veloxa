@@ -9,10 +9,12 @@ const GlyphBitmap* GlyphCache::Get(FontHandle font, u32 glyph_id,
   return ptr;
 }
 
-void GlyphCache::Put(FontHandle font, u32 glyph_id, u32 pixel_size,
-                      GlyphBitmap bitmap) {
+GlyphBitmap* GlyphCache::Put(FontHandle font, u32 glyph_id, u32 pixel_size,
+                              GlyphBitmap bitmap) {
   Key key{font, glyph_id, pixel_size};
-  entries_.Insert(key, static_cast<GlyphBitmap&&>(bitmap));
+  GlyphBitmap& slot = entries_[key];
+  slot = static_cast<GlyphBitmap&&>(bitmap);
+  return &slot;
 }
 
 }  // namespace vx::text

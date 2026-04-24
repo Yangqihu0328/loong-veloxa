@@ -31,6 +31,15 @@ class FontManager {
 
   FT_FaceRec_* GetFace(FontHandle handle) const;
 
+  // Idempotent FT_Set_Pixel_Sizes with per-handle size cache. Only invokes
+  // the FreeType call when the requested pixel_size differs from the cached
+  // value. Returns the FT_Face pointer for chained use, or nullptr if
+  // handle is invalid / face missing / FT_Set_Pixel_Sizes fails.
+  //
+  // Intended to be called BEFORE GetHbFont so that HarfBuzz observes
+  // consistent metrics via hb_ft_font_changed on actual size change.
+  FT_FaceRec_* SetFacePixelSize(FontHandle handle, u32 pixel_size);
+
   // Returns (and lazily creates) an hb_font_t* bound to this handle's
   // FT_Face. The same pointer is returned for repeated calls with the
   // same handle; on size change, the cached hb_font_t is reconfigured
@@ -48,6 +57,7 @@ class FontManager {
     FT_FaceRec_* face = nullptr;
     hb_font_t* hb_font = nullptr;
     u32 hb_pixel_size = 0;
+    u32 ft_pixel_size = 0;
     FontHandle handle = kInvalidFont;
     char family[64] = {};
     u16 weight = 400;
