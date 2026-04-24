@@ -293,6 +293,72 @@ plan 的「BM 数预估表」必须用此公式，**不要肉眼数**（TASK-202
 - FillRect / FillRoundedRect / StrokeRoundedRect / DrawText / DrawImage 各自的 emit 条件
 - 两个隐式契约：`ctx.stylesheets` 非空（StyleResolver gate）+ ImageCache 三阶段同传
 
+### 7. WSL2 / 云机 bench 稳态协议（环境敏感场景**必填**）
+
+> 反复出现（TASK-20260424-03 P6 实证）：WSL2 CPU governor 在不活跃时下调频率，冷启动瞬态 + load average 抖动让 google/benchmark 默认 `--benchmark_min_time=0.05s` 单次测量 CV 高达 8%，首次测得 6727 ns（43% 偏离真实 4689 ns），险些得出错误的 Phase 倒退结论。
+
+本任务运行环境为 **WSL2 / 云 VM / Docker** 时，plan 阶段的 bench 命令**必须**改用稳态协议：
+
+1. **sleep 等待** — `sleep 10` 让 CPU 进入 idle governor 的快速爬坡区
+2. **warm-up 预热** — 单 filter `--benchmark_repetitions=3 --benchmark_min_time=0.2s` 跑一次不记录结果
+3. **正式测量** — `--benchmark_repetitions=10 --benchmark_report_aggregates_only=true --benchmark_min_time=0.2s`
+4. **CV 门槛** — 读取 `_cv` 聚合行，若 `> 2%` 重跑；仍不稳则记为环境不可信，延后测量
+
+**样板（stash-swap 对比场景）：**
+
+```bash
+# before
+git stash push -u
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='WarmMedium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up
+./build-bench/benchmarks/bench_xxx --benchmark_filter='WarmMedium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s > /tmp/before.txt
+
+# after
+git stash pop
+cmake --build build-bench -j --target bench_xxx
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='WarmMedium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up
+./build-bench/benchmarks/bench_xxx --benchmark_filter='WarmMedium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s > /tmp/after.txt
+```
+
+**交叉引用：** `memory-bank/systemPatterns.md`「Bench Smoke 自检模式」段包含等价协议详情与 CV 门槛 rationale。
+
+### 8. 编译器已做优化识别 — 位运算/除法近似反模式（优化类任务**必填**）
+
+> 反复出现升级 P1（TASK-20260424-03 P5 实证）：手写 `/常量 → (x * magic + round) >> shift` 位运算近似在**标量路径**几乎必然输给 GCC/Clang 原生优化。
+
+**根因：** GCC 自 4.x / Clang 自早期版本已对所有编译期常量除法自动应用 **Granlund-Montgomery 魔数乘法**（imul + shr，2 instructions），而手写 add-shift 链通常 3 adds + 2 shifts = 5 instructions 且破坏 u8↔u32 扩展优化。
+
+**规则：** plan 阶段任何下列候选**必须**先 godbolt 确认 GCC `-O3` 原生输出：
+
+| 候选模式 | 原代码 | 典型手写"优化" |
+|---------|------|--------------|
+| 常量除法 | `x / 255` | `(x * 257 + 32768) >> 16` |
+| 常量模 | `x % N`（N 常量） | `x - (x * magic >> shift) * N` |
+| 常量乘除组合 | `x * C / D`（C, D 常量） | 自选魔数 |
+
+**验证命令（plan Phase 0 或候选筛选阶段必做）：**
+
+```bash
+# godbolt CLI（如可用）
+echo 'unsigned f(unsigned x) { return x / 255; }' | \
+  gcc -O3 -S -x c - -o - | grep -E 'imul|shr|mul'
+# 预期：imul $0x80808081, ... + shr $0x7, ...
+# → Granlund-Montgomery 已应用；手写近似极可能倒退
+```
+
+**例外：SIMD 场景值得手写** —— 编译器无法 auto-vectorize 到 `pmulhuw` / `_mm_mulhi_epu16` / NEON `vrshrn_n` 等 SIMD-specific 指令时，手写 per-lane 魔数近似仍是真正加速点。仅**标量路径**手写必然输给编译器。
+
+**结论落地：** plan §候选表增加「**`-O3` 原生输出已确认不含魔数乘法？**」列；未确认列为「高风险」并降优先级；SIMD 候选无需此检查。
+
+**交叉引用：** `memory-bank/systemPatterns.md`「已验证的模式（来自 TASK-20260424-03）」段「编译器已做优化识别 — 位运算近似反模式」包含完整反例与 Phase 5 回退数据。
+
 ---
 
 ## 小块任务粒度

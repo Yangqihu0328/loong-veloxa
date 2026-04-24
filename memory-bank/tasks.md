@@ -5,14 +5,15 @@
 （无）
 
 <details>
-<summary>TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化 — ✅ /build + /reflect 完成，等待 /archive（点开查看构建成果）</summary>
+<summary>TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化 — ✅ 已归档（点开查看历史）</summary>
 
 ### TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化
 
-- **复杂度级别：** Level 2-3（优化类；多候选路径 + 5 设计决策；修改 3-5 文件）
-- **状态：** ✅ /build 完成（7/7 Phase）+ ✅ /reflect 完成 — 等待 /archive 正式归档
+- **复杂度级别：** Level 2-3（优化类；多候选路径 + 5 设计决策；7 Phase + 2 次 R1 升级 = 7 文件 + 3 新 SIMD header + 1 新 test）
+- **状态：** ✅ 已完成（详见 `memory-bank/archive/archive-TASK-20260424-03.md`）
 - **反思文档：** `memory-bank/reflection/reflection-TASK-20260424-03.md`（13 段 / 7 改进建议 / plan × 0.6 第 6 数据点 0.34× 最窄档确认）
-- **分支：** `feature/TASK-20260424-03-drawtext-warm-opt`（已创建，基于 main `525efba`）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260424-03.md`
+- **分支：** `feature/TASK-20260424-03-drawtext-warm-opt`（13 commits 含 archive，`--no-ff` 合并到 main）
 - **创建日期：** 2026-04-24
 - **来源：** `activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
 - **设计文档：** `docs/specs/2026-04-24-drawtext-warm-opt-design.md` ✅

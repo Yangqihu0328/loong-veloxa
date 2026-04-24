@@ -918,6 +918,50 @@ grep FetchContent_Declare CMakeLists.txt  # 命中 → 条目 1 触发条件 OK
 
 **落实**：写入 `writing-plans.mdc`「性能基准任务必检项」段；下次任何 bench plan 必加。
 
+#### WSL2 / 云机 / Docker 稳态协议（TASK-20260424-03 反思 P1 #2 — 附录）
+
+**问题**：WSL2 / 云 VM / Docker 容器内 CPU governor 在不活跃时下调频率（特别是 `ondemand` / `schedutil` governor），冷启动瞬态 + load average 抖动让 google/benchmark 默认 `--benchmark_min_time=0.05s` 单次测量 CV 飙到 8%，远超可作决策门槛。
+
+**TASK-20260424-03 实证**：
+- 首次测 Phase 6 stash baseline 得 6727 ns，CV 7.92%
+- 真实稳态值 4689 ns，**偏离 43%** → 险些得出「Phase 7 倒退」的错误结论
+- 引入 warm-up 协议后 CV 收敛到 ≤ 1%，run-to-run variance 降到噪声底
+
+**稳态协议（4 步固定模板）：**
+
+1. **sleep 等待**：`sleep 10` 让 CPU 进入 idle governor 的快速爬坡区（避免首次 bench 命中低频窗口）
+2. **Warm-up 预热**：单 filter `--benchmark_repetitions=3 --benchmark_min_time=0.2s` **跑一次不记录结果**（让 L1/L2 cache 预热 + governor 升频 + glibc malloc 稳态）
+3. **正式测量**：`--benchmark_repetitions=10 --benchmark_report_aggregates_only=true --benchmark_min_time=0.2s` 取 mean/median/stddev 三聚合行
+4. **CV 门槛**：读取 stddev / mean = CV，`> 2%` 视为噪声不可决策 → 重跑 step 1-3；**连续 2 次 > 2%** 记为环境不可信，延后测量或换机
+
+**样板（stash-swap 同窗口对比）：**
+
+```bash
+# --- BEFORE (先跑) ---
+git stash push -u
+cmake --build build-bench -j --target bench_xxx
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up 丢弃
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s 2>&1 | tee /tmp/before.txt
+
+# --- AFTER ---
+git stash pop
+cmake --build build-bench -j --target bench_xxx
+sleep 10
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=3 --benchmark_min_time=0.2s > /dev/null  # warm-up 丢弃
+./build-bench/benchmarks/bench_xxx --benchmark_filter='Warm_Medium' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s 2>&1 | tee /tmp/after.txt
+```
+
+**适用识别：** WSL2 / 云 VM (EC2 / GCE 等) / Docker / M1 Rosetta 等 CPU governor 受宿主影响的运行时。**裸机 + 固定频率 (`performance` governor) 可直接跑标准协议。**
+
+**落实：** 已同步到 `writing-plans.mdc`「性能基准任务必检项」§7「WSL2 / 云机 bench 稳态协议」；Plan 阶段 Phase 0 工具核查 + bench 命令模板必引用本段。
+
 ### 扫描型研究任务脚本化模板 + 双指标交叉验证模式（TASK-24-01 反思 #3 — 新模式）
 
 **适用场景**：研究/调查类任务中需对单变量（block_size、buffer_size、cache 容量、超参 N 等）做多档扫描以定位最优值时。
