@@ -13,7 +13,8 @@
 - ✅ /build Phase 4 D `GlyphCache::Put` 返回 `GlyphBitmap*`（2026-04-24）— Put 签名 `void`→`GlyphBitmap*`，实现改用 `entries_[key]` 操作单次查找 + 移动赋值；DrawText 用 Put 返回值，消掉紧跟的 Get；4 处测试忽略返回值向后兼容；stash-swap Warm_Medium 5378→5311 ns（**-1.25%, -67 ns**，CV 0.41% 可信）— 单 Phase 改善最大；累计 Phase 0→4 Medium -101 ns (-1.9%)，仍差 2311 ns；ctest 46/46 PASS（Renderer/RenderUtils 全路径绿）
 - ⚠️ /build Phase 5 B1 `/255` 乘移位近似 — **实验回退**（2026-04-24）— 创建 `veloxa/graphics/software/glyph_blend.h` 内联 `DivBy255Approx` + `BlendGlyphPixel` + `tests/graphics/pixel_blend_test.cc` 含 5 个精度契约测试（range 扫描 + 参考实现比对 + 端点极值）+ RED 反向探针（临时 `n>>8` 错公式 → 5/5 FAIL → 恢复 5/5 PASS 完整循环）；但替换 DrawText 内层 blit 后 stash-swap Warm_Medium 5311→5367 ns（**+56 ns, +1.1% 倒退**，CV 0.65% 稳定）；**根因**：GCC `-O3` 对常量除法 `/255` 已应用 Granlund-Montgomery 魔数乘法（imul+shr）比手写 add-shift 链更优 + u8↔u32 扩展打包开销；已回退 blit 代码到 Phase 4 形态，但**保留 helper header + test + CMake 注册**作为未来 SSE2/NEON SIMD pass 的精度参考基础设施；ctest 51/51 PASS（回退后 28/28 验证）；**关键负面发现写入 code comment + progress** 作为 B1 候选的最终结论
 - ✅ /build Phase 6 B2 预裁剪 + row pointer（2026-04-24）— 外层计算 `col_start/end`, `row_start/end` 预裁剪 glyph 与 canvas 交集；内层用 `dst_row` 指针 + `alpha_row` 指针递增，消除 `py*stride+px` 乘法 + 4 次边界比较 + 索引 mul；stash-swap **Warm_Medium 5340→4689 ns (-651 ns, -12.2%)**，Warm_Long 17007→11991 ns (**-5016 ns, -29.5%**) — 多字符场景巨大收益；CV 0.66% 稳定；累计 Phase 0→6 Medium **5412→4689 ns (-723 ns, -13.4%)**；ctest 53/53 PASS（广路径 render/integration/layout/paint_command 全绿）；**仍差 1689 ns (36%)** 未达 D5 刚性目标 → 按 plan R1 触发升级决策点 AskQuestion
-- ⏳ /build Phase 7 收尾（取决于用户是否升级 B3 SIMD 或接受当前）
+- ✅ /build Phase 7 B3 SSE2 SIMD blit（2026-04-24）— 新建 `veloxa/graphics/software/blit_sse2.h` 含 `DivBy255ApproxU16` (per-lane pmulhuw-style 近似) + `BlendGlyphRowSSE2`（4 px/iter: 加载 4 alpha → 展开 u16 → DivBy255Approx(sa*alpha) 得 effective_a → unpack dst 到 2×8 u16 → 广播 ea/inv 到 per-channel u16 → split 两次 /255 避免 u16 溢出 → packus_epi16 clamp 到 u8 → storeu）+ 编译期 `#if defined(__SSE2__)` 守卫 + 标量 tail 0..3 px 回退；**src_vec 的 alpha 通道强制 255 让统一 blend 公式 `(src*ea + dst*inv)/255` 同时覆盖 RGBA 4 通道**（因 (255*ea)/255 = ea 精确）；扩展 `pixel_blend_test` 新增 4 个 SIMD 契约测试（7 种 count 布局含 4-iter + tail 混合 + 256 px stress + zero-alpha identity + full-opaque overwrite 4 组 + RED 反向探针破坏 channel order 确认 3/4 FAIL 再恢复 GREEN 完整循环）；stash-swap warm-up + 10 reps 稳定测量 **Warm_Medium 4700→3354 ns (-28.6%, -1346 ns)**，Warm_Short 739→644 ns (-12.9%)，**Warm_Long 12682→10382 ns (-18.1%, -2300 ns)**，CV 0.69% 非常稳；**累计 Phase 0→7 Medium 5412→3354 ns = -2058 ns (-38%)**；ctest 57/57 PASS（含 9 pixel_blend / 全 render/integration/layout/paint_command 路径）
+- 🎯 /build Phase 7 业务/技术目标评估：**真路径 3354 ns < Fallback 3637 ns（快 7.8%）→ 真路径默认化业务前置条件超额达成**；技术刚性 D5 < 3000 ns 仍差 354 ns (10.6%) → 按 plan R1 二次 AskQuestion 决定是否 (A) 接受现状并推进 finalize / (B) 继续再压榨 (glyph cache row_ptr 数组 + skip-all-zero AA fast path) / (C) AVX2 8 px/iter
 - ⏳ /build Phase 7 baseline 刷新 + MB 收尾
 - ⏳ /reflect + /archive
 
@@ -28,6 +29,7 @@
 | 4 | D Put→ptr | **5311** | -67 (-1.25%) | -1.9% (-101) | ❌ | 46/46 ✅ |
 | 5 | B1 /255 (**回退**) | 5367 | +56 (+1.1%) ❌ | -1.9% (-101) | ❌ | 51/51 ✅ (含 5 新) |
 | 6 | B2 pre-clip+row ptr | **4689** | **-651 (-12.2%)** | **-13.4% (-723)** | ❌ (差 1689) | 53/53 ✅ |
+| 7 | B3 SSE2 4px/iter | **3354** | **-1346 (-28.6%)** | **-38% (-2058)** | ❌ (差 354, 但 < Fallback) | 57/57 ✅ (含 9 blend) |
 | 6 | B2 pre-clip | _待_ | _待_ | _待_ | _待_ | _待_ |
 
 ## 已完成任务

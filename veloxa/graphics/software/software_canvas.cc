@@ -8,6 +8,7 @@
 #include <hb-ft.h>
 
 #include "veloxa/foundation/base/assert.h"
+#include "veloxa/graphics/software/blit_sse2.h"
 #include "veloxa/text/font_manager.h"
 #include "veloxa/text/glyph_cache.h"
 
@@ -288,11 +289,12 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
         const u32 stride_px = stride_ / 4;
         const u8* alpha_base = cached->alpha.data();
         const u32 alpha_stride = cached->width;
-        const u8 srr = text_color.r;
-        const u8 sgg = text_color.g;
-        const u8 sbb = text_color.b;
-        const u32 saa = text_color.a;
+        const u32 run = static_cast<u32>(col_end - col_start);
 
+        // TASK-03 Phase 7 (B3): per-row SSE2 fast path — 4 px/iter via
+        // pmullw + DivBy255ApproxU16, scalar tail ≤ 3 px handled by
+        // BlendGlyphPixel. Precision contract ±1 LSB per channel (see
+        // pixel_blend_test BlendGlyphRowSSE2* suite).
         for (i32 row = row_start; row < row_end; ++row) {
           u32* dst_row = pixels_ +
                          static_cast<u32>(gy + row) * stride_px +
@@ -300,32 +302,8 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
           const u8* alpha_row = alpha_base +
                                 static_cast<u32>(row) * alpha_stride +
                                 static_cast<u32>(col_start);
-
-          for (i32 col = col_start; col < col_end; ++col) {
-            u8 alpha = *alpha_row++;
-            if (alpha == 0) {
-              ++dst_row;
-              continue;
-            }
-
-            u32 dst_pixel = *dst_row;
-            u8 dr = static_cast<u8>(dst_pixel & 0xFF);
-            u8 dg = static_cast<u8>((dst_pixel >> 8) & 0xFF);
-            u8 db = static_cast<u8>((dst_pixel >> 16) & 0xFF);
-            u8 da = static_cast<u8>((dst_pixel >> 24) & 0xFF);
-
-            u8 sa = static_cast<u8>((saa * alpha) / 255);
-            u8 inv_sa = static_cast<u8>(255 - sa);
-            u8 or_ = static_cast<u8>((srr * sa + dr * inv_sa) / 255);
-            u8 og = static_cast<u8>((sgg * sa + dg * inv_sa) / 255);
-            u8 ob = static_cast<u8>((sbb * sa + db * inv_sa) / 255);
-            u8 oa = static_cast<u8>(sa + (da * inv_sa) / 255);
-
-            *dst_row++ = static_cast<u32>(or_) |
-                         (static_cast<u32>(og) << 8) |
-                         (static_cast<u32>(ob) << 16) |
-                         (static_cast<u32>(oa) << 24);
-          }
+          BlendGlyphRowSSE2(dst_row, alpha_row, run, text_color.r,
+                            text_color.g, text_color.b, text_color.a);
         }
       }
     }

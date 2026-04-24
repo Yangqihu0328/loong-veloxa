@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <vector>
 
+#include "veloxa/graphics/software/blit_sse2.h"
 #include "veloxa/graphics/software/glyph_blend.h"
 
 namespace vx::gfx::sw {
@@ -103,6 +105,101 @@ TEST(PixelBlendTest, BlendGlyphPixelZeroCoverageIsIdentity) {
   uint32_t dst = 0xDEADBEEFu;
   uint32_t got = BlendGlyphPixel(dst, 255, 128, 64, 200, 0);
   EXPECT_EQ(got, dst);
+}
+
+// ---------- BlendGlyphRowSSE2 fidelity contract ------------------------------
+
+namespace {
+// Run the SSE2 row blitter and compare every output pixel channel against
+// the scalar BlendGlyphPixel helper, asserting |diff| <= 1 per channel.
+void ExpectSSE2MatchesScalar(std::vector<uint32_t> dst_initial,
+                             const std::vector<uint8_t>& alpha, uint8_t sr,
+                             uint8_t sg, uint8_t sb, uint8_t sa,
+                             const char* label) {
+  ASSERT_EQ(dst_initial.size(), alpha.size()) << label;
+  std::vector<uint32_t> dst_scalar = dst_initial;
+  std::vector<uint32_t> dst_sse = dst_initial;
+  const uint32_t n = static_cast<uint32_t>(dst_initial.size());
+
+  for (uint32_t i = 0; i < n; ++i) {
+    uint8_t a = alpha[i];
+    if (a == 0) continue;
+    dst_scalar[i] = BlendGlyphPixel(dst_scalar[i], sr, sg, sb, sa, a);
+  }
+  BlendGlyphRowSSE2(dst_sse.data(), alpha.data(), n, sr, sg, sb, sa);
+
+  for (uint32_t i = 0; i < n; ++i) {
+    for (int ch = 0; ch < 4; ++ch) {
+      int got = static_cast<int>((dst_sse[i] >> (ch * 8)) & 0xFFu);
+      int exp = static_cast<int>((dst_scalar[i] >> (ch * 8)) & 0xFFu);
+      int diff = std::abs(got - exp);
+      ASSERT_LE(diff, 1) << label << " pixel=" << i << " channel=" << ch
+                         << " got=" << got << " expected=" << exp;
+    }
+  }
+}
+}  // namespace
+
+TEST(PixelBlendTest, BlendGlyphRowSSE2MatchesScalarForVariousLayouts) {
+  // Cover counts that exercise both the 4-lane SIMD path and the
+  // scalar tail: 0, 1, 3 (tail only), 4 (exactly one SIMD iter), 7
+  // (one SIMD + 3 tail), 16 (four SIMD iters, tail empty), 19 (four
+  // SIMD + 3 tail).
+  const uint32_t counts[] = {0, 1, 3, 4, 7, 16, 19};
+  for (uint32_t n : counts) {
+    std::vector<uint32_t> dst(n);
+    std::vector<uint8_t> alpha(n);
+    for (uint32_t i = 0; i < n; ++i) {
+      dst[i] = 0x10203040u + i * 0x01010101u;
+      alpha[i] = static_cast<uint8_t>((i * 37u) & 0xFFu);
+    }
+    ExpectSSE2MatchesScalar(dst, alpha, 200, 100, 50, 220,
+                            ("count=" + std::to_string(n)).c_str());
+  }
+}
+
+TEST(PixelBlendTest, BlendGlyphRowSSE2ZeroAlphaSkipsPixel) {
+  std::vector<uint32_t> dst(5, 0xDEADBEEFu);
+  std::vector<uint8_t> alpha(5, 0);
+  BlendGlyphRowSSE2(dst.data(), alpha.data(), 5, 255, 255, 255, 255);
+  // Scalar tail path: alpha==0 literally skips the pixel, so dst must
+  // be bit-identical. SIMD path may blend with effective_a = 0, which
+  // should also produce bit-identical output (dst * 255 / 255 == dst,
+  // plus rounded-approx error of at most 1). Check ≤ 1 LSB.
+  for (uint32_t p : dst) {
+    for (int ch = 0; ch < 4; ++ch) {
+      int got = static_cast<int>((p >> (ch * 8)) & 0xFFu);
+      int exp = static_cast<int>((0xDEADBEEFu >> (ch * 8)) & 0xFFu);
+      EXPECT_LE(std::abs(got - exp), 1) << "channel=" << ch;
+    }
+  }
+}
+
+TEST(PixelBlendTest, BlendGlyphRowSSE2FullCoverageOverwritesRGB) {
+  std::vector<uint32_t> dst(4, 0xFF000000u);
+  std::vector<uint8_t> alpha(4, 255);
+  BlendGlyphRowSSE2(dst.data(), alpha.data(), 4, 100, 150, 200, 255);
+  for (uint32_t p : dst) {
+    EXPECT_LE(std::abs(static_cast<int>(p & 0xFFu) - 100), 1);
+    EXPECT_LE(std::abs(static_cast<int>((p >> 8) & 0xFFu) - 150), 1);
+    EXPECT_LE(std::abs(static_cast<int>((p >> 16) & 0xFFu) - 200), 1);
+    EXPECT_LE(std::abs(static_cast<int>((p >> 24) & 0xFFu) - 255), 1);
+  }
+}
+
+TEST(PixelBlendTest, BlendGlyphRowSSE2StressAllAlphasAllChannels) {
+  // Hit every (alpha, channel) interaction over a 256-pixel row against
+  // a reference scalar blend.
+  std::vector<uint32_t> dst(256);
+  std::vector<uint8_t> alpha(256);
+  for (uint32_t i = 0; i < 256; ++i) {
+    dst[i] = static_cast<uint32_t>(i) |
+             (static_cast<uint32_t>(255 - i) << 8) |
+             (static_cast<uint32_t>((i * 7) & 0xFFu) << 16) |
+             (static_cast<uint32_t>((i * 13) & 0xFFu) << 24);
+    alpha[i] = static_cast<uint8_t>(i);
+  }
+  ExpectSSE2MatchesScalar(dst, alpha, 17, 200, 63, 191, "stress-256");
 }
 
 TEST(PixelBlendTest, BlendGlyphPixelFullOpaqueOverwritesRGB) {
