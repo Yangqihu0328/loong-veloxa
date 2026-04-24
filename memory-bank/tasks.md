@@ -2,7 +2,109 @@
 
 ## 当前任务
 
-_（无活跃任务，等待 `/van` 启动新任务）_
+### TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化
+
+- **复杂度级别：** Level 2-3（优化类；多候选路径 + 5 设计决策；修改 3-5 文件）
+- **状态：** 📋 规划完成
+- **分支：** `feature/TASK-20260424-03-drawtext-warm-opt`（已创建，基于 main `525efba`）
+- **创建日期：** 2026-04-24
+- **来源：** `activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
+- **设计文档：** `docs/specs/2026-04-24-drawtext-warm-opt-design.md` ✅
+- **实现计划：** `docs/plans/2026-04-24-drawtext-warm-opt.md` ✅（7 Phase 阶梯骨架 / 130 min plan / plan×0.6 预期 ~78 min / 10 commits 含升级分支）
+- **需要创意阶段：** ❌ 否（spec §2 5 决策已锁定；所有架构/算法空白均无；注入点核对表 6/6 可行）
+- **安全相关：** ❌ 否（性能优化 / 无外部输入 / 无认证 / 无新依赖）
+
+#### 目标
+
+SoftwareCanvas::DrawText 真路径（FreeType+HarfBuzz）**warm** 5807 ns → **< 3000 ns**（小于 fallback 3647 ns），使真路径默认化具备性能前置条件。来源：TASK-20260419-09 K7 发现，`benchmarks/baseline/bench_drawtext.json` L279 baseline。
+
+| BM | 当前 warm | 目标 | 倍率 |
+|---|---:|---:|---|
+| `BM_DrawTextReal_Warm_Medium` (19 char) | **5807 ns** | **< 3000 ns** | **≥ 1.94×↓** |
+| `BM_DrawTextReal_Warm_Short` (2 char) | 968 ns | 显著改善（hb_buffer 固定开销显化） | 待测 |
+| `BM_DrawTextReal_Warm_Long` (124 char) | 16852 ns（136 ns/char 最佳摊还） | 线性摊还下应保持 136 ns/char 或更优 | 兜底 |
+
+#### VAN 阶段基础假设核查（代码实证）
+
+| K7 候选 | 代码路径 | 命题状态 |
+|---|---|:-:|
+| (a) `hb_buffer` 每次分配 | `software_canvas.cc` L183 `hb_buffer_create()` + L274 `hb_buffer_destroy()` 每次 DrawText 必然成对调用 | ✅ 命题成立 |
+| (b) "glyph bitmap 两次拷贝" | **需修正**：warm 路径无两次拷贝（L234-268 直接从 `GlyphBitmap::alpha` blit）；cold 路径才有 FT_Bitmap → Vector<u8> 拷贝（L220-224）| ⚠️ 需 plan 重写 |
+
+#### VAN 阶段额外优化候选（代码实证副产品）
+
+| # | 候选 | 代码位置 | 推测收益 |
+|:-:|---|---|---|
+| **A** | `hb_buffer` 复用（static / per-canvas） | `software_canvas.cc` L183/L274 | hb_buffer_create/destroy 每次 ~百 ns 级，短字符串显化 |
+| **B** | Inner blit loop 优化（去 per-pixel bounds / `/255` 替换 / SIMD） | `software_canvas.cc` L234-268（~20 语句 × W×H glyph 像素） | warm 主耗点；医 /255 → `(x*257+128)>>16` 可去整数除 |
+| **C** | `FT_Set_Pixel_Sizes` 状态化缓存 | `software_canvas.cc` L172 每次无条件调用 | 若 FontManager 已跟踪 pixel_size，可省 1 次 face state 写 |
+| **D** | GlyphCache Get 双重查询 | `software_canvas.cc` L206 Get → L225 Put → L227 再 Get | 可改 Put 返回插入指针 |
+| **E** | FindFont("", 400) 每次字符串 lookup | `software_canvas.cc` L154 | 可 cache default_font_handle |
+
+具体优化顺序、组合、阈值由 `/plan` 头脑风暴定。
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | FreeType/HarfBuzz/google-benchmark 均已集成（TASK-20260414-01 / TASK-20260419-02），无新依赖 |
+| 环境就绪 | ✅ | DejaVuSans.ttf 系统文件存在；gcc 11.4 / cmake 3.22.1 / WSL2 |
+| 已有 artifact | ✅ | `bench_drawtext.cc` 6 BM（含 warm/cold/short/medium/long） + `baseline/bench_drawtext.json` 已入仓 |
+| **FetchContent 代理守卫** | ⊘ 跳过 | 本任务**不触发 FetchContent**（仅用已集成依赖）→ `main.mdc` §1 FetchContent 检查子项不适用 |
+| 待处理事项关联 | ✅ | **P1 bench 阈值表绝对增量兜底**（TASK-11 #1）+ **P1 Mixed TDD RED 反向探针**（TASK-11 #3 / TASK-24-01）+ **P1 性能基准必检项**（TASK-05）+ **P1 plan × 0.6 估时校准**（跨 5 任务）全部适用 |
+
+#### 用户决策（/plan 头脑风暴产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | 优化实施策略 | **方案 1 阶梯验证驱动**（7 Phase）| 复用 TASK-24-01 0.29× 样板；便宜先做 A→C→E→D→B1→B2；累计达标即止 |
+| D2 | `hb_buffer` 复用 | **thread_local + RAII** | 零线程风险 + 零 header 污染 + thread exit 自动清理 |
+| D3 | Inner blit loop 深度 | **B1 + B2 组合** | /255 乘-移近似 + pre-clip；SIMD 留触发型 P2（ARM/NEON 兼容性开销）|
+| D4 | `GlyphBitmap` 结构 | **保持 Vector<u8>** | 0 ABI 改动；data() + row ptr 推进即可 |
+| D5 | 验收阈值 | **刚性 < 3000 ns**（用户选严格）| 不设中间带；B1+B2 不达标则 AskQuestion 升 B3 SIMD |
+
+#### Phase 划分（7 Phase 骨架 + 阶梯退出条件）
+
+| Phase | 名称 | plan (min) | plan×0.6 (min) | commits |
+|:-:|---|:-:|:-:|:-:|
+| 0 | 基线核验 + 工具/API grep | 10 | 6 | 1 |
+| 1 | 候选 A — hb_buffer 复用 | 15 | 9 | 1 |
+| 2 | 候选 C — FT_Set_Pixel_Sizes 缓存 | 20 | 12 | 1 |
+| 3 | 候选 E — FindFont 缓存 | 10 | 6 | 1 |
+| 4 | 候选 D — GlyphCache::Put 返回 ptr | 15 | 9 | 1 |
+| 5 | 候选 B1 — /255 乘-移近似 + RED 反向探针 | 25 | 15 | 2 |
+| 6 | 候选 B2 — Pre-clip + row ptr（**条件触发**）| 20 | 12 | 1 |
+| 7 | Baseline 刷新 + MB 构建态收尾 | 15 | 9 | 2 |
+| **合计** | — | **130** | **~78** | **10** |
+| 升级 B3（条件）| SIMD（x86_64 SSE2-only / SSE2+NEON 双版本）| +40-60 | +25-45 | +1-2 |
+
+**阶梯退出：** 任一 Phase 末 `BM_DrawTextReal_Warm_Medium_mean < 3000 ns` 即跳过后续候选 Phase 直接进 Phase 7。
+
+#### 注入点核对表（spec §4，全部 ✅ 可行，无需扩接口透传）
+
+| 候选 | 注入点 | 状态 |
+|---|---|:-:|
+| A hb_buffer 复用 | `software_canvas.cc` L183/L274 | ✅ |
+| C FT_Set_Pixel_Sizes 缓存 | `software_canvas.cc` L172 + `font_manager.{h,cc}` | ✅ |
+| E FindFont 缓存 | `software_canvas.cc` L154 | ✅ |
+| D GlyphCache::Put 返回 ptr | `glyph_cache.{h,cc}` + `software_canvas.cc` L225-227 | ✅ |
+| B1 /255 替换 | `software_canvas.cc` L253-267 | ✅ |
+| B2 Pre-clip + row ptr | `software_canvas.cc` L230-269 | ✅ |
+
+#### 验收标准（plan 阶段精化）
+
+初步（待 plan 细化）：
+1. `BM_DrawTextReal_Warm_Medium` 达到 D5 阈值
+2. `BM_DrawTextReal_Warm_Short` / `_Long` 回归不差于基线（1.1× 内波动可接受）
+3. `BM_DrawTextReal_Cold_Medium` 回归不差于基线（冷路径可能随改动略退化）
+4. `bench_imagecache` / `bench_render_*` / `bench_layout_*` 4 bench baseline 无显著退化（10% 内）
+5. ctest 全量 PASS（预计 892+ tests）
+6. Release `-O3 -Werror` 全量 rebuild 0 err/warn
+7. 若引入对「warm 路径正确性」的改动，新增至少 1 条像素断言 GTest（Mixed TDD D3 + RED 反向探针验证）
+8. `benchmarks/baseline/bench_drawtext.json` 刷新；`baseline/README.md` 更新 K7 → resolved 状态
+9. `techContext.md` Replay-Deepbench 段 K7 段补 resolved + 新 warm 数据表
+
+---
 
 <details>
 <summary>TASK-20260424-01：Layout super-linear knee 根因调查 — ✅ 已归档（点开查看历史）</summary>

@@ -2,7 +2,13 @@
 
 ## 当前任务
 
-_（无活跃任务，等待 `/van` 启动新任务）_
+**TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化**（Level 2-3 优化类）
+
+- ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-03-drawtext-warm-opt` 创建 / 基础假设核查（K7 候选 a/b 实证 + 3 副产品候选识别）
+- ✅ /plan 规划完成（2026-04-24）— 头脑风暴 5 决策锁定（D1-D5） / 设计文档 `docs/specs/2026-04-24-drawtext-warm-opt-design.md` / 实现计划 `docs/plans/2026-04-24-drawtext-warm-opt.md`（7 Phase 阶梯骨架 + 130 min plan / ~78 min 预期 / 10 commits）/ 注入点核对表 6/6 可行
+- ⏳ /build 待启动（Phase 0 基线核验 + 工具核查 + API grep）
+- ⏳ 各阶梯 Phase 1-6 按用户 D1 阶梯验证策略实施，达标即止
+- ⏳ /reflect + /archive
 
 ## 已完成任务
 

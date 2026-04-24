@@ -1,15 +1,25 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲
+规划中
 
 ## 当前任务
 
-_（无活跃任务，等待 `/van` 启动新任务）_
+**TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化**
+
+- 复杂度：Level 2-3（优化类，多候选路径 + 5 设计决策）
+- 来源：`activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
+- 目标：warm 真路径 5807 ns → < 3000 ns，使真路径默认化具备前置条件
+- **/plan 产出（设计 + 计划已写）：**
+  - `docs/specs/2026-04-24-drawtext-warm-opt-design.md`（5 决策锁定 + 6 注入点 ✅ + 12 验收项）
+  - `docs/plans/2026-04-24-drawtext-warm-opt.md`（7 Phase 阶梯骨架，130 min plan / ~78 min 预期 / 10 commits）
+- **5 决策：** D1 阶梯验证 / D2 thread_local + RAII / D3 B1+B2 组合（不含 SIMD）/ D4 保持 Vector<u8> / D5 刚性 <3000 ns
+- **阶梯退出：** 任一 Phase 末 warm_Medium < 3000 ns 即跳进 Phase 7 收尾；Phase 6 仍未达标则 AskQuestion 走 B3 SIMD 升级分支
+- 下一步：`/build` 启动实施（或 `/creative` — 本任务判定不需要）
 
 ## 未合并分支
 
-- _(无)_
+- `feature/TASK-20260424-03-drawtext-warm-opt`（VAN 阶段，尚未开工）
 
 ## 最近归档
 
