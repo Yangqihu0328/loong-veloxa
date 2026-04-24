@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建完成 — 等待 /reflect + /archive
+回顾中 — 等待 /archive
 
 ## 当前任务
 
@@ -42,10 +42,19 @@
 - `memory-bank/progress.md`：6 phase 条目 + 7 表行
 - `memory-bank/tasks.md`：TASK-20260424-03 归档折叠 + /build 成果段
 
+### /reflect 阶段成果（2026-04-24）
+
+- 反思文档：`memory-bank/reflection/reflection-TASK-20260424-03.md`（13 段 / 11 GTests 测试契约对照 / plan × 0.6 第 6 数据点 0.34× 「最窄」档确认）
+- **3 大关键发现**：
+  - F5 **GCC `-O3` Granlund-Montgomery 魔数乘法 > 手写 /255 近似**（通用编译器洞察，适用所有标量 `/常量` 场景）
+  - F6 **AVX2 8 px/iter 在 ASCII glyph (6-12 px) 无净收益** — 引出「**异构工作负载 SIMD 尺寸阈值 dispatch**」新模式
+  - L4 **API 层优化天花板远低于 plan 估算** — 现代 runtime (glibc tcmalloc / FT / hb) 已做足，Phase 6 B2 单 Phase 收益是 Phase 1-4 累计 6 倍
+- **7 改进建议** 含 2 项 P1（godbolt 编译器优化识别 / WSL2 warm-up 协议标准化） + 5 项 P2（SIMD 阈值 dispatch 模式 / 负结果资产化 / API 天花板识别 / R1 升级路径 / 智能阈值不退化）
+- 反复模式识别：「前置依赖/环境/API 能力未验证」1 次轻重复（编译器优化未 godbolt 确认），已纳入 P1 建议 #1
+
 ### 下一步
 
-1. `/reflect` — 生成 `memory-bank/reflection/reflection-TASK-20260424-03.md`（含 7 Phase 耗时对比 / plan × 0.6 第 6 数据点 / AVX2 实验负面结果教训 / Phase 5 GCC Granlund-Montgomery 覆盖手写近似的通用洞察）
-2. `/archive` — 生成 `memory-bank/archive/archive-TASK-20260424-03.md` + merge 到 main
+1. `/archive` — 生成 `memory-bank/archive/archive-TASK-20260424-03.md` + merge 到 main；落实 P1 建议 #1 (godbolt 检查) + #2 (WSL2 warm-up 协议) 到 `writing-plans.mdc`/`systemPatterns.md`
 
 ## 未合并分支
 
@@ -104,4 +113,6 @@
 - **P2（新增, TASK-24-01 反思 #3）：** **扫描型研究任务的 for 循环 + python3 聚合模板 + 双指标交叉验证**沉淀。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「扫描型研究任务脚本化模板 + 双指标交叉验证模式」段（本次 Phase 2 blocked-size 5 档扫描为范例）。
 - **P2（新增, TASK-24-01 反思 #4）：** **「最窄路径任务」plan×0.3 子档 + TASK-24-01 0.29× 历史最快数据点**。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「bench 类任务估时校准」段追加子档。下次单文件 1 行改动 + 基础设施 100% 复用的任务直接按 plan×0.3 预估。
 - **P2（新增, TASK-24-01 反思 #5）：** **「公开行为锚定内部约束」测试设计哲学**。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「测试设计 — 公开行为锚定内部约束模式」段。本任务 `DefaultBlockSizeFitsLargeAllocations` 用指针连续性间接观测 block 容量，不扩 API 不加 friend 为样板。
+- **P1（新增, TASK-24-03 反思 #1，反复模式「前置依赖未验证」新变体）：** **Godbolt 验证编译器魔数优化 — 位运算/除法近似前置检查**。任何 "/常量 → 位运算" 或 "常量模/乘替换" 类手写优化 plan 前必须 godbolt 看 GCC `-O3` 原生输出；**Granlund-Montgomery 魔数乘法自 GCC 4.x 已自动应用**，标量路径手写近似几乎必然输给编译器；**只有 SIMD 场景才值得手写**。**落实方式**：归档阶段追加到 `writing-plans.mdc`「管线注入点代码级可行性验证」段新增子项「编译器已做优化识别」；Plan Phase 0 工具核查矩阵加 `gcc -S -O3` 或 godbolt-cli 手动确认。**根因**：TASK-24-03 Phase 5 实证 `/255 → (x*257+32768)>>16` 倒退 +1.1%（来源 reflection §4.b / §10.1）。
+- **P1（新增, TASK-24-03 反思 #2）：** **WSL2 / 云机 bench warm-up 协议标准化**。`google/benchmark` 默认 `--benchmark_min_time=0.05s` 在 WSL2 冷启动瞬态下 CV 可达 8%（本任务实证）。**稳定协议**：sleep 10s → 单 filter 3-rep warm-up (min_time=0.2s) → 全量 10-rep measure → CV ≤ 2% 门槛，否则重测。**落实方式**：归档阶段追加到 `systemPatterns.md`「Bench Smoke 自检模式」+ `writing-plans.mdc`「性能基准任务必检项」新 §N 「WSL2/云机稳态协议」。**根因**：TASK-24-03 Phase 6 首次 stash baseline 测 6727 ns（43% 偏离真实 4689 ns），险些得出「Phase 7 倒退」的错误结论，warm-up 协议让 CV 从 8% 收敛到 1%。
 
