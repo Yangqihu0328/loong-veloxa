@@ -184,15 +184,17 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     return;
   }
 
-  auto* face = font_manager_->GetFace(font);
+  u32 pixel_size = static_cast<u32>(font_size);
+  if (pixel_size == 0) pixel_size = 1;
+
+  // TASK-03 Phase 2 (C): idempotent FT size set — skips the underlying
+  // FT_Set_Pixel_Sizes call on warm paths where the cached ft_pixel_size
+  // already matches, saving an internal FT_Request_Metrics recompute.
+  auto* face = font_manager_->SetFacePixelSize(font, pixel_size);
   if (!face) {
     DrawTextFallback(text, bounds, font_size, brush);
     return;
   }
-
-  u32 pixel_size = static_cast<u32>(font_size);
-  if (pixel_size == 0) pixel_size = 1;
-  FT_Set_Pixel_Sizes(face, 0, pixel_size);
 
   // #48: obtain a cached hb_font_t for this handle instead of the
   // previous per-DrawText hb_ft_font_create_referenced/hb_font_destroy.
