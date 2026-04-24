@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中
+构建中·轮次 1 完成（Phase 0-3 of 7 ✅；下次进入 Phase 4）
 
 ## 当前任务
 
@@ -16,7 +16,14 @@
 - **5 决策：** D1 阶梯验证 / D2 thread_local + RAII / D3 B1+B2 组合（不含 SIMD）/ D4 保持 Vector<u8> / D5 刚性 <3000 ns
 - **阶梯退出：** 任一 Phase 末 warm_Medium < 3000 ns 即跳进 Phase 7 收尾；Phase 6 仍未达标则 AskQuestion 走 B3 SIMD 升级分支
 - **Phase 0 锚点（2026-04-24 本机当日）：** `BM_DrawTextReal_Warm_Medium_mean = 5412 ns`（CV 0.19%）；所有后续 Phase 用此同机锚点做对比，目标绝对值 < 3000 ns
-- 下一步：Phase 1 — 候选 A hb_buffer 复用（`HbBufferHolder` + `thread_local`）
+- **轮次 1 成果（Phase 0-3，4 commits）：**
+  - Phase 0 baseline + toolchain audit → commit `6b4fa54`
+  - Phase 1 A `hb_buffer` 复用（thread_local RAII）→ 5434→5397 ns (-0.7%) → commit `4ff74a3`
+  - Phase 2 C `FT_Set_Pixel_Sizes` 状态缓存（`SetFacePixelSize` 幂等 API）→ 5323→5266 ns (-1.1%) → commit `6944f35`
+  - Phase 3 E 默认 FontHandle 缓存（`cached_default_font_` 成员）→ 5403→5386 ns (-0.3%) → commit `ab0f56d`
+  - **累计 Phase 0→3 = -26 ns (-0.5%)**，远低于 plan 预期 400-900 ns
+  - **关键洞察**：真正瓶颈不在 HarfBuzz/FreeType API 开销层 → 大概率在内层 blit loop（B1+B2）或 GlyphCache 查找（D）
+- 下一步（轮次 2）：Phase 4 D `GlyphCache::Put` 返回 `GlyphBitmap*`（消掉 Put 后紧跟的 Get 二次查找） + Phase 5 B1 `/255` 乘移位近似（含 RED 反向探针 GTest） + Phase 6 B2 预裁剪 / row pointer 优化；仍不达标则 AskQuestion 走 B3 SIMD 分支
 
 ## 未合并分支
 
