@@ -5,6 +5,7 @@
 #include "veloxa/foundation/base/types.h"
 #include "veloxa/foundation/strings/string_view.h"
 #include "veloxa/text/font_handle.h"  // FontHandle, kInvalidFont
+#include "veloxa/text/shape_cache.h"  // ShapeCache, ShapedRun
 
 struct FT_LibraryRec_;
 struct FT_FaceRec_;
@@ -48,6 +49,28 @@ class FontManager {
   // Returns nullptr for invalid handle or if the handle has no FT_Face.
   hb_font_t* GetHbFont(FontHandle handle, u32 pixel_size);
 
+  // TASK-20260424-04: shape-or-lookup hot entry point for DrawText. Returns
+  // a pointer to a ShapedRun whose lifetime matches the underlying cache
+  // slot (see ShapeCache stability contract). Never nullptr on success.
+  //
+  // On miss: invokes hb_shape via the thread-local hb_buffer, copies glyph
+  // infos+positions into a new ShapedRun, inserts it, returns pointer.
+  // On hit: direct pointer return, no hb_shape invocation.
+  //
+  // Behavior is controlled at runtime by the VX_SHAPE_CACHE_OFF environment
+  // variable (if set to any non-empty value at process start, lookups are
+  // forced miss and inserts are skipped — used for A/B benchmarking the
+  // pre-cache baseline).
+  //
+  // Returns nullptr only if handle is invalid or hb_font acquisition fails;
+  // callers must fall back to the legacy path in that case.
+  const ShapedRun* ShapeOrLookup(FontHandle handle, u32 pixel_size,
+                                  StringView text);
+
+  // Drops all cached shape results. Intended for font reload / unload
+  // paths so a stale ShapedRun cannot be returned after a font changes.
+  void ClearShapeCache();
+
   usize font_count() const;
 
  private:
@@ -66,6 +89,9 @@ class FontManager {
   FontEntry fonts_[kMaxFonts] = {};
   usize font_count_ = 0;
   FontHandle next_handle_ = 1;
+
+  // TASK-20260424-04: per-FontManager hb_shape result cache.
+  ShapeCache shape_cache_;
 };
 
 }  // namespace vx::text

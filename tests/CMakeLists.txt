@@ -198,3 +198,7 @@ target_link_libraries(freetype_shaper_test PRIVATE vx_text)
 # TASK-20260424-04: ShapeCache (P1 HashBytesU64 + P2 cache contract)
 vx_add_test(shape_cache_test text/shape_cache_test.cc)
 target_link_libraries(shape_cache_test PRIVATE vx_text)
+
+# TASK-20260424-04: DrawText hb_shape cache end-to-end (P3)
+vx_add_test(drawtext_shape_cache_test graphics/drawtext_shape_cache_test.cc)
+target_link_libraries(drawtext_shape_cache_test PRIVATE vx_graphics vx_text)
