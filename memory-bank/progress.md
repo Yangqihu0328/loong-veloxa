@@ -2,7 +2,10 @@
 
 ## 当前任务
 
-（无）— 等待 `/van` 开始新任务
+**TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）**（Level 2）
+
+- ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-04-drawtext-residual-opt` 创建（基于 main `78cabf4`）/ 基础假设核查（3 候选代码实证 — (a) 条件命题需 Phase 0 zero-row 占比实测；(b) 基本否决因 Phase 6 B2 已完成；(c) 高收益带空间副作用）/ 用户决策锁定（V1 D 纯收尾模式目标 `<3200 ns` / V2 Level 2 / V3 分支确认）
+- ⏳ /plan 待启动 — 头脑风暴 3 候选顺序 + (c) scope（cache key / invalidation / LRU 必要性）+ Phase 0 实测 zero-row 占比协议
 
 ## 已完成任务
 

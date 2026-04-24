@@ -1,15 +1,25 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲 — 等待 `/van` 开始新任务
+初始化 — 等待 /plan
 
 ## 当前任务
 
-（无）
+**TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）** — Level 2
+
+- 目标：warm Medium **3499 → < 3200 ns**（-299 ns / -8.5%，新结构性阈值；达成即归档，非 D5 刚性 `<3000 ns` 重启）
+- 来源：TASK-20260424-03 归档 §9.2 残余 499 ns P3 触发型候选
+- **VAN 基础假设核查产出：**
+  - (a) skip-all-zero AA fast path — 条件命题，-50 ~ -200 ns，需 Phase 0 实测 zero-row 占比
+  - (b) GlyphCache row_ptr 数组 — **基本否决**（Phase 6 B2 已做大头，残余 ≤ 20 ns）
+  - (c) hb_shape cache per-text — 高收益 -200 ~ -500 ns，但有空间 + cache miss 副作用
+- **预判阶梯顺序：** (a) → 达 `<3200 ns` 停 → 否则评估 (c) 空间代价后决策
+- 分支：`feature/TASK-20260424-04-drawtext-residual-opt`（基于 main `78cabf4`，已创建）
+- **下一步：** `/plan` 头脑风暴 → 3 候选顺序 + (c) scope 决定（含 cache key / invalidation / LRU 必要性）
 
 ## 未合并分支
 
-（无）
+- `feature/TASK-20260424-04-drawtext-residual-opt`（刚创建，基于 main `78cabf4`，0 commits）
 
 ## 最近归档
 

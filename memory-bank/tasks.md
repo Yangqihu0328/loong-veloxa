@@ -2,7 +2,70 @@
 
 ## 当前任务
 
-（无）
+### TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）
+
+- **复杂度级别：** Level 2（3 候选阶梯验证 + 1 新 fast path 设计 + /plan→/build 直通，跳过 /creative）
+- **状态：** 🟢 初始化完成 — 等待 /plan
+- **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（已创建，基于 main `78cabf4`）
+- **创建日期：** 2026-04-24
+- **来源：** TASK-20260424-03 归档 §9.2「残余 499 ns 可能突破点」P3 触发型候选（本任务用 D 模式主动推进，非刚性目标）
+- **设计文档：** 待 /plan 阶段产出 `docs/specs/2026-04-24-drawtext-residual-opt-design.md`
+- **实现计划：** 待 /plan 阶段产出 `docs/plans/2026-04-24-drawtext-residual-opt.md`
+- **需要创意阶段：** ❌ 否（Level 2；3 候选 scope 已 VAN 锁定，/plan 头脑风暴锁定决策后直接 /build）
+- **安全相关：** ❌ 否（性能优化 / 无外部输入 / 无认证 / 无新依赖）
+
+#### 目标
+
+SoftwareCanvas::DrawText 真路径 **warm Medium** 从 3499 ns → **< 3200 ns**（**-299 ns / -8.5%**，新结构性阈值），作为 TASK-24-03 K7 Resolved 后的收尾优化。**D 纯收尾模式**：达成 `<3200 ns` 新阈值即归档，避免 P3 长期挂单；不追求原 D5 刚性 `<3000 ns`（用户已于 TASK-24-03 知情接受）。
+
+| BM | 当前 warm（TASK-24-03 baseline）| 目标 | 倍率 |
+|---|---:|---:|---|
+| `BM_DrawTextReal_Warm_Medium` (19 char) | **3499 ns** | **< 3200 ns** | **-8.5% / -299 ns** |
+| `BM_DrawTextReal_Warm_Short` (2 char) | 677 ns | 不回归（≤ 677 × 1.1 = 744 ns）| 兜底 |
+| `BM_DrawTextReal_Warm_Long` (124 char) | 10573 ns | 不回归（≤ 10573 × 1.1 = 11630 ns）| 兜底 |
+
+#### VAN 阶段基础假设核查（代码实证）
+
+| # | 候选 | 代码位置 | 命题/实证 | 预期收益 | 状态 |
+|:-:|---|---|---|---:|:-:|
+| (a) | **skip-all-zero AA fast path** | `blit_avx2.h` L117-127 `BlendGlyphRow` + `blit_sse2.h` 入口 + 标量 `glyph_blend.h` | 当前无 zero-row short-circuit；FT_Bitmap 已 crop bounding box 所以 zero-row 分布**不确定**，需 Phase 0 实测 zero-row 占比再决定投入 | -50 ~ -200 ns | ⚠️ 条件命题（占比 <20% 则可能 regress）|
+| (b) | GlyphCache row_ptr 数组 | `glyph_cache.h` L11-18 `GlyphBitmap` 仅 `Vector<u8> alpha` | TASK-24-03 Phase 6 B2 **已在 DrawText 外层循环 hoist row_ptr**（`alpha_row = alpha.data() + row_start * width` 每 glyph 仅 1 次）→ 残余优化空间 ≤ 20 ns | ~5-20 ns | ❌ **基本否决** |
+| (c) | **hb_shape cache per-text** | `software_canvas.cc` L221-226 `hb_buffer_reset + add_utf8 + hb_shape` 每次 DrawText 无条件执行 | BM warm 测试同 text × N 次，cache 命中 100% → 最可能单独达标；但真实 UI workload 若 text 变化频繁 → cache miss 路径额外 hash + memcpy 开销可能 net regression | -200 ~ -500 ns | ✅ 高收益但带副作用 |
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | FT/hb/google-benchmark 已集成（TASK-20260414-01 / TASK-20260419-02），无新依赖 |
+| 环境就绪 | ✅ | `build-bench/` + `build-bench/benchmarks/bench_drawtext` 已存在；DejaVuSans.ttf ✅ |
+| 已有 artifact | ✅ 100% 复用 | `bench_drawtext.cc` 6 BM + `baseline/bench_drawtext.json` (TASK-24-03 Phase 7.4 刷新) + `pixel_blend_test.cc` 11 GTests + `blit_sse2.h` / `blit_avx2.h` / `glyph_blend.h` header 全部复用 |
+| **FetchContent 代理守卫** | ⊘ 跳过 | 本任务**不触发 FetchContent**（仅用已集成依赖）|
+| 待处理事项关联 | ✅ 多条 P1/P2 适用 | **plan × 0.6 通用协议**（第 7 数据点，「最窄」档候选）+ **bench 阈值表绝对增量兜底**（TASK-11 #1）+ **Mixed TDD RED 反向探针**（本任务 (a) 新 fast path 标配）+ **WSL2 bench 稳态协议**（TASK-24-03 §7 强制）+ **编译器优化识别反模式**（TASK-24-03 §8 — (a) pmovmskb+testz fast path 标量 fallback 需 godbolt）+ **异构工作负载 SIMD 尺寸阈值 dispatch**（TASK-24-03 新模式 — (a) 可能也需要 count 阈值）|
+
+#### 用户决策（VAN 阶段产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | D5 重启定位 | **D 纯收尾模式** | 目标放宽为 `<3200 ns` 新结构性阈值；达成即归档，无严格 `<3000 ns` 压力 |
+| V2 | 复杂度分级 | **Level 2** | 3 候选 scope 已锁定；无架构空白；直接 /plan→/build |
+| V3 | Git 分支 | **feature/TASK-20260424-04-drawtext-residual-opt** | 基于 main `78cabf4`（TASK-24-03 已合并）|
+
+具体优化顺序、组合、阈值由 `/plan` 头脑风暴定，但 VAN 预判推荐阶梯顺序：**(a) → 若达 `<3200 ns` 停 → 否则评估 (c) 的空间副作用后决策**；**(b) 直接不入 scope**。
+
+#### 初步验收标准（待 /plan 阶段精化）
+
+1. `BM_DrawTextReal_Warm_Medium_mean` < 3200 ns
+2. `BM_DrawTextReal_Warm_Short` / `_Long` 不回归（≤ baseline × 1.1）
+3. `BM_DrawTextReal_Cold_Medium` 不回归（≤ TASK-24-03 baseline 28338 ns × 1.1 = 31172 ns）
+4. `BM_DrawTextFallback_*` / 4 bench baseline 无显著退化（≤ 10%）
+5. ctest 全量 PASS（当前 59+ tests，预计 +2-4 new for (a) zero-skip）
+6. Release `-O3 -Werror` 0 err/warn
+7. **若 (a) 命中：**新增 `BlendGlyphRow_AllZeroAlpha_Skips` GTest + RED 反向探针
+8. **若 (c) 命中：**新增 cache invalidation GTest（font reload / pixel_size change / LRU 满）+ RED 反向探针
+9. `benchmarks/baseline/bench_drawtext.json` 刷新
+10. `benchmarks/baseline/README.md` 追加 TASK-20260424-04 历史行
+
+---
 
 <details>
 <summary>TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化 — ✅ 已归档（点开查看历史）</summary>
