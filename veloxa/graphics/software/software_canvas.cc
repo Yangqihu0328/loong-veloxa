@@ -172,12 +172,19 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
 
   using namespace vx::text;
 
+  // TASK-03 Phase 3 (E): cache default FontHandle per canvas instance.
+  // FindFont("", 400) performs an O(N) string compare against each loaded
+  // family on every warm DrawText call; on this canvas the handle is stable
+  // so a single resolution suffices.
   FontHandle font = kInvalidFont;
-  if (font_manager_->font_count() > 0) {
+  if (cached_default_font_ != 0) {
+    font = cached_default_font_;
+  } else if (font_manager_->font_count() > 0) {
     font = font_manager_->FindFont("", 400);
     if (font == kInvalidFont) {
       font = 1;
     }
+    cached_default_font_ = font;
   }
   if (font == kInvalidFont) {
     DrawTextFallback(text, bounds, font_size, brush);
