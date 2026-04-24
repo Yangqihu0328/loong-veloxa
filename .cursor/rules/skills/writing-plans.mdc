@@ -329,6 +329,44 @@ sleep 10
 
 **交叉引用：** `memory-bank/systemPatterns.md`「Bench Smoke 自检模式」段包含等价协议详情与 CV 门槛 rationale。
 
+### 7.1 Cache-targeted BM 稳态访问模式数学推演清单（cache/memoization 优化任务**必填**）
+
+> 反复出现（TASK-20260424-04 P4 实证）：`BM_*_RoundRobin` 原 plan 声明 "pool=256 + cap=128 + linear → 50% hit"，实测稳态是 **100% miss**（第一轮 evict 128..255 替换 0..127，第二轮反向）。Plan 阶段未做稳态推演，下游 BM 语义与命名背离 → Phase 4 临时调整 pool size，虽未影响门槛但削弱规划精度。
+
+**规则：** Plan 阶段设计 cache-targeted BM 时，**必须**在 plan §BM 定义段附带一张「稳态访问推演表」，列出 ≥ 3 轮迭代，明示稳态 hit rate。
+
+**推演模板：**
+
+```markdown
+#### BM_Name 稳态推演（cap=C, pool=P, policy=FIFO, access=linear）
+
+| 轮次 | access index 区间 | cache 内容（evict 后） | hit rate |
+|:-:|---|---|:-:|
+| 1 | 0 .. P-1 | 末 C 个：[P-C .. P-1] | 0% |
+| 2 | 0 .. P-1 | 末 C 个：[P-C .. P-1]（若 P > C 线性替换） | [推演结果] |
+| 3+ | ... | ... | [稳态值] |
+
+**稳态结论：** [XX% hit / XX% miss]，与 BM 命名 `Name` 语义一致性 ✅/❌
+```
+
+**常见稳态结论速查（FIFO cache, linear round-robin access）：**
+
+| cap vs pool | 稳态 hit rate | 适用语义 |
+|---|:-:|---|
+| `pool == cap` | **100% hit**（第 2 轮起 cache 恰好包含全 pool） | 压 full-cache scan cost |
+| `pool < cap` | **100% hit**（第 2 轮起） | 同上，但未压满容量 |
+| `pool > cap`，linear | **0% hit**（每轮 evict 都是下一轮要用的） | 压 miss + insert overhead |
+| `pool > cap`，pseudo-random | `~cap / pool`（均匀 workload 近似） | 真实混合负载模拟 |
+| `pool == 2 × cap`，每 text 连续访问 2 次 | **50% hit**（第 2 次必命中） | 短局部性模拟 |
+
+**验证：** 若 BM 实测 hit rate 与推演结果偏差 >5%，plan 阶段的访问模式假设错误 → Phase 开始前必须修正 pool/access 参数或更名 BM。
+
+**反模式：**
+- ❌ Plan 直接声明 "50% hit" / "80% hit" 不附推演 → 容易与 FIFO/LRU + linear/random 交互产生非直觉稳态
+- ❌ BM 命名含 "RoundRobin" / "MixedHit" 却未定义访问模式数学模型 → 下游 reader 误读测量语义
+
+**交叉引用：** `memory-bank/systemPatterns.md`「Env Toggle A/B 对照模式」段（env toggle 可作为稳态推演的事后验证手段：`VX_<FEATURE>_OFF=1 ./bench` 应与 0% hit 相同量级）。
+
 ### 8. 编译器已做优化识别 — 位运算/除法近似反模式（优化类任务**必填**）
 
 > 反复出现升级 P1（TASK-20260424-03 P5 实证）：手写 `/常量 → (x * magic + round) >> shift` 位运算近似在**标量路径**几乎必然输给 GCC/Clang 原生优化。

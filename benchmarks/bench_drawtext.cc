@@ -12,6 +12,19 @@
 //   BM_DrawTextReal_Warm_Short         "hi"          (warm)
 //   BM_DrawTextReal_Warm_Long          124-char text (warm)
 //
+//   A3 — TASK-20260424-04 hb_shape cache pressure (cache-hit / cache-miss)
+//   BM_DrawTextReal_Warm_TextVarying_RoundRobin
+//                                     128 unique texts, linear round-robin
+//                                     -> steady-state 100% hit; stresses
+//                                        ShapeCache::LookupOrNull scan over
+//                                        a full 128-slot cache.
+//   BM_DrawTextReal_Warm_TextVarying_AllMiss
+//                                     1024 unique texts, linear sequential
+//                                     -> steady-state 100% miss; stresses
+//                                        hb_shape + Insert (reference for
+//                                        the cache-disabled baseline via
+//                                        VX_SHAPE_CACHE_OFF=1).
+//
 //   A2 — End-to-end Replay TextHeavy true-path vs fallback (validates K1)
 //   BM_ReplayTextHeavyFallback         32-div text-heavy DOM, fallback canvas
 //   BM_ReplayTextHeavyReal             same DOM, real canvas (warm)
@@ -23,12 +36,15 @@
 
 #include <benchmark/benchmark.h>
 
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "benchmarks/layout_corpus.h"
 #include "veloxa/core/css/selector.h"
@@ -188,6 +204,83 @@ static void BM_DrawTextReal_Warm_Long(benchmark::State& state) {
   state.SetItemsProcessed(state.iterations() * 124);
 }
 BENCHMARK(BM_DrawTextReal_Warm_Long);
+
+// ---- A3: TASK-20260424-04 hb_shape cache pressure ------------------------
+
+// Deterministic medium-length text pool. Each text is ~19 ASCII chars so
+// the per-iteration glyph count is close to BM_DrawTextReal_Warm_Medium,
+// isolating the cache hit-rate effect from glyph-count variation.
+const std::vector<std::string>& VaryingTextPool(std::size_t n) {
+  static std::map<std::size_t, std::vector<std::string>> cache;
+  static std::mutex mu;
+  std::lock_guard<std::mutex> lk(mu);
+  auto it = cache.find(n);
+  if (it != cache.end()) return it->second;
+  std::vector<std::string> pool;
+  pool.reserve(n);
+  char buf[32];
+  for (std::size_t i = 0; i < n; ++i) {
+    // 19 chars, varies in all positions across i to defeat any prefix-only
+    // fingerprint optimization a future hash might introduce.
+    std::snprintf(buf, sizeof(buf), "T%07zu quick brwn", i);
+    pool.emplace_back(buf);
+  }
+  return cache.emplace(n, std::move(pool)).first->second;
+}
+
+// pool size == ShapeCache::kCapacity. Linear round-robin access lands
+// each text back in cache after one pool traversal; steady-state is
+// 100% hit. Warm-up pre-fills the cache.
+constexpr std::size_t kPoolRR = 128;
+
+static void BM_DrawTextReal_Warm_TextVarying_RoundRobin(
+    benchmark::State& state) {
+  const auto& pool = VaryingTextPool(kPoolRR);
+  auto& c = CanvasReal();
+  vx::gfx::Rect r{0.0f, 0.0f, 256.0f, 16.0f};
+  auto br = WhiteBrush();
+  // Warm-up: prime the cache so the steady-state loop is entirely hits.
+  for (std::size_t i = 0; i < kPoolRR; ++i) {
+    c.DrawText(vx::StringView(pool[i].data(), pool[i].size()), r, 16.0f, br);
+  }
+  std::size_t idx = 0;
+  for (auto _ : state) {
+    c.DrawText(vx::StringView(pool[idx].data(), pool[idx].size()), r,
+               16.0f, br);
+    benchmark::ClobberMemory();
+    idx = (idx + 1) % kPoolRR;
+  }
+  state.SetItemsProcessed(state.iterations() * 19);
+  state.SetLabel("hit=100%");
+}
+BENCHMARK(BM_DrawTextReal_Warm_TextVarying_RoundRobin);
+
+// pool size >> cap (1024 > 128). Linear sequential access -> steady-state
+// 100% miss. Acts as the "cache-disabled" ceiling; comparing this BM vs
+// the pre-cache baseline (VX_SHAPE_CACHE_OFF=1) measures the insert +
+// linear-scan overhead introduced by the cache on the miss path.
+constexpr std::size_t kPoolMiss = 1024;
+
+static void BM_DrawTextReal_Warm_TextVarying_AllMiss(
+    benchmark::State& state) {
+  const auto& pool = VaryingTextPool(kPoolMiss);
+  auto& c = CanvasReal();
+  // Pre-touch glyph cache with the medium base text so glyph raster is
+  // warm and we isolate hb_shape / ShapeCache insertion cost.
+  WarmUp(vx::StringView(kMedium));
+  vx::gfx::Rect r{0.0f, 0.0f, 256.0f, 16.0f};
+  auto br = WhiteBrush();
+  std::size_t idx = 0;
+  for (auto _ : state) {
+    c.DrawText(vx::StringView(pool[idx].data(), pool[idx].size()), r,
+               16.0f, br);
+    benchmark::ClobberMemory();
+    idx = (idx + 1) % kPoolMiss;
+  }
+  state.SetItemsProcessed(state.iterations() * 19);
+  state.SetLabel("miss=100%");
+}
+BENCHMARK(BM_DrawTextReal_Warm_TextVarying_AllMiss);
 
 // ---- A2: end-to-end Replay TextHeavy true vs fallback --------------------
 

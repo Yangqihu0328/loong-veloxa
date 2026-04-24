@@ -1,5 +1,6 @@
 #include "veloxa/text/font_manager.h"
 
+#include <cstdlib>
 #include <cstring>
 
 #include <ft2build.h>
@@ -7,7 +8,25 @@
 #include <hb.h>
 #include <hb-ft.h>
 
+#include "veloxa/foundation/base/hash.h"
+#include "veloxa/text/hb_buffer_holder.h"
+
 namespace vx::text {
+
+namespace {
+
+// Latched at first call: reads VX_SHAPE_CACHE_OFF once and caches the
+// result. Ensures the flag cannot flip mid-run and that the env lookup
+// cost is paid exactly once.
+bool ShapeCacheDisabled() {
+  static const bool disabled = [] {
+    const char* v = std::getenv("VX_SHAPE_CACHE_OFF");
+    return v != nullptr && v[0] != '\0';
+  }();
+  return disabled;
+}
+
+}  // namespace
 
 FontManager::FontManager() = default;
 
@@ -26,6 +45,10 @@ Status FontManager::Init() {
 }
 
 void FontManager::Shutdown() {
+  // TASK-20260424-04: invalidate shape results before releasing the
+  // underlying fonts, so a subsequent Init can't see a stale ShapedRun
+  // if a future FontHandle value collides with a previous one.
+  shape_cache_.Clear();
   for (usize i = 0; i < font_count_; ++i) {
     // Destroy hb_font_t before FT_Face — hb_ft_font_create_referenced
     // holds a reference to the FT_Face but freeing the face first is
@@ -119,6 +142,60 @@ FT_FaceRec_* FontManager::SetFacePixelSize(FontHandle handle, u32 pixel_size) {
     return entry.face;
   }
   return nullptr;
+}
+
+void FontManager::ClearShapeCache() { shape_cache_.Clear(); }
+
+const ShapedRun* FontManager::ShapeOrLookup(FontHandle handle, u32 pixel_size,
+                                             StringView text) {
+  // Cache lookup (skipped when VX_SHAPE_CACHE_OFF=1).
+  ShapeCacheKey key{handle, pixel_size,
+                    HashBytesU64(reinterpret_cast<const u8*>(text.data()),
+                                 text.size()),
+                    static_cast<u32>(text.size())};
+  if (!ShapeCacheDisabled()) {
+    const ShapedRun* hit = shape_cache_.LookupOrNull(key);
+    if (hit) return hit;
+  }
+
+  // Miss path: run hb_shape on the thread-local buffer, copy results into
+  // a new ShapedRun, and insert.
+  hb_font_t* hb_font = GetHbFont(handle, pixel_size);
+  if (!hb_font) return nullptr;
+
+  hb_buffer_t* buf = AcquireThreadLocalHbBuffer();
+  if (!buf) return nullptr;
+  hb_buffer_reset(buf);
+  hb_buffer_add_utf8(buf, text.data(), static_cast<int>(text.size()), 0, -1);
+  hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
+  hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
+  hb_buffer_guess_segment_properties(buf);
+  hb_shape(hb_font, buf, nullptr, 0);
+
+  u32 glyph_count = 0;
+  const hb_glyph_info_t* glyph_info =
+      hb_buffer_get_glyph_infos(buf, &glyph_count);
+  const hb_glyph_position_t* glyph_pos =
+      hb_buffer_get_glyph_positions(buf, &glyph_count);
+
+  ShapedRun run;
+  run.glyphs.reserve(glyph_count);
+  for (u32 i = 0; i < glyph_count; ++i) {
+    run.glyphs.push_back(
+        ShapedGlyph{glyph_info[i].codepoint,
+                    static_cast<f32>(glyph_pos[i].x_offset) / 64.0f,
+                    static_cast<f32>(glyph_pos[i].y_offset) / 64.0f,
+                    static_cast<f32>(glyph_pos[i].x_advance) / 64.0f});
+  }
+
+  if (ShapeCacheDisabled()) {
+    // Cache is disabled — return a thread_local copy so the pointer stays
+    // valid for the immediate caller but nothing is retained across calls.
+    thread_local ShapedRun uncached_buffer;
+    uncached_buffer = std::move(run);
+    return &uncached_buffer;
+  }
+  return shape_cache_.Insert(key, std::move(run));
 }
 
 hb_font_t* FontManager::GetHbFont(FontHandle handle, u32 pixel_size) {

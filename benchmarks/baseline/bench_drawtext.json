@@ -1,6 +1,6 @@
 {
   "context": {
-    "date": "2026-04-24T23:21:28+08:00",
+    "date": "2026-04-25T00:48:34+08:00",
     "host_name": "qihooz",
     "executable": "./build-bench/benchmarks/bench_drawtext",
     "num_cpus": 8,
@@ -32,7 +32,7 @@
         "num_sharing": 8
       }
     ],
-    "load_avg": [0.211426,0.125977,0.0981445],
+    "load_avg": [0.63916,1.41504,1.13379],
     "library_version": "v1.9.1",
     "library_build_type": "release",
     "json_schema_version": 1
@@ -47,11 +47,11 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 3177536,
-      "real_time": 4.4927340302945890e+02,
-      "cpu_time": 4.4926711546305063e+02,
+      "iterations": 1561100,
+      "real_time": 4.7144010119040161e+02,
+      "cpu_time": 4.7142904106079050e+02,
       "time_unit": "ns",
-      "items_per_second": 4.4516946181085166e+06
+      "items_per_second": 4.2424200161697324e+06
     },
     {
       "name": "BM_DrawTextFallback_Medium",
@@ -62,11 +62,11 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 390676,
-      "real_time": 3.6078363630183858e+03,
-      "cpu_time": 3.6078353187807802e+03,
+      "iterations": 193000,
+      "real_time": 3.6865478756094417e+03,
+      "cpu_time": 3.6864858601036262e+03,
       "time_unit": "ns",
-      "items_per_second": 5.2663157603381956e+06
+      "items_per_second": 5.1539598200075319e+06
     },
     {
       "name": "BM_DrawTextReal_Cold_Medium",
@@ -77,11 +77,11 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 48761,
-      "real_time": 2.8338060436240838e+04,
-      "cpu_time": 2.8436214208075755e+04,
+      "iterations": 24338,
+      "real_time": 2.8718582302003906e+04,
+      "cpu_time": 2.8788960719861250e+04,
       "time_unit": "ns",
-      "items_per_second": 6.6816207885380497e+05
+      "items_per_second": 6.5997519621790538e+05
     },
     {
       "name": "BM_DrawTextReal_Warm_Medium",
@@ -92,11 +92,11 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 405431,
-      "real_time": 3.4992225087707852e+03,
-      "cpu_time": 3.4991615737326451e+03,
+      "iterations": 370461,
+      "real_time": 1.8774567714900465e+03,
+      "cpu_time": 1.8774087690742062e+03,
       "time_unit": "ns",
-      "items_per_second": 5.4298721564126620e+06
+      "items_per_second": 1.0120331977233354e+07
     },
     {
       "name": "BM_DrawTextReal_Warm_Short",
@@ -107,11 +107,11 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 2075116,
-      "real_time": 6.7706622182038427e+02,
-      "cpu_time": 6.7706087466917540e+02,
+      "iterations": 2843330,
+      "real_time": 2.4438751323359793e+02,
+      "cpu_time": 2.4437960841689150e+02,
       "time_unit": "ns",
-      "items_per_second": 2.9539441353441630e+06
+      "items_per_second": 8.1839888890736112e+06
     },
     {
       "name": "BM_DrawTextReal_Warm_Long",
@@ -122,41 +122,73 @@
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 131782,
-      "real_time": 1.0573080989717375e+04,
-      "cpu_time": 1.0572874565570412e+04,
+      "iterations": 197859,
+      "real_time": 3.5514650180019048e+03,
+      "cpu_time": 3.5514407027226448e+03,
       "time_unit": "ns",
-      "items_per_second": 1.1728125518843714e+07
+      "items_per_second": 3.4915407683686718e+07
+    },
+    {
+      "name": "BM_DrawTextReal_Warm_TextVarying_RoundRobin",
+      "family_index": 6,
+      "per_family_instance_index": 0,
+      "run_name": "BM_DrawTextReal_Warm_TextVarying_RoundRobin",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 320857,
+      "real_time": 2.1891265861124757e+03,
+      "cpu_time": 2.1890484421408923e+03,
+      "time_unit": "ns",
+      "items_per_second": 8.6795703714157976e+06,
+      "label": "hit=100%"
+    },
+    {
+      "name": "BM_DrawTextReal_Warm_TextVarying_AllMiss",
+      "family_index": 7,
+      "per_family_instance_index": 0,
+      "run_name": "BM_DrawTextReal_Warm_TextVarying_AllMiss",
+      "run_type": "iteration",
+      "repetitions": 1,
+      "repetition_index": 0,
+      "threads": 1,
+      "iterations": 178540,
+      "real_time": 3.9074760783058719e+03,
+      "cpu_time": 3.9073108267054995e+03,
+      "time_unit": "ns",
+      "items_per_second": 4.8626794341877587e+06,
+      "label": "miss=100%"
     },
     {
       "name": "BM_ReplayTextHeavyFallback",
-      "family_index": 6,
+      "family_index": 8,
       "per_family_instance_index": 0,
       "run_name": "BM_ReplayTextHeavyFallback",
       "run_type": "iteration",
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 1836,
-      "real_time": 8.5667773530476633e+05,
-      "cpu_time": 8.5667567701525067e+05,
+      "iterations": 838,
+      "real_time": 8.3107241167662421e+05,
+      "cpu_time": 8.3105547374701640e+05,
       "time_unit": "ns",
-      "items_per_second": 1.1206107816026040e+05
+      "items_per_second": 1.1551575440224292e+05
     },
     {
       "name": "BM_ReplayTextHeavyReal",
-      "family_index": 7,
+      "family_index": 9,
       "per_family_instance_index": 0,
       "run_name": "BM_ReplayTextHeavyReal",
       "run_type": "iteration",
       "repetitions": 1,
       "repetition_index": 0,
       "threads": 1,
-      "iterations": 1118,
-      "real_time": 1.0313664740330519e+06,
-      "cpu_time": 1.0313540670840794e+06,
+      "iterations": 912,
+      "real_time": 7.7217546162213886e+05,
+      "cpu_time": 7.7215928618421010e+05,
       "time_unit": "ns",
-      "items_per_second": 9.3081515905995620e+04
+      "items_per_second": 1.2432667937519016e+05
     }
   ]
 }

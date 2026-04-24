@@ -4,38 +4,14 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <hb.h>
-#include <hb-ft.h>
 
 #include "veloxa/foundation/base/assert.h"
 #include "veloxa/graphics/software/blit_avx2.h"
 #include "veloxa/text/font_manager.h"
 #include "veloxa/text/glyph_cache.h"
+#include "veloxa/text/shape_cache.h"
 
 namespace vx::gfx::sw {
-
-namespace {
-
-// TASK-20260424-03 Phase 1 (D2): hb_buffer reuse via thread_local RAII holder.
-// Eliminates per-DrawText hb_buffer_create/destroy (≈ glibc arena malloc +
-// structure init). Thread-safe by construction (each thread owns its own
-// buffer); leak-safe via dtor running at thread exit.
-struct HbBufferHolder {
-  hb_buffer_t* buf = nullptr;
-  HbBufferHolder() : buf(hb_buffer_create()) {}
-  ~HbBufferHolder() {
-    if (buf) hb_buffer_destroy(buf);
-  }
-  HbBufferHolder(const HbBufferHolder&) = delete;
-  HbBufferHolder& operator=(const HbBufferHolder&) = delete;
-};
-
-hb_buffer_t* AcquireThreadLocalHbBuffer() {
-  thread_local HbBufferHolder holder;
-  return holder.buf;
-}
-
-}  // namespace
 
 SoftwareCanvas::SoftwareCanvas(vx::u32* pixels, vx::u32 width, vx::u32 height,
                                vx::u32 stride,
@@ -204,41 +180,29 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     return;
   }
 
-  // #48: obtain a cached hb_font_t for this handle instead of the
-  // previous per-DrawText hb_ft_font_create_referenced/hb_font_destroy.
-  // FontManager handles reconfiguration when pixel_size differs.
-  hb_font_t* hb_font = font_manager_->GetHbFont(font, pixel_size);
-  if (!hb_font) {
+  // TASK-20260424-04: single warm-path entry point. ShapeOrLookup either
+  // returns a cached ShapedRun (hit — ~1 FNV-1a over `text` + 128-slot
+  // linear scan) or performs hb_shape on the thread-local hb_buffer and
+  // inserts the result. GetHbFont and hb_buffer acquisition are handled
+  // inside ShapeOrLookup on the miss path.
+  const ShapedRun* shaped = font_manager_->ShapeOrLookup(font, pixel_size,
+                                                         text);
+  if (!shaped) {
     DrawTextFallback(text, bounds, font_size, brush);
     return;
   }
-
-  hb_buffer_t* buf = AcquireThreadLocalHbBuffer();
-  if (!buf) {
-    DrawTextFallback(text, bounds, font_size, brush);
-    return;
-  }
-  hb_buffer_reset(buf);
-  hb_buffer_add_utf8(buf, text.data(), static_cast<int>(text.size()), 0, -1);
-  hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
-  hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
-  hb_buffer_guess_segment_properties(buf);
-  hb_shape(hb_font, buf, nullptr, 0);
-
-  u32 glyph_count = 0;
-  hb_glyph_info_t* glyph_info = hb_buffer_get_glyph_infos(buf, &glyph_count);
-  hb_glyph_position_t* glyph_pos =
-      hb_buffer_get_glyph_positions(buf, &glyph_count);
 
   f32 pen_x = bounds.x;
   f32 pen_y = bounds.y + static_cast<f32>(face->size->metrics.ascender >> 6);
   Color text_color = brush.solid;
 
-  for (u32 i = 0; i < glyph_count; ++i) {
-    u32 glyph_id = glyph_info[i].codepoint;
-    f32 x_offset = glyph_pos[i].x_offset / 64.0f;
-    f32 y_offset = glyph_pos[i].y_offset / 64.0f;
-    f32 x_advance = glyph_pos[i].x_advance / 64.0f;
+  const usize glyph_count = shaped->glyphs.size();
+  for (usize i = 0; i < glyph_count; ++i) {
+    const ShapedGlyph& g = shaped->glyphs[i];
+    u32 glyph_id = g.glyph_id;
+    f32 x_offset = g.x_offset;
+    f32 y_offset = g.y_offset;
+    f32 x_advance = g.x_advance;
 
     const GlyphBitmap* cached =
         glyph_cache_->Get(font, glyph_id, pixel_size);
@@ -311,9 +275,8 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     pen_x += x_advance;
   }
 
-  // TASK-03 Phase 1: buf is owned by thread_local HbBufferHolder; do not
-  // destroy here. Contents will be cleared via hb_buffer_reset on next call.
-  // hb_font is owned by FontManager; do not destroy here.
+  // TASK-20260424-04: hb_buffer + hb_font are owned by FontManager /
+  // thread-local holder; nothing to release here.
 }
 
 void SoftwareCanvas::DrawImage(const Image& image, const Rect& src_rect,

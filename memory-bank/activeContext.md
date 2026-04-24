@@ -1,18 +1,61 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲 — 等待 `/van` 开始新任务
+空闲 — 等待新任务（使用 `/van` 启动）
 
 ## 当前任务
 
-（无）
+**无活跃任务** — 使用 `/van` 启动新任务
+
+## 最近完成
+
+**TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）** — Level 2 ✅ 已归档
+
+- 目标：warm Medium **3499 → < 3200 ns**（-299 ns / -8.5%，新结构性阈值；达成即归档）
+- 来源：TASK-20260424-03 归档 §9.2 残余 499 ns P3 触发型候选
+- **VAN 基础假设核查（已完成）：**
+  - (a) skip-all-zero AA fast path — 条件命题，/plan 阶段进一步实证：SSE2 主循环无块级 zero-skip，但 FT_Bitmap 已 crop bbox → 净收益 ≈ 0 风险高 → **放弃**
+  - (b) GlyphCache row_ptr 数组 — 基本否决（Phase 6 B2 已做大头，残余 ≤ 20 ns）
+  - (c) hb_shape cache per-text — 高收益 -1000 ~ -2100 ns（hit 路径节省 hb_shape_full 全部成本），**/plan 选定主攻方向**
+- **/plan 头脑风暴 5 决策（已锁定）：**
+  - Q1 候选组合：**方案 B（仅 (c) hb_shape cache + 精简 FIFO LRU）**
+  - Q2 Cache key：**K2（u64 xxhash fingerprint + text_len 碰撞降级护栏）**
+  - Q3 存活范围：**S2（per-FontManager 成员）**，FontManager 生命周期对齐
+  - Q4 容量策略：**C1（固定 128 entry + FIFO 淘汰）**，内存天花板 ~40 KB
+  - Q5 回归护栏：**B1 RoundRobin 256 门槛** + B3 AllMiss 参考（入 baseline CSV 不计门槛）
+- **设计文档：** `docs/specs/2026-04-24-drawtext-shape-cache-design.md`
+- **实现计划：** `docs/plans/2026-04-24-drawtext-shape-cache.md`（6 Phase / 12 Task / 预估 ~2h 3m × 0.6 校准）
+- **需要创意阶段：** ❌ 否（Level 2；所有设计决策已锁定）
+- 分支：`feature/TASK-20260424-04-drawtext-residual-opt`（基于 main `78cabf4`，已创建）
+- **构建结果（Phase 1-6 全部完成）：**
+  - P1 `b8f700e`: HashBytesU64 FNV-1a + 3 tests PASS
+  - P2 `f081ed9`: ShapeCache FIFO + FontHandle 提取 + 7 tests PASS（含 T6 碰撞降级）
+  - P3 `623ad47`: FontManager::ShapeOrLookup + DrawText 接入 + HbBufferHolder 提取 + 4 集成 tests；917/917 ctest PASS；Release -O3 干净
+  - P4 `2b4310a`: 2 新 BMs（RoundRobin / AllMiss）+ VX_SHAPE_CACHE_OFF env 开关 + pre-baseline 采集
+  - P5 / P6（本 commit 合并）：WSL2 稳态协议 10 reps bench + baseline.json + README 刷新
+- **最终门槛判决（全部 ✅）：**
+  - Warm_Medium: 3499 → **2350 ns mean / 1877 ns single**（-32.8% / -46.4%；< 3200 ns 目标超额 850 ns；间接达成技术刚性 <3000 ns）
+  - Warm_Short: 677 → 311 ns (-54%)；Warm_Long: 10573 → 4333 ns (-59%)
+  - TextVarying_RoundRobin (hit=100%): 2676 ns；AllMiss (miss=100%): 4711 ns
+  - Cache ON vs VX_SHAPE_CACHE_OFF=1: Warm_Medium 1788 vs 3542 ns (env toggle 精度验证)
+  - Fallback / ReplayTextHeavy* 无回归（-0.1% ~ +2% 噪音区间，ReplayReal 反降 -9.8%）
+- **回顾完成（2026-04-25）：** `memory-bank/reflection/reflection-TASK-20260424-04.md`
+  - 关键发现：(1) plan × 0.6 第 7 数据点 **0.26×**（「最窄路径」子档第 3 次确认，继 TASK-24-01 0.29× / TASK-24-03 0.34×）；(2) D 纯收尾模式门槛 <3200 ns 实测 2350 ns mean / 1877 ns single，**意外直破技术刚性 <3000 ns**，根因：hb_shape API 族（6 次连续调用）消除收益远超经验常数估算；(3) `VX_SHAPE_CACHE_OFF` env toggle 实现 A/B 对照，Cache OFF 3542 ns 与 TASK-24-03 baseline 3499 ns 吻合（1.2% 噪音）；(4) Cold_Medium CV 12.67% 属 FT_Load 噪声非任务范围
+  - 3 新模式沉淀 `systemPatterns.md`（Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`）
+  - 改进建议：5 条（P1 × 1 Cache BM 稳态数学推演清单 → ✅ 已入 `writing-plans.mdc` §7.1；P2 × 4 ✅ 已入 systemPatterns）
+- **归档完成（2026-04-25）：** `memory-bank/archive/archive-TASK-20260424-04.md`（Level 2 全维度归档）
+
+## 下一步
+
+使用 `/van` 启动新任务。候选任务列表见「待处理事项 → 后续任务候选」段。
 
 ## 未合并分支
 
-（无）
+（所有待归档分支均已合并到 main；新任务启动时再创建 feature 分支）
 
 ## 最近归档
 
+- `memory-bank/archive/archive-TASK-20260424-04.md`（TASK-20260424-04 SoftwareCanvas::DrawText 真路径 warm 残余优化 D 纯收尾模式 — Level 2 单候选 /plan→/build 直通；Warm_Medium **3499→2350 ns mean / 1877 ns single (-32.8% / -46.4%)**，超额门槛 <3200 ns 850 ns **意外直破技术刚性 <3000 ns**；Warm_Short -54% / Warm_Long -59%；**VX_SHAPE_CACHE_OFF** env toggle A/B 精确剥离 cache 贡献（OFF 3542 ≈ TASK-24-03 baseline 3499，1.2% 噪音带）；FNV-1a 64-bit + text_len 双重 key 碰撞概率 2^-96；固定 128 FIFO + per-FontManager scope + 预提取 FontHandle/HbBufferHolder 零循环依赖；ctest 917/917 PASS（+14 cases 含 R2 反向探针 `DifferentTexts_DifferentOutput`）/ Release -O3 -Werror 零警告；**plan × 0.6 第 7 数据点 0.26×**「最窄路径」子档第 3 次确认（继 TASK-24-01 0.29× / TASK-24-03 0.34×）；**归档阶段落实 1 P1 规则**：`writing-plans.mdc` §7.1 Cache BM 稳态访问模式数学推演清单（推演模板 + 速查表 + 反模式）；**3 新模式沉淀 `systemPatterns.md`**（Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`）；9 commits 含 VAN/plan/P1-P6/reflect/archive；待 `--no-ff` 合并到 main）
 - `memory-bank/archive/archive-TASK-20260424-03.md`（TASK-20260424-03 SoftwareCanvas::DrawText 真路径 warm 优化 — **K7 Resolved**；已 `--no-ff` 合并到 main `e6fef0b`；7 Phase 阶梯 + 2 次 R1 AskQuestion 升级（SSE2 4 px/iter → AVX2 8 px/iter `count≥16` 智能阈值 dispatch）；Warm_Medium **5905→3499 ns (-40.7%)**，Warm_Long -39.4%，Cold_Medium 副产品 -46.4%；**业务目标达成**（真路径 3499 ns < Fallback 3608 ns）；技术刚性 D5 `<3000 ns` 差 499 ns (14%) 用户知情接受；**11 pixel_blend GTests + 3 次 RED 反向探针完整循环** (Phase 5 / SSE2 / AVX2)；ctest 59/59 PASS / Release `-O3 -Werror` 0 err/warn；**Phase 5 /255 乘-移位近似试验回退**实证 GCC `-O3` Granlund-Montgomery 覆盖手写（通用编译器洞察）；Phase 6 B2 单 Phase -12.2% 是最大单点收益（6× Phase 1-4 API 层累计）；Phase 7 SSE2 -28.6% 第二大；AVX2 `kAVX2MinPixelsPerRow=16` 保留 CJK/大字号 headroom；**plan × 0.6 第 6 数据点 0.34× 最窄档确认**；**归档阶段落实 2 P1 规则**：`writing-plans.mdc` §7 WSL2 稳态协议 + §8 编译器已做优化识别反模式；**4 新模式沉淀 `systemPatterns.md`**（异构工作负载 SIMD 尺寸阈值 dispatch / 负结果资产化 / 刚性目标+R1 升级路径 plan 模式 / 编译器已做优化识别反模式））
 - `memory-bank/archive/archive-TASK-20260424-01.md`（TASK-20260424-01 Layout super-linear knee 根因调查 — 根因 (d) ArenaAllocator 4KB block malloc/free churn 定位；默认 block 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40× 均 ~2.5× 改善；Phase 2 block-size 5 档扫描，32K 为 Flex sweet spot；**K8 新发现**：65K block > L1D 触发抖动 → Arena 设计守则「block ≤ L1D」；`DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；ctest 892/892 PASS；**plan × 0.6 第 5 数据点 0.29×**（115 min plan / ~33 min 实测，历史最快，「最窄路径」子档样板）；3 新模式沉淀 `systemPatterns.md`（扫描型脚本化模板+双指标交叉 / 公开行为锚定内部约束 / 最窄路径子档）；残余 ~40% super-linear 拆出 TASK-20260424-02；已 `--no-ff` 合并到 main `0882d0c`）
 - `memory-bank/archive/archive-TASK-20260419-13.md`（TASK-20260419-13 流程规则 P0/P1 沉淀冲刺 — 3 条积压条目一次性闭环：P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链可用性 grep（TASK-11 #2）/ P1 多轮次 Build 中间态（TASK-03 Round 1 首发）；9 文件修改（6 规则/命令 + 3 MB）/ 4 phase commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议（TASK-05/09/11/13 四数据点）；5 新模式沉淀 `systemPatterns.md`（Meta-dogfooding Phase 0 / 基础假设核查 / 单一真相来源占位符 / 实证微调 spec / bench 估时校准扩展跨类型）；已 `--no-ff` 合并到 main `8a436ed`）
@@ -35,7 +78,8 @@
 - **TASK-20260424-02（新增，TASK-24-01 Phase 1B 升级路径拆出，建议 P3 触发型）：** Layout 残余 super-linear 调查（per-phase 拆分 BM 定位 (e) L1D 抖动 / (f) 隐藏算法因素）— 承接 TASK-24-01 解决后剩余 ~40% super-linear（R256 仍 4.18× / R_flex 仍 6.40×）+ Phase 2 K8 新发现（65K block Flex 回弹暗示 L1D 抖动）。**触发条件**：下次 layout 性能需求（grid / multi-column）或主动预算
 - ~~TASK-20260419-11：已完成并合并到 main `8515c25`，详见 `archive-TASK-20260419-11.md~~`
 - ~~TASK-20260419-12：已立项为 TASK-20260424-03 并完成归档，K7 Resolved，详见 `archive-TASK-20260424-03.md`~~
-- **TASK-20260424-04（新增，TASK-24-03 残余 499 ns 拆出，建议 P3 触发型）：** DrawText 真路径 D5 刚性目标（`< 3000 ns`）残余优化。候选：(a) Skip-all-zero AA fast path（-100-200 ns）/ (b) GlyphCache row_ptr 数组预算（-50-100 ns）/ (c) hb_shape cache per-text（-200-500 ns，空间大）。**触发条件**：未来 D5 刚性目标重启或 CJK 大字号 workload 出现
+- ~~TASK-20260424-04：已立项并完成归档，详见 `archive-TASK-20260424-04.md`；D 纯收尾模式 Warm_Medium -32.8% 意外直破 <3000 ns 技术刚性目标~~
+- **TASK-20260424-05（新增，TASK-24-04 后续候选，P3 触发型）：** DrawText 真路径 ShapeCache 进一步优化 — (a) LRU 替代 FIFO（cap 降到 32 或 workload 偏斜场景）/ (b) Shape result interning（相同 glyph sequence 共享 ShapedRun，CJK 场景节省内存）/ (c) Layout `freetype_shaper::Measure()` 也用 `ShapeOrLookup`（layout pass 10-30% 潜在加速）。**触发条件**：Layout 性能 workload 驱动 / 内存敏感设备暴露 cap 不足 / CJK UI 大量文本节点
 
 ### 长期项（按优先级）
 
@@ -69,4 +113,7 @@
 - ~~**P1（新增, TASK-24-03 反思 #1，反复模式「前置依赖未验证」新变体）：** **Godbolt 验证编译器魔数优化 — 位运算/除法近似前置检查**~~ → ✅ **已于 TASK-20260424-03 /archive 阶段落实**：`writing-plans.mdc` §8「编译器已做优化识别 — 位运算/除法近似反模式」+ `systemPatterns.md`「已验证的模式（来自 TASK-20260424-03）」段「编译器已做优化识别 — 位运算近似反模式」（含 godbolt 验证命令 + SIMD 例外说明）
 - ~~**P1（新增, TASK-24-03 反思 #2）：** **WSL2 / 云机 bench warm-up 协议标准化**~~ → ✅ **已于 TASK-20260424-03 /archive 阶段落实**：`writing-plans.mdc` §7「WSL2 / 云机 bench 稳态协议」（4 步固定模板 + stash-swap 样板）+ `systemPatterns.md`「Bench Smoke 自检模式」追加「WSL2 / 云机 / Docker 稳态协议」附录（CV ≤ 2% 门槛 + 连续 2 次失败记为环境不可信）
 - **P2（新增, TASK-24-03 反思 #3-#7）：** 4 新模式 — **异构工作负载 SIMD 尺寸阈值 dispatch** / **负结果资产化** / **刚性目标+R1 升级路径 plan 模式** / **编译器已做优化识别反模式**。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260424-03 DrawText 真路径 warm 优化）」段；下次 SIMD / Mixed TDD D3 / 多候选优化类任务直接引用
+- ~~**P1（新增, TASK-24-04 反思 #4）：** Cache BM 稳态访问模式数学推演清单~~ → ✅ **已于 TASK-20260424-04 /archive 阶段落实**：`writing-plans.mdc` §7.1（推演模板 + FIFO/linear 5 场景速查表 + 反模式 + 交叉引用 env toggle 事后验证）。**根因**：TASK-24-04 P4 `RoundRobin` pool=256 plan 声明 "50% hit" 实际稳态 100% miss（FIFO+linear+cap=128），改为 pool=128 后实际 100% hit；Phase 4 临时调整虽未影响门槛但削弱规划精度
+- **P2（新增, TASK-24-04 反思 #1-#3）：** 3 新模式 — **Env Toggle A/B 对照模式**（process-level latched-once 环境变量 `VX_<FEATURE>_OFF` 单 build A/B 对照）/ **预提取依赖 Header 原则**（多 phase 任务预见透明重构第一次就完成，避免循环依赖 & 同文件二次修改）/ **第三方 API 消除型优化估时下限公式** `N × single_cost × (1-miss_rate)`（适用于消除一族连续 API 调用的 warm 路径 hit 优化）。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260424-04 DrawText hb_shape 结果缓存）」段；下次 cache/memoization/short-circuit 类优化直接引用
+- **P2（新增, TASK-24-04 反思 #1）：** `StringView(std::string)` ctor 兼容性与 plan 顶层表完整性自检 — 下次 plan smoke check 既有 grep 条目可覆盖 API ctor 矩阵；plan 尾部自检顶层文件清单（含 transparent refactor）与子任务一致。**触发条件**：累计 3+ 任务再出现即立项升级到规则；当前 TASK-24-04 各 1 次小瑕疵记观察
 
