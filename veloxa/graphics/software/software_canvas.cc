@@ -299,6 +299,16 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
               (text_color.b * sa + db * inv_sa) / 255);
           u8 oa = static_cast<u8>(sa + (da * inv_sa) / 255);
 
+          // TASK-03 Phase 5 (B1) negative finding: substituting DivBy255Approx
+          // mul-add-shift for `/255` in this loop caused a +1.1% regression
+          // under GCC -O3 (5311 -> 5367 ns on Warm_Medium, CV 0.65% stable).
+          // GCC already lowers /255 to Granlund-Montgomery magic-number
+          // multiplication (imul + shr) on x86_64, which is cheaper than the
+          // hand-rolled add-shift chain once u8 <-> u32 extensions are
+          // factored in. The helper + precision test
+          // (veloxa/graphics/software/glyph_blend.h,
+          //  tests/graphics/pixel_blend_test.cc) are retained as reference
+          // for any future SSE2/NEON SIMD pass.
           pixels_[dst_idx] = static_cast<u32>(or_) |
                              (static_cast<u32>(og) << 8) |
                              (static_cast<u32>(ob) << 16) |
