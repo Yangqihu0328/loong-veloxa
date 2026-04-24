@@ -5,8 +5,12 @@
 ### TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）
 
 - **复杂度级别：** Level 2（单候选方案 (c) hb_shape cache + 精简 FIFO + /plan→/build 直通，跳过 /creative）
-- **状态：** 🟢 构建完成 — 等待 /reflect（所有 6 Phase / 12 Task ✅；5 commits；10 门槛全通过）
-- **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（5 commits ahead of main `78cabf4`）
+- **状态：** 🟣 回顾完成 — 等待 /archive（所有 6 Phase / 12 Task ✅ + reflection 生成；7 commits）
+- **分支：** `feature/TASK-20260424-04-drawtext-residual-opt`（7 commits ahead of main `78cabf4`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260424-04.md`（2026-04-25）
+  - 关键发现：(1) plan × 0.6 第 7 数据点 **0.26×**「最窄路径」第 3 次确认；(2) D 模式 <3200 ns 实测 2350 ns mean 意外超额破技术刚性 <3000 ns，根因 hb_shape API 族（6 次）消除收益远超保守估算；(3) `VX_SHAPE_CACHE_OFF` env toggle A/B 精确剥离 cache 贡献（OFF 3542 ns ≈ TASK-24-03 baseline 3499 ns，1.2% 噪音）；(4) Cold_Medium +18.6% 属 FT_Load 噪声非任务范围
+  - 3 新模式入 `systemPatterns.md`：Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`
+  - 改进建议 5 条（P1 × 1 Cache BM 稳态数学推演清单，归档阶段入 `writing-plans.mdc`；P2 × 4 已落实到 `systemPatterns.md`）
 - **创建日期：** 2026-04-24
 - **来源：** TASK-20260424-03 归档 §9.2「残余 499 ns 可能突破点」P3 触发型候选（本任务用 D 模式主动推进，非刚性目标）
 - **设计文档：** `docs/specs/2026-04-24-drawtext-shape-cache-design.md`（11 段，含安全威胁建模 + 契约 + 测试矩阵）

@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建完成 — 等待 /reflect
+回顾中 — 等待 /archive
 
 ## 当前任务
 
@@ -35,7 +35,21 @@
   - TextVarying_RoundRobin (hit=100%): 2676 ns；AllMiss (miss=100%): 4711 ns
   - Cache ON vs VX_SHAPE_CACHE_OFF=1: Warm_Medium 1788 vs 3542 ns (env toggle 精度验证)
   - Fallback / ReplayTextHeavy* 无回归（-0.1% ~ +2% 噪音区间，ReplayReal 反降 -9.8%）
-- **下一步：** `/reflect` 回顾 → `/archive` 归档合并
+- **回顾完成（2026-04-25）：** `memory-bank/reflection/reflection-TASK-20260424-04.md`
+  - 关键发现：(1) plan × 0.6 第 7 数据点 **0.26×**（「最窄路径」子档第 3 次确认，继 TASK-24-01 0.29× / TASK-24-03 0.34×）；(2) D 纯收尾模式门槛 <3200 ns 实测 2350 ns mean / 1877 ns single，**意外直破技术刚性 <3000 ns**，根因：hb_shape API 族（6 次连续调用）消除收益远超经验常数估算；(3) `VX_SHAPE_CACHE_OFF` env toggle 实现 A/B 对照，Cache OFF 3542 ns 与 TASK-24-03 baseline 3499 ns 吻合（1.2% 噪音）；(4) Cold_Medium CV 12.67% 属 FT_Load 噪声非任务范围
+  - 3 新模式沉淀 `systemPatterns.md`（Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`）
+  - 改进建议：5 条（P1 × 1 Cache BM 稳态数学推演清单 → 待入 `writing-plans.mdc`；P2 × 4 入 systemPatterns / writing-plans 末段）
+
+## 待处理事项（来自 reflection，按任务归档推迟落实）
+
+- **P1 — Cache BM 稳态访问模式数学推演清单**（来源 TASK-20260424-04 反思 #4）：Plan 阶段写 cache-targeted BM 时需用表格推演 ≥ 3 轮迭代，明示 hit rate 稳态值。本次 RoundRobin pool=256 预期 50% hit 实际 100% miss（FIFO+linear+cap=128 稳态），改为 pool=128 后实际 100% hit。归档时追加到 `writing-plans.mdc` §7 WSL2 稳态协议段子项
+
+## 下一步
+
+`/archive` 归档 TASK-20260424-04：
+- 生成 `memory-bank/archive/archive-TASK-20260424-04.md`
+- 合并 `feature/TASK-20260424-04-drawtext-residual-opt` → main（`--no-ff`，7 commits）
+- 落实 P1 改进建议（Cache BM 稳态推演清单）到 `writing-plans.mdc`
 
 ## 未合并分支
 

@@ -18,7 +18,15 @@
   - TextVarying_RoundRobin 2676 ns (hit=100%, -25.8% vs pre-baseline 3605)；AllMiss 4711 ns (miss=100%, 入 baseline)
   - Fallback BMs 无变化（±2% 噪音），ReplayTextHeavyReal 反降 -9.8%
   - 917/917 ctest PASS（+4：shape_cache_test 10 + drawtext_shape_cache_test 4）；Release -O3 -Werror 零警告
-- ⏳ /reflect 待启动 — 回顾 6 Phase 实施、plan×0.6 校准第 7 数据点、门槛超额达成根因、hb_shape cache 通用模式抽取
+- ✅ /reflect 回顾完成（2026-04-25）— 生成 `memory-bank/reflection/reflection-TASK-20260424-04.md`（Level 2 全维度回顾）
+  - **计划 vs 实际**：6 Phase / 12 Task 一致；墙钟 ~53 min vs plan 205 min = **0.26×**（plan × 0.6 第 7 数据点，「最窄路径」子档第 3 次确认，继 TASK-24-01 0.29× / TASK-24-03 0.34×）；文件变更 plan 14 → 实际 17（+3 为 plan 子任务已列出但顶层表遗漏的 font_handle.h / hb_buffer_holder.{h,cc} 提取）
+  - **做得好（7 项）**：单候选方案 B 直通 / 6 次严格 TDD RED→GREEN 循环 / R2 反向探针 `DifferentTexts_DifferentOutput` 抗碰撞 / `VX_SHAPE_CACHE_OFF` env toggle 精确剥离 cache 贡献（OFF 3542 ≈ TASK-24-03 baseline 3499，1.2% 噪音）/ FontHandle + HbBufferHolder 双重预提取零循环依赖 / text_len 双重 key 将碰撞概率压到 2^-96 / plan × 0.6 第 7 数据点「最窄路径」
+  - **挑战（次要，无阻塞）**：CMake reconfigure 遗忘 1 次 / `StringView(std::string)` 构造不兼容 1 次 / RoundRobin pool=256 稳态数学瑕疵（预期 50% hit 实际 100% miss，改为 pool=128 → 100% hit 更有意义）；主要观察 Cold_Medium +18.6% CV 12.67% 属 FT_Load 主导噪声非任务范围
+  - **关键教训**：(1) 单候选 Level 2 + D 收尾模式可大幅超额达成，根因第三方 API 族消除（6 次 hb_*）收益远超经验常数；(2) env toggle A/B 比 branch 切换快 30 min；(3) 预提取依赖 header 在第一次改到相关文件时就完成
+  - **3 新模式沉淀 `systemPatterns.md`**：Env Toggle A/B 对照 / 预提取依赖 Header 原则 / 第三方 API 消除型优化估时下限公式 `N × single_cost × (1-miss_rate)`；「最窄路径」清单更新为 TASK-24-01 / 24-03 / 24-04 三数据点 0.26-0.34× 区间
+  - **改进建议 5 条**：P1 × 1 归档阶段落实到 `writing-plans.mdc`（Cache BM 稳态访问模式数学推演清单，避免本次 RoundRobin 预期瑕疵重演）；P2 × 4 已落实到 `systemPatterns.md`（3 新模式）或保留为下次 plan 阶段参考（StringView ctor 陷阱 / plan 顶层表完整性自检）
+  - **安全评估**：DoS（40 KB cap 硬顶）/ 碰撞侧信道（FNV-1a + text_len 2^-96）/ UAF（stability contract）/ Font reload stale hit（Shutdown Clear 顺序）4 威胁向量设计阶段 §6.2 已全部 mitigate
+- ⏳ /archive 待启动 — 归档 + 合并到 main + 落实 P1 改进建议
 
 ## 已完成任务
 

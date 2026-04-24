@@ -699,7 +699,7 @@ VAN / BUILD 阶段写候选方案表时，每个方案应附**一行根因验证
 |---|---|:-:|---|---|
 | 全新系统 | TASK-05 / TASK-09 | 3-4× | plan × 0.25-0.3 | 首次集成某类基础设施，多文件 + CMake 新 target |
 | 中等（2-5 文件） | TASK-11 / TASK-13 | 1.5-2× | plan × 0.5-0.6 | 扩展已有基础设施 / 文档沉淀 / 单模块重构 |
-| **最窄（1-3 文件 + 100% 基础设施复用）** | **TASK-24-01** | **0.29×** | **plan × 0.3** | 单行代码修改 + 1 GTest + baseline 刷新；无 CMake 变更；脚本化扫描可替代手工实验 |
+| **最窄（1-3 文件 + 100% 基础设施复用）** | **TASK-24-01 / TASK-24-03 / TASK-24-04** | **0.26-0.34×** | **plan × 0.3** | 单行代码修改 + 1 GTest + baseline 刷新；无 CMake 变更；脚本化扫描可替代手工实验（TASK-24-04 多文件但 100% 复用既有基础设施 → 仍入此档） |
 
 **「最窄路径」识别清单**（满足全部 → 按 plan × 0.3 预估）：
 - 核心改动 ≤ 3 文件
@@ -1211,6 +1211,100 @@ echo 'unsigned f(unsigned x) { return x / 255; }' | \
   gcc -O3 -S -x c - -o - | grep -E 'imul|shr|mul'
 # 预期：imul $0x80808081, ... + shr $0x7, ... → Granlund-Montgomery 已应用
 ```
+
+## 已验证的模式（来自 TASK-20260424-04 DrawText hb_shape 结果缓存）
+
+### Env Toggle A/B 对照模式（TASK-24-04 反思 #1 — 新模式）
+
+**问题**：引入新 cache/short-circuit 类优化后，如何**快速、可复现、可审计**地验证 "cache 贡献量" 而不必来回切 branch 或 git stash？传统做法是 `git checkout pre && bench` + `git checkout post && bench` + `compare.py`，但 setup 成本高（~30 min），且 pre/post 各跑一轮还是背景噪声大。
+
+**方案**：为新优化 feature 附带**同名环境变量禁用开关** `VX_<FEATURE>_OFF`，process-level latched-once（避免 benchmark 循环内反复读 env）。用户可在一次 build 内做 A/B 对照，pre-baseline 用 `VX_<FEATURE>_OFF=1 ./bench`，post 用 default env。
+
+**TASK-24-04 样板**：
+
+```cpp
+// veloxa/text/font_manager.cc
+static bool ShapeCacheDisabled() {
+  static const bool disabled = []() {
+    const char* v = std::getenv("VX_SHAPE_CACHE_OFF");
+    return v != nullptr && v[0] != '\0' && v[0] != '0';
+  }();
+  return disabled;
+}
+
+const ShapedRun* FontManager::ShapeOrLookup(...) {
+  if (!ShapeCacheDisabled()) {
+    if (const auto* hit = shape_cache_.LookupOrNull(key)) return hit;
+  }
+  // miss path ...
+}
+```
+
+**验证**：Cache ON Warm_Medium **1788 ns** vs `VX_SHAPE_CACHE_OFF=1` Warm_Medium **3542 ns** vs 上游 baseline **3499 ns**（env-off 与无优化版本差异 1.2% 在噪音带），**精确剥离 cache 贡献量**。
+
+**适用识别**：
+- Cache / memoization / lookup 表 / short-circuit fast path
+- 任何「是否启用优化」可在单 build 内通过 env 切换的 feature
+
+**反模式**：
+- ❌ 用编译期宏 `#ifdef` 切换 → 必须两次 build，setup 2×
+- ❌ Env 读取放热路径 → 每次调用 getenv syscall 抵消优化收益
+- ✅ Process-level latched-once（`static const bool = []{...}();`）
+
+**落实**：下次引入 cache / memoization / short-circuit 类优化 → 默认加同名 env 禁用开关（命名约定：`VX_<SHORT_FEATURE>_OFF`）。
+
+---
+
+### 预提取依赖 Header 原则（TASK-24-04 反思 #2 — 新模式）
+
+**问题**：多 phase 任务中，**后续 phase 若需要 include 当前 phase 尚未暴露的 symbol**，如果不预先提取到独立 header，容易触发**循环依赖** (A.h ↔ B.h) 或需要**第二次改同一文件**（破坏 phase 隔离）。
+
+**方案**：Phase 开始前识别"透明重构"需求（纯文件移动，语义不变），**在第一次改到相关文件时就一并完成**，而不是等到触发依赖问题时抢救。
+
+**TASK-24-04 样板**：
+- P2 `shape_cache.h` 需要 `FontHandle`（定义在 `font_manager.h`）；`font_manager.h` 下一步也需要 include `shape_cache.h`（P3）→ **预见循环依赖**。
+- 解法：P2 一并提取 `FontHandle` 到新 header `veloxa/text/font_handle.h`（20 lines），`font_manager.h` / `shape_cache.h` 各自 include 它。
+- 同理 P3 `FontManager::ShapeOrLookup` 需要复用 `software_canvas.cc` 的 thread_local `hb_buffer_t` → **预见第二次改 software_canvas.cc**。
+- 解法：P3 一并提取 `HbBufferHolder` 到 `veloxa/text/hb_buffer_holder.{h,cc}`（~60 lines），`font_manager.cc` / `software_canvas.cc` 各 include。
+
+**结果**：零循环依赖、零 ODR、零下游 include 破坏、零同文件二次修改。Plan 阶段若不预见，最晚在 P3 触发时 plan 阶段会需要新增 Refactor phase（+30 min），破坏 phase 粒度。
+
+**适用识别**：
+- 多 phase 任务（≥ 3 phase）
+- 当前 phase 引入新 header X，预期下一 phase 在已有 header Y 中 include X
+- Y 已存在 symbol Z，X 需要 Z
+
+**触发检查清单**：
+1. 新 header X 是否 include 已有 header Y？→ 若是，检查 Y 是否也会 include X（未来 phase）
+2. 若是，**本 phase 必须**把 X 与 Y 共需的 Z 提取到独立 header
+
+---
+
+### 第三方 API 消除型优化估时下限公式（TASK-24-04 反思 #3 — 新模式）
+
+**问题**：Plan 阶段对「消除一族第三方 API 连续调用」类优化估时容易过于保守（经验常数 -200 ~ -500 ns），导致**意外超额达成门槛**（本任务门槛 <3200 ns，实测 1877 ns single / 2350 ns mean）。
+
+**方案**：估时下限按 **`N × single_call_cost × (1 - miss_rate)`** 公式，而非经验常数：
+- `N` = 被消除的 API 连续调用次数
+- `single_call_cost` = 单次 API 代价经验值（profile 或 godbolt 反汇编粗估）
+- `miss_rate` = 目标 workload 的 cache miss 率（warm steady-state 通常 < 5%）
+
+**TASK-24-04 样板**：
+- 消除 6 次 hb_* 调用（`hb_buffer_reset` / `add_utf8` / `guess_segment_properties` / `hb_shape` / `get_glyph_infos` / `get_glyph_positions`）
+- 单次 hb_* 均摊 ~350 ns（profile 估算，hb_shape 本身占大头但其他 5 次也有 ~50-150 ns 各自）
+- miss_rate ≈ 0（warm 稳态）
+- 下限 = 6 × 350 × 1.0 ≈ **2100 ns**
+- 实测节省 = 3499 - 1745 ≈ **1754 ns**（误差 <17%，验证公式）
+
+**适用识别**：
+- 候选方案能**一次性消除一族连续第三方 API 调用**（shape / layout / rasterize / codec 等）
+- Warm 路径稳态 cache hit rate > 80%
+
+**反模式**：
+- ❌ 直接套用经验常数 -200 / -500 ns → plan 目标保守，意外超额不是坏事但削弱规划精度
+- ❌ 不区分单次 API 成本差异（如 hb_shape 单独占 60%）→ 公式只是下限兜底，实际可能更高
+
+---
 
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
