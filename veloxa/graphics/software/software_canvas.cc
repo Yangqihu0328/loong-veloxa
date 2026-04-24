@@ -13,6 +13,29 @@
 
 namespace vx::gfx::sw {
 
+namespace {
+
+// TASK-20260424-03 Phase 1 (D2): hb_buffer reuse via thread_local RAII holder.
+// Eliminates per-DrawText hb_buffer_create/destroy (≈ glibc arena malloc +
+// structure init). Thread-safe by construction (each thread owns its own
+// buffer); leak-safe via dtor running at thread exit.
+struct HbBufferHolder {
+  hb_buffer_t* buf = nullptr;
+  HbBufferHolder() : buf(hb_buffer_create()) {}
+  ~HbBufferHolder() {
+    if (buf) hb_buffer_destroy(buf);
+  }
+  HbBufferHolder(const HbBufferHolder&) = delete;
+  HbBufferHolder& operator=(const HbBufferHolder&) = delete;
+};
+
+hb_buffer_t* AcquireThreadLocalHbBuffer() {
+  thread_local HbBufferHolder holder;
+  return holder.buf;
+}
+
+}  // namespace
+
 SoftwareCanvas::SoftwareCanvas(vx::u32* pixels, vx::u32 width, vx::u32 height,
                                vx::u32 stride,
                                text::FontManager* font_manager,
@@ -180,7 +203,12 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     return;
   }
 
-  hb_buffer_t* buf = hb_buffer_create();
+  hb_buffer_t* buf = AcquireThreadLocalHbBuffer();
+  if (!buf) {
+    DrawTextFallback(text, bounds, font_size, brush);
+    return;
+  }
+  hb_buffer_reset(buf);
   hb_buffer_add_utf8(buf, text.data(), static_cast<int>(text.size()), 0, -1);
   hb_buffer_set_direction(buf, HB_DIRECTION_LTR);
   hb_buffer_set_script(buf, HB_SCRIPT_LATIN);
@@ -271,7 +299,8 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
     pen_x += x_advance;
   }
 
-  hb_buffer_destroy(buf);
+  // TASK-03 Phase 1: buf is owned by thread_local HbBufferHolder; do not
+  // destroy here. Contents will be cleared via hb_buffer_reset on next call.
   // hb_font is owned by FontManager; do not destroy here.
 }
 

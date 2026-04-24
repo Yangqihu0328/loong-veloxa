@@ -7,7 +7,8 @@
 - ✅ VAN 初始化（2026-04-24）— 任务 ID 分配 / 分支 `feature/TASK-20260424-03-drawtext-warm-opt` 创建 / 基础假设核查（K7 候选 a/b 实证 + 3 副产品候选识别）
 - ✅ /plan 规划完成（2026-04-24）— 头脑风暴 5 决策锁定（D1-D5） / 设计文档 `docs/specs/2026-04-24-drawtext-warm-opt-design.md` / 实现计划 `docs/plans/2026-04-24-drawtext-warm-opt.md`（7 Phase 阶梯骨架 + 130 min plan / ~78 min 预期 / 10 commits）/ 注入点核对表 6/6 可行
 - ✅ /build Phase 0（2026-04-24）— 工具核查（rg/jq shell MISS 已知；python3/find/bc ✅；build-bench/_deps 已存在跳 FetchContent 守卫）；API grep 实证 HashMap `bool Insert` + `V& operator[]` / FontEntry 无 ft_pixel_size / GlyphCache::Put 5 处下游（software_canvas + 4 测试）；本机当日 baseline `BM_DrawTextReal_Warm_Medium_mean = 5412 ns`（JSON baseline 5807 ns -7% 抖动；CV 0.19% 稳定）
-- ⏳ /build Phase 1-6 阶梯候选实施
+- ✅ /build Phase 1 A hb_buffer 复用（2026-04-24）— `HbBufferHolder` RAII + `thread_local` + `AcquireThreadLocalHbBuffer()`；`hb_buffer_create/destroy` per-call 消除；stash-swap 同窗口对比 Warm_Medium 5434→5397 ns（**-0.7%, -37 ns**），远低于预期 200-400 ns，**根因**：glibc tcmalloc 对同尺寸频繁 alloc/free 有 thread-cache 优化；Warm_Short 902→828 ns (-8.2%) 说明 fixed overhead 在短文本占比更大；ctest 26/26 PASS；D5 刚性目标 < 3000 ns 仍差 2397 ns，按 D1 阶梯进入 Phase 2
+- ⏳ /build Phase 2-6 阶梯候选实施
 - ⏳ /build Phase 7 baseline 刷新 + MB 收尾
 - ⏳ /reflect + /archive
 
@@ -16,7 +17,7 @@
 | Phase | 候选 | warm_Medium (ns) | Δ vs baseline | 累计 | 达标? | Ctest |
 |:-:|---|---:|---:|---:|:-:|:-:|
 | 0 | baseline | **5412** | 0 | 0 | ❌ | n/a |
-| 1 | A hb_buffer | _待_ | _待_ | _待_ | _待_ | _待_ |
+| 1 | A hb_buffer | **5397** | -37 (-0.7%) | -0.7% | ❌ | 26/26 ✅ |
 | 2 | C FT_size | _待_ | _待_ | _待_ | _待_ | _待_ |
 | 3 | E font cache | _待_ | _待_ | _待_ | _待_ | _待_ |
 | 4 | D Put→ptr | _待_ | _待_ | _待_ | _待_ | _待_ |
