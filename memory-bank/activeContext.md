@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-规划中
+构建中
 
 ## 当前任务
 
@@ -15,7 +15,8 @@
   - `docs/plans/2026-04-24-drawtext-warm-opt.md`（7 Phase 阶梯骨架，130 min plan / ~78 min 预期 / 10 commits）
 - **5 决策：** D1 阶梯验证 / D2 thread_local + RAII / D3 B1+B2 组合（不含 SIMD）/ D4 保持 Vector<u8> / D5 刚性 <3000 ns
 - **阶梯退出：** 任一 Phase 末 warm_Medium < 3000 ns 即跳进 Phase 7 收尾；Phase 6 仍未达标则 AskQuestion 走 B3 SIMD 升级分支
-- 下一步：`/build` 启动实施（或 `/creative` — 本任务判定不需要）
+- **Phase 0 锚点（2026-04-24 本机当日）：** `BM_DrawTextReal_Warm_Medium_mean = 5412 ns`（CV 0.19%）；所有后续 Phase 用此同机锚点做对比，目标绝对值 < 3000 ns
+- 下一步：Phase 1 — 候选 A hb_buffer 复用（`HbBufferHolder` + `thread_local`）
 
 ## 未合并分支
 
