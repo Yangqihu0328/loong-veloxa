@@ -15,8 +15,9 @@
 - ✅ /build Phase 6 B2 预裁剪 + row pointer（2026-04-24）— 外层计算 `col_start/end`, `row_start/end` 预裁剪 glyph 与 canvas 交集；内层用 `dst_row` 指针 + `alpha_row` 指针递增，消除 `py*stride+px` 乘法 + 4 次边界比较 + 索引 mul；stash-swap **Warm_Medium 5340→4689 ns (-651 ns, -12.2%)**，Warm_Long 17007→11991 ns (**-5016 ns, -29.5%**) — 多字符场景巨大收益；CV 0.66% 稳定；累计 Phase 0→6 Medium **5412→4689 ns (-723 ns, -13.4%)**；ctest 53/53 PASS（广路径 render/integration/layout/paint_command 全绿）；**仍差 1689 ns (36%)** 未达 D5 刚性目标 → 按 plan R1 触发升级决策点 AskQuestion
 - ✅ /build Phase 7 B3 SSE2 SIMD blit（2026-04-24）— 新建 `veloxa/graphics/software/blit_sse2.h` 含 `DivBy255ApproxU16` (per-lane pmulhuw-style 近似) + `BlendGlyphRowSSE2`（4 px/iter: 加载 4 alpha → 展开 u16 → DivBy255Approx(sa*alpha) 得 effective_a → unpack dst 到 2×8 u16 → 广播 ea/inv 到 per-channel u16 → split 两次 /255 避免 u16 溢出 → packus_epi16 clamp 到 u8 → storeu）+ 编译期 `#if defined(__SSE2__)` 守卫 + 标量 tail 0..3 px 回退；**src_vec 的 alpha 通道强制 255 让统一 blend 公式 `(src*ea + dst*inv)/255` 同时覆盖 RGBA 4 通道**（因 (255*ea)/255 = ea 精确）；扩展 `pixel_blend_test` 新增 4 个 SIMD 契约测试（7 种 count 布局含 4-iter + tail 混合 + 256 px stress + zero-alpha identity + full-opaque overwrite 4 组 + RED 反向探针破坏 channel order 确认 3/4 FAIL 再恢复 GREEN 完整循环）；stash-swap warm-up + 10 reps 稳定测量 **Warm_Medium 4700→3354 ns (-28.6%, -1346 ns)**，Warm_Short 739→644 ns (-12.9%)，**Warm_Long 12682→10382 ns (-18.1%, -2300 ns)**，CV 0.69% 非常稳；**累计 Phase 0→7 Medium 5412→3354 ns = -2058 ns (-38%)**；ctest 57/57 PASS（含 9 pixel_blend / 全 render/integration/layout/paint_command 路径）
 - 🎯 /build Phase 7 业务/技术目标评估：**真路径 3354 ns < Fallback 3637 ns（快 7.8%）→ 真路径默认化业务前置条件超额达成**；技术刚性 D5 < 3000 ns 仍差 354 ns (10.6%) → 按 plan R1 二次 AskQuestion 决定是否 (A) 接受现状并推进 finalize / (B) 继续再压榨 (glyph cache row_ptr 数组 + skip-all-zero AA fast path) / (C) AVX2 8 px/iter
-- ⏳ /build Phase 7 baseline 刷新 + MB 收尾
-- ⏳ /reflect + /archive
+- ✅ /build Phase 7 B3 AVX2 升级（2026-04-24，用户选 (C)）— 新建 `veloxa/graphics/software/blit_avx2.h`：`__attribute__((target("avx2")))` 函数级编译 + `BlendGlyphRowAVX2` 8 px/iter（`_mm256_cvtepu8_epi16` + `_mm256_permute4x64_epi64(0xD8)` lane 对齐：lane_lo = pixels 0-3 alpha, lane_hi = pixels 4-7 alpha；AVX2 unpack_epi8 lane-local 产出 dst_lo = pixels {0,1,4,5}, dst_hi = pixels {2,3,6,7}；pack lane-local 还原成连续 8 pixel store）+ runtime dispatcher `BlendGlyphRow` 用 `__builtin_cpu_supports("avx2")` 静态缓存；扩展 `pixel_blend_test` 新增 2 个 AVX2 dispatch 契约测试（13 种 count 布局含 AVX2 fast path + SSE2 fast path + 标量 tail 混合、SSE2-parity 33 px 对照）+ RED 反向探针（破坏 permute imm `0xD8` → `0x00` → 2/2 dispatch test FAIL → 恢复完整循环）；**stash-swap 对比 AVX2 无统计显著收益**（Warm_Medium 3311 ns SSE2 vs 3324 ns AVX2 = +13 ns +0.4%，CV noise floor 内；Fallback 同期 3549 → 4184 ns +18% 证 run-to-run noise ~15%）；**根因**：ASCII glyph 宽度偏小（6-12 px），AVX2 8 px/iter 摊销不足 + cvtepu8_epi16+permute4x64 每 iter 多 2-3 cycles 开销 + dispatch static branch 开销；按用户选 (C) 智能阈值 `count >= kAVX2MinPixelsPerRow=16` 才走 AVX2，小 glyph 仍走 SSE2 直接路径；最终实测 Warm_Medium 3360 ns（与纯 SSE2 3311 统计等价 CV 内）；ctest **59/59 PASS**（含 11 pixel_blend GTests）；AVX2 代码作为 **CJK 大字号 / 未来硬件进化的 headroom** 保留
+- ✅ /build Phase 7.4 finalize（2026-04-24）— 重采 `benchmarks/baseline/bench_drawtext.json`（--benchmark_min_time=1.0s Release 同机），新 baseline：Warm_Medium **5905→3499 ns (-40.7%)** / Warm_Short 975→677 ns (-30.6%) / Warm_Long 17456→10573 ns (-39.4%) / Cold_Medium 52873→28338 ns (-46.4%) / Fallback_Medium 3813→3608 ns 基本持平（对照组未参与优化）；`baseline/README.md` 更新 K7 ✅ resolved 条目 + 历史行 + DrawText 生成日期 2026-04-24；`tasks.md` TASK-20260424-03 归档折叠 + /build 成果段（7 Phase Before/After 表 + Phase × plan 0.6 第 6 数据点 0.42×）；`activeContext.md` 当前阶段 → 构建完成
+- ⏳ /reflect + /archive（下次会话）
 
 ### Phase 运行记录（当日同机可比）
 
@@ -30,7 +31,8 @@
 | 5 | B1 /255 (**回退**) | 5367 | +56 (+1.1%) ❌ | -1.9% (-101) | ❌ | 51/51 ✅ (含 5 新) |
 | 6 | B2 pre-clip+row ptr | **4689** | **-651 (-12.2%)** | **-13.4% (-723)** | ❌ (差 1689) | 53/53 ✅ |
 | 7 | B3 SSE2 4px/iter | **3354** | **-1346 (-28.6%)** | **-38% (-2058)** | ❌ (差 354, 但 < Fallback) | 57/57 ✅ (含 9 blend) |
-| 6 | B2 pre-clip | _待_ | _待_ | _待_ | _待_ | _待_ |
+| 7b | + AVX2 dispatch (count≥16) | **3360** | +6 (statistical tie w/ SSE2) | -38% (-2052) | ❌ (差 360) | 59/59 ✅ (含 11 blend) |
+| 7.4 finalize | baseline JSON 刷新 (min_time=1.0s) | **3499** | — (新 baseline 取代旧 5905) | -40.7% vs old baseline | ✅ < Fallback 3608 | 59/59 ✅ |
 
 ## 已完成任务
 

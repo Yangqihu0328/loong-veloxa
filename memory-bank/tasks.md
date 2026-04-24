@@ -2,10 +2,15 @@
 
 ## 当前任务
 
+（无）
+
+<details>
+<summary>TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化 — ✅ /build 完成，等待 /reflect & /archive（点开查看构建成果）</summary>
+
 ### TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化
 
 - **复杂度级别：** Level 2-3（优化类；多候选路径 + 5 设计决策；修改 3-5 文件）
-- **状态：** 📋 规划完成
+- **状态：** ✅ /build 完成（7/7 Phase）— 等待 /reflect + /archive 正式归档
 - **分支：** `feature/TASK-20260424-03-drawtext-warm-opt`（已创建，基于 main `525efba`）
 - **创建日期：** 2026-04-24
 - **来源：** `activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
@@ -104,7 +109,54 @@ SoftwareCanvas::DrawText 真路径（FreeType+HarfBuzz）**warm** 5807 ns → **
 8. `benchmarks/baseline/bench_drawtext.json` 刷新；`baseline/README.md` 更新 K7 → resolved 状态
 9. `techContext.md` Replay-Deepbench 段 K7 段补 resolved + 新 warm 数据表
 
+#### /build 阶段成果（2026-04-24）
+
+**7/7 Phase 完成**，阶梯验证策略 + 2 次 R1 AskQuestion 升级（Phase 6→7 用户选 B3 SSE2；Phase 7 AVX2 实验后用户选智能阈值 dispatch）。
+
+**核心改动（7 文件 / 8 commits 覆盖 Phase 0-7）：**
+
+1. `veloxa/graphics/software/software_canvas.{h,cc}` — Phase 1 hb_buffer thread_local 复用（`HbBufferHolder` RAII）+ Phase 3 default FontHandle 缓存（`cached_default_font_`）+ Phase 6 inner blit pre-clip + row ptr 预计算 + Phase 7 接线 `BlendGlyphRow` runtime dispatch
+2. `veloxa/text/font_manager.{h,cc}` — Phase 2 `SetFacePixelSize` 状态化缓存（`FontEntry::ft_pixel_size`）避免重复 `FT_Set_Pixel_Sizes`
+3. `veloxa/text/glyph_cache.{h,cc}` — Phase 4 `Put` 返回 `GlyphBitmap*` 消除 Put 后冗余 Get
+4. `veloxa/graphics/software/glyph_blend.h` — Phase 5 header-only `DivBy255Approx` + `BlendGlyphPixel`（Phase 5 /255 乘移位试验回退后保留作 SIMD 参考）
+5. `veloxa/graphics/software/blit_sse2.h` — Phase 7 SSE2 4 px/iter `BlendGlyphRowSSE2`（pmullw + DivBy255ApproxU16 + packus + 标量 tail）
+6. `veloxa/graphics/software/blit_avx2.h` — Phase 7 AVX2 8 px/iter `BlendGlyphRowAVX2`（target attribute + permute4x64_epi64 lane 对齐 + cvtepu8_epi16）+ `BlendGlyphRow` 智能 dispatch（`count >= 16 && __builtin_cpu_supports("avx2")` 才走 AVX2）
+7. `tests/graphics/pixel_blend_test.cc` — 11 GTests：DivBy255 精度 / BlendGlyphPixel 契约 / SSE2 4 布局 + zero-alpha + full-opaque + 256 stress / Dispatch AVX2 13 布局 + SSE2 parity 对比，全部 RED 反向探针完整循环验证
+
+**关键 Before/After（同机 Release warm-up + 10 reps 测量）：**
+
+| BM | 修前（baseline） | 修后（Phase 7 AVX2 dispatch） | 改善 |
+|---|---:|---:|---|
+| `BM_DrawTextReal_Warm_Medium` (19 char) | **5905 ns** | **3499 ns** | **-40.7% / -2406 ns** |
+| `BM_DrawTextReal_Warm_Short` (2 char) | 975 ns | 677 ns | -30.6% / -298 ns |
+| `BM_DrawTextReal_Warm_Long` (124 char) | 17456 ns | 10573 ns | -39.4% / -6883 ns |
+| `BM_DrawTextReal_Cold_Medium` | 52873 ns | 28338 ns | -46.4%（副产品：default font + pixel size 缓存对 cold 路径也有效）|
+| `BM_DrawTextFallback_Medium` (对照) | 3813 ns | 3608 ns | -5.4%（basically 噪声，未参与优化）|
+
+**K7 命题评估：**
+- **业务前置条件** 真路径 < fallback：✅ **达成**（3499 ns < 3608 ns，快 3%；warm-up + 10 reps 稳定 CV ≤ 1% 非噪声）
+- **技术刚性目标** D5 `< 3000 ns`：⚠️ 未达（差 499 ns / 14%）— 两次 R1 AskQuestion 升级后仍差；用户知情接受
+- **阶梯验证实证**：Phase 1-4 累计微幅改善（-2% 量级）；**Phase 6 blit 内层优化** 单独贡献 -12%；**Phase 7 SSE2 SIMD** 单独贡献 -29% → 印证 spec 对「inner blit loop 是 warm hot path 大头」的假设；**Phase 5 /255 乘移位试验回退** 印证 GCC Granlund-Montgomery 自动降级已是最优，手写近似不能无脑替换
+- **AVX2 在当前 glyph 宽度分布下无可见收益**（ASCII 6-12 px 偏小），改为 `count >= 16` 智能阈值只对 CJK / 大字号启用，为未来硬件进化保留 headroom
+
+#### Phase 耗时对比（plan × 0.6 协议校准）
+
+| Phase | plan (min) | 实测 (min) | 比例 |
+|:-:|:-:|:-:|:-:|
+| 0 | 10 | ~3 | 0.30× |
+| 1-3 (A+C+E 批) | 45 | ~18 | 0.40× |
+| 4 (D) | 15 | ~4 | 0.27× |
+| 5 (B1 试验回退) | 25 | ~12 | 0.48× |
+| 6 (B2) | 20 | ~6 | 0.30× |
+| 7 (B3 SSE2 + AVX2 dispatch) | 40-60（含升级分支）| ~30 | 0.50-0.75× |
+| finalize | 15 | ~5 | 0.33× |
+| **合计** | **170-190** | **~78** | **~0.42×** |
+
+**第 6 个数据点**（继 TASK-05 0.34× / TASK-09 0.42× / TASK-11 0.15-0.20× / TASK-13 0.17-0.19× / TASK-24-01 0.29×）：性能优化类任务 plan × 0.6 协议稳定落在 **0.20-0.50×**，本任务 0.42× 中位数，含 2 次 R1 升级分支（Phase 7 SSE2 + AVX2）时间仍可控。
+
 ---
+
+</details>
 
 <details>
 <summary>TASK-20260424-01：Layout super-linear knee 根因调查 — ✅ 已归档（点开查看历史）</summary>

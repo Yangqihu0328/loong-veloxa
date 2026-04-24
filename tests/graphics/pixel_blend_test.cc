@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "veloxa/graphics/software/blit_avx2.h"
 #include "veloxa/graphics/software/blit_sse2.h"
 #include "veloxa/graphics/software/glyph_blend.h"
 
@@ -184,6 +185,79 @@ TEST(PixelBlendTest, BlendGlyphRowSSE2FullCoverageOverwritesRGB) {
     EXPECT_LE(std::abs(static_cast<int>((p >> 8) & 0xFFu) - 150), 1);
     EXPECT_LE(std::abs(static_cast<int>((p >> 16) & 0xFFu) - 200), 1);
     EXPECT_LE(std::abs(static_cast<int>((p >> 24) & 0xFFu) - 255), 1);
+  }
+}
+
+// ---------- BlendGlyphRow dispatch (AVX2 if available) fidelity -------------
+
+namespace {
+void ExpectDispatchMatchesScalar(std::vector<uint32_t> dst_initial,
+                                 const std::vector<uint8_t>& alpha,
+                                 uint8_t sr, uint8_t sg, uint8_t sb,
+                                 uint8_t sa, const char* label) {
+  ASSERT_EQ(dst_initial.size(), alpha.size()) << label;
+  std::vector<uint32_t> dst_scalar = dst_initial;
+  std::vector<uint32_t> dst_disp = dst_initial;
+  const uint32_t n = static_cast<uint32_t>(dst_initial.size());
+
+  for (uint32_t i = 0; i < n; ++i) {
+    uint8_t a = alpha[i];
+    if (a == 0) continue;
+    dst_scalar[i] = BlendGlyphPixel(dst_scalar[i], sr, sg, sb, sa, a);
+  }
+  BlendGlyphRow(dst_disp.data(), alpha.data(), n, sr, sg, sb, sa);
+
+  for (uint32_t i = 0; i < n; ++i) {
+    for (int ch = 0; ch < 4; ++ch) {
+      int got = static_cast<int>((dst_disp[i] >> (ch * 8)) & 0xFFu);
+      int exp = static_cast<int>((dst_scalar[i] >> (ch * 8)) & 0xFFu);
+      int diff = std::abs(got - exp);
+      ASSERT_LE(diff, 1) << label << " pixel=" << i << " channel=" << ch
+                         << " got=" << got << " expected=" << exp;
+    }
+  }
+}
+}  // namespace
+
+TEST(PixelBlendTest, BlendGlyphRowDispatchCoversAVX2AndSSE2AndTailLayouts) {
+  // Counts span both the AVX2 (≥8) and SSE2 (≥4) fast paths plus
+  // assorted scalar tails. 17/23/31 force AVX + SSE + scalar tail
+  // mixes in a single call.
+  const uint32_t counts[] = {0, 1, 3, 4, 7, 8, 9, 15, 16, 17, 23, 31, 64};
+  for (uint32_t n : counts) {
+    std::vector<uint32_t> dst(n);
+    std::vector<uint8_t> alpha(n);
+    for (uint32_t i = 0; i < n; ++i) {
+      dst[i] = 0x11223344u + i * 0x05030107u;
+      alpha[i] = static_cast<uint8_t>(((i + 3) * 53u) & 0xFFu);
+    }
+    ExpectDispatchMatchesScalar(dst, alpha, 200, 100, 50, 220,
+                                ("dispatch count=" + std::to_string(n)).c_str());
+  }
+}
+
+TEST(PixelBlendTest, BlendGlyphRowDispatchAgreesWithSSE2Path) {
+  // Feeds the same input through both the dispatch-selected (possibly
+  // AVX2) and the hard-coded SSE2 path; any mismatch would mean the
+  // AVX2 lane-layout re-alignment is broken. Tolerance 1 LSB.
+  const uint32_t n = 33;
+  std::vector<uint32_t> dst_avx(n), dst_sse(n);
+  std::vector<uint8_t> alpha(n);
+  for (uint32_t i = 0; i < n; ++i) {
+    const uint32_t seed = 0xABCDEF01u + i * 0x00010203u;
+    dst_avx[i] = seed;
+    dst_sse[i] = seed;
+    alpha[i] = static_cast<uint8_t>((i * 11u) & 0xFFu);
+  }
+  BlendGlyphRow(dst_avx.data(), alpha.data(), n, 17, 200, 63, 191);
+  BlendGlyphRowSSE2(dst_sse.data(), alpha.data(), n, 17, 200, 63, 191);
+
+  for (uint32_t i = 0; i < n; ++i) {
+    for (int ch = 0; ch < 4; ++ch) {
+      int a = static_cast<int>((dst_avx[i] >> (ch * 8)) & 0xFFu);
+      int b = static_cast<int>((dst_sse[i] >> (ch * 8)) & 0xFFu);
+      EXPECT_LE(std::abs(a - b), 1) << "pixel=" << i << " channel=" << ch;
+    }
   }
 }
 

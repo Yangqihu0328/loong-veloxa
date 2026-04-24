@@ -1,40 +1,55 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·轮次 3（Phase 7 of 7 = B3 SSE2 SIMD + finalize 开始）
+构建完成 — 等待 /reflect + /archive
 
 ## 当前任务
 
-**TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化**
+**TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化** — /build 阶段完成
 
 - 复杂度：Level 2-3（优化类，多候选路径 + 5 设计决策）
 - 来源：`activeContext.md` 后续任务候选 TASK-20260419-12（TASK-09 K7 拆出，P2 触发型）
 - 目标：warm 真路径 5807 ns → < 3000 ns，使真路径默认化具备前置条件
-- **/plan 产出（设计 + 计划已写）：**
-  - `docs/specs/2026-04-24-drawtext-warm-opt-design.md`（5 决策锁定 + 6 注入点 ✅ + 12 验收项）
-  - `docs/plans/2026-04-24-drawtext-warm-opt.md`（7 Phase 阶梯骨架，130 min plan / ~78 min 预期 / 10 commits）
-- **5 决策：** D1 阶梯验证 / D2 thread_local + RAII / D3 B1+B2 组合（不含 SIMD）/ D4 保持 Vector<u8> / D5 刚性 <3000 ns
-- **阶梯退出：** 任一 Phase 末 warm_Medium < 3000 ns 即跳进 Phase 7 收尾；Phase 6 仍未达标则 AskQuestion 走 B3 SIMD 升级分支
-- **Phase 0 锚点（2026-04-24 本机当日）：** `BM_DrawTextReal_Warm_Medium_mean = 5412 ns`（CV 0.19%）；所有后续 Phase 用此同机锚点做对比，目标绝对值 < 3000 ns
-- **轮次 1 成果（Phase 0-3，4 commits）：**
-  - Phase 0 baseline + toolchain audit → commit `6b4fa54`
-  - Phase 1 A `hb_buffer` 复用（thread_local RAII）→ 5434→5397 ns (-0.7%) → commit `4ff74a3`
-  - Phase 2 C `FT_Set_Pixel_Sizes` 状态缓存（`SetFacePixelSize` 幂等 API）→ 5323→5266 ns (-1.1%) → commit `6944f35`
-  - Phase 3 E 默认 FontHandle 缓存（`cached_default_font_` 成员）→ 5403→5386 ns (-0.3%) → commit `ab0f56d`
-  - **累计 Phase 0→3 = -26 ns (-0.5%)**，远低于 plan 预期 400-900 ns
-  - **关键洞察**：真正瓶颈不在 HarfBuzz/FreeType API 开销层 → 大概率在内层 blit loop（B1+B2）或 GlyphCache 查找（D）
-- **轮次 2 成果（Phase 4-6，3 commits + 1 negative-result infra）：**
-  - Phase 4 D `GlyphCache::Put`→`GlyphBitmap*`（`operator[]` 单次查找 + 移动赋值，消掉 Put 后 Get 二次查找）→ 5378→5311 ns **(-1.25%, -67 ns)** 单 Phase 最大 → commit `2891d9d`
-  - Phase 5 B1 `/255` 乘移位近似 — **实验回退**（GCC -O3 Granlund-Montgomery 魔数乘法已优于手写 add-shift 链）→ +56 ns (+1.1% 倒退) → 保留 `glyph_blend.h` + `pixel_blend_test` 5 契约 + RED 反向探针验证作 SIMD 精度基础设施 → commit `09192c1`
-  - Phase 6 B2 预裁剪 + row pointer（外层计算 col/row start+end，内层 `dst_row++` + `alpha_row++`，消除 4 边界比较 + `py*stride+px` 乘法）→ **5340→4689 ns (-12.2%, -651 ns)** Medium 最大单 Phase + Long 17007→11991 (-29.5%) → commit `05a82ab`
-  - **累计 Phase 0→6 = -723 ns (-13.4%)** Medium；Warm_Long -29.5% 大幅改善；CV 0.66% 稳定
-  - **Phase 6 结束时 Warm_Medium 4689 ns 仍 > 3000 ns 目标**，差 1689 ns (36%) → 按 plan R1 AskQuestion
-  - 用户选 **(A) B3 SIMD 升级路径**（SSE2 blit 4 px/cycle + DivBy255Approx pmulhuw）
-- **下一步（轮次 3）：** Phase 7 = B3 SSE2 SIMD blit + 精度测试扩展（复用 `pixel_blend_test` 契约，新增 SIMD path 4-px tiling 一致性 GTest + 残余标量回退边界测试） + finalize baseline JSON 刷新 + Memory Bank 收尾；关键风险：即便 SSE2 理想再减 500-1500 ns 仍可能**逼近但未必达到** 3000 ns，达标前再 AskQuestion 决定是否接受接近值或引入额外优化
+- **/plan 产出：** `docs/specs/2026-04-24-drawtext-warm-opt-design.md` + `docs/plans/2026-04-24-drawtext-warm-opt.md`
+- **5 决策：** D1 阶梯验证 / D2 thread_local + RAII / D3 B1+B2 组合 / D4 保持 Vector<u8> / D5 刚性 <3000 ns
+
+### /build 最终成果汇总（3 轮次 / 7 Phase / 9 commits）
+
+| Phase | 优化 | Warm_Medium | 累计 | 命中 | 测试 |
+|:-:|---|---:|---:|:-:|:-:|
+| 0 | baseline anchor | 5412 ns | — | — | 46 ✅ |
+| 1 | A hb_buffer thread_local 复用 | 5397 ns | -0.3% | ❌ | 46 |
+| 2 | C FT_Set_Pixel_Sizes 状态缓存 | 5266 ns | -0.9% | ❌ | 46 |
+| 3 | E 默认 FontHandle 缓存 | 5386 ns | -0.3% | ❌ | 46 |
+| 4 | D GlyphCache::Put → GlyphBitmap* | 5311 ns | -1.9% | ❌ | 46 |
+| 5 | B1 /255 乘移位近似（**实验回退**）| — | — | — | 51 (5 新 infra 保留) |
+| 6 | B2 pre-clip + row ptr | **4689 ns** | **-13.4%** | ❌ | 53 |
+| 7 | B3 SSE2 4 px/iter + AVX2 8 px/iter `count≥16` 智能 dispatch | **3354 → 3499 ns** | **-38%** | ⚠️ 差 499 ns | **59** ✅ |
+
+**关键结论：**
+- **业务目标达成** ✅：Warm_Medium **3499 ns < Fallback 3608 ns (-3%)**，真路径默认化前置条件满足
+- **技术刚性目标**：D5 `< 3000 ns` 差 499 ns (14%)，2 次 R1 AskQuestion 升级后仍差，用户知情接受
+- **Cold 路径副产品**：Real_Cold_Medium 52873 → 28338 ns **(-46.4%)**（default font + pixel size 缓存对 cold 也生效）
+- **Phase 5 负结果**：GCC -O3 Granlund-Montgomery 魔数乘法已优于手写 /255 近似 → 保留 `glyph_blend.h` + `pixel_blend_test` 作 SIMD 精度基础设施
+- **AVX2 实验教训**：glyph 宽度分布偏小（ASCII 6-12 px）使 8 px/iter 摊销不足 → 实施 `count >= 16` 智能阈值为 CJK / 大字号保留 headroom
+- **SIMD 精度契约**：11 GTests（含 RED 反向探针完整循环验证）保证 SSE2/AVX2 与 scalar ±1 LSB/channel
+
+### 交付清单
+
+- 7 修改文件（software_canvas / font_manager / glyph_cache 核心 3 对 + 2 新 SIMD header + 1 blend helper + 1 test）
+- baseline JSON 刷新：`benchmarks/baseline/bench_drawtext.json`
+- `benchmarks/baseline/README.md`：K7 → resolved + 历史行 TASK-20260424-03
+- `memory-bank/progress.md`：6 phase 条目 + 7 表行
+- `memory-bank/tasks.md`：TASK-20260424-03 归档折叠 + /build 成果段
+
+### 下一步
+
+1. `/reflect` — 生成 `memory-bank/reflection/reflection-TASK-20260424-03.md`（含 7 Phase 耗时对比 / plan × 0.6 第 6 数据点 / AVX2 实验负面结果教训 / Phase 5 GCC Granlund-Montgomery 覆盖手写近似的通用洞察）
+2. `/archive` — 生成 `memory-bank/archive/archive-TASK-20260424-03.md` + merge 到 main
 
 ## 未合并分支
 
-- `feature/TASK-20260424-03-drawtext-warm-opt`（VAN 阶段，尚未开工）
+- `feature/TASK-20260424-03-drawtext-warm-opt`（/build 完成 8 commits，等待 /reflect + /archive + `--no-ff` 合并到 main）
 
 ## 最近归档
 

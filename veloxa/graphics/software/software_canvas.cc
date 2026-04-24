@@ -8,7 +8,7 @@
 #include <hb-ft.h>
 
 #include "veloxa/foundation/base/assert.h"
-#include "veloxa/graphics/software/blit_sse2.h"
+#include "veloxa/graphics/software/blit_avx2.h"
 #include "veloxa/text/font_manager.h"
 #include "veloxa/text/glyph_cache.h"
 
@@ -291,10 +291,11 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
         const u32 alpha_stride = cached->width;
         const u32 run = static_cast<u32>(col_end - col_start);
 
-        // TASK-03 Phase 7 (B3): per-row SSE2 fast path — 4 px/iter via
-        // pmullw + DivBy255ApproxU16, scalar tail ≤ 3 px handled by
-        // BlendGlyphPixel. Precision contract ±1 LSB per channel (see
-        // pixel_blend_test BlendGlyphRowSSE2* suite).
+        // TASK-03 Phase 7 (B3): per-row SIMD fast path via runtime
+        // dispatch — AVX2 8 px/iter when available, else SSE2 4 px/iter,
+        // tail 0..7 / 0..3 falls through to scalar BlendGlyphPixel.
+        // Precision contract ±1 LSB per channel (see pixel_blend_test
+        // BlendGlyphRow{,SSE2}* suites).
         for (i32 row = row_start; row < row_end; ++row) {
           u32* dst_row = pixels_ +
                          static_cast<u32>(gy + row) * stride_px +
@@ -302,8 +303,8 @@ void SoftwareCanvas::DrawText(vx::StringView text, const Rect& bounds,
           const u8* alpha_row = alpha_base +
                                 static_cast<u32>(row) * alpha_stride +
                                 static_cast<u32>(col_start);
-          BlendGlyphRowSSE2(dst_row, alpha_row, run, text_color.r,
-                            text_color.g, text_color.b, text_color.a);
+          BlendGlyphRow(dst_row, alpha_row, run, text_color.r,
+                        text_color.g, text_color.b, text_color.a);
         }
       }
     }
