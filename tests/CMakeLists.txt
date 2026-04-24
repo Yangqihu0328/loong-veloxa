@@ -194,3 +194,7 @@ target_link_libraries(glyph_cache_test PRIVATE vx_text)
 
 vx_add_test(freetype_shaper_test text/freetype_shaper_test.cc)
 target_link_libraries(freetype_shaper_test PRIVATE vx_text)
+
+# TASK-20260424-04: ShapeCache (P1 HashBytesU64 + P2 cache contract)
+vx_add_test(shape_cache_test text/shape_cache_test.cc)
+target_link_libraries(shape_cache_test PRIVATE vx_text)
