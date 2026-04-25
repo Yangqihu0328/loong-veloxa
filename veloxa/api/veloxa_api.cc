@@ -1,8 +1,10 @@
 #include "veloxa/api/veloxa_api.h"
 
 #include "veloxa/core/application.h"
+#include "veloxa/platform/event_loop.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
 #include "veloxa/platform/headless/memory_surface.h"
+#include "veloxa/platform/surface.h"
 
 static vx::event::EventType MapEventType(VxEventType type) {
   switch (type) {
@@ -39,7 +41,10 @@ VxEventLoop* vx_event_loop_create_headless(void) {
 }
 
 void vx_event_loop_destroy(VxEventLoop* loop) {
-  delete reinterpret_cast<vx::platform::HeadlessEventLoop*>(loop);
+  // ABI contract: handle is always a vx::platform::EventLoop* (or derived);
+  // base class has virtual ~. Adding multiply-inherited backends would break
+  // this reinterpret_cast — see TASK-20260425-01 spec §5.3.
+  delete reinterpret_cast<vx::platform::EventLoop*>(loop);
 }
 
 /* ── Surface ────────────────────────────────────────────────────── */
@@ -50,12 +55,15 @@ VxSurface* vx_surface_create_memory(uint32_t width, uint32_t height) {
 }
 
 void vx_surface_destroy(VxSurface* surface) {
-  delete reinterpret_cast<vx::platform::MemorySurface*>(surface);
+  // ABI contract: handle is always a vx::platform::Surface* (or derived);
+  // base class has virtual ~. Adding multiply-inherited backends would break
+  // this reinterpret_cast — see TASK-20260425-01 spec §5.3.
+  delete reinterpret_cast<vx::platform::Surface*>(surface);
 }
 
 VxResult vx_surface_save_ppm(const VxSurface* surface, const char* path) {
   if (!surface || !path) return VX_ERROR_NULL_PARAM;
-  auto* s = reinterpret_cast<const vx::platform::MemorySurface*>(surface);
+  auto* s = reinterpret_cast<const vx::platform::Surface*>(surface);
   auto status = s->SavePPM(path);
   return status.ok() ? VX_OK : VX_ERROR_INVALID_STATE;
 }

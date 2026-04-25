@@ -172,6 +172,18 @@ TEST(CApiTest, SurfaceSavePPM) {
   vx_event_loop_destroy(loop);
 }
 
+TEST(CApiTest, RepeatedHeadlessCreateDestroyNoStateLeak) {
+  for (int i = 0; i < 5; ++i) {
+    VxEventLoop* loop = vx_event_loop_create_headless();
+    ASSERT_NE(loop, nullptr);
+    VxSurface* surface = vx_surface_create_memory(32, 32);
+    ASSERT_NE(surface, nullptr);
+    vx_surface_destroy(surface);
+    vx_event_loop_destroy(loop);
+  }
+  SUCCEED();
+}
+
 TEST(CApiTest, UpdateBeforeLoadHTML) {
   VxEventLoop* loop = vx_event_loop_create_headless();
   VxSurface* surface = vx_surface_create_memory(100, 100);
