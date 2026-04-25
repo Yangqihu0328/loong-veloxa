@@ -2,13 +2,30 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — VAN 完成（2026-04-26）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R0 完成（2026-04-26 02:28）
 
-- D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align）
+- D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
-- 安全相关 [✅ 标注]：#28 接收 HTML `style="..."` 外部输入，spec 阶段补轻量威胁建模
+- PLAN 阶段 6 决策锁定：**Q1A** 一次性完整 W3C CSS 2.1 §8.3.1 / **Q2A** 全量 LineBox + ascent/descent + vertical-align 6 关键字 + length 偏移 + 半-leading / **Q3A** wpt 远程拉取（代理 `172.22.32.1:7890` 实证可用）/ **Q4A** 完整三件套安全护栏（count cap 1000 + value len cap 8KB + 历史攻击关键字黑名单）/ **Q5A** 每 Round 1 commit + 中间态报告 + 用户确认 / **Q6 narrow_to_accurate** 0.6× 准确档（plan 900 min → 实测 ~540 min）
+- 安全相关 [✅ 标注]：#28 接收 HTML `style="..."` 外部输入，spec §6 完整威胁建模 7 类（T1 DoS via 巨 declaration / T2 DoS via 巨 single value / T3 IE expression() / T4 CSS behavior / T5 javascript: URL / T6 property name overflow / T7 race condition）
+- 设计 spec：`docs/specs/2026-04-26-layout-correctness-design.md`（6 决策矩阵 / 17 验收标准 A1-A17 / 8 风险登记 R1-R8 / 11 修改 + 9 新增文件清单 / 估时数据点登记）
+- 实现 plan：`docs/plans/2026-04-26-layout-correctness.md`（R0 准备 30 min / R1 #25 60 min / R2 #28 90 min / R3 #20 300 min / R4 #21 360 min / R5 finalize 60 min；3 处子代理 D3 任务 R3.3 + R4.3 + R4.6 / R3-R4 各触发 1 篇 creative 文档 / 7 触发器风险监控）
+- 代理实证：W3C wpt 仓库（114 个 margin-collapse fixture）已通过 `172.22.32.1:7890` 代理可达（plan 阶段 curl 实测 200 OK），build §0 阶段拉取 8 例（4 margin-collapse 覆盖 case 1/2/3/negative + 2 IFC + 2 vertical-align baseline）；任务收尾 git config 代理强制 `--unset`（TASK-19-13 P1 守卫）
+- **CREATIVE 阶段产出（2 篇 / 10 决策全 ACCEPT）：**
+  - `memory-bank/creative/creative-margin-collapsing.md`（R3 #20）— 3 方案探索（A in-line 累积 / B pre-pass / C 纯函数）+ D1 5 决策：方案 A MarginChain + 内部 Vector\<MarginChain\> 栈式状态 + BFC root 仅识别 overflow: hidden\|scroll\|auto + VX_DEBUG_LAYOUT Trace + 先 layout child → 回填 child.y
+  - `memory-bank/creative/creative-line-box-model.md`（R4 #21）— 3×3 子决策探索（D2.A LineBox 数据结构 / D2.B vertical-align pass 数 / D2.C TextMetrics ABI）+ D2 5 决策：A.1 显式 LineBox+Vector + B.1 严格 2-pass + C.1 加字段不删字段 [[deprecated]] + inline-block atomic + CSS 2.1 §10.8.1 line-height 默认语义；含 2-pass 算法 Phase 1/2/3 形式化伪码 + vertical-align 6 关键字+length 完整公式 + 半-leading 公式
 - 分支：`feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`）
-- 下一步：`/plan` 启动头脑风暴 + 设计 spec
+- **BUILD R0 准备完成（2026-04-26 02:28）**：
+  - **P0.1 ctest baseline**：`build/` 增量 951/951 PASS in 1.23s（0 fail，与 PLAN/CREATIVE 阶段对齐）
+  - **P0.1 bench baseline**（`build-bench/` Release）：`BM_LayoutBuildTreeFlat/64` **3709 ns** mean（R3 退出门 ≤ +5% = 3895 ns）/ Flat/8 539 ns / Flat/256 30917 ns / Flat/512 88628 ns（+5% 阈值 ≤ 93060 ns）/ Nested/16 1107 ns / Nested/64 4850 ns / Mixed 6646 ns；K-3 ref `BM_LayoutFlex<1,32>` 2135 ns
+  - **P0.2 wpt fixtures 入仓**：`tests/fixtures/wpt/css/CSS2/` 11 文件 / 68 KB（margin-collapse 4 testcase + 3 ref + linebox 2 testcase + 2 ref）；**实证微调记录**：plan §0.P0.2 原选 `margin-collapse-091` 在 wpt master 不存在（088-095 全 404）→ 替代为 `margin-collapse-005`（HTTP 200 / 1742 bytes 复杂 collapse 形态）；vertical-align baseline 在 `linebox/` 子目录下（不在独立 `vertical-align/`）；`tests/fixtures/wpt/README.md` 含来源 / 许可证 BSD-3-Clause / 拉取脚本指针；GitHub API `commits/master` 因 rate-limit 返回 403，commit hash 暂记 'unknown'
+  - **P0.3 grep 4 类 fingerprint**：
+    - **F1 #25 origin 替换点 = 14 处** `child->x/y = ...` 写入语句（≥ 12 退出门通过）：layout_engine.cc L209-210/L277-278/L288-289/L336/L341（8）+ flex_layout.cc L310/L314/L322/L327/L392/L394（6）；其中 12 处 candidate（2 处 absolute pos 用 ResolveLength 保留）
+    - **F2 #28 inline_declarations 全链路 = 6 文件**：element.h L46/L49/L50/L64 + element.cc L5-12 + style_resolver.h L21 + style_resolver.cc L14/L34/L50 + layout_engine.cc L35（layout 端消费完整，#28 修复目标在 html/parser.cc 增加 style="..." 解析路径）
+    - **F3 #21 vertical-align hint = 0 处**（`veloxa/` 全目录）→ 确认全新功能，无遗留代码冲突
+    - **F4 enum 全链路 7 文件 fingerprint**（kLineHeight 模板）：property.h L64 enum 定义 + property.cc L67 properties[] 注册 + parser.cc L107 parse 值类型 + style_resolver.cc L106/L323 inherit/apply + transition.cc L83/L161/L239/L276 lerp 全链路（4 处）+ enum_serialization.cc L48-51/L110-113 字符串表 → R4 #21 VerticalAlign enum 必须照样补 7 文件（VerticalAlign 是 enum 不参与 transition，实际 6 文件 + computed_style.h 成员）
+  - **代理使用守则**：本次 R0 通过 `http_proxy=http://172.22.32.1:7890` 拉取 fixture，`git config --global` 未设代理（避免污染全局 git）；R5 finalize 阶段无代理配置可清理（守则前置）
+- 下一步：`/build` R1（#25 LayoutBox origin helpers，60 min plan / 0.6× 准确档 ~36 min；TDD RED 反向探针 ≥ 2 + ctest 951 不变 + bench Flat/64 ≤ 3895 ns）
 
 ## 已完成任务
 

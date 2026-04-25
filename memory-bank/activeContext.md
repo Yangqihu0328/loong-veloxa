@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-初始化（TASK-20260426-01 VAN 已完成，等待 `/plan`）
+构建中·R0 完成（baseline 951 / bench Flat/64=3709 ns / wpt 11 文件 / grep 4 类 fingerprint），等待用户确认进入 R1 #25
 
 ## 当前任务
 
@@ -16,7 +16,13 @@
 - **来源：** `techContext.md §技术债务清单` + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
 - **安全相关：** ✅ 标注（#28 接收 HTML `style="..."` 外部输入；`ParseDeclarationList` 已被 JS 路径用过相对成熟，但 spec 阶段需补轻量威胁建模 — DoS via 巨大 declaration / `url()` 引用 / 未实现 CSS var 退化）
 - **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
-- **下一步：** `/plan` 启动头脑风暴 + 设计 spec + 4 子任务多轮次 Build 拆分
+- **下一步：** `/build` R0 准备阶段（基线核验 951 PASS + wpt fixture 拉取 8 例 + grep 4 类 fingerprint）
+- **设计 spec：** `docs/specs/2026-04-26-layout-correctness-design.md`（决策矩阵 6 维 / 17 验收标准 / 8 风险登记 / 安全威胁 7 类 / 文件清单 11 修改 + 9 新增）
+- **实现 plan：** `docs/plans/2026-04-26-layout-correctness.md`（R0 准备 + R1-R4 四轮 + R5 finalize / 估时 plan 900 min × 0.6 = 540 min / 子代理 3 处 D3 任务）
+- **代理实证：** `172.22.32.1:7890`（WSL2 host gateway）已于 plan 阶段实证可用，wpt 仓库 114 个 margin-collapse fixture 备选，build §0 阶段拉取 8 例
+- **创意文档（已落盘 + 全 ACCEPT）：**
+  - `memory-bank/creative/creative-margin-collapsing.md`（R3 #20）— D1 5 决策：方案 A MarginChain in-line 累积 + 内部 `Vector<MarginChain>` 栈式状态 + 仅 `overflow: hidden\|scroll\|auto` BFC root + `#if VX_DEBUG_LAYOUT` Trace + 先 layout child → 回填 child.y
+  - `memory-bank/creative/creative-line-box-model.md`（R4 #21）— D2 5 决策：A.1 显式 LineBox + Vector + B.1 严格 2-pass vertical-align + C.1 TextMetrics 加字段不删 + `[[deprecated]]` + inline-block atomic + CSS 2.1 §10.8.1 line-height 默认语义
 
 ### VAN 阶段产出
 
@@ -96,11 +102,17 @@
 
 ## 下一步
 
-执行 `/plan` 启动 TASK-20260426-01 头脑风暴 + 设计文档 + 4 子任务多轮次 Build 拆分。
+执行 `/build` R0 准备阶段：
+1. **基线核验**：`ctest --test-dir build -j 8` 应 951 PASS / 0 FAIL；记录 `bench_layout_buildtree` baseline mean
+2. **W3C wpt fixture 拉取**：通过代理 `172.22.32.1:7890` 拉 8 例（4 margin-collapse + 2 IFC + 2 vertical-align baseline）入仓 `tests/fixtures/wpt/`
+3. **grep 影响面 fingerprint**：4 类 grep（#25 替换点 / #28 inline_declarations 消费点 / #21 vertical-align 现有 hint / enum_serialization 全链路 fingerprint），输出快照写入 progress.md
+4. **R0 退出门**：ctest 951 PASS + wpt 8/8 200 OK + grep #25 ≥ 12 处命中
+
+R0 完成后依次进 R1（#25 helper）→ R2（#28 inline style + 安全护栏）→ R3（#20 margin collapsing）→ R4（#21 LineBox + vertical-align）→ R5 finalize → /reflect。
 
 ## 未合并分支
 
-- `feature/TASK-20260426-01-layout-correctness` — TASK-20260426-01 VAN 完成，等待 /plan（基于 main `9f7f338`）
+- `feature/TASK-20260426-01-layout-correctness` — TASK-20260426-01 CREATIVE 完成（spec + plan + 2 创意文档全落盘 + D1/D2 全 ACCEPT），等待 /build R0（基于 main `9f7f338`）
 
 ## 最近归档
 

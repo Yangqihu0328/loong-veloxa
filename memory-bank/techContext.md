@@ -72,10 +72,12 @@
 首次 `cmake -B build` 触发 `FetchContent` 拉取 quickjs-ng（v0.14.0）等依赖。WSL2 / 内网环境若无系统 DNS，必须导出代理：
 
 ```bash
-export http_proxy=http://your-proxy:port
+export http_proxy=http://172.22.32.1:7890   # WSL2 host gateway (Windows clash)
 export https_proxy=$http_proxy
 cmake -B build
 ```
+
+> **代理地址来源（单一真相）：** `172.22.32.1:7890` 为 WSL2 → Windows host 网络网关（`172.22.x.1` 系 WSL2 NAT gateway 默认 IP），由 Windows 侧 Clash / V2Ray 等本地代理在 7890 端口暴露。任务收尾必须 `git config --global --unset http.proxy` + `--unset https.proxy` 恢复（参考 TASK-20260419-13 P1 守卫规则）。规则文件中**统一占位符** `<开发环境代理地址>`，本段为唯一可写入实际值的位置。
 
 ### 离线场景
 
@@ -119,7 +121,9 @@ cmake --build build -j
 
 ### Plan/VAN 阶段守卫（来源 TASK-20260419-13）
 
-规则文件 `.cursor/rules/skills/writing-plans.mdc` 的「FetchContent 网络代理守卫」段要求每个 FetchContent 任务在 VAN / Plan Phase 0 检查并（必要时）补设 git 全局代理；`.cursor/commands/van.md` 步骤 1 已有对应自动检查子项。**本段是代理地址的单一真相来源**，规则文件中**严禁硬编码** IP 地址，统一用占位符 `<开发环境代理地址>`。
+规则文件 `.cursor/rules/skills/writing-plans.mdc` 的「FetchContent 网络代理守卫」段要求每个 FetchContent 任务在 VAN / Plan Phase 0 检查并（必要时）补设 git 全局代理；`.cursor/commands/van.md` 步骤 1 已有对应自动检查子项。**本段是代理地址的单一真相来源**（实际值见上文 §FetchContent 与代理 / `172.22.32.1:7890`），规则文件中**严禁硬编码** IP 地址，统一用占位符 `<开发环境代理地址>`。
+
+**TASK-20260426-01 PLAN 阶段实证：** 通过 `http_proxy=http://172.22.32.1:7890 curl ... raw.githubusercontent.com/web-platform-tests/wpt/...` 200 OK + GitHub API 列出 114 个 margin-collapse fixture，确认代理可拉取 W3C wpt 仓库。Build §0 阶段将拉取 8 例（4 margin-collapse + 2 IFC + 2 vertical-align baseline）入仓 `tests/fixtures/wpt/`。
 
 ## CSS 性能基线（来源 TASK-20260419-03，2026-04-19）
 
@@ -587,15 +591,15 @@ cmake --build build -j
 17. 选择器匹配 O(rules × elements) 全量遍历，大页面需哈希索引优化
 18. ~~:hover/:active/:focus 伪类当前返回 false（stub）~~ ✅ 已回填（TASK-08 SelectorMatcher + TASK-09 StyleResolver 透传）
 19. LayoutEngine::Layout 的 static ArenaAllocator 线程不安全（旧签名仍存在，新签名接受外部 arena）
-20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）
-21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）
+20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）— 🟡 **TASK-20260426-01 R3 in progress**（plan 完成，spec §5.3 + creative 阶段待启动；CSS 2.1 §8.3.1 完整实现 / 4 wpt fixture 集成）
+21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）— 🟡 **TASK-20260426-01 R4 in progress**（plan 完成，spec §5.4 + creative 阶段待启动；LineBox 抽象 + vertical-align 6 关键字 + line-height 半-leading + TextShaper FT metrics + 2 wpt fixture）
 22. Arena 分配的 ComputedStyle 含 InternedString 成员，arena 释放不调用析构函数，可能泄露引用计数
 23. SoftwareCanvas::DrawText 是存根（逐字符 FillRect），需集成 FreeType+HarfBuzz
 24. border-radius 渲染未实现（ComputedStyle 有值但 renderer 忽略）
-25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处
+25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处 — 🟡 **TASK-20260426-01 R1 in progress**（plan 完成，spec §5.1；6 helpers + 替换 layout_engine.cc 5 处 + flex_layout.cc 7-15 处分散计算）
 26. DisplayList 无 Dump() 调试方法
 27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
-28. LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）
+28. ~~LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）~~ — ⚠️ **描述不精确（TASK-20260426-01 VAN F1 实证修正）**：真实缺口在 `html/parser.cc:95` 把 `style` attr 当普通 attribute（未识别 + 未调 `ParseDeclarationList`）；`layout_engine.cc:35` 已正确传 `element->inline_declarations()`。🟡 **TASK-20260426-01 R2 in progress**（plan 完成，spec §5.2 + §6 安全威胁建模 7 类；HTML parser 接 `CssParser::ParseDeclarationList` + 完整三件套安全护栏 count cap 1000 + value len cap 8 KB + 历史攻击关键字黑名单）
 29. ~~EventManager 无「状态变更→样式失效→重绘」触发机制~~ ✅ 已实现（TASK-09 UpdateManager + InvalidationCallback）
 30. EventDispatcher::listeners_ 元素销毁时需手动 RemoveEventListeners（无自动清理）
 31. HitTest z-index 排序每次调用重新排序（可缓存）
