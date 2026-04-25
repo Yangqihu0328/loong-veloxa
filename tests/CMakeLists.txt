@@ -212,4 +212,10 @@ if(VX_PLATFORM_SDL2)
   # an actual display server.
   gtest_discover_tests(sdl2_input_translate_test
     PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+
+  add_executable(sdl2_window_surface_test platform/sdl2_window_surface_test.cc)
+  target_link_libraries(sdl2_window_surface_test
+    PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+  gtest_discover_tests(sdl2_window_surface_test
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 endif()
