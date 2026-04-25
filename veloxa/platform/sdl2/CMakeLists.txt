@@ -17,6 +17,7 @@ endif()
 add_library(vx_platform_sdl2 STATIC
   sdl2_input_translate.cc
   sdl2_window_surface.cc
+  sdl2_event_loop.cc
 )
 
 target_include_directories(vx_platform_sdl2 PUBLIC
