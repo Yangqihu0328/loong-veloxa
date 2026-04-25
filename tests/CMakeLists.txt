@@ -165,8 +165,11 @@ vx_add_test(application_integration_test core/application_integration_test.cc)
 target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
 # API: C API
-vx_add_test(api_test api/api_test.cc)
-target_link_libraries(api_test PRIVATE vx_api vx_platform)
+add_executable(api_test api/api_test.cc)
+target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)
+# SDL_VIDEODRIVER=dummy is harmless when VX_PLATFORM_SDL2=OFF (SDL2 cases
+# are #ifdef'd out) and lets the SDL2 cases run on headless CI.
+gtest_discover_tests(api_test PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 
 vx_add_test(api_integration_test api/api_integration_test.cc)
 target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)

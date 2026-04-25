@@ -6,6 +6,11 @@
 #include "veloxa/platform/headless/memory_surface.h"
 #include "veloxa/platform/surface.h"
 
+#ifdef VX_PLATFORM_SDL2
+#include "veloxa/platform/sdl2/sdl2_event_loop.h"
+#include "veloxa/platform/sdl2/sdl2_window_surface.h"
+#endif
+
 static vx::event::EventType MapEventType(VxEventType type) {
   switch (type) {
     case VX_EVENT_POINTER_MOVE:
@@ -40,6 +45,33 @@ VxEventLoop* vx_event_loop_create_headless(void) {
   return reinterpret_cast<VxEventLoop*>(loop);
 }
 
+VxEventLoop* vx_event_loop_create_sdl2(void) {
+#ifdef VX_PLATFORM_SDL2
+  auto* loop = new vx::platform::Sdl2EventLoop();
+  return reinterpret_cast<VxEventLoop*>(loop);
+#else
+  return nullptr;
+#endif
+}
+
+VxResult vx_event_loop_pump_input(VxEventLoop* loop, VxView* view) {
+  if (!loop || !view) return VX_ERROR_NULL_PARAM;
+#ifdef VX_PLATFORM_SDL2
+  auto* base = reinterpret_cast<vx::platform::EventLoop*>(loop);
+  auto* sdl = dynamic_cast<vx::platform::Sdl2EventLoop*>(base);
+  if (!sdl) return VX_ERROR_INVALID_STATE;
+  // Bind callback on every call (cheap; lets caller swap views per frame).
+  sdl->SetInputCallback([view](const VxInputEvent& e) {
+    vx_view_inject_input(view, &e);
+  });
+  sdl->PumpInputEvents();
+  return VX_OK;
+#else
+  (void)loop; (void)view;
+  return VX_ERROR_INVALID_STATE;
+#endif
+}
+
 void vx_event_loop_destroy(VxEventLoop* loop) {
   // ABI contract: handle is always a vx::platform::EventLoop* (or derived);
   // base class has virtual ~. Adding multiply-inherited backends would break
@@ -52,6 +84,21 @@ void vx_event_loop_destroy(VxEventLoop* loop) {
 VxSurface* vx_surface_create_memory(uint32_t width, uint32_t height) {
   auto* surface = new vx::platform::MemorySurface(width, height);
   return reinterpret_cast<VxSurface*>(surface);
+}
+
+VxSurface* vx_surface_create_window(const VxWindowOptions* opts) {
+  if (!opts) return nullptr;
+#ifdef VX_PLATFORM_SDL2
+  auto* surface = new vx::platform::Sdl2WindowSurface(
+      opts->width, opts->height, opts->title);
+  if (!surface->valid()) {
+    delete surface;
+    return nullptr;
+  }
+  return reinterpret_cast<VxSurface*>(surface);
+#else
+  return nullptr;
+#endif
 }
 
 void vx_surface_destroy(VxSurface* surface) {

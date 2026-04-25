@@ -7,6 +7,10 @@
 
 #include "veloxa/platform/headless/headless_event_loop.h"
 
+#ifdef VX_PLATFORM_SDL2
+#include <SDL2/SDL.h>
+#endif
+
 namespace {
 
 TEST(CApiTest, Version) {
@@ -199,5 +203,62 @@ TEST(CApiTest, UpdateBeforeLoadHTML) {
   vx_surface_destroy(surface);
   vx_event_loop_destroy(loop);
 }
+
+#ifdef VX_PLATFORM_SDL2
+
+TEST(CApiSdl2, CreateDestroyEventLoopSdl2) {
+  VxEventLoop* loop = vx_event_loop_create_sdl2();
+  ASSERT_NE(loop, nullptr);
+  vx_event_loop_destroy(loop);
+}
+
+TEST(CApiSdl2, CreateDestroyWindowSurface) {
+  VxWindowOptions opts{};
+  opts.width = 100;
+  opts.height = 80;
+  opts.title = "capi-test";
+  VxSurface* surface = vx_surface_create_window(&opts);
+  ASSERT_NE(surface, nullptr);
+  vx_surface_destroy(surface);
+}
+
+TEST(CApiSdl2, NullOptionsReturnsNull) {
+  EXPECT_EQ(vx_surface_create_window(nullptr), nullptr);
+}
+
+TEST(CApiSdl2, PumpInputOnHeadlessLoopReturnsInvalidState) {
+  // pump_input on a non-windowed loop should NOT crash; return error instead.
+  VxEventLoop* loop = vx_event_loop_create_headless();
+  VxSurface* surface = vx_surface_create_memory(20, 20);
+  VxViewConfig cfg{};
+  cfg.event_loop = loop;
+  cfg.surface = surface;
+  cfg.target_fps = 60;
+  VxView* view = vx_view_create(&cfg);
+  EXPECT_EQ(vx_event_loop_pump_input(loop, view), VX_ERROR_INVALID_STATE);
+  vx_view_destroy(view);
+  vx_surface_destroy(surface);
+  vx_event_loop_destroy(loop);
+}
+
+TEST(CApiSdl2, PumpInputOnSdl2LoopReturnsOk) {
+  VxEventLoop* loop = vx_event_loop_create_sdl2();
+  ASSERT_NE(loop, nullptr);
+  VxSurface* surface = vx_surface_create_memory(20, 20);
+  VxViewConfig cfg{};
+  cfg.event_loop = loop;
+  cfg.surface = surface;
+  cfg.target_fps = 60;
+  VxView* view = vx_view_create(&cfg);
+  EXPECT_EQ(vx_event_loop_pump_input(loop, view), VX_OK);
+  vx_view_destroy(view);
+  vx_surface_destroy(surface);
+  vx_event_loop_destroy(loop);
+}
+
+TEST(CApiSdl2, NullParamPumpReturnsNullParam) {
+  EXPECT_EQ(vx_event_loop_pump_input(nullptr, nullptr), VX_ERROR_NULL_PARAM);
+}
+#endif  // VX_PLATFORM_SDL2
 
 }  // namespace
