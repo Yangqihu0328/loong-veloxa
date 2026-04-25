@@ -154,5 +154,23 @@ TEST(MemorySurfaceTest, SavePPMFailsOnInvalidPath) {
   EXPECT_EQ(status.code(), vx::StatusCode::kInternal);
 }
 
+TEST(MemorySurfaceTest, PresentDefaultNoOpDoesNotCrash) {
+  MemorySurface surface(100, 50);
+  vx::u32* pixels = surface.Lock();
+  ASSERT_NE(pixels, nullptr);
+  pixels[0] = 0xFF000000;
+  surface.Unlock();
+  surface.Present();
+  EXPECT_EQ(surface.width(), 100u);
+  EXPECT_EQ(surface.height(), 50u);
+}
+
+TEST(MemorySurfaceTest, PresentViaBaseClassPointerCallsVirtual) {
+  MemorySurface surface(8, 8);
+  Surface* base = &surface;
+  base->Present();
+  EXPECT_EQ(base->width(), 8u);
+}
+
 }  // namespace
 }  // namespace vx::platform

@@ -16,6 +16,11 @@ class Surface {
   virtual void Unlock() = 0;
   virtual void Resize(vx::u32 width, vx::u32 height) = 0;
   virtual vx::Status SavePPM(const char* path) const = 0;
+
+  // Push the rendered pixel buffer to the screen if the backend supports it.
+  // Default no-op for headless / file-only backends.
+  // Contract: call exactly once per frame, after Lock/Unlock pair completes.
+  virtual void Present() {}
 };
 
 }  // namespace vx::platform
