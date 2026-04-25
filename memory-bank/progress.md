@@ -31,7 +31,7 @@
 | P4.2 | vx_event_loop_pump_input helper | ✅ | TDD |
 | P5.1 | examples/hello_sdl2.cc | ✅ | vx_view_run 自动 wire SDL2 callback；composition over inheritance |
 | P5.2 | ctest hello_sdl2_smoke (dummy driver) | ✅ | VX_HELLO_SDL2_AUTOQUIT_MS hook；**ctest 951/951 PASS 1.07s** |
-| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | ⏳ | 等待用户在 WSLg 桌面打开 hello_sdl2 实测 |
+| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | 🟡 遗留 | 用户当前环境不便实测；**触发条件**：下次有 GUI/WSLg 桌面环境时复跑 `./build/examples/hello_sdl2` 验证 A1（窗口 + 三色块）/A2（鼠标无崩溃）/A3（× 关闭后输出 `Done.`）；headless smoke (`SDL_VIDEODRIVER=dummy`) 已在 P5.2 自动覆盖 |
 | P6.2 | Release -O3 -Werror 通路验证 | ✅ | `build-release/`（-DVX_PLATFORM_SDL2=ON）`-O3 -Werror` 0 警告；ctest **951/951 PASS 1.24s** |
 | P6.3 | techContext + productContext 文档更新 | ✅ | techContext 新增 SDL2 行 + Platform Backends 段；productContext 加 SDL2 ✅ 行 |
 
