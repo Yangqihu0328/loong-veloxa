@@ -47,7 +47,9 @@ void Sdl2EventLoop::PumpInputEvents() {
   SDL_Event ev;
   while (SDL_PollEvent(&ev)) {
     if (ev.type == SDL_QUIT) {
-      inner_->Quit();
+      // Use self Quit so Run() loop sees running_ flip; inner_ is composed
+      // and only exposes task/timer state.
+      Quit();
       continue;
     }
     if (!input_cb_) continue;
