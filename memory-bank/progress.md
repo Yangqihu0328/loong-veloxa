@@ -18,14 +18,22 @@
 | Phase | 任务 | 状态 | 备注 |
 |---|---|:-:|---|
 | P0.1 | 基线核验 | ✅ | SDL2 2.0.20 / 工具链全 / proxy 空 / **ctest 917/917 PASS 1.00s** / branch on feature |
-| P0.2 | Surface::Present virtual no-op | ⏳ | TDD |
-| P0.3 | destroy/save_ppm 基类化 | ⏳ | 覆盖补充 |
-| P1.1-P1.3 | sdl2_input_translate | ⏳ | TDD |
-| P2.1-P2.2 | sdl2_window_surface | ⏳ | TDD |
-| P3.1-P3.2 | sdl2_event_loop | ⏳ | TDD |
-| P4.1-P4.2 | C API 扩展 | ⏳ | TDD |
-| P5.1-P5.2 | example + smoke | ⏳ | |
-| P6.1-P6.3 | WSLg 验证 + Release + 文档 | ⏳ | |
+| P0.2 | Surface::Present virtual no-op | ✅ | TDD |
+| P0.3 | destroy/save_ppm 基类化 | ✅ | 覆盖补充 |
+| P1.1 | CMake 骨架 + VX_PLATFORM_SDL2 选项 | ✅ | TDD |
+| P1.2 | TranslateSdlEvent 鼠标事件 | ✅ | TDD |
+| P1.3 | TranslateSdlEvent 键盘事件 + 修饰位 + Quit | ✅ | TDD |
+| P2.1 | Sdl2WindowSurface RAII ctor/dtor + getter | ✅ | TDD |
+| P2.2 | Sdl2WindowSurface Lock/Unlock/Present 实现 | ✅ | TDD |
+| P3.1 | Sdl2EventLoop 基础接口（Run/Quit/PostTask/SetTimer） | ✅ | TDD |
+| P3.2 | Sdl2EventLoop PumpInputEvents + SetInputCallback | ✅ | TDD |
+| P4.1 | VxWindowOptions + create_sdl2 / create_window C API | ✅ | TDD |
+| P4.2 | vx_event_loop_pump_input helper | ✅ | TDD |
+| P5.1 | examples/hello_sdl2.cc | ✅ | vx_view_run 自动 wire SDL2 callback；composition over inheritance |
+| P5.2 | ctest hello_sdl2_smoke (dummy driver) | ✅ | VX_HELLO_SDL2_AUTOQUIT_MS hook；**ctest 951/951 PASS 1.07s** |
+| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | ⏳ | |
+| P6.2 | Release -O3 -Werror 通路验证 | ⏳ | |
+| P6.3 | techContext + productContext 文档更新 | ⏳ | |
 
 ## 已完成任务
 

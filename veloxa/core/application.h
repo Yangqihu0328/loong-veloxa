@@ -52,6 +52,7 @@ class Application {
   dom::Document* document() const { return document_; }
   event::EventManager& event_manager() { return event_manager_; }
   const UpdateManager* update_manager() const { return update_manager_.get(); }
+  platform::EventLoop* event_loop() const { return config_.event_loop; }
 
  private:
   void OnFrame();

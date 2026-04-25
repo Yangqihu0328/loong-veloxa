@@ -192,6 +192,15 @@ VxResult vx_view_update(VxView* view) {
 VxResult vx_view_run(VxView* view) {
   if (!view) return VX_ERROR_NULL_PARAM;
   auto* app = reinterpret_cast<vx::Application*>(view);
+#ifdef VX_PLATFORM_SDL2
+  // Auto-wire SDL input forwarding when the configured event loop is the
+  // SDL2 backend. Headless loops are unaffected.
+  if (auto* sdl = dynamic_cast<vx::platform::Sdl2EventLoop*>(app->event_loop())) {
+    sdl->SetInputCallback([view](const VxInputEvent& e) {
+      vx_view_inject_input(view, &e);
+    });
+  }
+#endif
   app->Run();
   return VX_OK;
 }

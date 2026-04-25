@@ -101,6 +101,13 @@ void Application::Update() {
   if (update_manager_) {
     update_manager_->Update();
   }
+  // Push the rendered buffer to the display backend at end of every frame
+  // (no-op for headless surfaces; SDL2 backends UpdateTexture +
+  // RenderPresent). Idempotent: backends may be called multiple times per
+  // logical frame without issues.
+  if (config_.surface) {
+    config_.surface->Present();
+  }
 }
 
 void Application::OnFrame() { Update(); }

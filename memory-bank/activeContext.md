@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中 — Phase 0 进行中（基线核验 + Surface::Present + destroy/save_ppm 基类化）
+构建中·轮次 1 完成（Phase P0-P5 of P6 ✅；下次进入 P6 Release/WSLg/文档）
 
 ## 当前任务
 

@@ -227,4 +227,16 @@ if(VX_PLATFORM_SDL2)
     PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
   gtest_discover_tests(sdl2_event_loop_test
     PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+
+  # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
+  # with auto-quit so it self-terminates. Exercises the full create / load /
+  # run / quit / destroy path against a real SDL2 backend.
+  add_test(
+    NAME hello_sdl2_smoke
+    COMMAND $<TARGET_FILE:hello_sdl2>
+  )
+  set_tests_properties(hello_sdl2_smoke PROPERTIES
+    ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_SDL2_AUTOQUIT_MS=200"
+    TIMEOUT 10
+  )
 endif()
