@@ -5,7 +5,7 @@
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）
-- **状态：** 🟡 BUILD R0 准备完成（baseline + wpt + grep fingerprint 落盘），等待用户确认进入 R1 #25
+- **状态：** 🟡 BUILD R1 完成（#25 origin helpers — 19 helper + 10 处替换 + ctest 960 + bench Flat/64 +0.16%），等待用户确认进入 R2 #28
 - **创建日期：** 2026-04-26
 - **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
 - **来源：** `techContext.md §技术债务清单` 4 项 + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
@@ -65,6 +65,7 @@
 | 2026-04-26 02:00 | 规划 | PLAN 完成；6 决策矩阵锁定（Q1A 完整 §8.3.1 + Q2A 全量 LineBox + Q3A wpt 远程拉取 + Q4A 三件套安全护栏 + Q5A 每 Round 1 commit + Q6 0.6× 准确档）；spec + plan 落盘；代理 `172.22.32.1:7890` 实证可达 wpt 仓库 114 fixture 备选；下一步 `/creative` 2 篇创意文档 |
 | 2026-04-26 02:20 | 设计 | CREATIVE 完成；D1 (margin collapsing) 5 决策全 ACCEPT — 方案 A MarginChain in-line 累积 + 内部栈式 chain 状态 + BFC root 仅 overflow + VX_DEBUG_LAYOUT trace + 先 layout child 回填 child.y；D2 (LineBox 模型) 5 决策全 ACCEPT — A.1 显式 LineBox + B.1 严格 2-pass vertical-align + C.1 加字段不删 [[deprecated]] + inline-block atomic + CSS 2.1 §10.8.1 默认 line-height；2 篇创意文档落盘（含 3 方案探索 + 3×3 子决策对比 + 形式化伪码 + 6 关键字公式 + 风险登记）；下一步 `/build` R0 |
 | 2026-04-26 02:28 | 构建·R0 | BUILD R0 准备完成；ctest 951/951 PASS in 1.23s + bench `BM_LayoutBuildTreeFlat/64` 3709 ns baseline（R3 退出门 ≤ 3895 ns）+ wpt 11 文件入仓 (`tests/fixtures/wpt/css/CSS2/`) 含 README BSD-3-Clause + grep 4 类 fingerprint（F1 #25 替换点 14 处 ≥ 12 / F2 inline_decl 全链路 6 文件 / F3 vertical-align 0 hint 全新 / F4 enum 全链路 7 文件 kLineHeight 模板）；**实证微调**：plan 原选 `margin-collapse-091` 不存在 → 替代 `005`，`vertical-align` fixture 在 `linebox/` 子目录；下一步 R1 #25 origin helpers |
+| 2026-04-26 02:38 | 构建·R1 | BUILD R1 完成；#25 origin helpers 落地 — `Point{f32 x, f32 y}` struct + 19 helper（3 origin border/padding/content_box_origin + 16 four-side (border/padding/content/margin)_box_(top/right/bottom/left)）/ TDD RED 反向探针 2/2 通过（ZeroBoxIsTrivial + InversesByMutation）/ 10 处分散计算替换为 helper（layout_engine 1 + flex_layout 9）+ 4 处保留语义清晰（reverse 步进 / box-sizing 反推 / x_offset 步进，无 helper 适用）/ ctest 960/960 PASS（+9 cases，1.58s）/ bench `Flat/64` 3709→3715 ns **+0.16%** ≪ +5% 退出门 (3895 ns) / 全部 6 BM 波动 -1.7% ~ +6.1% ≤ A15 +10% 门；**首次反模式触发**：编译刚完成 Load 4.97 → 假退化 +26% → TASK-19-13 P1「WSL2 bench 稳态协议」sleep 30s 重测 → 真值 +0.16%；plan × 0.6 第 10 数据点 0.5×（plan 60 min / 实测 ~30 min，子档稳定区间 0.22-0.34× 又一确认） |
 
 #### PLAN 阶段决策（已锁定）
 

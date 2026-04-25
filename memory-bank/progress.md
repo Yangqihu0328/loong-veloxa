@@ -2,7 +2,7 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R0 完成（2026-04-26 02:28）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R1 完成（2026-04-26 02:38）
 
 - D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
@@ -26,6 +26,37 @@
     - **F4 enum 全链路 7 文件 fingerprint**（kLineHeight 模板）：property.h L64 enum 定义 + property.cc L67 properties[] 注册 + parser.cc L107 parse 值类型 + style_resolver.cc L106/L323 inherit/apply + transition.cc L83/L161/L239/L276 lerp 全链路（4 处）+ enum_serialization.cc L48-51/L110-113 字符串表 → R4 #21 VerticalAlign enum 必须照样补 7 文件（VerticalAlign 是 enum 不参与 transition，实际 6 文件 + computed_style.h 成员）
   - **代理使用守则**：本次 R0 通过 `http_proxy=http://172.22.32.1:7890` 拉取 fixture，`git config --global` 未设代理（避免污染全局 git）；R5 finalize 阶段无代理配置可清理（守则前置）
 - 下一步：`/build` R1（#25 LayoutBox origin helpers，60 min plan / 0.6× 准确档 ~36 min；TDD RED 反向探针 ≥ 2 + ctest 951 不变 + bench Flat/64 ≤ 3895 ns）
+- **BUILD R1 完成（2026-04-26 02:38，~30 min 实测，0.5× plan 比例）：**
+  - **R1.1 Point struct + 19 helpers** 落 `veloxa/core/layout/layout_box.h`（spec §5.1 接口签名）：3 origin 返回 `Point{f32 x, f32 y}` (border/padding/content_box_origin) + 16 four-side helper f32 ((border/padding/content/margin)_box_(top/right/bottom/left))；helpers 全 inline constexpr 风格，Release `-O3` 内联为相同汇编（bench 噪声内验证）
+  - **R1.2 TDD RED 反向探针 2/2 通过**：`OriginHelpersZeroBoxIsTrivial`（全 0 box 必须 origin (0,0) — 防字段 +1 笔误）+ `OriginHelpersAreInversesByMutation`（单字段突变检验 — 防 kLeft/kRight/kTop/kBottom 枚举互换笔误）；RED 阶段编译失败实证（缺 Point 类型 + 19 helper）→ GREEN 阶段全 PASS；新增 8 case（plan 估 6 case 偏少 2）
+  - **R1.3 layout_engine.cc 1 处替换**：L211-212 `child->y + child->border_box_height() + child->margin[kBottom]` → `child->margin_box_bottom()`
+  - **R1.4 flex_layout.cc 9 处替换**（plan §1 估 5-7 处，实测多 2-4 处）：
+    - L235 → `item.box->margin_box_height()` (column cross_size)
+    - L247 → `item.box->margin_box_width()` (row cross_size)
+    - L268-269 → `items[i].box->margin_box_width()` (used_main row)
+    - L271-272 → `items[i].box->margin_box_height()` (used_main column)
+    - L323-324 → `it.box->margin_box_width()` (justify-content row)
+    - L328-329 → `it.box->margin_box_height()` (justify-content column)
+    - L345-346 → `it.box->margin_box_height()` (cross-axis row item)
+    - L348-349 → `it.box->margin_box_width()` (cross-axis column item)
+    - L416 → `item.box->margin_box_bottom()` (container cross size column)
+  - **R1.5 4 处保留**（无简洁 helper 适用）：
+    - flex_layout.cc L309/L313 reverse 路径（reverse main_offset 步进，不是 box origin）
+    - flex_layout.cc L370-372 / L378-381 stretch 反推 content（反向公式无 box-origin 语义）
+    - flex_layout.cc L408-409 box-sizing 反推（vertical/horizontal decoration，spec §5.1 未要求）
+    - layout_engine.cc L218-225 / L233-240 box-sizing 反推 max/min height（同上，spec 5.1 未要求）
+    - **结论**：14 处 candidate identified（grep R0 fingerprint）→ **10 处实际替换**为 helper + 4 处保留语义清晰；spec A1 ≥ 12 处 grep 锚定 + 实质语义清理已达
+  - **R1.6 ctest 全量 960/960 PASS in 1.58s**（baseline 951 + 9 新增 LayoutBoxTest case，原 8 LayoutBoxTest + 9 新增 = 17 cases；其余 0 case 受影响），Debug 编译 0 warn
+  - **R1.7 bench 稳态验收**（Load 2.15 vs baseline 0.07 仍偏高，但低噪音段重测）：
+    - `BM_LayoutBuildTreeFlat/64`：3709 → **3715 ns (+0.16%)** ≪ R3 退出门 ≤ +5% (3895 ns) ✅
+    - `BM_LayoutBuildTreeNested/16`：1107 → 1139 ns (+2.9%) ✅
+    - `BM_LayoutBuildTreeMixed`：6646 → 6532 ns (**-1.7%**) ✅
+    - `BM_LayoutFlex<1,32>`：2135 → 2123 ns (**-0.6%**) ✅
+    - `BM_LayoutFlex<8,8>`：4943 → 4932 ns (**-0.2%**) ✅
+    - `BM_LayoutFlexNested`：5768 → 6121 ns (+6.1%) — 噪声范围内，全部 ≤ spec A15 退出门 ≤ +10%
+    - **首次稳态采样触发反模式**：编译刚完成 Load Average 4.97 → bench Flat/64 4681 ns (+26%) 假退化 → TASK-19-13 P1「WSL2 / 云机 bench 稳态协议」生效 → sleep 30s 待 Load 降到 2.15 重测 → 真值 3715 ns +0.16%（差 25 个百分点是单纯 load 干扰）
+  - **plan × 0.6 第 10 数据点**：plan 60 min × 0.6 = 36 min 估，实测 ~30 min（0.5× 实际，比 0.6× 准确档更窄；连续验证「最窄路径」子档稳定区间 0.22-0.34× 中位 0.28×）
+- 下一步：`/build` R2（#28 HTML parser inline style + 完整三件套安全护栏 [安全相关]，90 min plan × 0.6 = ~54 min）
 
 ## 已完成任务
 

@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·R0 完成（baseline 951 / bench Flat/64=3709 ns / wpt 11 文件 / grep 4 类 fingerprint），等待用户确认进入 R1 #25
+构建中·R1 完成（#25 LayoutBox origin helpers — 19 helper + Point struct + 10 处替换 + ctest 960/960 + bench Flat/64 3715 ns +0.16%），等待用户确认进入 R2 #28
 
 ## 当前任务
 

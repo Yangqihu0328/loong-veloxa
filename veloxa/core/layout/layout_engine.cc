@@ -208,8 +208,7 @@ void LayoutEngine::LayoutBlock(LayoutBox* box, f32 containing_width,
     LayoutChild(child, box->content_width, ctx);
     child->x = child->margin[LayoutBox::kLeft];
     child->y = y_offset + child->margin[LayoutBox::kTop];
-    y_offset =
-        child->y + child->border_box_height() + child->margin[LayoutBox::kBottom];
+    y_offset = child->margin_box_bottom();
   }
 
   if (style->height.is_auto() || style->height.is_none()) {
