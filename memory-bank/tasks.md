@@ -2,7 +2,61 @@
 
 ## 当前任务
 
-无。使用 `/van` 启动新任务。
+### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
+
+- **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）
+- **状态：** 🟡 初始化完成（VAN 阶段产出，等待 `/plan`）
+- **创建日期：** 2026-04-26
+- **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
+- **来源：** `techContext.md §技术债务清单` 4 项 + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
+
+#### 目标
+
+按 D1 全包 + 多轮次 Build 中间态（complexity-levels.mdc §轮次完成协议）依次消化 4 项 Layout 正确性技术债：
+
+| 子任务 | 编号 | 现状（VAN grep 实证） | 修复方向 | 量级 |
+|:-:|:-:|---|---|---:|
+| Round 1 | **#25** | LayoutBox 仅有 `*_box_width/height()` 系列；缺 origin helpers；坐标计算分散在 `layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处 | 加 `border_box_origin()` / `padding_box_origin()` / `content_box_origin()` 6 helpers + 全量替换分散计算 + 集成测试覆盖坐标语义 | ~30-60 min |
+| Round 2 | **#28** | HTML parser `parser.cc:95` 把 `style` attr 当普通 attribute；`CssParser::ParseDeclarationList` API 已存在（`script/dom_bindings.cc:322` 已用）| HTML parser 处理 attribute 时识别 `style` → 调 ParseDeclarationList → 逐条 `SetInlineDeclaration` + 集成测试（HTML 路径与 JS 路径行为一致）+ 安全（DoS 巨大 declaration / 无效 `url()` / CSS var 未实现退化） | ~60-90 min |
+| Round 3 | **#20** | `layout_engine.cc:209-212` 完全无 margin collapsing（直接 `y_offset = child->y + border_box + margin[Bottom]`）| CSS 2.1 §8.3.1 完整实现：adjoining vertical margins / nested / negative collapse / collapse-through (empty box) / clearance / float exclusion；至少 8-12 testcases（W3C 官方 testcase 选取参考）| ~3-5h |
+| Round 4 | **#21** | `layout_engine.cc:260-303` LayoutInline 用 `line_height = max(child.height)` 简化；`text_shaper.h:12` 有 `f32 baseline` 字段但 layout 未消费 | 引入 LineBox 抽象；接入 TextShaper.baseline；实现 ascent/descent metric；vertical-align（baseline/top/middle/bottom）；line-height 计算；半-leading；line box reflow | ~5-8h |
+| **合计** | — | — | — | **~10-15h plan / ~6-9h plan×0.6 实测预期** |
+
+#### 验收要点（待 /plan 精化）
+
+- 每 Round 末「轮次完成」中间态报告（complexity-levels.mdc §轮次完成判断 + build.md §6.5）
+- ctest 全量 PASS（基线 951/951；预计 +20-40 new test cases）
+- Release `-O3 -Werror` 0 err/warn
+- `bench_layout_*` baseline 不退化超 10%（TASK-24-01 32K block sweet spot 不破）
+- W3C CSS 2.1 §8.3.1 testcase 选取至少 6 例做集成测试金标准
+- `techContext.md §技术债务清单` #20/#21/#25/#28 状态变更为 ✅ 已闭环
+
+#### VAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围包 | **包 D（Layout 正确性）** | 用户从 5 包候选中选定 |
+| V2 | 拆分策略 | **D1 全包 + 多轮次 Build** | 4 子任务依次串行，每 Round 独立验收中间态 |
+| V3 | Git 分支 | **feature/TASK-20260426-01-layout-correctness** | 基于 main `9f7f338` |
+| V4 | 复杂度 | **Level 4** | 多子系统 + 架构决策 + #20/#21 单独 Level 3 量级 |
+| V5 | 安全相关 | **✅ [安全相关]** | #28 接收 HTML `style="..."` 外部输入 |
+
+#### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | 「#28 LayoutEngine::BuildTree 不解析 inline style」 | ⚠️ **描述不精确**：`layout_engine.cc:35` 已传 inline_declarations；真实缺口在 `html/parser.cc:95` | spec 阶段修正 #28 描述 → 修复路径在 HTML parser，非 layout |
+| F2 | 「`ParseDeclarationList` API 是否存在」 | ✅ `css/parser.h:12` 完整实现；`script/dom_bindings.cc:322` 已成熟使用 | #28 实施零 API 设计成本 |
+| F3 | 「LayoutBox origin 计算分散位置」 | ✅ `layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处 | #25 改造影响面已知 |
+| F4 | 「Block 布局当前是否有 margin collapsing」 | ✅ 完全无 collapsing | #20 是从零实施 |
+| F5 | 「LayoutInline 是否流入 TextShaper.baseline」 | ✅ baseline 字段未消费 | #21 第一步：接入 baseline + 引入 LineBox |
+| F6 | 「FetchContent 代理状态」 | ✅ 不引入新依赖 | 跳过 git proxy 守卫 |
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-26 01:35 | 初始化 | VAN 完成；6 项 grep 实证；用户决策 D1 全包 + 多轮次 Build；分支创建（基于 main `9f7f338`）；MB 三件套同步 |
 
 ---
 

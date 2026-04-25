@@ -1,11 +1,53 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲（TASK-20260425-01 已归档；准备接受新任务）
+初始化（TASK-20260426-01 VAN 已完成，等待 `/plan`）
 
 ## 当前任务
 
-无。使用 `/van` 启动新任务。
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）** — Level 4
+
+- **目标：** 消化 `techContext.md §技术债务清单` 4 项 Layout 正确性债（D1 全包策略，多轮次 Build 中间态）：
+  - **#25** LayoutBox 缺 `border_box_origin()` / `padding_box_origin()` / `content_box_origin()` 辅助方法（坐标计算分散在 `layout_engine.cc` / `flex_layout.cc` 多处）
+  - **#28** HTML 解析器 `parser.cc:95` 把 `style` 属性当作普通 attribute 处理，未调用已存在的 `CssParser::ParseDeclarationList`（JS 侧 `dom_bindings.cc:322` 已成熟使用此 API；缺口在 HTML 路径侧）
+  - **#20** Block 布局完全无 margin collapsing（`layout_engine.cc:209-212` 直接 `y_offset += border_box + margin`）— CSS 2.1 §8.3.1 adjoining / nested / negative / collapse-through / clearance
+  - **#21** LayoutInline 简化（`layout_engine.cc:260-303` 用 `line_height = max(child.height)`，**无 baseline / ascent / descent / vertical-align / line-height**；`TextShaper` 已有 `f32 baseline` 字段但未流入 layout）
+- **复杂度：** Level 4（多子系统 + 架构决策 + #20/#21 各自单独够撑 Level 3）
+- **来源：** `techContext.md §技术债务清单` + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
+- **安全相关：** ✅ 标注（#28 接收 HTML `style="..."` 外部输入；`ParseDeclarationList` 已被 JS 路径用过相对成熟，但 spec 阶段需补轻量威胁建模 — DoS via 巨大 declaration / `url()` 引用 / 未实现 CSS var 退化）
+- **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
+- **下一步：** `/plan` 启动头脑风暴 + 设计 spec + 4 子任务多轮次 Build 拆分
+
+### VAN 阶段产出
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围包 | **包 D（Layout 正确性）** | 用户从 5 包候选中选定（#46/#47/#49 等其他包属 P3 触发型；包 D 是规范级正确性硬骨头）|
+| V2 | 拆分策略 | **D1 全包一次过 + 多轮次 Build 中间态** | 4 子任务依次 #25 → #28 → #20 → #21，每 Round 独立验收中间态（complexity-levels.mdc §多轮次 Build 中间态协议）|
+| V3 | Git 分支 | **feature/TASK-20260426-01-layout-correctness** | 基于 main `9f7f338`，已创建 |
+| V4 | 复杂度 | **Level 4** | 4 子系统 + 架构决策 + #20/#21 单独 Level 3 量级 |
+| V5 | 安全标注 | **[安全相关]** | #28 路径接收 HTML 外部输入；spec §威胁建模轻量覆盖 |
+
+### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响 |
+|:-:|---|---|---|
+| F1 | 「#28 LayoutEngine::BuildTree 不解析 inline style」 | ⚠️ **描述不精确**：`layout_engine.cc:35` 已传 `element->inline_declarations()` 给 StyleResolver；真实缺口在 `html/parser.cc:95` 把 `style` attr 当普通 attribute（未识别 + 未调 `ParseDeclarationList`）| spec/plan 阶段修正 #28 描述：缺口在 HTML 解析器侧，非 layout 侧；修复路径 = `html/parser.cc` 处理 attribute 时识别 `style` → 调 `CssParser::ParseDeclarationList` → 逐条 `SetInlineDeclaration` |
+| F2 | 「`ParseDeclarationList` API 是否存在」 | ✅ `css/parser.h:12` + `css/parser.cc:202` 完整实现；`script/dom_bindings.cc:322` 已成熟使用（CSSText setter 路径）| #28 实施零 API 设计成本 |
+| F3 | 「LayoutBox 当前 origin 计算分散位置」 | ✅ 实证 `layout_engine.cc` (5 处) + `flex_layout.cc` (15+ 处) 直接读 `child->x`/`child->y` + `margin[*]` 拼接，确实分散；helper 重构有意义 | #25 改造影响面：`layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处替换 |
+| F4 | 「Block 布局当前是否有任何 margin collapsing」 | ✅ `layout_engine.cc:209-212` `y_offset = child->y + border_box + margin[Bottom]` 完全直加，零 collapsing 实现 | #20 是从零实施（不是补全） |
+| F5 | 「LayoutInline 是否流入 TextShaper.baseline」 | ✅ `text_shaper.h:12` 有 `f32 baseline` 字段，但 `layout_engine.cc:266-280` 仅用 `metrics.width`/`.height`；baseline 字段未消费 | #21 第一步是接入 baseline + 引入 LineBox 抽象 |
+| F6 | 「FetchContent 代理状态」 | ✅ 项目根 + `script/CMakeLists.txt` 含 `FetchContent_Declare`；`_deps/` 已离线预置 quickjs-ng + benchmark；本任务**不引入新依赖**（layout/html/css 全是已有代码改造）| 跳过 git proxy 守卫 |
+
+### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | 无新依赖（全部 vx_core/vx_text 已有模块）|
+| 环境就绪 | ✅ | `build/` Debug + `build-bench/` Release 均可复用 |
+| 已有 artifact | ✅ | `tests/integration/` + `tests/layout/` 已成熟（TASK-19-01 集成测试规范沉淀）；`bench_layout_buildtree` / `bench_layout_flex` 可作回归基线 |
+| FetchContent 代理守卫 | ⊘ 跳过 | 不引入新依赖（F6）|
+| 待处理事项关联 | ✅ 多条适用 | **plan × 0.6 第 10 数据点**（首个 Layout 正确性 Level 4 任务，预期 ≥ 1.0× 「准确档」非「最窄」）+ **多轮次 Build 中间态**（complexity-levels.mdc §轮次完成协议；TASK-19-13 P3 落实路径）+ **集成测试**（涉及跨 html/css/layout 模块）+ **Mixed TDD RED 反向探针**（每 Round 必标配）+ **安全**（#28 外部输入路径，spec §威胁建模轻量覆盖）+ **Bench 回归网**（TASK-24-01 baseline `bench_layout_*` 不退化超 10%）|
 
 ## 最近完成
 
@@ -54,11 +96,11 @@
 
 ## 下一步
 
-使用 `/van` 启动新任务。候选任务列表见「待处理事项 → 后续任务候选」段。
+执行 `/plan` 启动 TASK-20260426-01 头脑风暴 + 设计文档 + 4 子任务多轮次 Build 拆分。
 
 ## 未合并分支
 
-（所有待归档分支均已合并到 main；feature/TASK-20260425-01-sdl2-backend 已 `--no-ff` 合并到 main `4a096ab`；新任务启动时再创建 feature 分支）
+- `feature/TASK-20260426-01-layout-correctness` — TASK-20260426-01 VAN 完成，等待 /plan（基于 main `9f7f338`）
 
 ## 最近归档
 

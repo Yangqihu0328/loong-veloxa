@@ -2,7 +2,13 @@
 
 ## 当前任务
 
-无。使用 `/van` 启动新任务。
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — VAN 完成（2026-04-26）
+
+- D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align）
+- VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
+- 安全相关 [✅ 标注]：#28 接收 HTML `style="..."` 外部输入，spec 阶段补轻量威胁建模
+- 分支：`feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`）
+- 下一步：`/plan` 启动头脑风暴 + 设计 spec
 
 ## 已完成任务
 
