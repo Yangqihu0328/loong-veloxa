@@ -19,13 +19,35 @@ bool TranslateSdlEvent(const SDL_Event& sdl, VxInputEvent& out) {
       // SDL_BUTTON_LEFT=1, MIDDLE=2, RIGHT=3 → Veloxa convention 0/1/2.
       out.button = static_cast<uint8_t>(sdl.button.button - 1);
       return true;
+    case SDL_KEYDOWN:
+    case SDL_KEYUP:
+      out.type =
+          (sdl.type == SDL_KEYDOWN) ? VX_EVENT_KEY_DOWN : VX_EVENT_KEY_UP;
+      out.key_code = TranslateSdlKey(sdl.key.keysym.sym);
+      out.modifiers = TranslateSdlMod(
+          static_cast<SDL_Keymod>(sdl.key.keysym.mod));
+      return true;
     default:
       return false;
   }
 }
 
-uint32_t TranslateSdlKey(SDL_Keycode /*key*/) { return 0; }
+uint32_t TranslateSdlKey(SDL_Keycode key) {
+  // ASCII subset only: SDLK_<ascii> values equal their ASCII code.
+  // F-keys, arrows, etc. fall outside [0,127] and return 0 for now.
+  if (key >= 0 && key < 128) {
+    return static_cast<uint32_t>(key);
+  }
+  return 0;
+}
 
-uint32_t TranslateSdlMod(SDL_Keymod /*mod*/) { return 0; }
+uint32_t TranslateSdlMod(SDL_Keymod mod) {
+  uint32_t out = 0;
+  if (mod & (KMOD_LSHIFT | KMOD_RSHIFT)) out |= 0x1;  // Shift
+  if (mod & (KMOD_LCTRL  | KMOD_RCTRL))  out |= 0x2;  // Ctrl
+  if (mod & (KMOD_LALT   | KMOD_RALT))   out |= 0x4;  // Alt
+  if (mod & (KMOD_LGUI   | KMOD_RGUI))   out |= 0x8;  // Super/GUI
+  return out;
+}
 
 }  // namespace vx::platform
