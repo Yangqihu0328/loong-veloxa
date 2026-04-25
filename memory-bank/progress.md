@@ -2,46 +2,11 @@
 
 ## 当前任务
 
-**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 / 🟣 回顾完成（待归档）
-
-- 阶段：VAN ✅ + /plan ✅ + /build ✅（13 commits + 2 finalize commits = 15 commits）+ /reflect ✅
-- 分支：`feature/TASK-20260425-01-sdl2-backend`（基于 main `e52868b`）
-- 决策（Q1-Q6 锁定）：(B) PumpInputEvents callback / (B) Surface::Present virtual / (C) CMake 双轨 / (C) `VX_PLATFORM_SDL2=OFF` 默认 / (B) 新增 hello_sdl2.cc / (C) options struct
-- 隐含范围：veloxa_api.cc destroy/save_ppm 基类化（修复硬编码派生类指针 UB 隐患）✅
-- 设计：`docs/specs/2026-04-25-sdl2-window-backend-design.md`
-- 计划：`docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 14 任务 / 34 新增 GTests + smoke）
-- 估时：300 min × 0.6 = ~180 min（plan × 0.6 第 9 数据点）— **实测 ~40 min（0.22× 最窄路径第 4 次确认，历史最快）**
-- 回顾：`memory-bank/reflection/reflection-TASK-20260425-01.md`
-  - 关键发现：(1) plan ×0.6 第 9 数据点 0.22× 历史最快 — 6 个 AskQuestion 提前锁定决策 + 平台抽象成熟 + 无性能 phase；(2) Composition over Inheritance 首次自觉应用（`Sdl2EventLoop` 内组合 `HeadlessEventLoop`）+ 配套「同名方法歧义防护」准则（实证 `inner_->Quit()` 误调挂死测试）；(3) GUI/loop 程序 ctest 自终止协议泛化（`VX_HELLO_SDL2_AUTOQUIT_MS` 第二次 env hook 应用，可定型）
-  - 反复模式新数据点：「计划清单不一致」第 10 次（plan A2 :hover vs example 漂移，UI 行为维度新变体）+「测试隔离问题」第 8 次（`<SDL2/SDL.h>` 误置 anon namespace 污染 `std::abs`）
-  - P0 #4 已落实：hello_sdl2.cc 加 `:hover` 规则使 plan A2 验收可达
-  - P1 #1/#2/#3 已沉淀：`systemPatterns.md`「Platform Backend Composition 复用模式」+「同名方法歧义防护」+「GUI/Loop 程序 ctest 自终止模式」+「测试文件 include 卫生模式」+「Plan 验收用例与 example 一致性检查」+ `writing-plans.mdc`「测试文件 include 卫生 grep」+「验收用例与 example 一致性检查」两段
-- 环境：libsdl2-dev 2.0.20 ✅ / WSLg ✅ / FetchContent 不引入
-
-### 构建里程碑
-
-| Phase | 任务 | 状态 | 备注 |
-|---|---|:-:|---|
-| P0.1 | 基线核验 | ✅ | SDL2 2.0.20 / 工具链全 / proxy 空 / **ctest 917/917 PASS 1.00s** / branch on feature |
-| P0.2 | Surface::Present virtual no-op | ✅ | TDD |
-| P0.3 | destroy/save_ppm 基类化 | ✅ | 覆盖补充 |
-| P1.1 | CMake 骨架 + VX_PLATFORM_SDL2 选项 | ✅ | TDD |
-| P1.2 | TranslateSdlEvent 鼠标事件 | ✅ | TDD |
-| P1.3 | TranslateSdlEvent 键盘事件 + 修饰位 + Quit | ✅ | TDD |
-| P2.1 | Sdl2WindowSurface RAII ctor/dtor + getter | ✅ | TDD |
-| P2.2 | Sdl2WindowSurface Lock/Unlock/Present 实现 | ✅ | TDD |
-| P3.1 | Sdl2EventLoop 基础接口（Run/Quit/PostTask/SetTimer） | ✅ | TDD |
-| P3.2 | Sdl2EventLoop PumpInputEvents + SetInputCallback | ✅ | TDD |
-| P4.1 | VxWindowOptions + create_sdl2 / create_window C API | ✅ | TDD |
-| P4.2 | vx_event_loop_pump_input helper | ✅ | TDD |
-| P5.1 | examples/hello_sdl2.cc | ✅ | vx_view_run 自动 wire SDL2 callback；composition over inheritance |
-| P5.2 | ctest hello_sdl2_smoke (dummy driver) | ✅ | VX_HELLO_SDL2_AUTOQUIT_MS hook；**ctest 951/951 PASS 1.07s** |
-| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | 🟡 遗留 | 用户当前环境不便实测；**触发条件**：下次有 GUI/WSLg 桌面环境时复跑 `./build/examples/hello_sdl2` 验证 A1（窗口 + 三色块）/A2（鼠标 hover 红块变 #FF6B6B / 绿 #6BCB77 / 蓝 #4D96FF — `:hover` 规则 reflect 阶段已加入）/A3（× 关闭后输出 `Done.`）；headless smoke (`SDL_VIDEODRIVER=dummy`) 已在 P5.2 自动覆盖 |
-| P6.2 | Release -O3 -Werror 通路验证 | ✅ | `build-release/`（-DVX_PLATFORM_SDL2=ON）`-O3 -Werror` 0 警告；ctest **951/951 PASS 1.24s** |
-| P6.3 | techContext + productContext 文档更新 | ✅ | techContext 新增 SDL2 行 + Platform Backends 段；productContext 加 SDL2 ✅ 行 |
+无。使用 `/van` 启动新任务。
 
 ## 已完成任务
 
+- **TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接**（Level 3 中等功能 / 6 AskQuestion 提前锁定决策 / 直通 /build）— **第一个有可见窗口的平台后端**，解锁 DevTool 主线（hot reload / inspector / FPS overlay 前置依赖）；`Sdl2WindowSurface` + `Sdl2EventLoop`（**Composition over Inheritance** 内组合 `HeadlessEventLoop` 复用 task/timer）+ `Surface::Present()` virtual no-op + `Application::Update()` 末尾自动调用 + `vx_view_run()` 自动 `dynamic_cast<Sdl2EventLoop*>` wire input callback；C API：`vx_event_loop_create_sdl2 / vx_surface_create_window(VxWindowOptions*) / vx_event_loop_pump_input`；**隐含技术债清理**：`destroy/save_ppm` 改基类指针 + 虚析构清掉新后端 UB 隐患；CMake 双轨 SDL2 lookup（`find_package CONFIG` → `pkg_check_modules`）+ `VX_PLATFORM_SDL2=OFF` 默认；`examples/hello_sdl2.cc` 含 `:hover` CSS 规则（A2 验收依赖）+ `VX_HELLO_SDL2_AUTOQUIT_MS` env hook + `SDL_AddTimer` push `SDL_QUIT` 自终止；`hello_sdl2_smoke` headless ctest (`SDL_VIDEODRIVER=dummy`) 0.22s；ctest **951/951 PASS**（Debug + Release `-O3 -Werror`，+34 cases 含 `SDL_RenderReadPixels` 像素探针 + `SdlQuitTriggersLoopQuit` 修复实证）；**plan × 0.6 第 9 数据点 0.22× 历史最快**「最窄路径」第 4 次确认（180 min plan / ~40 min 实测，跨 4 数据点稳定区间 0.22-0.34× 中位 0.28×）；**反复模式 2 新变体**：「计划清单不一致」第 10 次（UI 行为维度）+「测试隔离问题」第 8 次（namespace 维度）；**5 新模式沉淀 systemPatterns.md** + **2 新 plan §0 grep 子段沉淀 writing-plans.mdc**（include 卫生 + 验收用例 ↔ example 一致性 3 选 1 强制）；P6.1 WSLg 真窗口手测用户决议标遗留；17 commits；已 `--no-ff` 合并到 main `4a096ab`；详见 `memory-bank/archive/archive-TASK-20260425-01.md`
 - **TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）**（Level 2 单候选 /plan→/build 直通）— Warm_Medium **3499→2350 ns mean / 1877 ns single (-32.8% / -46.4%)** 超额门槛 <3200 ns 850 ns **意外直破技术刚性 <3000 ns**；Warm_Short -54% / Warm_Long -59%；**VX_SHAPE_CACHE_OFF** env toggle A/B 精确剥离 cache 贡献（OFF 3542 ≈ TASK-24-03 baseline 3499，1.2% 噪音）；FNV-1a 64-bit + text_len 双重 key 碰撞 2^-96；固定 128 FIFO + per-FontManager scope + 预提取 FontHandle/HbBufferHolder 零循环依赖；ctest 917/917 PASS（+14 cases 含 R2 反向探针）/ Release -O3 -Werror 零警告；**plan × 0.6 第 7 数据点 0.26×「最窄路径」第 3 次确认**（继 TASK-24-01 0.29× / TASK-24-03 0.34×）；**归档阶段落实 1 P1 规则**：`writing-plans.mdc` §7.1 Cache BM 稳态访问模式数学推演清单；**3 新模式沉淀 `systemPatterns.md`**（Env Toggle A/B / 预提取 Header / 第三方 API 消除公式）；9 commits；详见 `memory-bank/archive/archive-TASK-20260424-04.md`
 - **TASK-20260424-03：SoftwareCanvas::DrawText 真路径 warm 优化**（Level 2-3 优化类）— 7 Phase 阶梯 + 2 次 R1 AskQuestion 升级（SSE2 4 px/iter → AVX2 8 px/iter `count≥16` 智能阈值 dispatch）；Warm_Medium **5905→3499 ns (-40.7%)**，Warm_Long -39.4%，Cold_Medium 副产品 -46.4%；**业务目标达成**（真路径 3499 ns < Fallback 3608 ns，K7 **Resolved**），技术刚性 D5 `<3000ns` 差 499 ns (14%) 2 次 R1 后用户接受；**11 pixel_blend GTests + 3 次 RED 反向探针完整循环**（Phase 5 /255 helper / Phase 7 SSE2 channel order / Phase 7b AVX2 permute4x64 imm）；ctest 59/59 PASS / Release `-O3 -Werror` 0 err/warn；**Phase 5 /255 乘-移位近似试验回退**实证 GCC `-O3` Granlund-Montgomery 覆盖手写（通用编译器洞察）；**Phase 6 B2 pre-clip + row ptr** 单 Phase -12.2% 是最大单点收益（API 层 Phase 1-4 累计仅 -1.9%，算法层贡献是 6 倍）；**Phase 7 SSE2 -28.6%** 是第二大收益；AVX2 在 ASCII (6-12 px) 无净收益 → `kAVX2MinPixelsPerRow=16` 智能阈值为 CJK / 大字号 / 未来硬件保留 headroom；**plan × 0.6 第 6 数据点 0.34× 最窄档确认**（~230 min 完整 scope vs ~78 min 实测）；**归档阶段落实 2 P1 规则**：`writing-plans.mdc` §7 WSL2 / 云机 bench 稳态协议 + §8 编译器已做优化识别 — 位运算/除法近似反模式；**4 新模式沉淀 `systemPatterns.md`**（异构工作负载 SIMD 尺寸阈值 dispatch / 负结果资产化 / 刚性目标+R1 升级路径 plan 模式 / 编译器已做优化识别反模式）；`benchmarks/baseline/bench_drawtext.json` + README.md K7 → Resolved；`--no-ff` 合并到 main → 归档 `memory-bank/archive/archive-TASK-20260424-03.md`
 - TASK-20260424-01：Layout super-linear knee 根因调查（研究类）— 根因定位 (d) ArenaAllocator 4KB block malloc/free churn；默认 block 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40×；Phase 2 block-size 5 档扫描（4K/8K/16K/32K/65K），32K 为 Flex sweet spot；**K8 新发现**：65K block > L1D 触发抖动 → Arena 设计守则「block ≤ L1D」；`DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；ctest 892/892 PASS；**plan × 0.6 第 5 数据点 0.29×**（115 min plan / ~33 min 实测，历史最快，「最窄路径」子档样板）；3 新模式沉淀 `systemPatterns.md`（扫描型脚本化模板+双指标交叉 / 公开行为锚定内部约束 / 最窄路径子档）；残余 ~40% super-linear 拆出 TASK-20260424-02 → 归档 `memory-bank/archive/archive-TASK-20260424-01.md`

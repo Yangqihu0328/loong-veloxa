@@ -2,11 +2,19 @@
 
 ## 当前任务
 
+无。使用 `/van` 启动新任务。
+
+---
+
+<details>
+<summary>TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接 — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接
 
 - **复杂度级别：** Level 3（中等功能 — 新模块 + 设计决策 + 跨现有 headless 后端的抽象统一）
-- **状态：** 🟣 回顾完成，待 `/archive`（reflection-TASK-20260425-01.md 已产出；P0 #4 已落实；3 项 P1 已沉淀到 systemPatterns + writing-plans）
+- **状态：** ✅ 已完成（已 `--no-ff` 合并到 main `4a096ab`，详见 `archive-TASK-20260425-01.md`）
 - **反思文档：** `memory-bank/reflection/reflection-TASK-20260425-01.md`
+- **归档文档：** `memory-bank/archive/archive-TASK-20260425-01.md`
 - **创建日期：** 2026-04-25
 - **来源：** 项目主体功能完整（30 任务归档），实时调试 UI 主线第一步；解锁后续 DevTool（hot reload / overlay / Inspector）
 - **分支基线：** `main` `e52868b`；建议分支 `feature/TASK-20260425-01-sdl2-backend`（待 `/plan` 后创建）
@@ -93,6 +101,9 @@
 | 2026-04-26 00:20 | 构建中 | /build 启动；P0.1 基线 ctest 917/917 PASS 1.00s |
 | 2026-04-26 00:49 | 构建完成 | P0-P5 + P6.2 + P6.3 ✅；P6.1 用户决策标为遗留验证项；ctest 951/951 PASS（Debug + Release `-O3 -Werror`）；15 commits |
 | 2026-04-26 01:00 | 回顾完成 | reflection-TASK-20260425-01.md ✅；plan ×0.6 第 9 数据点 0.22× 历史最快；3 P1 沉淀长期知识库 + P0 #4（hello_sdl2 :hover）落地 |
+| 2026-04-26 01:10 | 归档完成 | archive-TASK-20260425-01.md ✅；feature 分支 `--no-ff` 合并到 main `4a096ab`（17 commits）；MB 三件套重置为空闲 |
+
+</details>
 
 ---
 
@@ -917,6 +928,7 @@ SoftwareCanvas::DrawText 真路径（FreeType+HarfBuzz）**warm** 5807 ns → **
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260425-01 | SDL2 窗口后端 + 输入事件桥接（Level 3 中等功能）— 第一个有可见窗口的平台后端，解锁 DevTool 主线（hot reload / inspector / FPS overlay 前置）；`Sdl2WindowSurface` + `Sdl2EventLoop`（Composition over Inheritance 内组合 `HeadlessEventLoop`）+ `Surface::Present()` virtual no-op + `vx_view_run()` 自动 wire input callback；C API：`vx_event_loop_create_sdl2 / vx_surface_create_window(VxWindowOptions*) / vx_event_loop_pump_input`；隐含技术债清理：`destroy/save_ppm` 基类化清掉 UB 隐患；CMake 双轨 SDL2 lookup + `VX_PLATFORM_SDL2=OFF` 默认；`examples/hello_sdl2.cc` + `hello_sdl2_smoke` ctest（`SDL_VIDEODRIVER=dummy` + `VX_HELLO_SDL2_AUTOQUIT_MS` env hook 0.22s 自终止）；ctest 951/951 PASS（Debug + Release `-O3 -Werror`）；plan ×0.6 第 9 数据点 0.22× 历史最快「最窄路径」第 4 次确认；5 新模式 + 2 新 plan §0 grep 子段沉淀长期知识库；P6.1 WSLg 真窗口手测标遗留 | ✅ 已完成 | 2026-04-26 | `archive-TASK-20260425-01.md` |
 | TASK-20260424-01 | Layout super-linear knee 根因调查（研究类）— 根因定位 (d) ArenaAllocator 4KB block malloc/free churn；默认 block_size 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40×；3 文件核心 + 7 commits；新增 `DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；K8 新发现（65K block > L1D 触发抖动）；plan × 0.6 第 5 数据点 0.29×（历史最快，「最窄路径」子档样板）；3 新模式沉淀 systemPatterns；残余 ~40% super-linear 拆出 TASK-20260424-02 | ✅ 已完成 | 2026-04-24 | `archive-TASK-20260424-01.md` |
 | TASK-20260419-13 | 流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）— P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链 grep / P1 多轮次 Build 中间态；9 文件 / 8 commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议；5 新模式沉淀 systemPatterns | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-13.md` |
 | TASK-20260419-11 | ImageCache::Load HashMap 化（K6 高 ROI 修复）— 双索引 (`Vector<Entry>` + `HashMap<String, ImageHandle, StringHash, StringEq>`)；保 ABI / Get O(1)；Hit<256> 1151.77 ns → 45.70 ns（25.2×↓）；ctest 891/891 PASS；新增 `ClearAndReloadDeduplicates` D3 回归网（RED 反向探针验证有效）；3 P1 + 3 P2 改进沉淀 | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-11.md` |
