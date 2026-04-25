@@ -599,7 +599,7 @@ cmake --build build -j
 25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处 — 🟡 **TASK-20260426-01 R1 in progress**（plan 完成，spec §5.1；6 helpers + 替换 layout_engine.cc 5 处 + flex_layout.cc 7-15 处分散计算）
 26. DisplayList 无 Dump() 调试方法
 27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
-28. ~~LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）~~ — ⚠️ **描述不精确（TASK-20260426-01 VAN F1 实证修正）**：真实缺口在 `html/parser.cc:95` 把 `style` attr 当普通 attribute（未识别 + 未调 `ParseDeclarationList`）；`layout_engine.cc:35` 已正确传 `element->inline_declarations()`。🟡 **TASK-20260426-01 R2 in progress**（plan 完成，spec §5.2 + §6 安全威胁建模 7 类；HTML parser 接 `CssParser::ParseDeclarationList` + 完整三件套安全护栏 count cap 1000 + value len cap 8 KB + 历史攻击关键字黑名单）
+28. ~~LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）~~ — ✅ **TASK-20260426-01 R2 已修复**（`html/parser.cc` 增 `ApplyInlineStyleAttribute` 私有方法，调 `CssParser::ParseDeclarationList` + 完整三件套安全护栏 [安全相关]：T1 count cap 1000 / T2 value len cap 8 KB / T3-T5 黑名单 expression(/behavior:/javascript: 大小写不敏感）；常量 `kInlineStyleMaxDeclarationCount` + `kInlineStyleMaxValueLength` 暴露 namespace 可测；`internal::ContainsBlacklistKeyword(StringView) → bool` 提取为 unit test 入口；ctest +24 cases（14 inline_style + 1 const guard + 8 ContainsBlacklist + 1 layout e2e）= 984/984 PASS；与 JS dom_bindings.cc:322 路径行为完全等价（A2 e2e 验证 `<div style='padding:10px'>` ≡ stylesheet）
 29. ~~EventManager 无「状态变更→样式失效→重绘」触发机制~~ ✅ 已实现（TASK-09 UpdateManager + InvalidationCallback）
 30. EventDispatcher::listeners_ 元素销毁时需手动 RemoveEventListeners（无自动清理）
 31. HitTest z-index 排序每次调用重新排序（可缓存）

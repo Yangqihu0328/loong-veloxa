@@ -2,7 +2,7 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R1 完成（2026-04-26 02:38）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R2 完成（2026-04-26 02:55）
 
 - D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
@@ -56,7 +56,33 @@
     - `BM_LayoutFlexNested`：5768 → 6121 ns (+6.1%) — 噪声范围内，全部 ≤ spec A15 退出门 ≤ +10%
     - **首次稳态采样触发反模式**：编译刚完成 Load Average 4.97 → bench Flat/64 4681 ns (+26%) 假退化 → TASK-19-13 P1「WSL2 / 云机 bench 稳态协议」生效 → sleep 30s 待 Load 降到 2.15 重测 → 真值 3715 ns +0.16%（差 25 个百分点是单纯 load 干扰）
   - **plan × 0.6 第 10 数据点**：plan 60 min × 0.6 = 36 min 估，实测 ~30 min（0.5× 实际，比 0.6× 准确档更窄；连续验证「最窄路径」子档稳定区间 0.22-0.34× 中位 0.28×）
-- 下一步：`/build` R2（#28 HTML parser inline style + 完整三件套安全护栏 [安全相关]，90 min plan × 0.6 = ~54 min）
+- **BUILD R2 完成（2026-04-26 02:55，~50 min 实测，0.56× plan 比例）：**
+  - **R2.1 安全护栏常量暴露**：`veloxa/core/html/parser.h` 增 `inline constexpr usize kInlineStyleMaxDeclarationCount = 1000` + `kInlineStyleMaxValueLength = 8u * 1024u`；plan §2 R2.1 原计划匿名 namespace 内 hidden constants — **实证微调**：暴露到 namespace 让测试可断言数字守恒（spec §6 协议合同）
+  - **R2.2 ApplyInlineStyleAttribute 私有方法**（parser.h L36 + parser.cc L252-263）：`if css.empty() return / size > kMaxValue return / ContainsBlacklistKeyword return → CssParser::ParseDeclarationList → for i < min(decls.size(), kMaxCount) SetInlineDeclaration`，三件套 + dedup（SetInlineDeclaration upsert 语义）
+  - **R2.3 ContainsBlacklistKeyword 子模块化**（parser.cc L58-91 `internal::` namespace）：**实证微调**：plan §2 R2.1 原匿名 namespace `kBlacklistKeywords` + helper — 但 R2.5 反向探针发现 4 黑名单 e2e 测试因 CssParser 自然丢弃 unknown property 路径已 trivially PASS（over-match）→ 提取 `vx::html::internal::ContainsBlacklistKeyword(StringView) → bool` 暴露 unit test 入口 + parser.h 同步声明 + 8 直接测试用例（5 match positives + 3 reject negatives）
+  - **R2.4 ProcessStartTag attribute 循环改造**（parser.cc L143-155 6 行）：`InternedString::Intern(token.name)` 抬出循环外 + `if name == kStyleAttr → ApplyInlineStyleAttribute else SetAttribute`；保留 DecodeEntities 语义 + id/class 后续处理路径无变化
+  - **R2.5 单元测试新文件 `tests/core/html/inline_style_test.cc`**（197 lines / 14 case + 1 const guard）：
+    - **A2 行为一致性 5 case**：单 color = 0xFF0000FF / 多 declaration / HTML ≡ JS 路径完全等价 / 空 style → nullptr / style 不存 attribute
+    - **A3-T1 count cap**：常量守恒 `MatchesSpecValues` + `CountCapPathSurvives1500Repeats`（dedup 后 size==1，附 doc 注释说明 dedup 限制）
+    - **A3-T2 value cap**：16KB value → 整 attribute 跳过 → inline_decls = nullptr
+    - **A3-T3/T4/T5 黑名单 4 case**：expression() / behavior: / javascript: + EXPRESSION 大写
+    - **反向探针 2 case**：无 style → nullptr / 无效 CSS 不崩溃 + element 仍可访问
+    - **共存 1 case**：`<div id=... style=... class=...>` 三 attribute 共存
+  - **R2.6 ContainsBlacklistKeyword RED 反向探针** `tests/core/html/inline_style_test.cc:155-208`（8 case）：5 match positives（expression/behavior/javascript/EXPRESSION 大写/JavaScript: 混合大小写）+ 3 reject negatives（benign declaration / empty / too short）；**RED 阶段实测**：临时 `return false;` 5/5 match 测试立即 FAIL（reject 测试不受影响），恢复后 8/8 PASS — 反向探针**真正区分实现 vs placeholder**
+  - **R2.7 e2e 集成 `tests/core/layout/integration_test.cc:189-204`**（+1 case `InlineStyleAttributePaddingTakesEffect`）：`<div id='inline-pad' style='padding: 10px'>` + 外联 `width:100px;height:50px` → layout 4 边 padding=10px + content 100×50；**A2 跨路径一致性最强证据**（HTML inline ≡ JS DOM bindings ≡ stylesheet）
+  - **R2.8 ctest 全量 984/984 PASS in 2.08s**（baseline R1 960 + 24 = inline_style 14 + InlineStyleSecurityConstants 1 + ContainsBlacklist 8 + e2e 1）；plan §2 R2.7 原估 `965 = 957 + 8`，实测 +24 比 plan 估 +8 显著扩大（**实证微调**：完整威胁建模需要更多 case）
+  - **R2.9 bench 回归**（仅 HTML parser 路径修改，预期不影响 css/layout bench）：
+    - `BM_ParseDeclarationListInline/16`：2018 → **1947 ns (-3.5%)** ✅（首次跑 +10.3% 是 Load 1.03 偶发，sleep 30s 稳态后跑改善 -3.5%）
+    - `BM_ParseDeclarationListInline/32`：4085 → **4015 ns (-1.7%)** ✅（首次跑 +11.1% 同样是噪声）
+    - `BM_ParseStylesheetSmall/Medium/Large/Wide` 全在 ±1.6% 内
+    - **WSL2 稳态协议第 2 次自证**：单点 +10% bench 异常 → sleep 30s 稳态 → 真值 -3.5% 改善（与 R1 高 Load 噪声机制相同；TASK-19-13 P1 协议第 2 次实战）
+  - **R2.10 编译质量**：Debug `-O0` 0 warn / Release `-O3 -Werror` 0 warn / linter 0 issue
+  - **过程实证收获 3 条**：
+    1. **SetInlineDeclaration upsert 语义破坏 cap test 可观测性** — 1500 个相同 prop dedup 至 1 → cap 测试只能证「不崩溃」+「常量数字守恒」，真 cap 实证依赖 spec §6 review；后续若需更强 cap 实证应暴露内部 entry 或加 testing override
+    2. **CssParser 自然错误恢复 over-match blacklist e2e 测试** — `behavior: url(...)` 因 `behavior` 不在 PropertyId 表 → unknown 路径已 discard，blacklist test 即使不实施也 PASS；提取 `internal::ContainsBlacklistKeyword` 直接测试函数才是真 blacklist 实证 — **「测试该测什么」边界发现**
+    3. **`StringView` ctor 非 constexpr** — `constexpr StringView k[]` 编译失败（unused-function -Werror 同样卡），改为 `const StringView k[]` 即可 + helper 用 `[[maybe_unused]]` 容忍临时禁用
+  - **plan × 0.6 第 11 数据点**：plan 90 min × 0.6 = 54 min 估，实测 ~50 min（**0.56× 实际**，与 R1 0.5× 衔接形成「最窄路径」+「单文件 D2 注入点」连续 2 数据点稳定 0.5-0.56×；中位 0.28× 偏向 0.5× 因 R2 含 8 直接测试 + 1 e2e 比 R1 多）
+- 下一步：`/build` R3（#20 Block margin collapsing 全实施 [Level 4 子任务最大体量]，300 min plan × 0.6 = ~180 min；TDD 单元 6-8 case + W3C wpt 4 例引用一致性）
 
 ## 已完成任务
 

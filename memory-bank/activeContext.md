@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·R1 完成（#25 LayoutBox origin helpers — 19 helper + Point struct + 10 处替换 + ctest 960/960 + bench Flat/64 3715 ns +0.16%），等待用户确认进入 R2 #28
+构建中·R2 完成（#28 HTML inline style + 三件套安全护栏 [安全相关] — 暴露 cap 常量 + 提取 `internal::ContainsBlacklistKeyword` 子模块 + ApplyInlineStyleAttribute 私有方法 + ProcessStartTag 增 style 分支 + ctest 984/984 vs R1 960 +24 cases + bench DeclList/16 1947 ns -3.5% / /32 4015 ns -1.7% 稳态后改善），等待用户确认进入 R3 #20
 
 ## 当前任务
 
@@ -102,13 +102,13 @@
 
 ## 下一步
 
-执行 `/build` R0 准备阶段：
-1. **基线核验**：`ctest --test-dir build -j 8` 应 951 PASS / 0 FAIL；记录 `bench_layout_buildtree` baseline mean
-2. **W3C wpt fixture 拉取**：通过代理 `172.22.32.1:7890` 拉 8 例（4 margin-collapse + 2 IFC + 2 vertical-align baseline）入仓 `tests/fixtures/wpt/`
-3. **grep 影响面 fingerprint**：4 类 grep（#25 替换点 / #28 inline_declarations 消费点 / #21 vertical-align 现有 hint / enum_serialization 全链路 fingerprint），输出快照写入 progress.md
-4. **R0 退出门**：ctest 951 PASS + wpt 8/8 200 OK + grep #25 ≥ 12 处命中
+R2 已完成（commit `c10c516`），等待用户确认进入 **R3 #20 Block margin collapsing 全实施**：
+- **类型**：D3（多文件 + W3C 规范一致性）→ creative 已落盘 `creative-margin-collapsing.md`，方案 A MarginChain in-line 累积已 ACCEPT
+- **预计**：plan 300 min × 0.6 = ~180 min（按子档 0.34× 实测可能 100-180 min）
+- **退出门**：ctest 984 + N PASS（预计 +20 cases 含 4 W3C wpt 引用一致性）/ Release `-O3 -Werror` 0 warn / W3C wpt 4 例 margin-collapse 引用图像一致性测试通过
+- **TDD 顺序**：先 RED 单元测试（adjoining 2 项 / nested first-child / collapse-through / negative max() / clearance / 6-8 case）+ MarginChain RED 探针 → GREEN 实施 layout_engine.cc → REFACTOR 提炼 helper
 
-R0 完成后依次进 R1（#25 helper）→ R2（#28 inline style + 安全护栏）→ R3（#20 margin collapsing）→ R4（#21 LineBox + vertical-align）→ R5 finalize → /reflect。
+后续 R4（#21 LineBox + vertical-align）→ R5 finalize → /reflect。
 
 ## 未合并分支
 
