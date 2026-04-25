@@ -2,15 +2,20 @@
 
 ## 当前任务
 
-**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 / 🟢 规划完成
+**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 / 🟣 回顾完成（待归档）
 
-- 阶段：VAN ✅ + /plan ✅ → 等待用户审查 → /build
+- 阶段：VAN ✅ + /plan ✅ + /build ✅（13 commits + 2 finalize commits = 15 commits）+ /reflect ✅
 - 分支：`feature/TASK-20260425-01-sdl2-backend`（基于 main `e52868b`）
 - 决策（Q1-Q6 锁定）：(B) PumpInputEvents callback / (B) Surface::Present virtual / (C) CMake 双轨 / (C) `VX_PLATFORM_SDL2=OFF` 默认 / (B) 新增 hello_sdl2.cc / (C) options struct
-- 隐含范围：veloxa_api.cc destroy/save_ppm 基类化（修复硬编码派生类指针 UB 隐患）
+- 隐含范围：veloxa_api.cc destroy/save_ppm 基类化（修复硬编码派生类指针 UB 隐患）✅
 - 设计：`docs/specs/2026-04-25-sdl2-window-backend-design.md`
-- 计划：`docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 12 任务 / 14 GTests + smoke）
-- 估时：300 min × 0.6 = ~180 min（plan × 0.6 第 8 数据点，首个新模块类任务）
+- 计划：`docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 14 任务 / 34 新增 GTests + smoke）
+- 估时：300 min × 0.6 = ~180 min（plan × 0.6 第 9 数据点）— **实测 ~40 min（0.22× 最窄路径第 4 次确认，历史最快）**
+- 回顾：`memory-bank/reflection/reflection-TASK-20260425-01.md`
+  - 关键发现：(1) plan ×0.6 第 9 数据点 0.22× 历史最快 — 6 个 AskQuestion 提前锁定决策 + 平台抽象成熟 + 无性能 phase；(2) Composition over Inheritance 首次自觉应用（`Sdl2EventLoop` 内组合 `HeadlessEventLoop`）+ 配套「同名方法歧义防护」准则（实证 `inner_->Quit()` 误调挂死测试）；(3) GUI/loop 程序 ctest 自终止协议泛化（`VX_HELLO_SDL2_AUTOQUIT_MS` 第二次 env hook 应用，可定型）
+  - 反复模式新数据点：「计划清单不一致」第 10 次（plan A2 :hover vs example 漂移，UI 行为维度新变体）+「测试隔离问题」第 8 次（`<SDL2/SDL.h>` 误置 anon namespace 污染 `std::abs`）
+  - P0 #4 已落实：hello_sdl2.cc 加 `:hover` 规则使 plan A2 验收可达
+  - P1 #1/#2/#3 已沉淀：`systemPatterns.md`「Platform Backend Composition 复用模式」+「同名方法歧义防护」+「GUI/Loop 程序 ctest 自终止模式」+「测试文件 include 卫生模式」+「Plan 验收用例与 example 一致性检查」+ `writing-plans.mdc`「测试文件 include 卫生 grep」+「验收用例与 example 一致性检查」两段
 - 环境：libsdl2-dev 2.0.20 ✅ / WSLg ✅ / FetchContent 不引入
 
 ### 构建里程碑
@@ -31,7 +36,7 @@
 | P4.2 | vx_event_loop_pump_input helper | ✅ | TDD |
 | P5.1 | examples/hello_sdl2.cc | ✅ | vx_view_run 自动 wire SDL2 callback；composition over inheritance |
 | P5.2 | ctest hello_sdl2_smoke (dummy driver) | ✅ | VX_HELLO_SDL2_AUTOQUIT_MS hook；**ctest 951/951 PASS 1.07s** |
-| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | 🟡 遗留 | 用户当前环境不便实测；**触发条件**：下次有 GUI/WSLg 桌面环境时复跑 `./build/examples/hello_sdl2` 验证 A1（窗口 + 三色块）/A2（鼠标无崩溃）/A3（× 关闭后输出 `Done.`）；headless smoke (`SDL_VIDEODRIVER=dummy`) 已在 P5.2 自动覆盖 |
+| P6.1 | WSLg 手工验证 A1/A2/A3（用户协助） | 🟡 遗留 | 用户当前环境不便实测；**触发条件**：下次有 GUI/WSLg 桌面环境时复跑 `./build/examples/hello_sdl2` 验证 A1（窗口 + 三色块）/A2（鼠标 hover 红块变 #FF6B6B / 绿 #6BCB77 / 蓝 #4D96FF — `:hover` 规则 reflect 阶段已加入）/A3（× 关闭后输出 `Done.`）；headless smoke (`SDL_VIDEODRIVER=dummy`) 已在 P5.2 自动覆盖 |
 | P6.2 | Release -O3 -Werror 通路验证 | ✅ | `build-release/`（-DVX_PLATFORM_SDL2=ON）`-O3 -Werror` 0 警告；ctest **951/951 PASS 1.24s** |
 | P6.3 | techContext + productContext 文档更新 | ✅ | techContext 新增 SDL2 行 + Platform Backends 段；productContext 加 SDL2 ✅ 行 |
 

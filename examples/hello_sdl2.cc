@@ -45,6 +45,12 @@ static const char kCSS[] =
     "#box-red   { width: 96px; height: 96px; background-color: #E74C3C; }"
     "#box-green { width: 96px; height: 96px; background-color: #2ECC71; }"
     "#box-blue  { width: 96px; height: 96px; background-color: #3498DB; }"
+    /* :hover variants — enable end-to-end input verification (plan A2):
+       moving the mouse over a box should flip its color, proving SDL events
+       reach the DOM event manager via vx_view_inject_input. */
+    "#box-red:hover   { background-color: #FF6B6B; }"
+    "#box-green:hover { background-color: #6BCB77; }"
+    "#box-blue:hover  { background-color: #4D96FF; }"
     "#footer { height: 24px; background-color: #2C3E50; }";
 
 int main() {

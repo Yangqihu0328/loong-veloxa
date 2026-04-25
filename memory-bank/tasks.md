@@ -5,7 +5,8 @@
 ### TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接
 
 - **复杂度级别：** Level 3（中等功能 — 新模块 + 设计决策 + 跨现有 headless 后端的抽象统一）
-- **状态：** 🟢 规划完成（VAN + /plan 头脑风暴完成，等待用户审查 → `/build`）
+- **状态：** 🟣 回顾完成，待 `/archive`（reflection-TASK-20260425-01.md 已产出；P0 #4 已落实；3 项 P1 已沉淀到 systemPatterns + writing-plans）
+- **反思文档：** `memory-bank/reflection/reflection-TASK-20260425-01.md`
 - **创建日期：** 2026-04-25
 - **来源：** 项目主体功能完整（30 任务归档），实时调试 UI 主线第一步；解锁后续 DevTool（hot reload / overlay / Inspector）
 - **分支基线：** `main` `e52868b`；建议分支 `feature/TASK-20260425-01-sdl2-backend`（待 `/plan` 后创建）
@@ -89,6 +90,9 @@
 | 2026-04-25 23:51 | 初始化 | VAN 完成，识别 libsdl2-dev 阻碍项 + WSLg 环境就绪 |
 | 2026-04-25 23:56 | 初始化 | libsdl2-dev 2.0.20 安装完成；阻碍项解除；进入 `/plan` |
 | 2026-04-25 23:58 | 规划完成 | /plan 头脑风暴 Q1-Q6 锁定 + spec/plan 文档产出；等待用户审查 → /build |
+| 2026-04-26 00:20 | 构建中 | /build 启动；P0.1 基线 ctest 917/917 PASS 1.00s |
+| 2026-04-26 00:49 | 构建完成 | P0-P5 + P6.2 + P6.3 ✅；P6.1 用户决策标为遗留验证项；ctest 951/951 PASS（Debug + Release `-O3 -Werror`）；15 commits |
+| 2026-04-26 01:00 | 回顾完成 | reflection-TASK-20260425-01.md ✅；plan ×0.6 第 9 数据点 0.22× 历史最快；3 P1 沉淀长期知识库 + P0 #4（hello_sdl2 :hover）落地 |
 
 ---
 
