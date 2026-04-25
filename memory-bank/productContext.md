@@ -48,6 +48,7 @@
 | FreeType + HarfBuzz 字体渲染 | ✅ | 真实字形光栅化、GlyphCache |
 | PNG/JPEG 图片支持 | ✅ | 解码 + 缓存 + DrawImage |
 | JS-DOM 绑定 | ✅ | getElementById、属性、style proxy、事件 |
+| **SDL2 实时窗口后端** | ✅ | TASK-20260425-01；`Sdl2WindowSurface` + `Sdl2EventLoop`；WSLg/桌面真窗口 + 输入事件桥接；为 hot-reload / inspector / FPS overlay 等 DevTool 解锁前置 |
 
 ## 非目标
 - 不做完整浏览器（不支持完整 HTML5 规范）

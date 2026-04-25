@@ -40,6 +40,30 @@
 | zlib | 压缩 | 待接入（资源打包） |
 | libuv | 异步 I/O | 待接入（事件循环） |
 | google/benchmark | 性能基准 | **已接入** v1.9.1（TASK-20260419-02），`FetchContent`，仅在 `-DVX_BUILD_BENCHMARKS=ON` 时拉取 |
+| SDL2 | 窗口/输入后端 | **已接入**（TASK-20260425-01），系统包双轨查找（`find_package(SDL2 CONFIG)` 优先，`pkg_check_modules` 兜底），WSL2 包名 `libsdl2-dev`（最低 2.0.12，实测 2.0.20）；仅在 `-DVX_PLATFORM_SDL2=ON` 时构建 `vx_platform_sdl2` |
+
+## 平台后端（Platform Backends）
+
+`veloxa/platform/` 按 `Surface` + `EventLoop` 抽象提供可替换的窗口/事件子系统。
+
+| 后端 | 头文件目录 | 状态 | 用途 |
+|---|---|---|---|
+| Headless / Memory Surface | `veloxa/platform/{memory_surface,headless_event_loop}.h` | ✅ 默认始终编译 | 单元测试、图片导出（`SavePPM`）、CI |
+| **SDL2** | `veloxa/platform/sdl2/` | ✅ 可选 (`VX_PLATFORM_SDL2=ON`) | 桌面/WSLg 实时窗口；`Sdl2WindowSurface` + `Sdl2EventLoop`（内部组合 `HeadlessEventLoop` 复用 task/timer） |
+
+### Surface 抽象增量
+
+- `Surface::Present()` `virtual void` 默认 no-op（headless 后端继续行内为空），SDL2 后端重写为 `SDL_UpdateTexture + RenderClear + RenderCopy + RenderPresent`；`Application::Update()` 末尾自动调用
+- `vx_event_loop_destroy` / `vx_surface_destroy` / `vx_surface_save_ppm` 在 TASK-20260425-01 改为基类指针 + 虚析构，避免新后端 UB
+
+### SDL2 接入要点（构建/运行）
+
+- 配置：`cmake -B build -DVX_PLATFORM_SDL2=ON`
+- WSL 安装：`sudo apt install libsdl2-dev`
+- 运行：`./build/examples/hello_sdl2`（WSLg 自动开窗）
+- 无显示环境：`SDL_VIDEODRIVER=dummy ./build/examples/hello_sdl2`（headless smoke）
+- 测试 hook：`VX_HELLO_SDL2_AUTOQUIT_MS=200`（hello_sdl2_smoke ctest 用，定时 push SDL_QUIT 自终止）
+- C API：`vx_event_loop_create_sdl2()` + `vx_surface_create_window(VxWindowOptions*)` + `vx_event_loop_pump_input(loop, view)` 手工泵；或 `vx_view_run()` 自动 wire SDL2 callback 并由 `Sdl2EventLoop::Run()` 驱动
 
 ## FetchContent 与代理（开发环境注意）
 
