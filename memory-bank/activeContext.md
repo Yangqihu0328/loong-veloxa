@@ -1,11 +1,37 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲 — 等待新任务（使用 `/van` 启动）
+构建中 — Phase 0 进行中（基线核验 + Surface::Present + destroy/save_ppm 基类化）
 
 ## 当前任务
 
-**无活跃任务** — 使用 `/van` 启动新任务
+**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3（中等功能）
+
+- 目标：为 Veloxa 引入第一个真实窗口后端（SDL2），让 `vx_view_run()` 在 WSLg / Linux Desktop 上能开窗实时显示渲染结果，并把 SDL 输入事件桥接到现有 `VxInputEvent` / 事件系统三阶段
+- 来源：项目主体功能已完成（30 任务归档），实时调试 UI 的前置依赖；解锁后续 DevTool（hot reload / overlay / Inspector）
+- 复杂度：**Level 3** — 引入新模块 `veloxa/platform/sdl2/`、需要 surface/event_loop 设计决策、CMake 模式选型、跨现有 `headless` 后端的抽象统一
+- 分支：`feature/TASK-20260425-01-sdl2-backend`（已基于 main `e52868b` 创建并切换）
+- **环境就绪：** ✅
+  - libsdl2-dev 2.0.20 已安装（`pkg-config sdl2` ✅ + `/usr/include/SDL2/SDL.h` ✅ + `/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake` ✅）
+  - WSLg `DISPLAY=:0` + `WAYLAND_DISPLAY=wayland-0` + `/mnt/wslg`
+  - FetchContent `_deps/` 离线预置，本任务不引入新 FetchContent
+- **/plan 头脑风暴 6 决策（已锁定）：**
+  - Q1 输入事件投递路径：**(B) `Sdl2EventLoop::PumpInputEvents(callback)` 裸函数** — EventLoop 不反向持有 View；保持平台抽象单向
+  - Q2 Surface 像素呈现时机：**(B) `Surface` 抽象增加 `virtual void Present() {}` 默认 no-op** — SDL2 重写为 `SDL_UpdateTexture + RenderPresent`
+  - Q3 CMake SDL2 查找：**(C) 双轨兜底** — `find_package(SDL2 CONFIG QUIET)` 优先，失败 fallback `pkg_check_modules`
+  - Q4 默认构建可选性：**(C) 默认 OFF，需 `-DVX_PLATFORM_SDL2=ON`** — 与 `VX_BUILD_BENCHMARKS` 风格一致
+  - Q5 examples 形态：**(B) 保留 `hello.cc` 不动 + 新增 `examples/hello_sdl2.cc`** — 仅 SDL2 ON 时构建；含 ctest smoke (`SDL_VIDEODRIVER=dummy`)
+  - Q6 C API 命名：**(C) `vx_event_loop_create_sdl2()` + `vx_surface_create_window(const VxWindowOptions*)`** — options struct 与现有 `VxViewConfig` 风格一致
+- **隐含范围（必须做）：** 修复 `vx_event_loop_destroy` / `vx_surface_destroy` / `vx_surface_save_ppm` 在 `veloxa_api.cc` 硬编码 `HeadlessEventLoop*` / `MemorySurface*` 的技术债（加 SDL2 后端时 `delete` 错的派生类指针会 UB）— 改为基类指针调用
+- **设计规格：** `docs/specs/2026-04-25-sdl2-window-backend-design.md`（13 段，含安全威胁建模 + 注入点核对表 + R1-R6 风险登记）
+- **实现计划：** `docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 12 任务 / 13 新增测试 + ctest smoke）
+- **需要创意阶段：** ❌ 否（Level 3 但所有设计决策已通过头脑风暴 Q1-Q6 锁定 + 接口签名已具体化；可直接 /build）
+- **估时：** plan 300 min × 0.6 = ~180 min 实测预期（第 8 数据点，首个新模块类任务）
+- **下一步：** 用户审查 spec/plan → `/build` 进入 Phase 0 基线核验
+
+## 最近完成
+
+**TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）** — Level 2 ✅ 已归档
 
 ## 最近完成
 

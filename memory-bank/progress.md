@@ -2,7 +2,30 @@
 
 ## 当前任务
 
-**无活跃任务** — 使用 `/van` 启动新任务
+**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 / 🟢 规划完成
+
+- 阶段：VAN ✅ + /plan ✅ → 等待用户审查 → /build
+- 分支：`feature/TASK-20260425-01-sdl2-backend`（基于 main `e52868b`）
+- 决策（Q1-Q6 锁定）：(B) PumpInputEvents callback / (B) Surface::Present virtual / (C) CMake 双轨 / (C) `VX_PLATFORM_SDL2=OFF` 默认 / (B) 新增 hello_sdl2.cc / (C) options struct
+- 隐含范围：veloxa_api.cc destroy/save_ppm 基类化（修复硬编码派生类指针 UB 隐患）
+- 设计：`docs/specs/2026-04-25-sdl2-window-backend-design.md`
+- 计划：`docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 12 任务 / 14 GTests + smoke）
+- 估时：300 min × 0.6 = ~180 min（plan × 0.6 第 8 数据点，首个新模块类任务）
+- 环境：libsdl2-dev 2.0.20 ✅ / WSLg ✅ / FetchContent 不引入
+
+### 构建里程碑
+
+| Phase | 任务 | 状态 | 备注 |
+|---|---|:-:|---|
+| P0.1 | 基线核验 | ✅ | SDL2 2.0.20 / 工具链全 / proxy 空 / **ctest 917/917 PASS 1.00s** / branch on feature |
+| P0.2 | Surface::Present virtual no-op | ⏳ | TDD |
+| P0.3 | destroy/save_ppm 基类化 | ⏳ | 覆盖补充 |
+| P1.1-P1.3 | sdl2_input_translate | ⏳ | TDD |
+| P2.1-P2.2 | sdl2_window_surface | ⏳ | TDD |
+| P3.1-P3.2 | sdl2_event_loop | ⏳ | TDD |
+| P4.1-P4.2 | C API 扩展 | ⏳ | TDD |
+| P5.1-P5.2 | example + smoke | ⏳ | |
+| P6.1-P6.3 | WSLg 验证 + Release + 文档 | ⏳ | |
 
 ## 已完成任务
 
