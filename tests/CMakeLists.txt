@@ -202,3 +202,14 @@ target_link_libraries(shape_cache_test PRIVATE vx_text)
 # TASK-20260424-04: DrawText hb_shape cache end-to-end (P3)
 vx_add_test(drawtext_shape_cache_test graphics/drawtext_shape_cache_test.cc)
 target_link_libraries(drawtext_shape_cache_test PRIVATE vx_graphics vx_text)
+
+# TASK-20260425-01: SDL2 platform backend (opt-in, requires VX_PLATFORM_SDL2)
+if(VX_PLATFORM_SDL2)
+  add_executable(sdl2_input_translate_test platform/sdl2_input_translate_test.cc)
+  target_link_libraries(sdl2_input_translate_test
+    PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+  # SDL_VIDEODRIVER=dummy ensures these tests can run on headless CI without
+  # an actual display server.
+  gtest_discover_tests(sdl2_input_translate_test
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+endif()
