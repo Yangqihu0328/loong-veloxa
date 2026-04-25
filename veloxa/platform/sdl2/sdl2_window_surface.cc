@@ -126,7 +126,14 @@ vx::Status Sdl2WindowSurface::SavePPM(const char* /*path*/) const {
 }
 
 void Sdl2WindowSurface::Present() {
-  // Implemented in P2.2.
+  if (!texture_ || !renderer_ || !pixels_) return;
+  // Upload CPU buffer → GPU streaming texture, then composite full texture
+  // onto renderer back buffer and swap.
+  SDL_UpdateTexture(texture_, nullptr, pixels_,
+                    static_cast<int>(width_ * sizeof(vx::u32)));
+  SDL_RenderClear(renderer_);
+  SDL_RenderCopy(renderer_, texture_, nullptr, nullptr);
+  SDL_RenderPresent(renderer_);
 }
 
 uint32_t Sdl2WindowSurface::window_id() const {
