@@ -1,11 +1,37 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲 — 等待新任务（使用 `/van` 启动）
+回顾中（reflection-TASK-20260425-01.md ✅；P0 #4 hello_sdl2.cc 加 `:hover` 已落地；P1 #1/#2/#3 已沉淀到 systemPatterns.md + writing-plans.mdc；可进入 `/archive`）
 
 ## 当前任务
 
-**无活跃任务** — 使用 `/van` 启动新任务
+**TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3（中等功能）
+
+- 目标：为 Veloxa 引入第一个真实窗口后端（SDL2），让 `vx_view_run()` 在 WSLg / Linux Desktop 上能开窗实时显示渲染结果，并把 SDL 输入事件桥接到现有 `VxInputEvent` / 事件系统三阶段
+- 来源：项目主体功能已完成（30 任务归档），实时调试 UI 的前置依赖；解锁后续 DevTool（hot reload / overlay / Inspector）
+- 复杂度：**Level 3** — 引入新模块 `veloxa/platform/sdl2/`、需要 surface/event_loop 设计决策、CMake 模式选型、跨现有 `headless` 后端的抽象统一
+- 分支：`feature/TASK-20260425-01-sdl2-backend`（已基于 main `e52868b` 创建并切换）
+- **环境就绪：** ✅
+  - libsdl2-dev 2.0.20 已安装（`pkg-config sdl2` ✅ + `/usr/include/SDL2/SDL.h` ✅ + `/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake` ✅）
+  - WSLg `DISPLAY=:0` + `WAYLAND_DISPLAY=wayland-0` + `/mnt/wslg`
+  - FetchContent `_deps/` 离线预置，本任务不引入新 FetchContent
+- **/plan 头脑风暴 6 决策（已锁定）：**
+  - Q1 输入事件投递路径：**(B) `Sdl2EventLoop::PumpInputEvents(callback)` 裸函数** — EventLoop 不反向持有 View；保持平台抽象单向
+  - Q2 Surface 像素呈现时机：**(B) `Surface` 抽象增加 `virtual void Present() {}` 默认 no-op** — SDL2 重写为 `SDL_UpdateTexture + RenderPresent`
+  - Q3 CMake SDL2 查找：**(C) 双轨兜底** — `find_package(SDL2 CONFIG QUIET)` 优先，失败 fallback `pkg_check_modules`
+  - Q4 默认构建可选性：**(C) 默认 OFF，需 `-DVX_PLATFORM_SDL2=ON`** — 与 `VX_BUILD_BENCHMARKS` 风格一致
+  - Q5 examples 形态：**(B) 保留 `hello.cc` 不动 + 新增 `examples/hello_sdl2.cc`** — 仅 SDL2 ON 时构建；含 ctest smoke (`SDL_VIDEODRIVER=dummy`)
+  - Q6 C API 命名：**(C) `vx_event_loop_create_sdl2()` + `vx_surface_create_window(const VxWindowOptions*)`** — options struct 与现有 `VxViewConfig` 风格一致
+- **隐含范围（必须做）：** 修复 `vx_event_loop_destroy` / `vx_surface_destroy` / `vx_surface_save_ppm` 在 `veloxa_api.cc` 硬编码 `HeadlessEventLoop*` / `MemorySurface*` 的技术债（加 SDL2 后端时 `delete` 错的派生类指针会 UB）— 改为基类指针调用
+- **设计规格：** `docs/specs/2026-04-25-sdl2-window-backend-design.md`（13 段，含安全威胁建模 + 注入点核对表 + R1-R6 风险登记）
+- **实现计划：** `docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 12 任务 / 13 新增测试 + ctest smoke）
+- **需要创意阶段：** ❌ 否（Level 3 但所有设计决策已通过头脑风暴 Q1-Q6 锁定 + 接口签名已具体化；可直接 /build）
+- **估时：** plan 300 min × 0.6 = ~180 min 实测预期（第 8 数据点，首个新模块类任务）
+- **下一步：** 用户审查 spec/plan → `/build` 进入 Phase 0 基线核验
+
+## 最近完成
+
+**TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）** — Level 2 ✅ 已归档
 
 ## 最近完成
 
@@ -80,6 +106,7 @@
 - ~~TASK-20260419-12：已立项为 TASK-20260424-03 并完成归档，K7 Resolved，详见 `archive-TASK-20260424-03.md`~~
 - ~~TASK-20260424-04：已立项并完成归档，详见 `archive-TASK-20260424-04.md`；D 纯收尾模式 Warm_Medium -32.8% 意外直破 <3000 ns 技术刚性目标~~
 - **TASK-20260424-05（新增，TASK-24-04 后续候选，P3 触发型）：** DrawText 真路径 ShapeCache 进一步优化 — (a) LRU 替代 FIFO（cap 降到 32 或 workload 偏斜场景）/ (b) Shape result interning（相同 glyph sequence 共享 ShapedRun，CJK 场景节省内存）/ (c) Layout `freetype_shaper::Measure()` 也用 `ShapeOrLookup`（layout pass 10-30% 潜在加速）。**触发条件**：Layout 性能 workload 驱动 / 内存敏感设备暴露 cap 不足 / CJK UI 大量文本节点
+- **TASK-20260425-02（新增，TASK-25-01 后续候选，P3 触发型）：** SDL2 backend 二期 + interactive_sdl2 example — (a) `EventLoop::SetInputCallback` 上提到抽象基类（默认 no-op）替代 `dynamic_cast<Sdl2EventLoop>`（TASK-25-01 reflection §8 改进 #3）/ (b) `examples/interactive_sdl2.cc` 含 hover/click/keystroke 三类反馈用例作为 SDL2 backend 长期 reference / (c) `Surface::Present()` 调用约定 contract test（mock surface 验 Update 调用次数）/ (d) `vx_add_sdl2_test` CMake helper 自动加 `SDL_VIDEODRIVER=dummy` env。**触发条件**：第二个有 input 的 platform backend (Win32/Wayland) 立项 / FPS overlay / DevTool 启动 / 累计 5+ 处 SDL_VIDEODRIVER=dummy 重复字符串
 
 ### 长期项（按优先级）
 
@@ -116,4 +143,10 @@
 - ~~**P1（新增, TASK-24-04 反思 #4）：** Cache BM 稳态访问模式数学推演清单~~ → ✅ **已于 TASK-20260424-04 /archive 阶段落实**：`writing-plans.mdc` §7.1（推演模板 + FIFO/linear 5 场景速查表 + 反模式 + 交叉引用 env toggle 事后验证）。**根因**：TASK-24-04 P4 `RoundRobin` pool=256 plan 声明 "50% hit" 实际稳态 100% miss（FIFO+linear+cap=128），改为 pool=128 后实际 100% hit；Phase 4 临时调整虽未影响门槛但削弱规划精度
 - **P2（新增, TASK-24-04 反思 #1-#3）：** 3 新模式 — **Env Toggle A/B 对照模式**（process-level latched-once 环境变量 `VX_<FEATURE>_OFF` 单 build A/B 对照）/ **预提取依赖 Header 原则**（多 phase 任务预见透明重构第一次就完成，避免循环依赖 & 同文件二次修改）/ **第三方 API 消除型优化估时下限公式** `N × single_cost × (1-miss_rate)`（适用于消除一族连续 API 调用的 warm 路径 hit 优化）。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260424-04 DrawText hb_shape 结果缓存）」段；下次 cache/memoization/short-circuit 类优化直接引用
 - **P2（新增, TASK-24-04 反思 #1）：** `StringView(std::string)` ctor 兼容性与 plan 顶层表完整性自检 — 下次 plan smoke check 既有 grep 条目可覆盖 API ctor 矩阵；plan 尾部自检顶层文件清单（含 transparent refactor）与子任务一致。**触发条件**：累计 3+ 任务再出现即立项升级到规则；当前 TASK-24-04 各 1 次小瑕疵记观察
+- ~~**P1（新增, TASK-25-01 反思 #1）：** Composition pattern 内 outer 类自方法显式 `this->Method()` 防与 inner 同名方法混淆~~ → ✅ **已于 TASK-20260425-01 /reflect 阶段落实**：`systemPatterns.md`「已验证的模式（来自 TASK-20260425-01）」段「Composition over Inheritance — Platform Backend 复用模式」+「同名方法歧义防护」配套准则（含 TASK-25-01 `Sdl2EventLoop` `inner_->Quit()` 误调实证）
+- ~~**P1（新增, TASK-25-01 反思 #2，反复模式「测试隔离问题」第 8 次新变体）：** 测试文件 include 卫生 grep（new test files / 引入新第三方 C header 时 plan §0 batch grep 必做）~~ → ✅ **已于 TASK-20260425-01 /reflect 阶段落实**：`writing-plans.mdc`「smoke 工具链可用性检查」段后追加新子段「测试文件 include 卫生 grep」（含 TASK-25-01 `<SDL2/SDL.h>` 误置 anon namespace 实证 + 标志性 fingerprint「`'<symbol>' has not been declared in '{anonymous}::std'`」+ rg 一行命令）
+- ~~**P1（新增, TASK-25-01 反思 #3，反复模式「计划清单不一致」第 10 次新维度）：** Plan 验收用例与 example 实现一致性检查（plan 引用 hover/click/keystroke→样式变化等 UI 行为时必做）~~ → ✅ **已于 TASK-20260425-01 /reflect 阶段落实**：`writing-plans.mdc`「smoke 工具链可用性检查」段后追加新子段「验收用例与 example 一致性检查」（3 选 1 强制：plan example 段附 CSS/HTML 片段 / §X 步骤 0 同步检查项 / example 与 plan 同 PR）+ TASK-25-01 P6.1 A2 :hover plan-vs-example 漂移实证 + 反模式
+- **P2（新增, TASK-25-01 反思 #5-#6）：** 2 新模式 — **GUI/主循环型程序 ctest 自终止协议**（`VX_<APP>_AUTOQUIT_MS` env hook + `SDL_AddTimer` push platform quit event；prod 永不触发；TIMEOUT N 兜底；前缀 `VX_*` 防污染）/ **Platform Backend Composition 复用模式**（每个 backend 内部组合 `HeadlessEventLoop` 复用 task/timer，避免 EventLoop 抽象基类硬塞容器违反单一职责）。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260425-01）」段；下次 GUI smoke / 新 platform backend 直接引用
+- **P1（新增, TASK-25-01 数据点）：** **plan × 0.6 第 9 数据点「最窄路径」第 4 次确认 0.22×**（180 min 估算 / ~40 min 实测，是历史最快记录）。条件：基础设施 100% 复用（platform 抽象成熟）+ 6 个 AskQuestion 提前锁定全部决策 + 无性能/微优化 phase + TDD 节奏稳定。**落实方式**：下次类似条件任务（新 backend / 现有抽象增量 / 决策已锁定）直接按 plan ×0.22-0.30 预估「最窄路径」子档，跨 4 数据点稳定区间 0.22-0.34×（中位 0.28×）；如可写入 `writing-plans.mdc` 强制条目作为 4 数据点稳定门槛
+- **P2 / P3 触发型（新增, TASK-25-01 反思 #4 / 技术改进 #1-#5）：** TASK-25-01 后续候选见上文「后续任务候选」TASK-20260425-02 占位（含 EventLoop::SetInputCallback 上提抽象 / interactive_sdl2 example / Surface::Present contract test / vx_add_sdl2_test helper）
 

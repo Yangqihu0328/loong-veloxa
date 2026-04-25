@@ -1306,6 +1306,94 @@ const ShapedRun* FontManager::ShapeOrLookup(...) {
 
 ---
 
+## 已验证的模式（来自 TASK-20260425-01 SDL2 窗口后端 + 输入事件桥接）
+
+### Composition over Inheritance — Platform Backend 复用模式
+
+**问题**：新 platform backend（如 `Sdl2EventLoop` / `Win32EventLoop`）需要 PostTask / SetTimer / CancelTimer 等通用调度逻辑，但又有自己的事件循环主体（pump SDL events / pump win32 messages）。
+
+**反模式（继承）**：`Sdl2EventLoop : public HeadlessEventLoop` —
+- 两套 Run/Quit 状态机如何整合？outer Run 调 inner Run 还是替代？
+- inner 的 task 容器是 protected 还是 public？子类能直接动是反封装
+- Sdl2 quit 是否触发 Headless quit？反过来呢？语义死结
+
+**正解（组合）**：`Sdl2EventLoop` 内 `std::unique_ptr<HeadlessEventLoop> inner_;`，PostTask/SetTimer/CancelTimer **委托**给 inner，自己只管 Run/Quit/PumpInputEvents/SetInputCallback。
+
+**TASK-25-01 实测**：composition 让 `Sdl2EventLoop` 类只 ~80 LOC，复用 HeadlessEventLoop ~150 LOC 的 task/timer 实现，且语义清晰。
+
+**适用识别**：
+- 新 backend 与 headless backend 共享通用部分但有自己的 driver loop
+- 现有 backend 不是 final 类（可被组合复用）
+
+**配套准则 — 同名方法歧义防护**：composition 内 outer 类的控制方法（`Quit / Reset / PostTask` 等）与 inner 同名时，outer 实现必须**显式 `this->Quit()` 而非 `Quit()`**，或把 inner 同名方法重命名（如 `inner_quit_internal()`）。**TASK-25-01 实证**：`PumpInputEvents` 在 SDL_QUIT 分支误调 `inner_->Quit()`（关掉的是组合对象，不是自己），导致 `while (running_)` 永不退出，测试挂死。
+
+### GUI / 主循环型程序 ctest 自终止模式
+
+**问题**：GUI example（hello_sdl2 等）在 ctest 跑 smoke 时会 block 等用户关闭窗口，CI 永不结束。
+
+**模式**：用 `VX_<APP>_AUTOQUIT_MS=N` 环境变量 + `SDL_AddTimer / equivalent` 在指定 ms 后推送平台 quit event：
+
+```cpp
+if (const char* env = std::getenv("VX_HELLO_SDL2_AUTOQUIT_MS")) {
+  int ms = std::atoi(env);
+  if (ms > 0) {
+    SDL_InitSubSystem(SDL_INIT_TIMER);  // AddTimer 需要 TIMER 子系统
+    SDL_AddTimer(ms, [](Uint32, void*) -> Uint32 {
+      SDL_Event ev{}; ev.type = SDL_QUIT; SDL_PushEvent(&ev); return 0;
+    }, nullptr);
+  }
+}
+```
+
+CMake：
+```cmake
+add_test(NAME hello_sdl2_smoke COMMAND $<TARGET_FILE:hello_sdl2>)
+set_tests_properties(hello_sdl2_smoke PROPERTIES
+  ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_SDL2_AUTOQUIT_MS=200"
+  TIMEOUT 10)
+```
+
+**关键原则**：
+- prod 用户**永不**设此 env，hook 完全 opt-in
+- ms 取 200-500（足够走 1-2 帧渲染 + 触发关闭路径）
+- `TIMEOUT N`（N >= 5×ms）兜底，防止 hook 失效
+- env 名前缀必须 `VX_<APP>_*` 避免污染全局命名空间
+
+**已应用 2 次**：
+1. TASK-24-04 `VX_SHAPE_CACHE_OFF` — bench A/B 对照
+2. TASK-25-01 `VX_HELLO_SDL2_AUTOQUIT_MS` — GUI smoke 自终止
+
+→ **泛化为「Process-level latched-once env hook」模式**：任何「prod 路径不触发，仅 test/bench 需要的 process-wide 状态切换」都可用此模式，无需改 API。
+
+### 测试文件 include 卫生模式
+
+**问题**：`#include` 误置 anonymous namespace 内会污染该 namespace 解析（如 `<SDL2/SDL.h>` 间接拉 `<math.h>` 时把 `std::abs` 解析到 `{anonymous}::std`）。
+
+**模式**：所有 `#include` 必须在 file scope（namespace 之外）。**Plan §0 batch grep 检查**：
+
+```bash
+rg "^namespace .*\{" -A 30 tests/ | rg "include " && echo "BAD: include inside namespace" || echo "OK"
+```
+
+**TASK-25-01 实证**：api_test.cc 把 `#include <SDL2/SDL.h>` 放进 anon namespace，编译错误 `'abs' has not been declared in '{anonymous}::std'`，5 分钟排查。如果 Plan §0 grep 即可 0 秒发现。
+
+→ 落实方式：追加到 `writing-plans.mdc`「smoke 工具链可用性检查」段；本任务 P1 改进建议 #2 已对应。
+
+### Plan 验收用例与 example 实现一致性检查
+
+**问题**：plan 写「鼠标 hover 红块变 #FF6B6B」作为 A2 验收用例，但 example.cc 实现时忘了加 `:hover` CSS 规则 → plan 与代码不一致永久存在直到归档。
+
+**模式**：plan 验收清单引用具体 UI 行为（hover/click/keystroke→样式变化）时，必须满足下列**至少一项**：
+1. example 段直接附上对应 CSS/HTML/JS 片段（不是只写「会有 hover」）
+2. plan §X 步骤 0 加显式同步检查项「example 含验收所需的 CSS 规则 X」
+3. example PR 与 plan 同 PR 提交（强制 reviewer 看到两者）
+
+**TASK-25-01 实证**：plan §6.1 步骤 2 期望 hover 颜色变化，但 hello_sdl2.cc 没有 `:hover` 规则；P6.1 标为遗留没暴露。回顾阶段 P0 #4 强制加上才一致。
+
+→ 反复模式「计划文件清单与实际变更不一致」第 10 次新维度（UI 行为维度）。落实方式：追加到 `writing-plans.mdc`「验收用例与 example 一致性检查」新子段。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

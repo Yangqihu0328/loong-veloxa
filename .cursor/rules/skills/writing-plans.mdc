@@ -271,6 +271,45 @@ rg "PaintCommand::FillRect|emit.*FillRect|background_color" veloxa/core/render/r
 - **Plan 阶段 Phase 0「基线核验」步骤**：一次性 batch grep 本 plan 所需全部工具，输出命中/缺失矩阵写入 `progress.md`
 - **Build 阶段 Phase N 执行脚本前**：若 plan Phase 0 标记该工具 MISS，直接使用兜底方案，**严禁**临时切换技术栈后再补 plan
 
+#### 测试文件 include 卫生 grep（new test files / 引入新第三方 C header 时**必做**）
+
+> 反复出现（TASK-20260425-01 P5 实证）：`#include <SDL2/SDL.h>` 不慎写进 `tests/api/api_test.cc` 的 anonymous namespace，间接拉入 `<math.h>` 时把 `std::abs` 解析到 `{anonymous}::std`，编译错误 `'abs' has not been declared in '{anonymous}::std'`，~5 min 排查（错误信息隐晦）。
+>
+> 「测试隔离问题」类反复模式第 8 次新变体（namespace 维度）。
+
+**规则：** 任何 plan 涉及「新增 test 文件」或「现有 test 引入新第三方 C header（特别是 SDL/Vulkan/X11/Win32/CUDA 等会 transitive include `<math.h>`/`<string.h>`/`<stdlib.h>` 的 system header）」时，Plan §0 batch grep **必须**包含：
+
+```bash
+# 检查所有 test 文件 #include 是否在 file scope（无 namespace 包裹）
+rg "^namespace .*\{" -A 50 tests/ | rg "^[^:]+-:\s*#include " \
+  && echo "BAD: include inside namespace" || echo "OK: all includes at file scope"
+```
+
+**与 verification.mdc 协同：** test build 失败时，error message 形如 `'<symbol>' has not been declared in '{anonymous}::std'` / `not a member of {anonymous}` 是该模式的标志性 fingerprint，应直接定位到 namespace 内 include。
+
+#### 验收用例与 example 实现一致性检查（plan 验收清单引用具体 UI 行为时**必做**）
+
+> 反复出现（TASK-20260425-01 P6.1 实证）：plan §6.1 步骤 2 期望「鼠标 hover 红块 → 颜色 `#FF6B6B`」作为 A2 鼠标输入端到端验收用例，但 `examples/hello_sdl2.cc` 实施时沿用静态盒子样式，**未注入 `:hover` CSS 规则** → P6.1 标为遗留没暴露，但 plan 与 example 永久不一致直到回顾阶段 P0 强制修复。
+>
+> 「计划文件清单与实际变更不一致」反复模式第 10 次新维度（UI 行为维度）。
+
+**规则：** plan 验收清单（A1/A2/A3 / 集成测试预期 / smoke 验收等）若引用具体 UI 行为（hover 颜色变化 / click 事件 / keystroke 反馈 / focus 状态等），**必须**满足下列**至少一项**：
+
+1. **Plan example 段直接附 CSS/HTML/JS 片段**（不是只写「会有 hover 反馈」）—
+   ```css
+   #box-red:hover { background-color: #FF6B6B; }  /* A2 验收依赖 */
+   ```
+2. **Plan §X 步骤 0 加显式同步检查项**：
+   ```markdown
+   - [ ] **步骤 0 同步检查**：example 文件含验收所需的 CSS 规则
+     `rg ":hover" examples/hello_sdl2.cc` 必须命中
+   ```
+3. **example 与 plan 同 PR 提交** — 强制 reviewer 同时看到，避免 plan 漂移
+
+**反模式：**
+- ❌ plan 写「鼠标 hover 会变色」但 example 没 :hover 规则 → 验收用例不可达
+- ❌ plan 假设 example 已有某行为但 example 实现时简化 → 一致性 drift
+
 **与 `verification.mdc` 的协同：** verification 只要求「运行后才声明通过」；本子块是 verification 的**前置条件**（跑都跑不起来就谈不上验证）。
 
 ### 5. RangeMultiplier 案例数预估（避免 BM 数与 plan 数不一致）

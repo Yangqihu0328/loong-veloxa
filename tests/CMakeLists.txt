@@ -165,8 +165,11 @@ vx_add_test(application_integration_test core/application_integration_test.cc)
 target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
 # API: C API
-vx_add_test(api_test api/api_test.cc)
-target_link_libraries(api_test PRIVATE vx_api vx_platform)
+add_executable(api_test api/api_test.cc)
+target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)
+# SDL_VIDEODRIVER=dummy is harmless when VX_PLATFORM_SDL2=OFF (SDL2 cases
+# are #ifdef'd out) and lets the SDL2 cases run on headless CI.
+gtest_discover_tests(api_test PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 
 vx_add_test(api_integration_test api/api_integration_test.cc)
 target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
@@ -202,3 +205,38 @@ target_link_libraries(shape_cache_test PRIVATE vx_text)
 # TASK-20260424-04: DrawText hb_shape cache end-to-end (P3)
 vx_add_test(drawtext_shape_cache_test graphics/drawtext_shape_cache_test.cc)
 target_link_libraries(drawtext_shape_cache_test PRIVATE vx_graphics vx_text)
+
+# TASK-20260425-01: SDL2 platform backend (opt-in, requires VX_PLATFORM_SDL2)
+if(VX_PLATFORM_SDL2)
+  add_executable(sdl2_input_translate_test platform/sdl2_input_translate_test.cc)
+  target_link_libraries(sdl2_input_translate_test
+    PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+  # SDL_VIDEODRIVER=dummy ensures these tests can run on headless CI without
+  # an actual display server.
+  gtest_discover_tests(sdl2_input_translate_test
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+
+  add_executable(sdl2_window_surface_test platform/sdl2_window_surface_test.cc)
+  target_link_libraries(sdl2_window_surface_test
+    PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+  gtest_discover_tests(sdl2_window_surface_test
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+
+  add_executable(sdl2_event_loop_test platform/sdl2_event_loop_test.cc)
+  target_link_libraries(sdl2_event_loop_test
+    PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+  gtest_discover_tests(sdl2_event_loop_test
+    PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
+
+  # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
+  # with auto-quit so it self-terminates. Exercises the full create / load /
+  # run / quit / destroy path against a real SDL2 backend.
+  add_test(
+    NAME hello_sdl2_smoke
+    COMMAND $<TARGET_FILE:hello_sdl2>
+  )
+  set_tests_properties(hello_sdl2_smoke PROPERTIES
+    ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_SDL2_AUTOQUIT_MS=200"
+    TIMEOUT 10
+  )
+endif()

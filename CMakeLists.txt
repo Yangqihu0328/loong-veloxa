@@ -8,6 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(VX_BUILD_TESTS "Build tests" ON)
 option(VX_BUILD_BENCHMARKS "Build benchmarks" OFF)
+option(VX_PLATFORM_SDL2 "Build SDL2 platform backend (window + input)" OFF)
 set(VX_LOG_LEVEL 0 CACHE STRING "Minimum log level (0=DEBUG,1=INFO,2=WARN,3=ERROR,4=FATAL)")
 
 add_compile_definitions(VX_MIN_LOG_LEVEL=${VX_LOG_LEVEL})
@@ -26,6 +27,9 @@ endif()
 
 add_subdirectory(veloxa/foundation)
 add_subdirectory(veloxa/platform)
+if(VX_PLATFORM_SDL2)
+  add_subdirectory(veloxa/platform/sdl2)
+endif()
 add_subdirectory(veloxa/graphics)
 add_subdirectory(veloxa/core)
 add_subdirectory(veloxa/text)

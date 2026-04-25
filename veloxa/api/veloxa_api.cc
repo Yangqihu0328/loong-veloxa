@@ -1,8 +1,15 @@
 #include "veloxa/api/veloxa_api.h"
 
 #include "veloxa/core/application.h"
+#include "veloxa/platform/event_loop.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
 #include "veloxa/platform/headless/memory_surface.h"
+#include "veloxa/platform/surface.h"
+
+#ifdef VX_PLATFORM_SDL2
+#include "veloxa/platform/sdl2/sdl2_event_loop.h"
+#include "veloxa/platform/sdl2/sdl2_window_surface.h"
+#endif
 
 static vx::event::EventType MapEventType(VxEventType type) {
   switch (type) {
@@ -38,8 +45,38 @@ VxEventLoop* vx_event_loop_create_headless(void) {
   return reinterpret_cast<VxEventLoop*>(loop);
 }
 
+VxEventLoop* vx_event_loop_create_sdl2(void) {
+#ifdef VX_PLATFORM_SDL2
+  auto* loop = new vx::platform::Sdl2EventLoop();
+  return reinterpret_cast<VxEventLoop*>(loop);
+#else
+  return nullptr;
+#endif
+}
+
+VxResult vx_event_loop_pump_input(VxEventLoop* loop, VxView* view) {
+  if (!loop || !view) return VX_ERROR_NULL_PARAM;
+#ifdef VX_PLATFORM_SDL2
+  auto* base = reinterpret_cast<vx::platform::EventLoop*>(loop);
+  auto* sdl = dynamic_cast<vx::platform::Sdl2EventLoop*>(base);
+  if (!sdl) return VX_ERROR_INVALID_STATE;
+  // Bind callback on every call (cheap; lets caller swap views per frame).
+  sdl->SetInputCallback([view](const VxInputEvent& e) {
+    vx_view_inject_input(view, &e);
+  });
+  sdl->PumpInputEvents();
+  return VX_OK;
+#else
+  (void)loop; (void)view;
+  return VX_ERROR_INVALID_STATE;
+#endif
+}
+
 void vx_event_loop_destroy(VxEventLoop* loop) {
-  delete reinterpret_cast<vx::platform::HeadlessEventLoop*>(loop);
+  // ABI contract: handle is always a vx::platform::EventLoop* (or derived);
+  // base class has virtual ~. Adding multiply-inherited backends would break
+  // this reinterpret_cast — see TASK-20260425-01 spec §5.3.
+  delete reinterpret_cast<vx::platform::EventLoop*>(loop);
 }
 
 /* ── Surface ────────────────────────────────────────────────────── */
@@ -49,13 +86,31 @@ VxSurface* vx_surface_create_memory(uint32_t width, uint32_t height) {
   return reinterpret_cast<VxSurface*>(surface);
 }
 
+VxSurface* vx_surface_create_window(const VxWindowOptions* opts) {
+  if (!opts) return nullptr;
+#ifdef VX_PLATFORM_SDL2
+  auto* surface = new vx::platform::Sdl2WindowSurface(
+      opts->width, opts->height, opts->title);
+  if (!surface->valid()) {
+    delete surface;
+    return nullptr;
+  }
+  return reinterpret_cast<VxSurface*>(surface);
+#else
+  return nullptr;
+#endif
+}
+
 void vx_surface_destroy(VxSurface* surface) {
-  delete reinterpret_cast<vx::platform::MemorySurface*>(surface);
+  // ABI contract: handle is always a vx::platform::Surface* (or derived);
+  // base class has virtual ~. Adding multiply-inherited backends would break
+  // this reinterpret_cast — see TASK-20260425-01 spec §5.3.
+  delete reinterpret_cast<vx::platform::Surface*>(surface);
 }
 
 VxResult vx_surface_save_ppm(const VxSurface* surface, const char* path) {
   if (!surface || !path) return VX_ERROR_NULL_PARAM;
-  auto* s = reinterpret_cast<const vx::platform::MemorySurface*>(surface);
+  auto* s = reinterpret_cast<const vx::platform::Surface*>(surface);
   auto status = s->SavePPM(path);
   return status.ok() ? VX_OK : VX_ERROR_INVALID_STATE;
 }
@@ -137,6 +192,15 @@ VxResult vx_view_update(VxView* view) {
 VxResult vx_view_run(VxView* view) {
   if (!view) return VX_ERROR_NULL_PARAM;
   auto* app = reinterpret_cast<vx::Application*>(view);
+#ifdef VX_PLATFORM_SDL2
+  // Auto-wire SDL input forwarding when the configured event loop is the
+  // SDL2 backend. Headless loops are unaffected.
+  if (auto* sdl = dynamic_cast<vx::platform::Sdl2EventLoop*>(app->event_loop())) {
+    sdl->SetInputCallback([view](const VxInputEvent& e) {
+      vx_view_inject_input(view, &e);
+    });
+  }
+#endif
   app->Run();
   return VX_OK;
 }

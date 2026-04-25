@@ -61,14 +61,38 @@ typedef struct {
   uint32_t background_color; /* RRGGBBAA */
 } VxViewConfig;
 
+/* ── Window options (SDL2 backend) ──────────────────────────────── */
+
+typedef struct {
+  uint32_t width;
+  uint32_t height;
+  const char* title;  /* may be NULL → defaults to "Veloxa" */
+  uint32_t flags;     /* reserved; must be 0 in v0.1 */
+} VxWindowOptions;
+
 /* ── Event Loop ─────────────────────────────────────────────────── */
 
 VxEventLoop* vx_event_loop_create_headless(void);
+
+/* SDL2 event loop. Returns NULL when the build was not configured with
+ * -DVX_PLATFORM_SDL2=ON, or when SDL2 fails to initialize. */
+VxEventLoop* vx_event_loop_create_sdl2(void);
+
 void vx_event_loop_destroy(VxEventLoop* loop);
+
+/* Drain pending platform events from `loop` and inject them as input into
+ * `view`. No-op if `loop` is not a windowed/SDL2 event loop. Useful when
+ * the embedder owns the per-frame pump (e.g. examples/hello_sdl2.cc). */
+VxResult vx_event_loop_pump_input(VxEventLoop* loop, VxView* view);
 
 /* ── Surface ────────────────────────────────────────────────────── */
 
 VxSurface* vx_surface_create_memory(uint32_t width, uint32_t height);
+
+/* SDL2 windowed surface. Returns NULL when SDL2 is not built in or when the
+ * underlying SDL_CreateWindow fails. */
+VxSurface* vx_surface_create_window(const VxWindowOptions* opts);
+
 void vx_surface_destroy(VxSurface* surface);
 VxResult vx_surface_save_ppm(const VxSurface* surface, const char* path);
 

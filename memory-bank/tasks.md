@@ -2,9 +2,101 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务（使用 `/van` 启动）
+### TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接
+
+- **复杂度级别：** Level 3（中等功能 — 新模块 + 设计决策 + 跨现有 headless 后端的抽象统一）
+- **状态：** 🟣 回顾完成，待 `/archive`（reflection-TASK-20260425-01.md 已产出；P0 #4 已落实；3 项 P1 已沉淀到 systemPatterns + writing-plans）
+- **反思文档：** `memory-bank/reflection/reflection-TASK-20260425-01.md`
+- **创建日期：** 2026-04-25
+- **来源：** 项目主体功能完整（30 任务归档），实时调试 UI 主线第一步；解锁后续 DevTool（hot reload / overlay / Inspector）
+- **分支基线：** `main` `e52868b`；建议分支 `feature/TASK-20260425-01-sdl2-backend`（待 `/plan` 后创建）
+- **安全相关：** ❌ 否（无外部输入解析 / 无认证 / 无新网络栈；SDL 输入事件已在受控范围内）
+
+#### 目标
+
+为 Veloxa 引擎引入第一个**有可见窗口**的平台后端（SDL2），打通 `vx_view_run()` 在 WSLg / Linux Desktop 的实时显示路径，并把 SDL 输入事件桥接到现有 `VxInputEvent` 结构体与事件系统三阶段冒泡。
+
+#### 验收要点（待 /plan 精化）
+
+- 新增 `vx_event_loop_create_sdl2()` / `vx_surface_create_window(w, h, title)`，与现有 `headless` 后端对等接入 `VxView`
+- `examples/hello.cc` 或新增 `examples/hello_sdl2.cc` 在 WSLg 下运行可见 400×300 窗口（颜色块布局完整）
+- 鼠标移动 / 点击 → `:hover` / `:active` 状态切换可见
+- 不破坏现有 ctest 全绿（headless 路径继续 PASS）
+
+#### VAN 阶段前置检查
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | `libsdl2-dev` 2.0.20 已安装（`pkg-config sdl2` ✅ + `/usr/include/SDL2/SDL.h` ✅ + `/usr/lib/x86_64-linux-gnu/cmake/SDL2/sdl2-config.cmake` ✅）|
+| 环境就绪 | ✅ | WSLg `DISPLAY=:0` + `WAYLAND_DISPLAY=wayland-0` + `/mnt/wslg` 完整 |
+| 已有 artifact | ✅ 部分 | `veloxa/platform/headless/` 可作为对照参考；`VxInputEvent` 结构体已定义；事件系统已有三阶段冒泡 |
+| FetchContent 代理守卫 | ⊘ **跳过** | `_deps/` 已离线预置（quickjsng + benchmark）；本任务**不引入新 FetchContent**（SDL2 走系统包） |
+| 待处理事项关联 | ✅ | **plan × 0.6 第 8 数据点**（首个新模块类任务，预期 ≥ 1.5× "准确档" 而非 "最窄"）；**集成测试**（涉及生命周期 + 跨模块）；**安全**（输入事件来源外部）；**bench 阈值表绝对增量兜底**（input event 延迟若入 BM）|
+
+#### 阻碍项决策（待用户选择）
+
+| 选项 | 描述 | 优劣 |
+|:-:|---|---|
+| **(a)** | `sudo apt install libsdl2-dev`（推荐） | 体积 ~5 MB；与现有 FreeType / HarfBuzz / PNG / JPEG 走系统包一致；最快 |
+| **(b)** | `FetchContent` 拉 SDL2 源码 | 自包含；但首次构建拉 ~50 MB；额外代理依赖；与现有依赖管理风格不一致 |
+| **(c)** | 改换 X11 raw 后端 | 不引入 SDL；但同样需 `libx11-dev`；输入事件映射工作量加倍；跨平台收益丧失 |
+
+#### 用户决策（VAN 阶段产出）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | libsdl2-dev 解决方式 | **(a) sudo apt install libsdl2-dev** ✅ 已完成 | 与 FreeType/HarfBuzz/PNG/JPEG 系统包风格一致 |
+| V2 | 复杂度分级 | **Level 3** | 新模块 + 设计决策；surface 抽象 / event_loop 模式 / CMake 选型 / 输入事件映射粒度 4 维度需头脑风暴 |
+| V3 | Git 分支 | **feature/TASK-20260425-01-sdl2-backend**（待 /plan 后创建） | 基于 main `e52868b` |
+
+#### /plan 头脑风暴决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| Q1 | 输入事件投递路径 | **(B) `Sdl2EventLoop::PumpInputEvents(callback)` 裸函数** | EventLoop 不反向持有 View；与 headless 对称；保持平台抽象单向 |
+| Q2 | Surface 像素呈现时机 | **(B) `Surface` 抽象增加 `virtual void Present() {}` 默认 no-op** | 语义清晰；headless 默认 no-op；SDL2 重写为 `SDL_UpdateTexture + RenderPresent` |
+| Q3 | CMake SDL2 查找 | **(C) 双轨兜底** | `find_package(SDL2 CONFIG QUIET)` 优先，失败 fallback `pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)` |
+| Q4 | 默认构建可选性 | **(C) 默认 OFF，需 `-DVX_PLATFORM_SDL2=ON`** | 与 `VX_BUILD_BENCHMARKS` 风格一致；不破坏 CI minimal 镜像 |
+| Q5 | examples 形态 | **(B) 保留 `hello.cc` + 新增 `examples/hello_sdl2.cc`** | PPM 与 SDL2 两后端独立参考；含 ctest smoke (`SDL_VIDEODRIVER=dummy`) |
+| Q6 | C API 命名 | **(C) `vx_event_loop_create_sdl2()` + `vx_surface_create_window(const VxWindowOptions*)`** | 与现有 `_headless` / `_memory` 风格一致；options struct 与 `VxViewConfig` 一致；未来加 flags 不破 ABI |
+
+#### 隐含范围（必做技术债清理）
+
+发现：`vx_event_loop_destroy` / `vx_surface_destroy` / `vx_surface_save_ppm` 在 `veloxa_api.cc` 硬编码 `HeadlessEventLoop*` / `MemorySurface*`。加 SDL2 后端时 `delete` 错的派生类指针会 UB。**本任务范围内必须修复**：改用基类指针调用（基类已 `virtual ~`）。详见 spec §5.3。
+
+#### 设计与计划产出
+
+- **设计规格：** `docs/specs/2026-04-25-sdl2-window-backend-design.md`（13 段：目的 / 不做 / 成功标准 A1-A7 / 6 决策 / 架构 + 接口签名 / 安全威胁建模 / 测试策略 + 边界输入清单 / 注入点核对表 / CMake 链接拓扑 / 文件清单 / 估时 / R1-R6 风险登记 / 与未来任务关系）
+- **实现计划：** `docs/plans/2026-04-25-sdl2-window-backend.md`（6 Phase / 12 任务 / 13 新增 GTests + 1 ctest smoke）
+- **需要创意阶段：** ❌ 否（Level 3，但 Q1-Q6 决策 + 接口签名已具体化；可直接 `/build`）
+
+#### 估时（plan × 0.6 第 8 数据点）
+
+| Phase | 内容 | plan 估时 | × 0.6 实测预期 |
+|---|---|---:|---:|
+| P0 | 基线核验 + Surface::Present + destroy/save_ppm 基类化 | 25 min | 15 min |
+| P1 | sdl2_input_translate.{h,cc} + 7 GTests | 50 min | 30 min |
+| P2 | sdl2_window_surface.{h,cc} + 3 GTests | 70 min | 42 min |
+| P3 | sdl2_event_loop.{h,cc} + 4 GTests | 50 min | 30 min |
+| P4 | C API 扩展 + veloxa_api.cc 修复 | 35 min | 21 min |
+| P5 | examples/hello_sdl2.cc + ctest smoke | 40 min | 24 min |
+| P6 | WSLg 手工验证 + Release `-Werror` + memory-bank 文档 | 30 min | 18 min |
+| **合计** | | **~300 min (5h)** | **~180 min (3h)** |
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-25 23:51 | 初始化 | VAN 完成，识别 libsdl2-dev 阻碍项 + WSLg 环境就绪 |
+| 2026-04-25 23:56 | 初始化 | libsdl2-dev 2.0.20 安装完成；阻碍项解除；进入 `/plan` |
+| 2026-04-25 23:58 | 规划完成 | /plan 头脑风暴 Q1-Q6 锁定 + spec/plan 文档产出；等待用户审查 → /build |
+| 2026-04-26 00:20 | 构建中 | /build 启动；P0.1 基线 ctest 917/917 PASS 1.00s |
+| 2026-04-26 00:49 | 构建完成 | P0-P5 + P6.2 + P6.3 ✅；P6.1 用户决策标为遗留验证项；ctest 951/951 PASS（Debug + Release `-O3 -Werror`）；15 commits |
+| 2026-04-26 01:00 | 回顾完成 | reflection-TASK-20260425-01.md ✅；plan ×0.6 第 9 数据点 0.22× 历史最快；3 P1 沉淀长期知识库 + P0 #4（hello_sdl2 :hover）落地 |
 
 ---
+
+## 任务历史
 
 <details>
 <summary>TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化（D 纯收尾模式）— ✅ 已归档（点开查看历史）</summary>
