@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·R3 完成 + 优化达标（#20 Block margin collapsing CSS 2.1 §8.3.1 — `MarginChain` POD + `LayoutBlock` 重写 + 4 类规则 sibling collapse / collapse-through / negative / BFC root + 11 unit + 11 集成 + 4 wpt 数值（2 PASS 2 SKIP-w/-rationale） + ctest 1010/1010 + Release `-O3 -Werror` 0 warn）；用户选 **B 优化后再进 R4** → V1 优化 3 项（IsCollapseThrough sum-merge + inline overflow + Add 严格零跳过）已落地，**同窗口对照 bench Flat/64 增量 mean +3.2% / median +3.4%**（同窗口 baseline mean 3992 ns vs V1 mean 4121 ns，stddev 263+282 ns，差值在 noise band 内），全维度多数场景反超 baseline，**远低于 +10% 退出门**，准备 commit + 进 R4 #21 LineBox
+构建中·R4 完成（#21 LayoutInline LineBox 模型 — `VerticalAlign` 9 关键字 + `vertical-align` length/percent + `vertical_align_offset` 字段 + `TextMetrics` ABI 兼容拆 ascent/descent + `[[deprecated]] baseline` + 新建 `core/layout/line_box.h` `LineBox`/`LineBoxItem` POD + `LayoutInline` 严格 2-pass vertical-align 重写 + 半-leading + 隐式 strut + LineBox Vector + fit-content width / explicit height 修正 + `inline-block` atomic 路径）；测试 +19（11 line_box + 5 text_shaper + 3 parser）+ 2 wpt linebox fixture（Wpt006 inline 横向 + Wpt007 va: 0% ≡ baseline，class 选择器适配）+ ctest 1029/1029 PASS + 同窗口对照 bench Flat/64 mean -3.6% / median +2.65%（cv 5-8% 噪声带，远低 ±10% 阈）；准备 commit + Memory Bank 同步
 
 ## 当前任务
 

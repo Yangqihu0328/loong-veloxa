@@ -60,6 +60,10 @@ struct ComputedStyle {
   TextAlign text_align = TextAlign::kLeft;
   WhiteSpace white_space = WhiteSpace::kNormal;
   LengthValue letter_spacing;
+  // CSS 2.1 §10.8.1 vertical-align（不继承）。`vertical_align == kLength` 时
+  // 使用 `vertical_align_offset` 作为偏移；其他枚举值忽略 offset。
+  VerticalAlign vertical_align = VerticalAlign::kBaseline;
+  LengthValue vertical_align_offset;
 
   SmallVector<TransitionSpec, 2> transitions;
 };

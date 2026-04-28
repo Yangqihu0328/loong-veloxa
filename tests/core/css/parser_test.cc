@@ -220,6 +220,42 @@ TEST(CssParserTest, EnumPosition) {
   EXPECT_EQ(d.value.enum_value, static_cast<u16>(Position::kAbsolute));
 }
 
+// R4 #21 vertical-align — TASK-20260426-01
+// vertical-align 是混合类型属性（CSS 2.1 §10.8.1）：8 关键字走 enum 路径，
+// length/percent 走 length 路径。下列 3 case + 1 RED 反向探针验证解析正确性。
+
+TEST(CssParserTest, VerticalAlignBaseline) {
+  auto sheet = CssParser::Parse("span { vertical-align: baseline; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);
+  auto& d = sheet.rules[0].declarations[0];
+  EXPECT_EQ(d.property, PropertyId::kVerticalAlign);
+  EXPECT_EQ(d.value.type, ValueType::kEnum);
+  EXPECT_EQ(d.value.enum_value,
+            static_cast<u16>(VerticalAlign::kBaseline));
+}
+
+TEST(CssParserTest, VerticalAlignSubDistinctFromSuper) {
+  // RED 反向探针：若 parser 把 sub 错算成 super，下面 EXPECT 会失败。
+  auto sheet = CssParser::Parse("span { vertical-align: sub; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);
+  auto& d = sheet.rules[0].declarations[0];
+  EXPECT_EQ(d.property, PropertyId::kVerticalAlign);
+  EXPECT_EQ(d.value.type, ValueType::kEnum);
+  EXPECT_EQ(d.value.enum_value, static_cast<u16>(VerticalAlign::kSub));
+  EXPECT_NE(d.value.enum_value, static_cast<u16>(VerticalAlign::kSuper));
+}
+
+TEST(CssParserTest, VerticalAlignLengthPercent) {
+  // 50% 走 length 路径（unit = kPercent），enum 路径不应被触发。
+  auto sheet = CssParser::Parse("span { vertical-align: 50%; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);
+  auto& d = sheet.rules[0].declarations[0];
+  EXPECT_EQ(d.property, PropertyId::kVerticalAlign);
+  EXPECT_EQ(d.value.type, ValueType::kLength);
+  EXPECT_EQ(d.value.unit, Unit::kPercent);
+  EXPECT_FLOAT_EQ(d.value.number, 50.0f);
+}
+
 TEST(CssParserTest, AutoValue) {
   auto sheet = CssParser::Parse("div { width: auto; }");
   ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);

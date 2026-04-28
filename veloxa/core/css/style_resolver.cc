@@ -341,6 +341,16 @@ void StyleResolver::ApplyDeclaration(ComputedStyle& style,
     case PropertyId::kLetterSpacing:
       style.letter_spacing = ToLengthValue(decl.value);
       break;
+    case PropertyId::kVerticalAlign:
+      // 混合类型：parser 路径 ident → kEnum；length/percent → kLength。
+      if (decl.value.type == ValueType::kEnum) {
+        style.vertical_align = static_cast<VerticalAlign>(decl.value.enum_value);
+        style.vertical_align_offset = LengthValue{};
+      } else if (decl.value.type == ValueType::kLength) {
+        style.vertical_align = VerticalAlign::kLength;
+        style.vertical_align_offset = ToLengthValue(decl.value);
+      }
+      break;
     case PropertyId::kTransitionProperty:
       if (decl.value.type == ValueType::kEnum) {
         if (style.transitions.empty())

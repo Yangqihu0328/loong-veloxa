@@ -868,6 +868,14 @@ bool CssParser::ParseDeclaration(SmallVector<Declaration, 8>& out) {
 }
 
 CssValue CssParser::ParseValue(PropertyId prop) {
+  // vertical-align 是混合类型（CSS 2.1 §10.8.1 6 关键字 + length/percent）。
+  // 先 peek 当前 token：ident → ParseEnumValue；dimension/percentage/0 → length。
+  if (prop == PropertyId::kVerticalAlign) {
+    SkipWhitespace();
+    auto t = tokenizer_.Peek();
+    if (t.type == CssTokenType::kIdent) return ParseEnumValue(prop);
+    return ParseLengthOrPercent();
+  }
   if (IsLengthProperty(prop)) return ParseLengthOrPercent();
   if (IsColorProperty(prop)) return ParseColor();
   if (IsEnumProperty(prop)) return ParseEnumValue(prop);
@@ -1132,6 +1140,26 @@ CssValue CssParser::ParseEnumValue(PropertyId prop) {
         return CssValue::Enum(static_cast<u16>(CssFontStyle::kNormal));
       if (EqualsIgnoreCase(val, "italic"))
         return CssValue::Enum(static_cast<u16>(CssFontStyle::kItalic));
+      break;
+
+    case PropertyId::kVerticalAlign:
+      // CSS 2.1 §10.8.1 — 8 关键字（kLength sentinel 仅 length 路径使用）。
+      if (EqualsIgnoreCase(val, "baseline"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kBaseline));
+      if (EqualsIgnoreCase(val, "sub"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kSub));
+      if (EqualsIgnoreCase(val, "super"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kSuper));
+      if (EqualsIgnoreCase(val, "middle"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kMiddle));
+      if (EqualsIgnoreCase(val, "text-top"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kTextTop));
+      if (EqualsIgnoreCase(val, "text-bottom"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kTextBottom));
+      if (EqualsIgnoreCase(val, "top"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kTop));
+      if (EqualsIgnoreCase(val, "bottom"))
+        return CssValue::Enum(static_cast<u16>(VerticalAlign::kBottom));
       break;
 
     default:

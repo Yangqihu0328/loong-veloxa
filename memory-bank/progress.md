@@ -2,7 +2,7 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R3 完成 + V1 优化达标（2026-04-29 00:55，用户选 B，同窗口对照 +3.2% 通过 +10% 退出门，准备进 R4）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R4 完成（2026-04-29 01:30，#21 LineBox 模型完整 + ctest 1029/1029 + 同窗口对照 bench mean -3.6% / median +2.65% 远低 ±10%，准备 commit + 进 /reflect）
 
 - D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
@@ -112,6 +112,29 @@
     5. **正确性类优化收益的可达性** — V1 3 项轻改（合并比较 + inline 函数 + 严格零跳过）就把 R3 算法增量从 +10.2% 拉到 +3.2%，无需做更重的字段化结构改造。每 box 节省 ~3-4 ns × 64 ≈ 200-250 ns，与 mean Δ 129 ns 一致（其余被 stddev 噪声掩盖）。**经验**：性能回归不要轻易 commit 超阈值数字 — 算法实施完成后总有 30-60 min 简单优化空间能挽回 5-10%
   - **plan × 0.6 第 12 数据点**：plan 300 min × 0.6 = 180 min 估，实测 ~80 min 算法 + ~30 min V1 优化 = ~110 min（**0.37× 实际**，与 TASK-24-01 0.29× / TASK-24-03 0.34× / TASK-24-04 0.26× 形成「最窄路径」第 5 次确认带轻量优化扩展；条件：creative 完整锁定决策 + 无算法 R&D + helper 函数模式成熟 + 测试模式复用 R1/R2 + 优化路径仅靠合并/inline）
 - 下一步：**commit R3 完整工作 → 进 R4 #21 LineBox**
+- **BUILD R4 完成（2026-04-29 01:30，~3 hr 实测，0.5× plan 比例）：**
+  - **R4.1 CSS 全链路 6 文件**（spec §5.4 + plan §4.1）：`enums.h` 增 `enum class VerticalAlign : u8` 9 值（kBaseline/kSub/kSuper/kMiddle/kTextTop/kTextBottom/kTop/kBottom/kLength sentinel）+ `computed_style.h` 增 `VerticalAlign vertical_align = kBaseline` + `LengthValue vertical_align_offset` 双字段（kLength 时联动 offset）+ `property.h/cc` 增 `kVerticalAlign` PropertyId 注册 non-inherited + `parser.cc` `ParseValue` 特殊路径 peek next token 区分 enum/length 双分支 + `ParseEnumValue` 8 关键字 + `style_resolver.cc` `ApplyDeclaration` 处理 enum + length 联动 + `enum_serialization.cc` 正向字符串映射表 9 项（kLength → nullptr，序列化时落到 length 字段路径）；`transition.cc` 不修改（vertical-align 默认 discrete，CSS Transitions Level 1 spec 一致）
+  - **R4.2 CSS parser 单测 +3 case + 1 RED**：`parser_test.cc` 增 `VerticalAlignBaseline / VerticalAlignSubDistinctFromSuper（含 EXPECT_NE RED 反向探针 sub != super）/ VerticalAlignLengthPercent`；3/3 PASS，RED 实证 sub/super 解析独立
+  - **R4.3 TextShaper TextMetrics ABI 兼容扩展**：`text_shaper.h` `struct TextMetrics` 加 `f32 ascent / f32 descent` 双字段（FT face metrics 协议 ascender 正 / descender 取绝对值），保留 `[[deprecated("use ascent")]] f32 baseline` ABI 兼容字段；`text_shaper.cc` `SimpleTextShaper::Measure` 经验比例 ascent=0.8×fs / descent=0.2×fs / height=ascent+descent；`freetype_shaper.cc` 真路径取 `face->size->metrics.ascender/64.0` + `abs(descender)/64.0`；两路径均 `#pragma GCC diagnostic push/ignored "-Wdeprecated-declarations"` 抑制 baseline 字段初始化 warn
+  - **R4.4 text_shaper_test +3 case**：新建 `tests/core/layout/text_shaper_test.cc`（POD 三连击：AscentIsPositive / DescentIsPositive / BaselineCompatEqualsAscent — 后者 pragma 抑制 deprecated warning 实证向后兼容）；`freetype_shaper_test.cc` `MeasureReturnsPositiveDimensions` 改断言 `ascent>0 && descent>0 && |ascent+descent-height|<eps` 替代旧 `baseline>0`
+  - **R4.5 LineBox + LineBoxItem POD 头文件**：新建 `veloxa/core/layout/line_box.h` 70 行；`LineBoxItem { LayoutBox*; ascent; descent; baseline_offset }` + `LineBox { start_x; end_x; top; baseline_y; max_ascent; max_descent; line_height; Vector<LineBoxItem> items }`；`empty()`/`height()` helper（D2.A 抽象独立可测）
+  - **R4.6 LayoutInline 重写**（spec §5.5 + creative D2.B 严格 2-pass）：
+    - 内含 4 inline helper 加入 anonymous namespace：`ResolveLineHeightPx`（normal=1.2×fs / number / length / percent 基于 font_size）+ `ComputeInlineMetrics`（text→TextMetrics，inline-block/replaced/nested-inline→border_box_height 当 ascent + 0 当 descent）+ `ComputeNonExtremeAlign`（6 关键字+length 公式按 `item.y = baseline_y - ascent + offset` 坐标约定）+ `FinalizeLine`（Phase 1 收集非 kTop/kBottom item 更新 max_ascent/max_descent + 隐式 strut 用 parent_ascent/descent 兜底 + Phase 2 解析 kTop/kBottom offset 再回写 max_ + Phase 3 baseline_y + half_leading_top + 写每 item.y）
+    - `LayoutInline` 主循环：解析 box-model + parent ascent/descent 度量 + line_height_px + Vector<LineBox> lines + 当前 LineBox cur；逐 child 计算 child_width / item_ascent / item_descent + 换行检测（`cur.end_x + child_width > available && !cur.empty()` → FinalizeLine + push + 新 LineBox top=prev.line_height）+ 写 child->x（margin-left 加补）+ push LineBoxItem；末行 flush；总 content_height = sum(line_height)，**显式 height/width 覆盖**（修正 inline-block atomic 高度生效问题：默认 LayoutInline 不读 style.height 致 ascent=border_box_height=0，关键字 vertical-align 失去物理意义）；默认 width 改 fit-content（max line.end_x）替代 fill-available（避免 nested inline atomic 父宽度撑满让相邻 child 必然换行）
+  - **R4.7 line_box_test 11 case + 2 RED**：新建 `tests/core/layout/line_box_test.cc`（POD 5 + 集成 4 + RED 2）；A11.1 baseline 默认 / A11.2 vertical-align: top / A11.3 vertical-align: bottom（断言 `bot.bottom > base.bottom` 替代 `bot.y > base_text.y` — 修正坐标系不同源 bug）/ A11.4 vertical-align: 5px 上移；RED1 baseline_y == half_leading_top / RED2 kBottom item 撑高 line（>=40 inline-block height）；11/11 PASS
+  - **R4.8 wpt linebox fixture 数值化 +2**：`wpt_layout_test.cc` 新增 `WptLineBoxTest` 测试套；Wpt006 inline-formatting-context-001 数值化（容器改 display: inline 走 LayoutInline 等同 IFC，断言 3 inline child y 一致 + x 严格递增 + 不溢出 600px）/ Wpt007 vertical-align-baseline-001（断言 `vertical-align: 0%` `≡ baseline` y 相等，class 选择器适配 — `#id` 选择器 vx 子集支持有限）；2/2 PASS
+  - **R4.9 ctest 全量 1029/1029 PASS** in 2.21s（vs R3 baseline 1010 + 19 cases = 11 line_box + 5 text_shaper + 3 parser；2 wpt linebox + 2 wpt margin SKIP-w/-rationale 不计 fail）
+  - **R4.10 同窗口对照 bench Flat/64 (Release)**：
+    - **Baseline (R4 stash)** mean = 4797 ns / median = 4602 ns / cv 8.05%
+    - **R4 (post)** mean = 4624 ns / median = 4724 ns / cv 5.17%
+    - **Δ = mean -3.6% / median +2.65%**（R4 mean 反超基线；median 偏移 122 ns 在 stddev 386+239 ns 噪声带内 → 接近统计不显著），**远低于 ±10% 退出门**；本次 BM_LayoutBuildTreeFlat 走 block layout 路径（无 inline children），R4 改动主要在 LayoutInline + CSS 字段，对 block 路径几乎无影响验证算法独立性
+  - **过程实证收获 4 条**：
+    1. **vertical-align 坐标系符号错误** — 初版多处 sign 错误（`item.ascent + offset` vs 正确 `item.ascent - offset` 等），系统性诊断后采用统一坐标约定 `item.y = baseline_y - ascent + offset`（offset > 0 下沉 / < 0 上升）→ ComputeNonExtremeAlign 6 关键字 + Phase 1/2 max_ascent/max_descent 全部对齐；**lesson**：复杂坐标系算法实施前必须 creative 阶段画好「单一坐标约定 + 公式列表」+ build 阶段每条公式注释引用约定，避免 sign error 在 RED 阶段累积
+    2. **LayoutInline 默认 fill-available 反 IFC 直觉** — 原默认 `content_width = containing_width` 致 nested inline child 永远撑满父宽度，相邻 child 必然换行 → fit-content (max line.end_x) 才是 IFC atomic 子盒预期；**lesson**：spec §10.8 IFC 要求 inline element 实际宽度自然贴合内容，width 默认应是 max line.end_x 不是 fill-available
+    3. **inline-block atomic + LayoutInline 路径 height 失效** — vx BuildTree 把 display:inline-block 映射成 LayoutType::kInline → 走 LayoutInline 路径不读 style.height → atomic ascent = border_box_height = 0 → vertical-align 关键字物理位置失效；R4 修复：LayoutInline 末尾对 explicit height 走 ResolveLength 写 content_height（与 LayoutBlock 路径对称）；**lesson**：跨 LayoutType 共用样式属性时（width/height）不应假设单一 layout 路径处理，每个 box 类型必须独立执行 box-model 解析
+    4. **构建系统时间戳偏差致代码改动未生效** — git stash + 构建产物时间戳 > 源码 → ninja 跳过重编 → 测试始终用旧 binary；用 `touch <src>` 强制 mtime 更新或 `cmake --build --target vx_core` 全图重建可绕开；**lesson**：stash-swap bench 协议必须包含「stash pop 后 touch 关键 src + 全图重建」步骤，否则同窗口对照失效（用旧 binary 比新 binary）
+  - **plan × 0.6 第 13 数据点**：plan 360 min × 0.6 = 216 min 估，实测 ~180 min（**0.5× 实际**，与 R2/R3 0.56× / 0.37× 一致；连续 4 数据点确认「最窄路径 + helper 模式 + creative 完整锁定」的 0.3-0.5× 中位区间）
+- 下一步：**commit R4 完整工作 → /reflect**
 
 ## 已完成任务
 

@@ -25,7 +25,12 @@ TEST_F(FreeTypeShaperTest, MeasureReturnsPositiveDimensions) {
   auto metrics = shaper.Measure("Hello", 16.0f, 400);
   EXPECT_GT(metrics.width, 0.0f);
   EXPECT_GT(metrics.height, 0.0f);
-  EXPECT_GT(metrics.baseline, 0.0f);
+  // R4 #21（TASK-20260426-01）：metrics.baseline 已 deprecated（== ascent），
+  // 改用 ascent 直接断言；同时验证扩展字段 descent。
+  EXPECT_GT(metrics.ascent, 0.0f);
+  EXPECT_GT(metrics.descent, 0.0f);
+  // ascent + descent == height（FT path）；浮点容差 0.01 px 容纳舍入。
+  EXPECT_NEAR(metrics.ascent + metrics.descent, metrics.height, 0.01f);
 }
 
 TEST_F(FreeTypeShaperTest, MeasureWidthScalesWithText) {
