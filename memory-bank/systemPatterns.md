@@ -1394,6 +1394,175 @@ rg "^namespace .*\{" -A 30 tests/ | rg "include " && echo "BAD: include inside n
 
 ---
 
+## 已验证的模式（来自 TASK-20260426-01 Layout 正确性消化 #25 + #28 + #20 + #21）
+
+### 同窗口对照 bench — performance regression 验证范式
+
+**问题**：跨时间窗 bench baseline 数据点不可比 — 系统抖动 ±3-7%（CV 5-8%）在 ±10% 退出门下严重放大假信号。本任务 R3 初版「+10.2%」用一周前 baseline (3709 ns) vs 新窗口测量 (4087 ns)，同窗口对照后真实增量仅 +3.2%（差异分解：~70% 时窗校准 + ~30% 真实优化）。
+
+**模式**（升 P0，写入 `writing-plans.mdc` §7）：
+
+```bash
+# Performance regression 验证默认 stash-swap 同窗口对照
+# Step 1: stash 改动测原 baseline
+git stash
+cmake --build build-release --target <bench>
+build-release/<bench>_path --benchmark_repetitions=10 ... > baseline_in_window.json
+
+# Step 2: stash pop 还原 + 强制重编（关键！）
+git stash pop
+touch <changed_src>            # 防 ninja 时间戳偏差跳过重编
+cmake --build build-release --target <bench>
+
+# Step 3: 测改动版
+build-release/<bench>_path --benchmark_repetitions=10 ... > changed_in_window.json
+
+# Step 4: diff（同窗口 cv 通常 5-8%，跨窗口 8-15%）
+python3 -c "..." baseline_in_window.json changed_in_window.json
+```
+
+**判定准则**：
+- 退化判定一律同窗口；bench baseline `.json` 仅作长期趋势监控
+- 同窗口 CV ≤ 8% 视为可信（vs 跨窗口 CV ≤ 2% 协议不再适用）
+- mean/median 双指标交叉，单指标偏移落 stddev 范围内 → 接近统计不显著
+- 不允许跨日/跨重启比对绝对数字
+
+**TASK-20260426-01 实证**：R3 V1 优化后 stash-swap 同窗口 mean +3.2% / median +3.4%（跨窗口曾误判 +10.2%）+ R4 同窗口 mean -3.6% / median +2.65%（跨窗口曾不可知）。两次实证「stash-swap 同窗口对照」是 ±10% 退出门唯一可靠手段。
+
+→ 落实方式：升级 `writing-plans.mdc` §7 WSL2 协议。延伸：`bench/baseline/*.json` 仅作长期趋势监控注释。
+
+---
+
+### 跨 LayoutType 共用样式属性必须每路径独立 box-model 解析
+
+**问题**：当 `display: X` 在 BuildTree 阶段映射成 `LayoutType::Y`（如 inline-block → kInline / block → kBlock / flex → kFlex）时，Layout::Y 必须独立完成 box-model（width/height/padding/border/margin）解析；不能假设单一 layout 路径已处理。
+
+**模式**（升 P0，写入 `systemPatterns.md` 长期约束）：
+
+| `display` | `LayoutType` | 必须独立解析的 box-model 属性 |
+|---|---|---|
+| `block` | `kBlock` | width/height（含 auto/explicit） |
+| `inline-block` | `kInline`（atomic） | **width/height（atomic 高度边界）+ ascent/descent** |
+| `inline` | `kInline` | width = max line.end_x（fit-content 默认）/ ascent/descent 来自 child |
+| `flex` | `kFlex` | width/height + main/cross axis |
+
+**TASK-20260426-01 实证**：vx BuildTree 把 `display: inline-block` 映射成 `LayoutType::kInline` → R4 初版 LayoutInline 不读 style.height → atomic ascent = border_box_height = 0 → vertical-align 关键字物理位置失效（RED2 测试触发）。修复：LayoutInline 末尾对 explicit height 走 ResolveLength 写 content_height（与 LayoutBlock 路径对称）。
+
+→ 落实方式：写入 `writing-plans.mdc` Layout 类任务必检项：默认值边界（fit-content vs fill-available / explicit vs zero-fallback）必须在 plan §0 grep fingerprint + §3 设计决策一并锁定。
+
+---
+
+### Creative 阶段「单一坐标约定 + 公式表」一图（≥2 坐标系/方向算法）
+
+**问题**：复杂坐标系算法（vertical-align 的 baseline / ascent / descent / offset / top-bottom 多方向多锚点）在 build 阶段反复出现 sign error。creative 锁定了算法（2-pass）但未锁定坐标约定。
+
+**模式**（升 P0，写入 `creative.md` 命令模板）：
+
+凡涉及 ≥2 坐标系/方向的算法 creative 必产出：
+1. **统一坐标约定声明**（如 `item.y = baseline_y - item.ascent + offset`，offset > 0 下沉 / < 0 上升）
+2. **全部公式按约定列出**（每条公式注释引用约定）
+3. **build 阶段每条公式实施时引用约定**（代码注释含 `// per creative-X.md §Y coordinate convention`）
+
+**TASK-20260426-01 实证**：creative-line-box-model.md D2.B 锁定了 strict 2-pass，但未画坐标约定单一图；R4.6 实施时 `ComputeNonExtremeAlign` 6 关键字 + Phase 1/2 max_ascent/max_descent 维护 + kTop/kBottom offset 多处 sign error，调试 ~30 min 系统性诊断后采用统一坐标约定 + 每条公式注释引用约定才解。
+
+→ 落实方式：升级 `creative.md` 命令模板「6.algorithm」段：当涉及 baseline/ascent/descent/offset 等概念时强制要求坐标约定声明。
+
+---
+
+### TextMetrics ABI 兼容渐进式扩展模式
+
+**问题**：跨 Round 共享数据结构（如 `TextMetrics struct`）需新增字段又不破现有 caller，多 Round 并行时风险高。
+
+**模式**（升 P2，写入 `systemPatterns.md` 长期实践）：
+
+```cpp
+struct TextMetrics {
+  f32 width;
+  f32 height;
+  // 新增字段：清晰文档 + spec 引用
+  // CSS 2.1 §10.8.1 半-leading 公式依赖：line.height = max_ascent + max_descent
+  f32 ascent;
+  f32 descent;
+  // DEPRECATED：与 `ascent` 同语义；保留仅为 ABI 兼容。新代码请用 `ascent`。
+  [[deprecated("use ascent")]] f32 baseline;
+};
+```
+
+写入路径用 `#pragma GCC diagnostic push/ignored "-Wdeprecated-declarations"` 抑制 baseline 字段初始化 warn；新代码统一用 ascent。
+
+**TASK-20260426-01 实证**：R4.3 TextMetrics 拆 ascent/descent 同时保留 `[[deprecated]] baseline`，零 caller 改造（R1/R2/R3 同步推进零冲突）+ 给未来清理明确锚点。
+
+→ 落实方式：写入 `systemPatterns.md`「ABI 兼容渐进扩展模式」长期段。
+
+---
+
+### wpt fixture 数值化适配模式
+
+**问题**：直接拷贝 W3C wpt 标记可能 trivial fail（vx CSS 子集差距），不能简单按像素 ref 验。
+
+**模式**（升 P2，写入 `systemPatterns.md` 长期段）：
+
+拷贝 W3C wpt 标记前必查：
+1. **ID 选择器范围** — vx StyleResolver 子集对 `#id` 选择器支持有限 → 改 class
+2. **container display 与 vx 匿名 IFC 行为** — vx LayoutBlock 不创建匿名 IFC → 容器须显式 `display: inline` 才走 LayoutInline 路径
+3. **像素级 ref 不可比** — 改数值化断言（坐标 / 尺寸 / 关系），不直接对 png
+
+**TASK-20260426-01 实证**：R3 wpt 005 SKIP-w/-rationale（horizontal margin 像素 diff 不适配 R3 数值范围）+ R4 wpt 006/007 ID→class + container→display:inline 共 3 次同模式适配。
+
+→ 落实方式：写入 `systemPatterns.md` + `writing-plans.mdc` Layout 类任务必检项。
+
+---
+
+### 测试边界发现 — `internal::` helper 提取模式
+
+**问题**：当上层组件（如 CssParser）有自然错误恢复路径（unknown property → discard），e2e 测试可能 trivially PASS（over-match），看似实现存在但实际是依赖上层兜底。
+
+**模式**（升 P2，写入 `systemPatterns.md`）：
+
+当 e2e 测试 trivially PASS 即使实现是空 placeholder 时，必须提取内部 helper 到 `internal::` namespace 暴露 unit test 入口，直接测「实现真存在」。
+
+**TASK-20260426-01 实证**：R2.5 ContainsBlacklistKeyword 黑名单 e2e 4 case 因 CssParser 自然丢弃 `behavior:` unknown property 已 trivially PASS（over-match）；提取 `vx::html::internal::ContainsBlacklistKeyword(StringView) → bool` 暴露 unit test + 8 直接测试用例（5 match + 3 reject）+ RED 反向探针（临时 `return false` → 5/5 match 立即 FAIL → 恢复 8/8 PASS）才证「实现真存在」。
+
+→ 落实方式：写入 `systemPatterns.md`「测试边界发现 — internal helper 提取模式」段。
+
+---
+
+### 「副产品修 pre-existing bug」scope 边界 3 标准
+
+**问题**：build 阶段测试驱动发现的 pre-existing bug，是否要拆任务还是顺手修？
+
+**模式**（升 P2，写入 `systemPatterns.md`）：
+
+满足以下 3 条同时成立时，scope 内顺手 1 行 fix（不拆任务），在 progress.md「实证微调」列记：
+1. **由本 Round 测试触发** — 不是其他模块的疑似回归
+2. **修复 ≤ 5 行** — 真实结构性改动须拆任务
+3. **不引入新结构性改动** — 不新增字段/不改接口
+
+**TASK-20260426-01 实证**：R3.4 测试 `A7_OverflowAutoBlocksMarginCollapse` 触发 `overflow: auto` 经 ParseDeclaration 走 `ValueType::kAuto` 全局快路径不进 ParseEnumValue 致 enum 字段保持 default kVisible — 顺手在 `style_resolver.cc` 补 `kAuto` 路径合规（< 5 行），属「scope 内顺手 1 行 fix」典型，progress.md R3.3.x 列记。
+
+→ 落实方式：写入 `systemPatterns.md`「scope 边界 — 副产品修复 3 标准」段；下次 build 阶段触发 pre-existing bug 直接对照判定。
+
+---
+
+### Level 4 多轮次任务 plan × 0.6 估时（首数据点 0.44×）
+
+**问题**：Level 4 任务首次数据点 0.44× 落在「准确档（0.6×）下方 + 最窄档（0.3×）上方」中段，简单按子任务平均会失真。
+
+**模式**（升 P1，写入 `systemPatterns.md`「bench 类任务估时校准」段扩展）：
+
+| 任务类型 | plan × ratio | 触发条件 |
+|---|---|---|
+| 最窄路径（基础设施 100% 复用 + 单文件 D2 改动） | 0.22-0.34× | 4 数据点稳定（TASK-24-01/03/04 + TASK-25-01）|
+| 准确档（D2 单文件 + 测试完整） | 0.50-0.56× | R1/R2 子任务数据点 |
+| 中位档（D3 算法 creative 锁定 + helper 模式成熟） | 0.37-0.50× | R3/R4 子任务数据点 |
+| **Level 4 多轮次整体** | **0.40-0.50×** | **首数据点 0.44×**（creative 完整锁定 + 多轮次协议成熟 + VAN grep 实证三联合） |
+
+**关键洞察**：Level 4 整体不能简单按子任务平均（子任务平均会受最慢的 R3/R4 拉高），整体含 R0/R5 meta 反而拉低。Level 4 多轮次任务在「creative 完整锁定 + 多轮次协议成熟 + VAN grep 实证」三联合下应按 plan × 0.4-0.5× 预估。
+
+→ 落实方式：扩展 `systemPatterns.md`「bench 类任务估时校准」段；累计 3 个 Level 4 数据点后写入 `writing-plans.mdc` 强制条目。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

@@ -2,7 +2,7 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — BUILD R4 完成（2026-04-29 01:30，#21 LineBox 模型完整 + ctest 1029/1029 + 同窗口对照 bench mean -3.6% / median +2.65% 远低 ±10%，准备 commit + 进 /reflect）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — REFLECT 完成（2026-04-29 02:10，4 子任务全部 ✅；R5 finalize 关键步骤收尾 Release 1029 PASS + 0 warn / git proxy unset / techContext #20/#21/#25/#28 状态 ⏳→✅；reflection 文档落盘 13 改进建议 + 3 P0 + 4 P1 升级 + 6 新模式沉淀 systemPatterns.md；plan × 0.6 第 13 数据点 0.44× Level 4 首数据点；等待用户 /archive）
 
 - D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖
@@ -134,7 +134,15 @@
     3. **inline-block atomic + LayoutInline 路径 height 失效** — vx BuildTree 把 display:inline-block 映射成 LayoutType::kInline → 走 LayoutInline 路径不读 style.height → atomic ascent = border_box_height = 0 → vertical-align 关键字物理位置失效；R4 修复：LayoutInline 末尾对 explicit height 走 ResolveLength 写 content_height（与 LayoutBlock 路径对称）；**lesson**：跨 LayoutType 共用样式属性时（width/height）不应假设单一 layout 路径处理，每个 box 类型必须独立执行 box-model 解析
     4. **构建系统时间戳偏差致代码改动未生效** — git stash + 构建产物时间戳 > 源码 → ninja 跳过重编 → 测试始终用旧 binary；用 `touch <src>` 强制 mtime 更新或 `cmake --build --target vx_core` 全图重建可绕开；**lesson**：stash-swap bench 协议必须包含「stash pop 后 touch 关键 src + 全图重建」步骤，否则同窗口对照失效（用旧 binary 比新 binary）
   - **plan × 0.6 第 13 数据点**：plan 360 min × 0.6 = 216 min 估，实测 ~180 min（**0.5× 实际**，与 R2/R3 0.56× / 0.37× 一致；连续 4 数据点确认「最窄路径 + helper 模式 + creative 完整锁定」的 0.3-0.5× 中位区间）
-- 下一步：**commit R4 完整工作 → /reflect**
+- **REFLECT 完成（2026-04-29 02:10）：**
+  - **R5 finalize 关键步骤收尾**：Release 全量 ctest 1029/1029 PASS in 2.21s（`-O3 -Werror` 0 warn）+ 同窗口对照 bench Flat/64 mean -3.6% / median +2.65% 远低 ±10%（已在 R4 完成）+ git config 代理实证 unset (`git config --global --get http.proxy / https.proxy` 均空)+ techContext.md 4 项技术债状态 ⏳→✅（#20 margin collapsing / #21 LayoutInline LineBox / #25 origin helpers / #28 HTML inline style）
+  - **reflection 文档落盘**：`memory-bank/reflection/reflection-TASK-20260426-01.md` Level 4 全维度回顾（计划 vs 实际 / 检查清单 7 维 / 8 做得好 + 9 挑战 + 12 教训 + 6 流程改进 + 13 改进建议 + 反复模式识别 + plan × 0.6 数据点扩展）
+  - **3 P0 升级**：(1) Bench 退出门验证默认 stash-swap 同窗口对照 → `writing-plans.mdc` §7 / (2) 跨 LayoutType 共用样式属性必须每路径独立 box-model 解析 → `systemPatterns.md` + Layout 必检项 / (3) Creative 阶段「单一坐标约定 + 公式表」一图（≥2 坐标系/方向算法）→ `creative.md` 命令模板
+  - **4 P1 升级**：(4) stash-swap 协议补丁 touch + 全图重建 / (5) Plan 阶段明确 LayoutInline/LayoutBlock 默认 width/height 语义 / (6) 子代理 vs 直执行 build 阶段重评估机制 / (7) 反向探针升强制条目
+  - **8 新模式已落 systemPatterns.md**：同窗口对照 bench 范式 / 跨 LayoutType 独立 box-model / Creative 坐标约定一图 / TextMetrics ABI 兼容渐进扩展 / wpt fixture 数值化适配 / 测试边界发现 `internal::` helper 提取 / 副产品修 pre-existing bug 3 标准 / Level 4 多轮次估时 0.44× 首数据点
+  - **plan × 0.6 第 13 数据点 整体 0.44×**（plan 900 min / 实测 ~400 min；R0 ~25 + R1 ~30 + R2 ~50 + R3 ~110 + R4 ~180 + R5 ~5）；Level 4 首数据点落「准确档（0.6×）下方 + 最窄档（0.3×）上方」中段
+  - **反复模式识别**：「非默认路径遗漏验证」第 5 次（vertical-align 坐标 / fill-available 默认 / inline-block 高度 3 项）→ 升 P0；「测试隔离问题」第 9 次新变体（ninja 时间戳偏差 + git stash）→ 升 P1
+- 下一步：**等待用户 `/archive` 阶段 `--no-ff` 合并 main + 落实 P0/P1 规则升级 + 归档**
 
 ## 已完成任务
 

@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·R4 完成（#21 LayoutInline LineBox 模型 — `VerticalAlign` 9 关键字 + `vertical-align` length/percent + `vertical_align_offset` 字段 + `TextMetrics` ABI 兼容拆 ascent/descent + `[[deprecated]] baseline` + 新建 `core/layout/line_box.h` `LineBox`/`LineBoxItem` POD + `LayoutInline` 严格 2-pass vertical-align 重写 + 半-leading + 隐式 strut + LineBox Vector + fit-content width / explicit height 修正 + `inline-block` atomic 路径）；测试 +19（11 line_box + 5 text_shaper + 3 parser）+ 2 wpt linebox fixture（Wpt006 inline 横向 + Wpt007 va: 0% ≡ baseline，class 选择器适配）+ ctest 1029/1029 PASS + 同窗口对照 bench Flat/64 mean -3.6% / median +2.65%（cv 5-8% 噪声带，远低 ±10% 阈）；准备 commit + Memory Bank 同步
+回顾中（2026-04-29 02:10 进入 /reflect）— TASK-20260426-01 Layout 正确性消化 4 子任务（#25/#28/#20/#21）全部完成；R5 finalize 关键步骤已收尾（Release ctest 1029/1029 + 0 warn / 同窗口对照 bench mean -3.6% / median +2.65% / git proxy unset 实证 / techContext.md #20/#21/#25/#28 状态全部 ⏳→✅）；reflection 文档落盘 `memory-bank/reflection/reflection-TASK-20260426-01.md`（Level 4 全维度回顾 + 13 改进建议 + 3 P0 升级 + 4 P1 升级 + 6 新模式沉淀 systemPatterns.md）；plan × 0.6 第 13 数据点 **0.44×** Level 4 首数据点；等待用户 `/archive` 阶段 `--no-ff` 合并 main + 落实 P0/P1 改进 + 归档
 
 ## 当前任务
 
@@ -102,13 +102,11 @@
 
 ## 下一步
 
-R2 已完成（commit `c10c516`），等待用户确认进入 **R3 #20 Block margin collapsing 全实施**：
-- **类型**：D3（多文件 + W3C 规范一致性）→ creative 已落盘 `creative-margin-collapsing.md`，方案 A MarginChain in-line 累积已 ACCEPT
-- **预计**：plan 300 min × 0.6 = ~180 min（按子档 0.34× 实测可能 100-180 min）
-- **退出门**：ctest 984 + N PASS（预计 +20 cases 含 4 W3C wpt 引用一致性）/ Release `-O3 -Werror` 0 warn / W3C wpt 4 例 margin-collapse 引用图像一致性测试通过
-- **TDD 顺序**：先 RED 单元测试（adjoining 2 项 / nested first-child / collapse-through / negative max() / clearance / 6-8 case）+ MarginChain RED 探针 → GREEN 实施 layout_engine.cc → REFACTOR 提炼 helper
-
-后续 R4（#21 LineBox + vertical-align）→ R5 finalize → /reflect。
+R4 已完成 + reflect 完成 + R5 finalize 关键步骤收尾，等待用户 `/archive`：
+- **预期归档动作**：`--no-ff` 合并 `feature/TASK-20260426-01-layout-correctness` → main / 同步落实 reflection 中 3 P0 + 4 P1 规则升级 / 归档 `memory-bank/archive/archive-TASK-20260426-01.md`
+- **3 P0 升级**：(1) Bench 退出门验证默认 stash-swap 同窗口对照 → `writing-plans.mdc` §7 / (2) 跨 LayoutType 共用样式属性必须每路径独立 box-model 解析 → `systemPatterns.md` + `writing-plans.mdc` Layout 必检项 / (3) Creative 阶段「单一坐标约定 + 公式表」一图（≥2 坐标系/方向算法）→ `creative.md` 命令模板
+- **4 P1 升级**：(4) stash-swap 协议补丁（touch + 全图重建）→ `writing-plans.mdc` §7 附录 / (5) Plan 阶段必须明确 LayoutInline/LayoutBlock 默认 width/height 语义 → `writing-plans.mdc` Layout 必检项 / (6) 子代理 vs 直执行 build 阶段重评估机制 → `subagent-development.mdc` D2/D3 判定流程图 / (7) 反向探针升强制条目 → `writing-plans.mdc`
+- **6 新模式已落 systemPatterns.md**：同窗口对照 bench / 跨 LayoutType 独立 box-model / Creative 坐标约定一图 / TextMetrics ABI 兼容渐进扩展 / wpt 数值化适配 / 测试边界发现 internal helper 提取 / 副产品修 pre-existing bug 3 标准 / Level 4 多轮次估时 0.44× 首数据点
 
 ## 未合并分支
 
