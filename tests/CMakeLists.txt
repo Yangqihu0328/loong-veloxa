@@ -121,6 +121,12 @@ target_link_libraries(flex_layout_test PRIVATE vx_core)
 vx_add_test(inline_position_test core/layout/inline_position_test.cc)
 target_link_libraries(inline_position_test PRIVATE vx_core)
 
+vx_add_test(margin_collapse_test core/layout/margin_collapse_test.cc)
+target_link_libraries(margin_collapse_test PRIVATE vx_core)
+
+vx_add_test(wpt_layout_test integration/wpt_layout_test.cc)
+target_link_libraries(wpt_layout_test PRIVATE vx_core)
+
 vx_add_test(layout_integration_test core/layout/integration_test.cc)
 target_link_libraries(layout_integration_test PRIVATE vx_core)
 

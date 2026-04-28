@@ -5,7 +5,7 @@
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）
-- **状态：** 🟡 BUILD R2 完成（#28 HTML inline style + 三件套安全护栏 [安全相关] — cap 常量暴露 + `internal::ContainsBlacklistKeyword` 子模块 + ApplyInlineStyleAttribute 私有方法 + ProcessStartTag style 分支 + ctest 984 + bench DeclList 稳态后改善），等待用户确认进入 R3 #20
+- **状态：** 🟢 BUILD R3 完成 + V1 优化达标（#20 Block margin collapsing CSS 2.1 §8.3.1 — `MarginChain` POD + `LayoutBlock` 重写 + 4 类规则 sibling/collapse-through/negative/BFC root + `style_resolver.cc` overflow:auto bug fix + ctest 1010 + 4 wpt 数值 2 PASS 2 SKIP-w/-rationale；用户选 B → V1 优化 3 项落地 → **同窗口对照 mean +3.2% / median +3.4%** 远低于 +10% 退出门），准备 commit + 进 R4 #21 LineBox
 - **创建日期：** 2026-04-26
 - **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
 - **来源：** `techContext.md §技术债务清单` 4 项 + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包

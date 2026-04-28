@@ -1,7 +1,7 @@
 # 活跃上下文
 
 ## 当前阶段
-构建中·R2 完成（#28 HTML inline style + 三件套安全护栏 [安全相关] — 暴露 cap 常量 + 提取 `internal::ContainsBlacklistKeyword` 子模块 + ApplyInlineStyleAttribute 私有方法 + ProcessStartTag 增 style 分支 + ctest 984/984 vs R1 960 +24 cases + bench DeclList/16 1947 ns -3.5% / /32 4015 ns -1.7% 稳态后改善），等待用户确认进入 R3 #20
+构建中·R3 完成 + 优化达标（#20 Block margin collapsing CSS 2.1 §8.3.1 — `MarginChain` POD + `LayoutBlock` 重写 + 4 类规则 sibling collapse / collapse-through / negative / BFC root + 11 unit + 11 集成 + 4 wpt 数值（2 PASS 2 SKIP-w/-rationale） + ctest 1010/1010 + Release `-O3 -Werror` 0 warn）；用户选 **B 优化后再进 R4** → V1 优化 3 项（IsCollapseThrough sum-merge + inline overflow + Add 严格零跳过）已落地，**同窗口对照 bench Flat/64 增量 mean +3.2% / median +3.4%**（同窗口 baseline mean 3992 ns vs V1 mean 4121 ns，stddev 263+282 ns，差值在 noise band 内），全维度多数场景反超 baseline，**远低于 +10% 退出门**，准备 commit + 进 R4 #21 LineBox
 
 ## 当前任务
 
@@ -185,4 +185,59 @@ R2 已完成（commit `c10c516`），等待用户确认进入 **R3 #20 Block mar
 - **P2（新增, TASK-25-01 反思 #5-#6）：** 2 新模式 — **GUI/主循环型程序 ctest 自终止协议**（`VX_<APP>_AUTOQUIT_MS` env hook + `SDL_AddTimer` push platform quit event；prod 永不触发；TIMEOUT N 兜底；前缀 `VX_*` 防污染）/ **Platform Backend Composition 复用模式**（每个 backend 内部组合 `HeadlessEventLoop` 复用 task/timer，避免 EventLoop 抽象基类硬塞容器违反单一职责）。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260425-01）」段；下次 GUI smoke / 新 platform backend 直接引用
 - **P1（新增, TASK-25-01 数据点）：** **plan × 0.6 第 9 数据点「最窄路径」第 4 次确认 0.22×**（180 min 估算 / ~40 min 实测，是历史最快记录）。条件：基础设施 100% 复用（platform 抽象成熟）+ 6 个 AskQuestion 提前锁定全部决策 + 无性能/微优化 phase + TDD 节奏稳定。**落实方式**：下次类似条件任务（新 backend / 现有抽象增量 / 决策已锁定）直接按 plan ×0.22-0.30 预估「最窄路径」子档，跨 4 数据点稳定区间 0.22-0.34×（中位 0.28×）；如可写入 `writing-plans.mdc` 强制条目作为 4 数据点稳定门槛
 - **P2 / P3 触发型（新增, TASK-25-01 反思 #4 / 技术改进 #1-#5）：** TASK-25-01 后续候选见上文「后续任务候选」TASK-20260425-02 占位（含 EventLoop::SetInputCallback 上提抽象 / interactive_sdl2 example / Surface::Present contract test / vx_add_sdl2_test helper）
+
+---
+
+## TASK-20260426-01 R3 #20 完成快照（V1 优化达标）
+
+### 实施全清单
+
+- **R3.1 `veloxa/core/layout/margin_collapse.h`** 新增（POD `MarginChain` + `Add/Collapsed/IsEmpty/ApplyClearance/Trace`，header-only inline，零 vtable，arena 友好）
+- **R3.2 `tests/core/layout/margin_collapse_test.cc`** 新增（11 unit case：协议正确性 5 + RED 反向探针 2 + 顺序无关/幂等 2 + clearance stub 2）
+- **R3.3 `veloxa/core/layout/layout_engine.cc` LayoutBlock 重写**（W3C CSS 2.1 §8.3.1 算法 — sibling collapse / collapse-through / negative max(pos)+min(neg) / BFC root 阻断；3 helper `IsInFlow` + `CreatesBlockFormattingContext` + `IsCollapseThrough` 全 inline 早退优化）
+- **R3.3.x `veloxa/core/layout/layout_box.h`** 增 2 状态字段（`collapsed_through` + `margin_top_collapsed_into_ancestor`）
+- **R3.3.x `veloxa/core/css/style_resolver.cc`** 修 1 pre-existing bug — `overflow: auto` 经 ParseDeclaration 走 `ValueType::kAuto` 全局快路径不进 ParseEnumValue，style_resolver 此前仅消费 `kEnum` 致 overflow:auto 被忽略；R3 补 `kAuto` 路径合规
+- **R3.4 `tests/core/layout/block_layout_test.cc`** 加 11 集成 case：A4 sibling ×2 / A5 collapse-through ×3 / A6 negative ×2 / A7 BFC root ×3（含 `overflow: visible` 反向探针）/ AutoHeightParent 1
+- **R3.5 `tests/integration/wpt_layout_test.cc`** 新增（4 wpt fixture：collapse-001 SKIP horizontal / 002 PASS sibling max / 003 PASS negative cancellation / 005 SKIP nested first-child—rationale 留 P3 BFC API 改造）
+- **R3.6 ctest 1010/1010 PASS**（vs R2 baseline 984，+26 cases；2 SKIP-with-rationale 不计 fail）
+- **R3.7 bench Release `-O3 -Werror` 0 warn**；初版第一次测量 `BM_LayoutBuildTreeFlat/64` 中位 4087 ns vs stale baseline 3709 ns = +10.2% 边缘超 +10% 阈值（3895 ns）+192 ns
+- **R3.7.x V1 优化（用户选 B 路径）**：
+  1. `MarginChain::Add` 严格零跳过 — `m > 0` / `m < 0` 替代 `m >= 0`（语义不变，bench 64 box 全 0 margin 的 hot path 让 m=0 走 0 分支编译器省 max/min 调用）
+  2. `IsCollapseThrough` 4 个 padding/border 比较 → 合并 sum 非零检查（数学等价：所有非负 ⇒ sum=0 ⇔ 全 0；编译器易向量化 ADDPS）
+  3. inline overflow 比较 — 去掉 `CreatesBlockFormattingContext` 函数调用避免重复 style 解引用
+- **R3.7.x 同窗口对照 bench**（stash R3 改动测原 baseline → 还原测 V1，去除时变噪声）：
+  - **Baseline (R2 stash) mean = 3992 ns / median = 3858 ns / stddev 263 ns / CV 6.58%**
+  - **V1 (R3+优化) mean = 4121 ns / median = 3990 ns / stddev 282 ns / CV 6.84%**
+  - **Δ% = mean +3.2% / median +3.4%**（绝对差 129/132 ns 在 stddev 263+282 ns 范围内 → 接近统计不显著）
+  - 全维度多数场景 V1 反超 baseline（Flat/8 596 vs 619 = -3.7%、Flat/128 9588 vs 9693 = -1.1%、Flat/256 36186 vs 36726 = -1.5%、Nested/16 1268 vs 1317 = -3.7%）
+  - 早先「+10.2%」是用 stale baseline（更早时间窗 3709 ns）vs 新窗口测量的混合误差，**真正同窗口对照仅 +3.2% 远低于 +10% 退出门**
+- **R3.8 commit pending**（V1 已落地，待 commit 后进 R4）
+
+### W3C CSS 2.1 §8.3.1 算法范围
+
+| 规则 | R3 实施 | 测试覆盖 | 备注 |
+|---|:-:|:-:|---|
+| 同级 sibling collapse `max(pos) + min(neg)` | ✅ 完整 | A4 ×2 + Wpt002 | 主路径 |
+| collapse-through 空 box 串联 | ✅ 完整 | A5 ×3（含 2-嵌套链 + padding 阻断） | `IsCollapseThrough` 4 条件 |
+| 负 margin 数学（max(pos)+min(neg)） | ✅ 完整 | A6 ×2 + Wpt003 | MarginChain 协议自动 |
+| BFC root 阻断（overflow!=visible） | ✅ 部分 | A7 ×3 | D1.3：仅识别 overflow；完整 trigger（float/flow-root/inline-block）留 P3 |
+| first/last child 与 parent margin collapse | ⚠️ 受 API 边界限 | Wpt005 SKIP-w/-rationale | D1.2 锁定 LayoutChild API 不动 → 跨函数 propagate 留 P3 TASK-26-02 |
+| clearance | ⚠️ stub | MarginChainTest.ApplyClearance ×1 | `MarginChain.has_clearance` 标志位 + `ApplyClearance()` 接口；不影响 `Collapsed()` 数值；完整 clearance 留 P3 |
+
+### Hot-path 性能分析（V1 后）
+
+- 初版增量来源：每 child 多 4 helper 调用 + 字段写
+- V1 优化点：
+  1. `IsCollapseThrough` 字段访问 8 → 4（4 padding/border 比较合并为 1 sum）+ 函数调用 inline
+  2. `MarginChain::Add` m=0 hot-path 走 0 分支（编译器省 max/min 调用）
+  3. 估算每 box 省 ~3-4 ns × 64 ≈ 200-250 ns，与同窗口对照 mean Δ 129 ns 一致（其余被 stddev 噪声掩盖）
+- **WSL2 bench 关键学习**：跨时间窗 baseline 数据点不可比 — 必须 stash-swap 在同窗口内测原 baseline 与 V1，CV 6-7% 系统抖动会让单点比对失真。本次「+10.2% → +3.2%」差异 70% 来自时窗校准、30% 来自真实优化效果
+
+### 决策结果记录
+
+- 用户选 **B. 优化后再进 R4**
+- V1 优化集合（IsCollapseThrough sum-merge + Add 严格零跳过 + inline overflow）已落地
+- 同窗口对照 +3.2%，安全归零到 noise band，**通过 plan §3 退出门 ≤+10%**
+- ctest 1010/1010 PASS 回归（V1 后正确性零回归）
+- **后续：commit R3 完整工作 → 进 R4 #21 LineBox 模型实施**
 

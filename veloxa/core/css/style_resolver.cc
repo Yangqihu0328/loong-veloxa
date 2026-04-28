@@ -202,6 +202,10 @@ void StyleResolver::ApplyDeclaration(ComputedStyle& style,
     case PropertyId::kOverflow:
       if (decl.value.type == ValueType::kEnum)
         style.overflow = static_cast<Overflow>(decl.value.enum_value);
+      else if (decl.value.type == ValueType::kAuto)
+        // Parser ParseDeclaration 对 "auto" 走全局快路径返回 ValueType::kAuto
+        // 而非 enum；overflow 是合法的 enum 值（CSS 2.1 §11.1.1），此处补合规。
+        style.overflow = Overflow::kAuto;
       break;
     case PropertyId::kZIndex:
       if (decl.value.type == ValueType::kNumber)
