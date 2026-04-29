@@ -92,5 +92,20 @@ enum class CssFontStyle : u8 {
   kItalic,
 };
 
+// CSS 2.1 §10.8.1 vertical-align — 6 关键字 + length/percent 混合类型。
+// 顺序对应 D2.B 2-pass 算法分支：Phase 1 处理 [kBaseline, kLength)，
+// Phase 2 处理 {kTop, kBottom}（依赖 Phase 1 的 max_ascent/descent 结果）。
+enum class VerticalAlign : u8 {
+  kBaseline,
+  kSub,
+  kSuper,
+  kMiddle,
+  kTextTop,
+  kTextBottom,
+  kTop,
+  kBottom,
+  kLength,  // sentinel：值在 ComputedStyle::vertical_align_offset 中
+};
+
 }  // namespace vx::css
 #endif  // VELOXA_CORE_CSS_ENUMS_H_

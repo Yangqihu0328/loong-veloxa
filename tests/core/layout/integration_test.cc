@@ -184,5 +184,23 @@ TEST_F(LayoutIntegrationTest, AutoWidthFillsViewport) {
   EXPECT_FLOAT_EQ(div->content_width, 800.0f);
 }
 
+// TASK-20260426-01 R2 / #28 端到端：HTML inline style 经 parser 解析后
+// 应在 layout 中产生与外联样式表等价的 padding。
+// （A2 行为一致性：HTML 路径 ≡ JS 路径 ≡ stylesheet 路径）
+TEST_F(LayoutIntegrationTest, InlineStyleAttributePaddingTakesEffect) {
+  auto* root = DoLayout(
+      "<div id='inline-pad' style='padding: 10px'></div>",
+      "#inline-pad { width: 100px; height: 50px; }");
+  ASSERT_NE(root, nullptr);
+  auto* div = root->first_child;
+  ASSERT_NE(div, nullptr);
+  EXPECT_FLOAT_EQ(div->padding[LayoutBox::kTop], 10.0f);
+  EXPECT_FLOAT_EQ(div->padding[LayoutBox::kRight], 10.0f);
+  EXPECT_FLOAT_EQ(div->padding[LayoutBox::kBottom], 10.0f);
+  EXPECT_FLOAT_EQ(div->padding[LayoutBox::kLeft], 10.0f);
+  EXPECT_FLOAT_EQ(div->content_width, 100.0f);
+  EXPECT_FLOAT_EQ(div->content_height, 50.0f);
+}
+
 }  // namespace
 }  // namespace vx::layout

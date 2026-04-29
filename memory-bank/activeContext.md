@@ -1,11 +1,59 @@
 # 活跃上下文
 
 ## 当前阶段
-空闲（TASK-20260425-01 已归档；准备接受新任务）
+归档中（2026-04-30 00:40）— `archive-TASK-20260426-01.md` 已落盘；P0/P1 改进建议迁移确认完成（`writing-plans.mdc` / `.cursor/commands/creative.md` / `subagent-development.mdc` + `systemPatterns.md` + `productContext.md`）；当前待用户选择分支收尾策略（合并 main / 创建 PR / 保留分支），之后执行最终状态重置（`activeContext` → 空闲）
 
 ## 当前任务
 
-无。使用 `/van` 启动新任务。
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）** — Level 4
+
+- **目标：** 消化 `techContext.md §技术债务清单` 4 项 Layout 正确性债（D1 全包策略，多轮次 Build 中间态）：
+  - **#25** LayoutBox 缺 `border_box_origin()` / `padding_box_origin()` / `content_box_origin()` 辅助方法（坐标计算分散在 `layout_engine.cc` / `flex_layout.cc` 多处）
+  - **#28** HTML 解析器 `parser.cc:95` 把 `style` 属性当作普通 attribute 处理，未调用已存在的 `CssParser::ParseDeclarationList`（JS 侧 `dom_bindings.cc:322` 已成熟使用此 API；缺口在 HTML 路径侧）
+  - **#20** Block 布局完全无 margin collapsing（`layout_engine.cc:209-212` 直接 `y_offset += border_box + margin`）— CSS 2.1 §8.3.1 adjoining / nested / negative / collapse-through / clearance
+  - **#21** LayoutInline 简化（`layout_engine.cc:260-303` 用 `line_height = max(child.height)`，**无 baseline / ascent / descent / vertical-align / line-height**；`TextShaper` 已有 `f32 baseline` 字段但未流入 layout）
+- **复杂度：** Level 4（多子系统 + 架构决策 + #20/#21 各自单独够撑 Level 3）
+- **来源：** `techContext.md §技术债务清单` + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
+- **安全相关：** ✅ 标注（#28 接收 HTML `style="..."` 外部输入；`ParseDeclarationList` 已被 JS 路径用过相对成熟，但 spec 阶段需补轻量威胁建模 — DoS via 巨大 declaration / `url()` 引用 / 未实现 CSS var 退化）
+- **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
+- **下一步：** `/build` R0 准备阶段（基线核验 951 PASS + wpt fixture 拉取 8 例 + grep 4 类 fingerprint）
+- **设计 spec：** `docs/specs/2026-04-26-layout-correctness-design.md`（决策矩阵 6 维 / 17 验收标准 / 8 风险登记 / 安全威胁 7 类 / 文件清单 11 修改 + 9 新增）
+- **实现 plan：** `docs/plans/2026-04-26-layout-correctness.md`（R0 准备 + R1-R4 四轮 + R5 finalize / 估时 plan 900 min × 0.6 = 540 min / 子代理 3 处 D3 任务）
+- **代理实证：** `172.22.32.1:7890`（WSL2 host gateway）已于 plan 阶段实证可用，wpt 仓库 114 个 margin-collapse fixture 备选，build §0 阶段拉取 8 例
+- **创意文档（已落盘 + 全 ACCEPT）：**
+  - `memory-bank/creative/creative-margin-collapsing.md`（R3 #20）— D1 5 决策：方案 A MarginChain in-line 累积 + 内部 `Vector<MarginChain>` 栈式状态 + 仅 `overflow: hidden\|scroll\|auto` BFC root + `#if VX_DEBUG_LAYOUT` Trace + 先 layout child → 回填 child.y
+  - `memory-bank/creative/creative-line-box-model.md`（R4 #21）— D2 5 决策：A.1 显式 LineBox + Vector + B.1 严格 2-pass vertical-align + C.1 TextMetrics 加字段不删 + `[[deprecated]]` + inline-block atomic + CSS 2.1 §10.8.1 line-height 默认语义
+
+### VAN 阶段产出
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围包 | **包 D（Layout 正确性）** | 用户从 5 包候选中选定（#46/#47/#49 等其他包属 P3 触发型；包 D 是规范级正确性硬骨头）|
+| V2 | 拆分策略 | **D1 全包一次过 + 多轮次 Build 中间态** | 4 子任务依次 #25 → #28 → #20 → #21，每 Round 独立验收中间态（complexity-levels.mdc §多轮次 Build 中间态协议）|
+| V3 | Git 分支 | **feature/TASK-20260426-01-layout-correctness** | 基于 main `9f7f338`，已创建 |
+| V4 | 复杂度 | **Level 4** | 4 子系统 + 架构决策 + #20/#21 单独 Level 3 量级 |
+| V5 | 安全标注 | **[安全相关]** | #28 路径接收 HTML 外部输入；spec §威胁建模轻量覆盖 |
+
+### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响 |
+|:-:|---|---|---|
+| F1 | 「#28 LayoutEngine::BuildTree 不解析 inline style」 | ⚠️ **描述不精确**：`layout_engine.cc:35` 已传 `element->inline_declarations()` 给 StyleResolver；真实缺口在 `html/parser.cc:95` 把 `style` attr 当普通 attribute（未识别 + 未调 `ParseDeclarationList`）| spec/plan 阶段修正 #28 描述：缺口在 HTML 解析器侧，非 layout 侧；修复路径 = `html/parser.cc` 处理 attribute 时识别 `style` → 调 `CssParser::ParseDeclarationList` → 逐条 `SetInlineDeclaration` |
+| F2 | 「`ParseDeclarationList` API 是否存在」 | ✅ `css/parser.h:12` + `css/parser.cc:202` 完整实现；`script/dom_bindings.cc:322` 已成熟使用（CSSText setter 路径）| #28 实施零 API 设计成本 |
+| F3 | 「LayoutBox 当前 origin 计算分散位置」 | ✅ 实证 `layout_engine.cc` (5 处) + `flex_layout.cc` (15+ 处) 直接读 `child->x`/`child->y` + `margin[*]` 拼接，确实分散；helper 重构有意义 | #25 改造影响面：`layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处替换 |
+| F4 | 「Block 布局当前是否有任何 margin collapsing」 | ✅ `layout_engine.cc:209-212` `y_offset = child->y + border_box + margin[Bottom]` 完全直加，零 collapsing 实现 | #20 是从零实施（不是补全） |
+| F5 | 「LayoutInline 是否流入 TextShaper.baseline」 | ✅ `text_shaper.h:12` 有 `f32 baseline` 字段，但 `layout_engine.cc:266-280` 仅用 `metrics.width`/`.height`；baseline 字段未消费 | #21 第一步是接入 baseline + 引入 LineBox 抽象 |
+| F6 | 「FetchContent 代理状态」 | ✅ 项目根 + `script/CMakeLists.txt` 含 `FetchContent_Declare`；`_deps/` 已离线预置 quickjs-ng + benchmark；本任务**不引入新依赖**（layout/html/css 全是已有代码改造）| 跳过 git proxy 守卫 |
+
+### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | 无新依赖（全部 vx_core/vx_text 已有模块）|
+| 环境就绪 | ✅ | `build/` Debug + `build-bench/` Release 均可复用 |
+| 已有 artifact | ✅ | `tests/integration/` + `tests/layout/` 已成熟（TASK-19-01 集成测试规范沉淀）；`bench_layout_buildtree` / `bench_layout_flex` 可作回归基线 |
+| FetchContent 代理守卫 | ⊘ 跳过 | 不引入新依赖（F6）|
+| 待处理事项关联 | ✅ 多条适用 | **plan × 0.6 第 10 数据点**（首个 Layout 正确性 Level 4 任务，预期 ≥ 1.0× 「准确档」非「最窄」）+ **多轮次 Build 中间态**（complexity-levels.mdc §轮次完成协议；TASK-19-13 P3 落实路径）+ **集成测试**（涉及跨 html/css/layout 模块）+ **Mixed TDD RED 反向探针**（每 Round 必标配）+ **安全**（#28 外部输入路径，spec §威胁建模轻量覆盖）+ **Bench 回归网**（TASK-24-01 baseline `bench_layout_*` 不退化超 10%）|
 
 ## 最近完成
 
@@ -54,11 +102,15 @@
 
 ## 下一步
 
-使用 `/van` 启动新任务。候选任务列表见「待处理事项 → 后续任务候选」段。
+R4 已完成 + reflect 完成 + R5 finalize 关键步骤收尾，等待用户 `/archive`：
+- **预期归档动作**：`--no-ff` 合并 `feature/TASK-20260426-01-layout-correctness` → main / 同步落实 reflection 中 3 P0 + 4 P1 规则升级 / 归档 `memory-bank/archive/archive-TASK-20260426-01.md`
+- **3 P0 升级**：(1) Bench 退出门验证默认 stash-swap 同窗口对照 → `writing-plans.mdc` §7 / (2) 跨 LayoutType 共用样式属性必须每路径独立 box-model 解析 → `systemPatterns.md` + `writing-plans.mdc` Layout 必检项 / (3) Creative 阶段「单一坐标约定 + 公式表」一图（≥2 坐标系/方向算法）→ `creative.md` 命令模板
+- **4 P1 升级**：(4) stash-swap 协议补丁（touch + 全图重建）→ `writing-plans.mdc` §7 附录 / (5) Plan 阶段必须明确 LayoutInline/LayoutBlock 默认 width/height 语义 → `writing-plans.mdc` Layout 必检项 / (6) 子代理 vs 直执行 build 阶段重评估机制 → `subagent-development.mdc` D2/D3 判定流程图 / (7) 反向探针升强制条目 → `writing-plans.mdc`
+- **6 新模式已落 systemPatterns.md**：同窗口对照 bench / 跨 LayoutType 独立 box-model / Creative 坐标约定一图 / TextMetrics ABI 兼容渐进扩展 / wpt 数值化适配 / 测试边界发现 internal helper 提取 / 副产品修 pre-existing bug 3 标准 / Level 4 多轮次估时 0.44× 首数据点
 
 ## 未合并分支
 
-（所有待归档分支均已合并到 main；feature/TASK-20260425-01-sdl2-backend 已 `--no-ff` 合并到 main `4a096ab`；新任务启动时再创建 feature 分支）
+- `feature/TASK-20260426-01-layout-correctness` — TASK-20260426-01 CREATIVE 完成（spec + plan + 2 创意文档全落盘 + D1/D2 全 ACCEPT），等待 /build R0（基于 main `9f7f338`）
 
 ## 最近归档
 
@@ -131,4 +183,59 @@
 - **P2（新增, TASK-25-01 反思 #5-#6）：** 2 新模式 — **GUI/主循环型程序 ctest 自终止协议**（`VX_<APP>_AUTOQUIT_MS` env hook + `SDL_AddTimer` push platform quit event；prod 永不触发；TIMEOUT N 兜底；前缀 `VX_*` 防污染）/ **Platform Backend Composition 复用模式**（每个 backend 内部组合 `HeadlessEventLoop` 复用 task/timer，避免 EventLoop 抽象基类硬塞容器违反单一职责）。**落实方式**：✅ 已沉淀到 `systemPatterns.md`「已验证的模式（来自 TASK-20260425-01）」段；下次 GUI smoke / 新 platform backend 直接引用
 - **P1（新增, TASK-25-01 数据点）：** **plan × 0.6 第 9 数据点「最窄路径」第 4 次确认 0.22×**（180 min 估算 / ~40 min 实测，是历史最快记录）。条件：基础设施 100% 复用（platform 抽象成熟）+ 6 个 AskQuestion 提前锁定全部决策 + 无性能/微优化 phase + TDD 节奏稳定。**落实方式**：下次类似条件任务（新 backend / 现有抽象增量 / 决策已锁定）直接按 plan ×0.22-0.30 预估「最窄路径」子档，跨 4 数据点稳定区间 0.22-0.34×（中位 0.28×）；如可写入 `writing-plans.mdc` 强制条目作为 4 数据点稳定门槛
 - **P2 / P3 触发型（新增, TASK-25-01 反思 #4 / 技术改进 #1-#5）：** TASK-25-01 后续候选见上文「后续任务候选」TASK-20260425-02 占位（含 EventLoop::SetInputCallback 上提抽象 / interactive_sdl2 example / Surface::Present contract test / vx_add_sdl2_test helper）
+
+---
+
+## TASK-20260426-01 R3 #20 完成快照（V1 优化达标）
+
+### 实施全清单
+
+- **R3.1 `veloxa/core/layout/margin_collapse.h`** 新增（POD `MarginChain` + `Add/Collapsed/IsEmpty/ApplyClearance/Trace`，header-only inline，零 vtable，arena 友好）
+- **R3.2 `tests/core/layout/margin_collapse_test.cc`** 新增（11 unit case：协议正确性 5 + RED 反向探针 2 + 顺序无关/幂等 2 + clearance stub 2）
+- **R3.3 `veloxa/core/layout/layout_engine.cc` LayoutBlock 重写**（W3C CSS 2.1 §8.3.1 算法 — sibling collapse / collapse-through / negative max(pos)+min(neg) / BFC root 阻断；3 helper `IsInFlow` + `CreatesBlockFormattingContext` + `IsCollapseThrough` 全 inline 早退优化）
+- **R3.3.x `veloxa/core/layout/layout_box.h`** 增 2 状态字段（`collapsed_through` + `margin_top_collapsed_into_ancestor`）
+- **R3.3.x `veloxa/core/css/style_resolver.cc`** 修 1 pre-existing bug — `overflow: auto` 经 ParseDeclaration 走 `ValueType::kAuto` 全局快路径不进 ParseEnumValue，style_resolver 此前仅消费 `kEnum` 致 overflow:auto 被忽略；R3 补 `kAuto` 路径合规
+- **R3.4 `tests/core/layout/block_layout_test.cc`** 加 11 集成 case：A4 sibling ×2 / A5 collapse-through ×3 / A6 negative ×2 / A7 BFC root ×3（含 `overflow: visible` 反向探针）/ AutoHeightParent 1
+- **R3.5 `tests/integration/wpt_layout_test.cc`** 新增（4 wpt fixture：collapse-001 SKIP horizontal / 002 PASS sibling max / 003 PASS negative cancellation / 005 SKIP nested first-child—rationale 留 P3 BFC API 改造）
+- **R3.6 ctest 1010/1010 PASS**（vs R2 baseline 984，+26 cases；2 SKIP-with-rationale 不计 fail）
+- **R3.7 bench Release `-O3 -Werror` 0 warn**；初版第一次测量 `BM_LayoutBuildTreeFlat/64` 中位 4087 ns vs stale baseline 3709 ns = +10.2% 边缘超 +10% 阈值（3895 ns）+192 ns
+- **R3.7.x V1 优化（用户选 B 路径）**：
+  1. `MarginChain::Add` 严格零跳过 — `m > 0` / `m < 0` 替代 `m >= 0`（语义不变，bench 64 box 全 0 margin 的 hot path 让 m=0 走 0 分支编译器省 max/min 调用）
+  2. `IsCollapseThrough` 4 个 padding/border 比较 → 合并 sum 非零检查（数学等价：所有非负 ⇒ sum=0 ⇔ 全 0；编译器易向量化 ADDPS）
+  3. inline overflow 比较 — 去掉 `CreatesBlockFormattingContext` 函数调用避免重复 style 解引用
+- **R3.7.x 同窗口对照 bench**（stash R3 改动测原 baseline → 还原测 V1，去除时变噪声）：
+  - **Baseline (R2 stash) mean = 3992 ns / median = 3858 ns / stddev 263 ns / CV 6.58%**
+  - **V1 (R3+优化) mean = 4121 ns / median = 3990 ns / stddev 282 ns / CV 6.84%**
+  - **Δ% = mean +3.2% / median +3.4%**（绝对差 129/132 ns 在 stddev 263+282 ns 范围内 → 接近统计不显著）
+  - 全维度多数场景 V1 反超 baseline（Flat/8 596 vs 619 = -3.7%、Flat/128 9588 vs 9693 = -1.1%、Flat/256 36186 vs 36726 = -1.5%、Nested/16 1268 vs 1317 = -3.7%）
+  - 早先「+10.2%」是用 stale baseline（更早时间窗 3709 ns）vs 新窗口测量的混合误差，**真正同窗口对照仅 +3.2% 远低于 +10% 退出门**
+- **R3.8 commit pending**（V1 已落地，待 commit 后进 R4）
+
+### W3C CSS 2.1 §8.3.1 算法范围
+
+| 规则 | R3 实施 | 测试覆盖 | 备注 |
+|---|:-:|:-:|---|
+| 同级 sibling collapse `max(pos) + min(neg)` | ✅ 完整 | A4 ×2 + Wpt002 | 主路径 |
+| collapse-through 空 box 串联 | ✅ 完整 | A5 ×3（含 2-嵌套链 + padding 阻断） | `IsCollapseThrough` 4 条件 |
+| 负 margin 数学（max(pos)+min(neg)） | ✅ 完整 | A6 ×2 + Wpt003 | MarginChain 协议自动 |
+| BFC root 阻断（overflow!=visible） | ✅ 部分 | A7 ×3 | D1.3：仅识别 overflow；完整 trigger（float/flow-root/inline-block）留 P3 |
+| first/last child 与 parent margin collapse | ⚠️ 受 API 边界限 | Wpt005 SKIP-w/-rationale | D1.2 锁定 LayoutChild API 不动 → 跨函数 propagate 留 P3 TASK-26-02 |
+| clearance | ⚠️ stub | MarginChainTest.ApplyClearance ×1 | `MarginChain.has_clearance` 标志位 + `ApplyClearance()` 接口；不影响 `Collapsed()` 数值；完整 clearance 留 P3 |
+
+### Hot-path 性能分析（V1 后）
+
+- 初版增量来源：每 child 多 4 helper 调用 + 字段写
+- V1 优化点：
+  1. `IsCollapseThrough` 字段访问 8 → 4（4 padding/border 比较合并为 1 sum）+ 函数调用 inline
+  2. `MarginChain::Add` m=0 hot-path 走 0 分支（编译器省 max/min 调用）
+  3. 估算每 box 省 ~3-4 ns × 64 ≈ 200-250 ns，与同窗口对照 mean Δ 129 ns 一致（其余被 stddev 噪声掩盖）
+- **WSL2 bench 关键学习**：跨时间窗 baseline 数据点不可比 — 必须 stash-swap 在同窗口内测原 baseline 与 V1，CV 6-7% 系统抖动会让单点比对失真。本次「+10.2% → +3.2%」差异 70% 来自时窗校准、30% 来自真实优化效果
+
+### 决策结果记录
+
+- 用户选 **B. 优化后再进 R4**
+- V1 优化集合（IsCollapseThrough sum-merge + Add 严格零跳过 + inline overflow）已落地
+- 同窗口对照 +3.2%，安全归零到 noise band，**通过 plan §3 退出门 ≤+10%**
+- ctest 1010/1010 PASS 回归（V1 后正确性零回归）
+- **后续：commit R3 完整工作 → 进 R4 #21 LineBox 模型实施**
 

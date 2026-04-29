@@ -72,10 +72,12 @@
 首次 `cmake -B build` 触发 `FetchContent` 拉取 quickjs-ng（v0.14.0）等依赖。WSL2 / 内网环境若无系统 DNS，必须导出代理：
 
 ```bash
-export http_proxy=http://your-proxy:port
+export http_proxy=http://172.22.32.1:7890   # WSL2 host gateway (Windows clash)
 export https_proxy=$http_proxy
 cmake -B build
 ```
+
+> **代理地址来源（单一真相）：** `172.22.32.1:7890` 为 WSL2 → Windows host 网络网关（`172.22.x.1` 系 WSL2 NAT gateway 默认 IP），由 Windows 侧 Clash / V2Ray 等本地代理在 7890 端口暴露。任务收尾必须 `git config --global --unset http.proxy` + `--unset https.proxy` 恢复（参考 TASK-20260419-13 P1 守卫规则）。规则文件中**统一占位符** `<开发环境代理地址>`，本段为唯一可写入实际值的位置。
 
 ### 离线场景
 
@@ -119,7 +121,9 @@ cmake --build build -j
 
 ### Plan/VAN 阶段守卫（来源 TASK-20260419-13）
 
-规则文件 `.cursor/rules/skills/writing-plans.mdc` 的「FetchContent 网络代理守卫」段要求每个 FetchContent 任务在 VAN / Plan Phase 0 检查并（必要时）补设 git 全局代理；`.cursor/commands/van.md` 步骤 1 已有对应自动检查子项。**本段是代理地址的单一真相来源**，规则文件中**严禁硬编码** IP 地址，统一用占位符 `<开发环境代理地址>`。
+规则文件 `.cursor/rules/skills/writing-plans.mdc` 的「FetchContent 网络代理守卫」段要求每个 FetchContent 任务在 VAN / Plan Phase 0 检查并（必要时）补设 git 全局代理；`.cursor/commands/van.md` 步骤 1 已有对应自动检查子项。**本段是代理地址的单一真相来源**（实际值见上文 §FetchContent 与代理 / `172.22.32.1:7890`），规则文件中**严禁硬编码** IP 地址，统一用占位符 `<开发环境代理地址>`。
+
+**TASK-20260426-01 PLAN 阶段实证：** 通过 `http_proxy=http://172.22.32.1:7890 curl ... raw.githubusercontent.com/web-platform-tests/wpt/...` 200 OK + GitHub API 列出 114 个 margin-collapse fixture，确认代理可拉取 W3C wpt 仓库。Build §0 阶段将拉取 8 例（4 margin-collapse + 2 IFC + 2 vertical-align baseline）入仓 `tests/fixtures/wpt/`。
 
 ## CSS 性能基线（来源 TASK-20260419-03，2026-04-19）
 
@@ -587,15 +591,15 @@ cmake --build build -j
 17. 选择器匹配 O(rules × elements) 全量遍历，大页面需哈希索引优化
 18. ~~:hover/:active/:focus 伪类当前返回 false（stub）~~ ✅ 已回填（TASK-08 SelectorMatcher + TASK-09 StyleResolver 透传）
 19. LayoutEngine::Layout 的 static ArenaAllocator 线程不安全（旧签名仍存在，新签名接受外部 arena）
-20. Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）
-21. LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）
+20. ~~Block 布局缺少 margin collapsing（CSS 规范要求，影响渲染正确性）~~ — ✅ **TASK-20260426-01 R3 已修复**（W3C CSS 2.1 §8.3.1 sibling collapse / collapse-through / negative max(pos)+min(neg) / BFC root 阻断 4 类规则完整实施；first/last child 与 parent collapse + clearance 受 D1.2 LayoutChild API 边界约束 stub-w/-rationale 留 P3 TASK-26-02；新文件 `veloxa/core/layout/margin_collapse.h` POD `MarginChain` header-only inline + `Add/Collapsed/IsEmpty/ApplyClearance/Trace`；`layout_engine.cc::LayoutBlock` 重写 + 3 helper inline `IsInFlow`/`CreatesBlockFormattingContext`/`IsCollapseThrough`；`layout_box.h` 增 2 状态字段 `collapsed_through` + `margin_top_collapsed_into_ancestor`；ctest +26 cases = 1010/1010 PASS；R3 V1 优化 3 项后同窗口对照 mean +3.2% / median +3.4% 远低 ±10%；副产品修 1 pre-existing bug `style_resolver.cc` `overflow: auto` 走 `ValueType::kAuto` 全局快路径丢失 enum 解析）
+21. ~~LayoutInline 是简化实现，缺少真正的 line box 模型（ascent+descent 计算）~~ — ✅ **TASK-20260426-01 R4 已修复**（CSS 2.1 §10.8 / §10.8.1 完整实施；新文件 `veloxa/core/layout/line_box.h` POD `LineBox`+`LineBoxItem` Vector；`enums.h::VerticalAlign` 9 关键字（含 `kLength` sentinel）+ `computed_style.h` `vertical_align`+`vertical_align_offset` 双字段联动 + CSS 全链路 6 文件（property/parser/style_resolver/enum_serialization）+ `TextShaper` ABI 兼容拆 ascent/descent + `[[deprecated]] baseline` + FT 路径取真实 face metrics；`LayoutEngine::LayoutInline` 严格 2-pass vertical-align 算法 + 半-leading + 隐式 strut + LineBox Vector + fit-content width / explicit height 修正 + inline-block atomic 路径；ctest +19 = 1029/1029 PASS（11 line_box + 5 text_shaper + 3 parser）+ 2 wpt linebox PASS（Wpt006 inline-formatting / Wpt007 va: 0% ≡ baseline）；同窗口对照 bench Flat/64 mean -3.6% / median +2.65% 远低 ±10%；不在边界：bidi LTR 假设 / inline-block 内部 IFC 当 atomic / block 含 inline 匿名 IFC 留 P3）
 22. Arena 分配的 ComputedStyle 含 InternedString 成员，arena 释放不调用析构函数，可能泄露引用计数
 23. SoftwareCanvas::DrawText 是存根（逐字符 FillRect），需集成 FreeType+HarfBuzz
 24. border-radius 渲染未实现（ComputedStyle 有值但 renderer 忽略）
-25. LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处
+25. ~~LayoutBox 缺少 border_box_origin()/padding_box_origin() 辅助方法，坐标计算分散在多处~~ — ✅ **TASK-20260426-01 R1 已修复**（`layout_box.h` 增 `Point` POD + `border_box_origin()`/`padding_box_origin()`/`content_box_origin()` 三族 + 12 个 *_top/right/bottom/left 边缘 helpers，全部 constexpr inline；`layout_engine.cc` 5 处 + `flex_layout.cc` 12 处 重复表达式替换；ctest 不变 PASS；bench 0 退化）
 26. DisplayList 无 Dump() 调试方法
 27. vx_core 新增 vx_graphics 依赖，所有 core 代码（包括不需要 graphics 的 HTML/CSS/Layout）都链接了 vx_graphics
-28. LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）
+28. ~~LayoutEngine::BuildTree 不解析 inline style（inline_decls 始终为 nullptr）~~ — ✅ **TASK-20260426-01 R2 已修复**（`html/parser.cc` 增 `ApplyInlineStyleAttribute` 私有方法，调 `CssParser::ParseDeclarationList` + 完整三件套安全护栏 [安全相关]：T1 count cap 1000 / T2 value len cap 8 KB / T3-T5 黑名单 expression(/behavior:/javascript: 大小写不敏感）；常量 `kInlineStyleMaxDeclarationCount` + `kInlineStyleMaxValueLength` 暴露 namespace 可测；`internal::ContainsBlacklistKeyword(StringView) → bool` 提取为 unit test 入口；ctest +24 cases（14 inline_style + 1 const guard + 8 ContainsBlacklist + 1 layout e2e）= 984/984 PASS；与 JS dom_bindings.cc:322 路径行为完全等价（A2 e2e 验证 `<div style='padding:10px'>` ≡ stylesheet）
 29. ~~EventManager 无「状态变更→样式失效→重绘」触发机制~~ ✅ 已实现（TASK-09 UpdateManager + InvalidationCallback）
 30. EventDispatcher::listeners_ 元素销毁时需手动 RemoveEventListeners（无自动清理）
 31. HitTest z-index 排序每次调用重新排序（可缓存）

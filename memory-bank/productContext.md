@@ -54,3 +54,11 @@
 - 不做完整浏览器（不支持完整 HTML5 规范）
 - 不做通用桌面 UI 框架（焦点在嵌入式）
 - 不支持 WebRTC/WebGL 等重型 Web API
+
+## 最近能力更新（2026-04-30）
+
+- ✅ **Layout 正确性显著提升（TASK-20260426-01）**
+  - 完成 Block margin collapsing（CSS 2.1 §8.3.1）
+  - 完成 Inline line box / vertical-align / line-height 半-leading（CSS 2.1 §10.8）
+  - HTML inline style 解析路径与 JS 路径一致（含三件套安全护栏）
+  - 对 DevTool 主线（Inspector / 几何可视化 / 后续 z-index/IFC 扩展）提供更可靠几何基础

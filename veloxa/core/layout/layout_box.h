@@ -8,6 +8,13 @@
 
 namespace vx::layout {
 
+// 2D point in layout-space coordinates (相对 parent 工作坐标系)。
+// 用于 LayoutBox::*_box_origin() helper 返回类型，避免 (x, y) 双 f32 拼接式调用。
+struct Point {
+  f32 x;
+  f32 y;
+};
+
 enum class LayoutType : u8 {
   kBlock,
   kInline,
@@ -38,6 +45,14 @@ struct LayoutBox {
 
   enum { kTop = 0, kRight = 1, kBottom = 2, kLeft = 3 };
 
+  // Margin collapsing 状态（CSS 2.1 §8.3.1，TASK-20260426-01 R3）。
+  // collapsed_through：本 box 的 top/bottom margin 都并入了 sibling chain，
+  //   自身不占 vertical 空间（高度 0、无 padding/border）。
+  // margin_top_collapsed_into_ancestor：first-flow-child 与 parent 的 margin-top
+  //   collapse（P3 完整 BFC 改造时启用）。
+  bool collapsed_through = false;
+  bool margin_top_collapsed_into_ancestor = false;
+
   void AppendChild(LayoutBox* child) {
     child->parent = this;
     child->prev_sibling = last_child;
@@ -67,6 +82,51 @@ struct LayoutBox {
   }
   f32 margin_box_height() const {
     return border_box_height() + margin[kTop] + margin[kBottom];
+  }
+
+  // ===========================================================================
+  // Origin helpers (CSS box model coordinates).
+  //
+  // 约定：(x, y) 是 border-box 左上角，由布局阶段累加 margin 后写入。
+  // 调用方决定坐标系含义（绝对坐标 / 相对 parent padding-box）。
+  // ===========================================================================
+  Point border_box_origin() const { return {x, y}; }
+  Point padding_box_origin() const {
+    return {x + border[kLeft], y + border[kTop]};
+  }
+  Point content_box_origin() const {
+    return {x + border[kLeft] + padding[kLeft],
+            y + border[kTop] + padding[kTop]};
+  }
+
+  // border-box four sides
+  f32 border_box_top() const { return y; }
+  f32 border_box_left() const { return x; }
+  f32 border_box_right() const { return x + border_box_width(); }
+  f32 border_box_bottom() const { return y + border_box_height(); }
+
+  // padding-box four sides
+  f32 padding_box_top() const { return y + border[kTop]; }
+  f32 padding_box_left() const { return x + border[kLeft]; }
+  f32 padding_box_right() const {
+    return padding_box_left() + padding_box_width();
+  }
+  f32 padding_box_bottom() const {
+    return padding_box_top() + padding_box_height();
+  }
+
+  // content-box four sides
+  f32 content_box_top() const { return y + border[kTop] + padding[kTop]; }
+  f32 content_box_left() const { return x + border[kLeft] + padding[kLeft]; }
+  f32 content_box_right() const { return content_box_left() + content_width; }
+  f32 content_box_bottom() const { return content_box_top() + content_height; }
+
+  // margin-box four sides (border-box + outward margin)
+  f32 margin_box_top() const { return y - margin[kTop]; }
+  f32 margin_box_left() const { return x - margin[kLeft]; }
+  f32 margin_box_right() const { return border_box_right() + margin[kRight]; }
+  f32 margin_box_bottom() const {
+    return border_box_bottom() + margin[kBottom];
   }
 
   u32 child_count() const {

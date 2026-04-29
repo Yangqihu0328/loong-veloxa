@@ -64,6 +64,9 @@ target_link_libraries(document_test PRIVATE vx_core)
 vx_add_test(parser_test core/html/parser_test.cc)
 target_link_libraries(parser_test PRIVATE vx_core)
 
+vx_add_test(inline_style_test core/html/inline_style_test.cc)
+target_link_libraries(inline_style_test PRIVATE vx_core)
+
 vx_add_test(html_integration_test core/html/integration_test.cc)
 target_link_libraries(html_integration_test PRIVATE vx_core)
 
@@ -117,6 +120,18 @@ target_link_libraries(flex_layout_test PRIVATE vx_core)
 
 vx_add_test(inline_position_test core/layout/inline_position_test.cc)
 target_link_libraries(inline_position_test PRIVATE vx_core)
+
+vx_add_test(margin_collapse_test core/layout/margin_collapse_test.cc)
+target_link_libraries(margin_collapse_test PRIVATE vx_core)
+
+vx_add_test(text_shaper_test core/layout/text_shaper_test.cc)
+target_link_libraries(text_shaper_test PRIVATE vx_core)
+
+vx_add_test(line_box_test core/layout/line_box_test.cc)
+target_link_libraries(line_box_test PRIVATE vx_core)
+
+vx_add_test(wpt_layout_test integration/wpt_layout_test.cc)
+target_link_libraries(wpt_layout_test PRIVATE vx_core)
 
 vx_add_test(layout_integration_test core/layout/integration_test.cc)
 target_link_libraries(layout_integration_test PRIVATE vx_core)

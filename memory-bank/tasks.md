@@ -2,7 +2,120 @@
 
 ## 当前任务
 
-无。使用 `/van` 启动新任务。
+### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
+
+- **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）
+- **状态：** ✅ 已归档（2026-04-30）— 归档文档 `memory-bank/archive/archive-TASK-20260426-01.md` 已落盘；4 子任务全部完成（#25/#28/#20/#21）+ Release ctest 1029/1029 PASS + 同窗口对照 bench mean -3.6% / median +2.65%；P0/P1 改进建议均已迁移落地（规则文件与 systemPatterns 同步）
+- **创建日期：** 2026-04-26
+- **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
+- **来源：** `techContext.md §技术债务清单` 4 项 + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
+- **设计 spec：** `docs/specs/2026-04-26-layout-correctness-design.md`
+- **实现 plan：** `docs/plans/2026-04-26-layout-correctness.md`
+- **创意文档：**
+  - `memory-bank/creative/creative-margin-collapsing.md`（R3 #20，D1 5 决策全 ACCEPT）
+  - `memory-bank/creative/creative-line-box-model.md`（R4 #21，D2 5 决策全 ACCEPT）
+
+#### 目标
+
+按 D1 全包 + 多轮次 Build 中间态（complexity-levels.mdc §轮次完成协议）依次消化 4 项 Layout 正确性技术债：
+
+| 子任务 | 编号 | 现状（VAN grep 实证） | 修复方向 | 量级 |
+|:-:|:-:|---|---|---:|
+| Round 1 | **#25** | LayoutBox 仅有 `*_box_width/height()` 系列；缺 origin helpers；坐标计算分散在 `layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处 | 加 `border_box_origin()` / `padding_box_origin()` / `content_box_origin()` 6 helpers + 全量替换分散计算 + 集成测试覆盖坐标语义 | ~30-60 min |
+| Round 2 | **#28** | HTML parser `parser.cc:95` 把 `style` attr 当普通 attribute；`CssParser::ParseDeclarationList` API 已存在（`script/dom_bindings.cc:322` 已用）| HTML parser 处理 attribute 时识别 `style` → 调 ParseDeclarationList → 逐条 `SetInlineDeclaration` + 集成测试（HTML 路径与 JS 路径行为一致）+ 安全（DoS 巨大 declaration / 无效 `url()` / CSS var 未实现退化） | ~60-90 min |
+| Round 3 | **#20** | `layout_engine.cc:209-212` 完全无 margin collapsing（直接 `y_offset = child->y + border_box + margin[Bottom]`）| CSS 2.1 §8.3.1 完整实现：adjoining vertical margins / nested / negative collapse / collapse-through (empty box) / clearance / float exclusion；至少 8-12 testcases（W3C 官方 testcase 选取参考）| ~3-5h |
+| Round 4 | **#21** | `layout_engine.cc:260-303` LayoutInline 用 `line_height = max(child.height)` 简化；`text_shaper.h:12` 有 `f32 baseline` 字段但 layout 未消费 | 引入 LineBox 抽象；接入 TextShaper.baseline；实现 ascent/descent metric；vertical-align（baseline/top/middle/bottom）；line-height 计算；半-leading；line box reflow | ~5-8h |
+| **合计** | — | — | — | **~10-15h plan / ~6-9h plan×0.6 实测预期** |
+
+#### 验收要点（待 /plan 精化）
+
+- 每 Round 末「轮次完成」中间态报告（complexity-levels.mdc §轮次完成判断 + build.md §6.5）
+- ctest 全量 PASS（基线 951/951；预计 +20-40 new test cases）
+- Release `-O3 -Werror` 0 err/warn
+- `bench_layout_*` baseline 不退化超 10%（TASK-24-01 32K block sweet spot 不破）
+- W3C CSS 2.1 §8.3.1 testcase 选取至少 6 例做集成测试金标准
+- `techContext.md §技术债务清单` #20/#21/#25/#28 状态变更为 ✅ 已闭环
+
+#### VAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围包 | **包 D（Layout 正确性）** | 用户从 5 包候选中选定 |
+| V2 | 拆分策略 | **D1 全包 + 多轮次 Build** | 4 子任务依次串行，每 Round 独立验收中间态 |
+| V3 | Git 分支 | **feature/TASK-20260426-01-layout-correctness** | 基于 main `9f7f338` |
+| V4 | 复杂度 | **Level 4** | 多子系统 + 架构决策 + #20/#21 单独 Level 3 量级 |
+| V5 | 安全相关 | **✅ [安全相关]** | #28 接收 HTML `style="..."` 外部输入 |
+
+#### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | 「#28 LayoutEngine::BuildTree 不解析 inline style」 | ⚠️ **描述不精确**：`layout_engine.cc:35` 已传 inline_declarations；真实缺口在 `html/parser.cc:95` | spec 阶段修正 #28 描述 → 修复路径在 HTML parser，非 layout |
+| F2 | 「`ParseDeclarationList` API 是否存在」 | ✅ `css/parser.h:12` 完整实现；`script/dom_bindings.cc:322` 已成熟使用 | #28 实施零 API 设计成本 |
+| F3 | 「LayoutBox origin 计算分散位置」 | ✅ `layout_engine.cc` 5 处 + `flex_layout.cc` 15+ 处 | #25 改造影响面已知 |
+| F4 | 「Block 布局当前是否有 margin collapsing」 | ✅ 完全无 collapsing | #20 是从零实施 |
+| F5 | 「LayoutInline 是否流入 TextShaper.baseline」 | ✅ baseline 字段未消费 | #21 第一步：接入 baseline + 引入 LineBox |
+| F6 | 「FetchContent 代理状态」 | ✅ 不引入新依赖 | 跳过 git proxy 守卫 |
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-26 01:35 | 初始化 | VAN 完成；6 项 grep 实证；用户决策 D1 全包 + 多轮次 Build；分支创建（基于 main `9f7f338`）；MB 三件套同步 |
+| 2026-04-26 02:00 | 规划 | PLAN 完成；6 决策矩阵锁定（Q1A 完整 §8.3.1 + Q2A 全量 LineBox + Q3A wpt 远程拉取 + Q4A 三件套安全护栏 + Q5A 每 Round 1 commit + Q6 0.6× 准确档）；spec + plan 落盘；代理 `172.22.32.1:7890` 实证可达 wpt 仓库 114 fixture 备选；下一步 `/creative` 2 篇创意文档 |
+| 2026-04-26 02:20 | 设计 | CREATIVE 完成；D1 (margin collapsing) 5 决策全 ACCEPT — 方案 A MarginChain in-line 累积 + 内部栈式 chain 状态 + BFC root 仅 overflow + VX_DEBUG_LAYOUT trace + 先 layout child 回填 child.y；D2 (LineBox 模型) 5 决策全 ACCEPT — A.1 显式 LineBox + B.1 严格 2-pass vertical-align + C.1 加字段不删 [[deprecated]] + inline-block atomic + CSS 2.1 §10.8.1 默认 line-height；2 篇创意文档落盘（含 3 方案探索 + 3×3 子决策对比 + 形式化伪码 + 6 关键字公式 + 风险登记）；下一步 `/build` R0 |
+| 2026-04-26 02:28 | 构建·R0 | BUILD R0 准备完成；ctest 951/951 PASS in 1.23s + bench `BM_LayoutBuildTreeFlat/64` 3709 ns baseline（R3 退出门 ≤ 3895 ns）+ wpt 11 文件入仓 (`tests/fixtures/wpt/css/CSS2/`) 含 README BSD-3-Clause + grep 4 类 fingerprint（F1 #25 替换点 14 处 ≥ 12 / F2 inline_decl 全链路 6 文件 / F3 vertical-align 0 hint 全新 / F4 enum 全链路 7 文件 kLineHeight 模板）；**实证微调**：plan 原选 `margin-collapse-091` 不存在 → 替代 `005`，`vertical-align` fixture 在 `linebox/` 子目录；下一步 R1 #25 origin helpers |
+| 2026-04-26 02:38 | 构建·R1 | BUILD R1 完成；#25 origin helpers 落地 — `Point{f32 x, f32 y}` struct + 19 helper（3 origin border/padding/content_box_origin + 16 four-side (border/padding/content/margin)_box_(top/right/bottom/left)）/ TDD RED 反向探针 2/2 通过（ZeroBoxIsTrivial + InversesByMutation）/ 10 处分散计算替换为 helper（layout_engine 1 + flex_layout 9）+ 4 处保留语义清晰（reverse 步进 / box-sizing 反推 / x_offset 步进，无 helper 适用）/ ctest 960/960 PASS（+9 cases，1.58s）/ bench `Flat/64` 3709→3715 ns **+0.16%** ≪ +5% 退出门 (3895 ns) / 全部 6 BM 波动 -1.7% ~ +6.1% ≤ A15 +10% 门；**首次反模式触发**：编译刚完成 Load 4.97 → 假退化 +26% → TASK-19-13 P1「WSL2 bench 稳态协议」sleep 30s 重测 → 真值 +0.16%；plan × 0.6 第 10 数据点 0.5×（plan 60 min / 实测 ~30 min，子档稳定区间 0.22-0.34× 又一确认） |
+| 2026-04-26 02:55 | 构建·R2 | BUILD R2 完成 [安全相关]；#28 HTML inline style + 完整三件套安全护栏；ctest 984/984 PASS（+24 case）；bench -3.5%；plan × 0.6 第 11 数据点 0.56× |
+| 2026-04-26 03:20 | 构建·R3 | BUILD R3 完成；#20 Block margin collapsing CSS 2.1 §8.3.1 完整 4 类规则 + V1 优化 3 项；ctest 1010/1010 PASS（+26 case）；同窗口对照 bench mean +3.2% / median +3.4%（首次 stash-swap 范式确立）；plan × 0.6 第 12 数据点 0.37× |
+| 2026-04-29 01:30 | 构建·R4 | BUILD R4 完成；#21 LayoutInline LineBox 模型 2-pass vertical-align + 半-leading + LineBox Vector + fit-content width / explicit height + inline-block atomic；ctest 1029/1029 PASS（+19 case）+ 2 wpt linebox fixture；同窗口对照 bench mean -3.6% / median +2.65%；plan × 0.6 第 13 数据点 0.5× |
+| 2026-04-29 02:10 | 回顾 | REFLECT 完成；R5 finalize 关键步骤收尾（Release 1029 + 0 warn / git proxy unset / techContext #20/#21/#25/#28 状态 ⏳→✅）；reflection 落盘 Level 4 全维度回顾 13 改进建议 + 3 P0 + 4 P1 + 8 新模式沉淀 systemPatterns.md；plan × 0.6 整体 0.44× Level 4 首数据点；等待 /archive |
+| 2026-04-30 00:40 | 归档 | ARCHIVE 完成：`archive-TASK-20260426-01.md` 落盘；P0/P1 改进建议迁移确认完成（`writing-plans.mdc` / `creative.md` / `subagent-development.mdc` + `systemPatterns.md` + `productContext.md`）；任务状态置为已归档 |
+
+#### PLAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| Q1 | Round 3 #20 实施策略 | **A 一次性完整 W3C CSS 2.1 §8.3.1** | 用户全量；clearance 部分 stub 化（真 float 留 P3 触发型 TASK-26-02 候选） |
+| Q2 | Round 4 #21 范围 | **A 全量** LineBox + ascent/descent + vertical-align 6 关键字 + length 偏移 + 半-leading | 用户全量；inline-block atomic（不递归 IFC） |
+| Q3 | W3C testcase 来源 | **A wpt 远程拉取** + Plan §0 代理实证 | 代理 `172.22.32.1:7890` (WSL2 host gateway) 实证 200 OK；114 个 margin-collapse fixture 可选 |
+| Q4 | #28 安全护栏 | **A 完整三件套** count cap 1000 + value len cap 8 KB + 历史攻击关键字黑名单（expression(/behavior:/javascript:） | 用户全量；威胁模型 spec §6 (T1-T7 全覆盖) |
+| Q5 | 轮次提交粒度 | **A 每 Round 1 commit + 中间态报告 + 用户确认** | complexity-levels.mdc §多轮次协议标准路径；TASK-19-13 P3 落实 |
+| Q6 | Plan × 0.6 估时档 | **0.6× 准确档** plan 900 min → 实测 ~540 min | Level 4 首数据点；4 子任务复用度高但有 W3C 规范梳理成本 |
+
+#### CREATIVE 阶段决策（已锁定）
+
+##### D1: Margin Collapsing 算法（R3 #20）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1.1 | 算法 | **方案 A — MarginChain in-line 累积法** | 单 pass O(N) + 与现有 LayoutEngine 风格一致 + bench 退化预计 ≤ 5%；vs B pre-pass 双遍（+20-30% 退化） / C 纯函数（API 大改） |
+| D1.2 | outgoing_chain 表示 | **LayoutBlock 内部 Vector\<MarginChain\> 栈式状态** | 保持现有 LayoutBox API 不动，避免 API 大改影响 #25 #21 协调成本 |
+| D1.3 | BFC root 判定范围 | **本 Round 仅识别 `overflow: hidden\|scroll\|auto` 作为 BFC root** | 防范围蔓延；其他 BFC trigger（display: flow-root / float / 绝对定位）依靠 P3 TASK-26-02 |
+| D1.4 | 调试 trace | **`#if VX_DEBUG_LAYOUT` MarginChain::Trace 仅 DEBUG 启用** | Release 0 开销，Debug 可见 |
+| D1.5 | collapse-through lookback 实现 | **先 layout child → 基于结果回填 child.y** | 与方案 A 推荐路径一致 |
+
+##### D2: LineBox 模型 + vertical-align（R4 #21）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D2.A | LineBox 数据结构 | **A.1 显式 LineBox + Vector\<LineBox\>** | 抽象清晰对应 CSS 2.1 §9.4.2 / §10.8 概念 + 独立测试性 + DevTool 主线复用（TASK-25-02 占位 Inspector） |
+| D2.B | vertical-align 算法 | **B.1 严格 2-pass** | CSS 2.1 §10.8.1 在 2 pass 内完全解析 + 算法清晰度高 + 与 spec §5.4 一致 |
+| D2.C | TextMetrics ABI 策略 | **C.1 加字段不删 + `[[deprecated("use ascent")]]`** | ABI 不破，与 R1/R2/R3 同步推进零冲突 + `[[deprecated]]` 给未来清理明确锚点 |
+| D2.D | inline-block 处理 | **atomic（border_box_height 当 ascent + 0 当 descent）** | spec §2 不做边界（不递归 IFC） |
+| D2.E | line-height 单位语义 | **CSS 2.1 §10.8.1 默认**（数字 → font-size 倍数；length → 绝对像素；percent → font-size 百分比） | 完整规范支持 |
+
+#### 子任务多轮次拆分（spec/plan §0-§5）
+
+| Round | 子任务 | 类型 | plan (min) | × 0.6 (min) | 子代理 |
+|:-:|:-:|---|---:|---:|---|
+| R0 | 准备：基线核验 + wpt 拉取 + grep fingerprint | meta | 30 | 18 | — |
+| R1 | #25 LayoutBox origin helpers + 替换分散计算 + 6 测试 + bench | impl/D2 | 60 | 36 | 直执行 |
+| R2 | #28 HTML inline style + 三件套安全护栏 + 8 测试 + 集成 | impl/D2 + 安全 | 90 | 54 | 直执行 |
+| R3 | #20 Margin collapsing 全实施 + 12 测试 + 4 wpt fixture | impl/D3 | 300 | 180 | 子代理 A（R3.3 LayoutBlock 算法）|
+| R4 | #21 LineBox + vertical-align + line-height + 9 测试 + 2 wpt fixture | impl/D3 | 360 | 216 | 子代理 B（R4.3 TextShaper FT）+ 子代理 C（R4.6 LayoutInline）|
+| R5 | finalize：techContext 闭环 + git 代理 unset + reflect | meta | 60 | 36 | — |
+| **合计** | — | — | **900 (15h)** | **540 (9h)** | **3 子代理 D3** |
 
 ---
 

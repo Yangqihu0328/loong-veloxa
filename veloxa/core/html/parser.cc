@@ -1,10 +1,27 @@
 #include "veloxa/core/html/parser.h"
 
+#include <algorithm>
 #include <utility>
+
+#include "veloxa/core/css/parser.h"
 
 namespace vx::html {
 
 namespace {
+
+// =============================================================================
+// HTML inline style 安全护栏常量（TASK-20260426-01 R2 / #28，spec §6 T1-T7）
+//
+// HTML `style="..."` 来自外部输入（用户提供 / 第三方 HTML），必须三件套护栏：
+//   T1 DoS via 巨 declaration count → kMaxInlineDeclarationCount=1000
+//   T2 DoS via 巨 single value      → kMaxInlineValueLength=8 KB
+//   T3 IE expression()              → 黑名单
+//   T4 CSS behavior:                → 黑名单
+//   T5 javascript: URL              → 黑名单
+//
+// 命中即整 attribute 跳过；element 仍正常构建（未崩 DOM 树）。
+// 黑名单关键字本身不是机密，可入仓（与敏感数据保护规则不冲突）。
+// =============================================================================
 
 struct ImplicitCloseRule {
   dom::TagId open_tag;
@@ -37,6 +54,41 @@ static constexpr ImplicitCloseRule kImplicitCloseRules[] = {
 };
 
 }  // namespace
+
+namespace internal {
+
+const StringView kBlacklistKeywords[] = {
+    StringView("expression("),
+    StringView("behavior:"),
+    StringView("javascript:"),
+};
+
+const usize kBlacklistKeywordCount =
+    sizeof(kBlacklistKeywords) / sizeof(kBlacklistKeywords[0]);
+
+bool ContainsBlacklistKeyword(StringView value) {
+  for (usize k = 0; k < kBlacklistKeywordCount; ++k) {
+    StringView needle = kBlacklistKeywords[k];
+    if (needle.empty() || value.size() < needle.size()) continue;
+    for (usize i = 0; i + needle.size() <= value.size(); ++i) {
+      bool match = true;
+      for (usize j = 0; j < needle.size(); ++j) {
+        char h = value[i + j];
+        char n = needle[j];
+        if (h >= 'A' && h <= 'Z') h = static_cast<char>(h + 32);
+        if (n >= 'A' && n <= 'Z') n = static_cast<char>(n + 32);
+        if (h != n) {
+          match = false;
+          break;
+        }
+      }
+      if (match) return true;
+    }
+  }
+  return false;
+}
+
+}  // namespace internal
 
 dom::Document* Parser::Parse(StringView html, Vector<ParseError>* errors) {
   Parser parser(html, errors);
@@ -89,10 +141,16 @@ void Parser::ProcessStartTag(const Token& start_token) {
   dom::Element* el = doc_->CreateElement(tag_id);
 
   Token token = tokenizer_.Next();
+  static const InternedString kStyleAttr = InternedString::Intern("style");
   while (token.type == TokenType::kAttribute) {
     String value =
         token.has_entities ? DecodeEntities(token.value) : String(token.value);
-    el->SetAttribute(InternedString::Intern(token.name), std::move(value));
+    InternedString name = InternedString::Intern(token.name);
+    if (name == kStyleAttr) {
+      ApplyInlineStyleAttribute(el, value.view());
+    } else {
+      el->SetAttribute(name, std::move(value));
+    }
     token = tokenizer_.Next();
   }
   // token is now kTagEnd
@@ -190,5 +248,18 @@ void Parser::CloseTopElement() {
 }
 
 dom::Element* Parser::CurrentElement() { return open_elements_.back(); }
+
+void Parser::ApplyInlineStyleAttribute(dom::Element* el, StringView css) {
+  if (css.empty()) return;
+  if (css.size() > kInlineStyleMaxValueLength) return;  // T2 DoS via 巨 value
+  if (internal::ContainsBlacklistKeyword(css)) return;  // T3-T5 历史攻击向量
+
+  auto decls = css::CssParser::ParseDeclarationList(css);
+  const usize count =
+      std::min<usize>(decls.size(), kInlineStyleMaxDeclarationCount);
+  for (usize i = 0; i < count; ++i) {                   // T1 count cap
+    el->SetInlineDeclaration(decls[i].property, decls[i].value);
+  }
+}
 
 }  // namespace vx::html

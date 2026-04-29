@@ -232,8 +232,7 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
         item.box->content_height =
             ResolveLength(item.box->style->height, 0, child_font, ctx);
       }
-      item.cross_size = item.box->border_box_height() + item.box->margin[0] +
-                        item.box->margin[2];
+      item.cross_size = item.box->margin_box_height();
     } else {
       item.box->content_height = std::max(0.0f, item.hypothetical_main);
       if (!item.box->style->width.is_none() &&
@@ -244,8 +243,7 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
       } else {
         item.box->content_width = box->content_width;
       }
-      item.cross_size = item.box->border_box_width() + item.box->margin[1] +
-                        item.box->margin[3];
+      item.cross_size = item.box->margin_box_width();
     }
   }
 
@@ -265,11 +263,9 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
     u32 count = line.end - line.start;
     for (u32 i = line.start; i < line.end; ++i) {
       if (is_row) {
-        used_main += items[i].box->border_box_width() +
-                     items[i].box->margin[1] + items[i].box->margin[3];
+        used_main += items[i].box->margin_box_width();
       } else {
-        used_main += items[i].box->border_box_height() +
-                     items[i].box->margin[0] + items[i].box->margin[2];
+        used_main += items[i].box->margin_box_height();
       }
     }
     used_main += gap_size * (count > 1 ? count - 1 : 0);
@@ -320,13 +316,11 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
         auto& it = items[i];
         if (is_row) {
           it.box->x = main_offset + it.box->margin[3];
-          main_offset += it.box->margin[3] + it.box->border_box_width() +
-                         it.box->margin[1];
+          main_offset += it.box->margin_box_width();
           if (i < line.end - 1) main_offset += item_gap;
         } else {
           it.box->y = main_offset + it.box->margin[0];
-          main_offset += it.box->margin[0] + it.box->border_box_height() +
-                         it.box->margin[2];
+          main_offset += it.box->margin_box_height();
           if (i < line.end - 1) main_offset += item_gap;
         }
       }
@@ -342,11 +336,9 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
 
       f32 item_cross;
       if (is_row) {
-        item_cross = it.box->border_box_height() + it.box->margin[0] +
-                     it.box->margin[2];
+        item_cross = it.box->margin_box_height();
       } else {
-        item_cross = it.box->border_box_width() + it.box->margin[1] +
-                     it.box->margin[3];
+        item_cross = it.box->margin_box_width();
       }
 
       f32 cross_pos = 0;
@@ -412,8 +404,7 @@ void LayoutFlex(LayoutBox* box, f32 containing_width,
     if (style->height.is_auto() || style->height.is_none()) {
       f32 max_y = 0;
       for (auto& item : items) {
-        f32 bottom =
-            item.box->y + item.box->border_box_height() + item.box->margin[2];
+        f32 bottom = item.box->margin_box_bottom();
         if (bottom > max_y) max_y = bottom;
       }
       box->content_height = max_y;

@@ -14,8 +14,13 @@ FreeTypeTextShaper::FreeTypeTextShaper(FontManager* fm)
 layout::TextMetrics FreeTypeTextShaper::Measure(StringView text,
                                                  f32 font_size,
                                                  u16 font_weight) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+  // R4 #21（TASK-20260426-01）TextMetrics 已扩展 ascent/descent；baseline 标
+  // [[deprecated]] 但仍需写入以保 ABI 兼容。下方所有 return 通过本 push/pop
+  // 段抑制 deprecated-declarations warning。
   if (text.empty()) {
-    return {0.0f, 0.0f, 0.0f};
+    return {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
   }
 
   FontHandle fh = default_font_;
@@ -25,12 +30,13 @@ layout::TextMetrics FreeTypeTextShaper::Measure(StringView text,
 
   FT_Face face = (fh != kInvalidFont) ? font_manager_->GetFace(fh) : nullptr;
   if (!face) {
-    // Fallback: simple estimation matching SimpleTextShaper
+    // Fallback: simple estimation matching SimpleTextShaper（同 ascent/descent 比例）
     f32 char_width = font_size * 0.6f;
     f32 width = static_cast<f32>(text.size()) * char_width;
-    f32 height = font_size * 1.2f;
-    f32 baseline = font_size;
-    return {width, height, baseline};
+    f32 ascent = font_size * 0.8f;
+    f32 descent = font_size * 0.2f;
+    f32 height = ascent + descent;
+    return {width, height, ascent, descent, ascent};
   }
 
   u32 pixel_size = static_cast<u32>(font_size + 0.5f);
@@ -60,14 +66,17 @@ layout::TextMetrics FreeTypeTextShaper::Measure(StringView text,
   f32 width = total_advance / 64.0f;
 
   FT_Size_Metrics& m = face->size->metrics;
-  f32 ascender = static_cast<f32>(m.ascender) / 64.0f;
-  f32 descender = static_cast<f32>(m.descender) / 64.0f;
-  f32 height = ascender - descender;
+  // FT ascender 为正值（baseline 之上），descender 为负值（baseline 之下）。
+  // CSS 2.1 §10.8.1 约定 descent 为正数 → 取绝对值 / 取负号。
+  f32 ascent = static_cast<f32>(m.ascender) / 64.0f;
+  f32 descent = -static_cast<f32>(m.descender) / 64.0f;
+  f32 height = ascent + descent;  // 等价旧式 ascender - descender
 
   hb_buffer_destroy(buf);
   hb_font_destroy(hb_font);
 
-  return {width, height, ascender};
+  return {width, height, ascent, descent, ascent};
+#pragma GCC diagnostic pop
 }
 
 }  // namespace vx::text

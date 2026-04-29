@@ -58,6 +58,12 @@ constexpr const char* kBorderStyle[] = {
 constexpr const char* kFontStyle[] = {
     "normal", "italic",
 };
+// vertical-align: 8 关键字 + kLength sentinel（length 走 length 路径，不在此表）。
+// 顺序必须与 enums.h `VerticalAlign` 枚举一致。
+constexpr const char* kVerticalAlign[] = {
+    "baseline", "sub",     "super", "middle", "text-top",
+    "text-bottom", "top",  "bottom", nullptr,  // kLength 不返回字符串
+};
 
 // Bounds-checked indexed lookup over a string-pointer table.
 //
@@ -118,6 +124,8 @@ StringView EnumValueToCssString(PropertyId property, u16 enum_value) {
       return VX_LOOKUP(kBorderStyle, enum_value);
     case PropertyId::kFontStyle:
       return VX_LOOKUP(kFontStyle, enum_value);
+    case PropertyId::kVerticalAlign:
+      return VX_LOOKUP(kVerticalAlign, enum_value);
     default:
       return StringView();
   }
