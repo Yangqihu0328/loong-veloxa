@@ -368,6 +368,54 @@ sleep 10
 
 **交叉引用：** `memory-bank/systemPatterns.md`「Bench Smoke 自检模式」段包含等价协议详情与 CV 门槛 rationale。
 
+#### 7.0.1 同窗口对照 — performance regression 验证默认范式（**P0 强制**，TASK-20260426-01 升级）
+
+> 反复模式新升级（TASK-20260426-01 R3 实证）：跨时间窗 bench baseline 数据点不可比 — 系统抖动 ±3-7%（CV 5-8%）在 ±10% 退出门下严重放大假信号。R3 初版「+10.2%」用一周前 baseline (3709 ns) vs 新窗口测量 (4087 ns)，同窗口对照后真实增量仅 +3.2%（差异分解：~70% 时窗校准 + ~30% 真实优化）。
+
+**规则**：performance regression 验证**必须**在同时间窗内对照（stash 改动测 baseline → 还原测改动版 → diff），**不允许**跨日比对绝对数字。`bench/baseline/*.json` 仅作长期趋势监控，单次退化判定一律同窗口。
+
+**完整 stash-swap 协议**（含 ninja 时间戳偏差防护补丁）：
+
+```bash
+# Step 1: stash 改动测原 baseline
+git stash push -u
+sleep 10
+cmake --build build-release --target <bench>     # 防 stash 后 .o 比源新致 ninja 跳过
+./build-release/<bench> --benchmark_filter='Target' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s > /tmp/baseline_in_window.txt
+
+# Step 2: stash pop 还原 + 强制重编（关键防 ninja 时间戳跳过）
+git stash pop
+touch <changed_src>...           # 强制 mtime 防 ninja 跳过重编（多文件多次 touch）
+cmake --build build-release --target <bench>
+
+# Step 3: 测改动版（同窗口）
+sleep 10
+./build-release/<bench> --benchmark_filter='Target' \
+  --benchmark_repetitions=10 --benchmark_report_aggregates_only=true \
+  --benchmark_min_time=0.2s > /tmp/changed_in_window.txt
+
+# Step 4: diff（同窗口 cv 通常 5-8%，跨窗口 8-15%）
+python3 -c "..." /tmp/baseline_in_window.txt /tmp/changed_in_window.txt
+```
+
+**判定准则**：
+
+- 同窗口 CV ≤ 8% 视为可信（vs §7 跨窗口 CV ≤ 2% 协议不再适用）
+- mean / median 双指标交叉，单指标偏移落 stddev 范围内 → 接近统计不显著
+- 不允许跨日 / 跨重启 / 跨编译器升级比对绝对数字
+
+**ninja 时间戳偏差 — 关键防护**：
+
+> 反复模式「测试隔离问题」第 9 次新变体（TASK-20260426-01 R4 实证）：git stash + 构建产物 `.o` 时间戳 > stash 后还原的源码 → ninja 跳过重编 → 测试始终用旧 binary，输出迷惑性 0 改动报告。
+
+**强制 Step 2 包含 `touch <changed_src>` + `cmake --build` 全图重建**；多文件改动 `touch` 全部关键 src（或用 `cmake --build --target <lib> --clean-first`）。
+
+**TASK-20260426-01 实证**：R3 V1 优化后 stash-swap 同窗口 mean +3.2% / median +3.4%（跨窗口曾误判 +10.2%）+ R4 同窗口 mean -3.6% / median +2.65%（跨窗口曾不可知）。两次实证「stash-swap 同窗口对照」是 ±10% 退出门唯一可靠手段。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「同窗口对照 bench — performance regression 验证范式」段包含完整范式与 ninja 时间戳偏差 rationale。
+
 ### 7.1 Cache-targeted BM 稳态访问模式数学推演清单（cache/memoization 优化任务**必填**）
 
 > 反复出现（TASK-20260424-04 P4 实证）：`BM_*_RoundRobin` 原 plan 声明 "pool=256 + cap=128 + linear → 50% hit"，实测稳态是 **100% miss**（第一轮 evict 128..255 替换 0..127，第二轮反向）。Plan 阶段未做稳态推演，下游 BM 语义与命名背离 → Phase 4 临时调整 pool size，虽未影响门槛但削弱规划精度。
@@ -435,6 +483,62 @@ echo 'unsigned f(unsigned x) { return x / 255; }' | \
 **结论落地：** plan §候选表增加「**`-O3` 原生输出已确认不含魔数乘法？**」列；未确认列为「高风险」并降优先级；SIMD 候选无需此检查。
 
 **交叉引用：** `memory-bank/systemPatterns.md`「已验证的模式（来自 TASK-20260424-03）」段「编译器已做优化识别 — 位运算近似反模式」包含完整反例与 Phase 5 回退数据。
+
+### 9. Layout 类任务必检项（涉及 `layout_engine.cc` / `LayoutBox` / `LayoutType` 任务**必填**）
+
+> 反复模式「非默认路径遗漏验证」第 5 次升级 P0（TASK-20260426-01 R4 实证）：vertical-align 系统性 sign error / LayoutInline 默认 fill-available 反 IFC 直觉 / inline-block atomic 显式 height 失效 共 3 项 build 阶段才发现，creative 阶段未画好坐标约定 + 默认值边界。
+
+#### 9.1 跨 LayoutType 共用样式属性必须每路径独立 box-model 解析（**P0**）
+
+**规则**：当 `display: X` 在 BuildTree 阶段映射成 `LayoutType::Y`（如 inline-block → kInline / block → kBlock / flex → kFlex）时，Layout::Y **必须**独立完成 box-model（width/height/padding/border/margin）解析；plan §0 必须显式列举每种 LayoutType 的 box-model 解析约束表：
+
+| `display` | `LayoutType` | 必须独立解析的 box-model 属性 |
+|---|---|---|
+| `block` | `kBlock` | width / height（含 auto/explicit）|
+| `inline-block` | `kInline`（atomic） | **width / height（atomic 高度边界）+ ascent / descent** |
+| `inline` | `kInline` | width = max line.end_x（fit-content 默认）/ ascent/descent 来自 child |
+| `flex` | `kFlex` | width / height + main / cross axis |
+
+**TASK-20260426-01 实证**：vx BuildTree 把 `display: inline-block` 映射成 `LayoutType::kInline` → R4 初版 LayoutInline 不读 style.height → atomic ascent = border_box_height = 0 → vertical-align 关键字物理位置失效（RED2 测试触发）。
+
+#### 9.2 默认值边界必须 plan 阶段锁定（**P1**）
+
+**规则**：plan §3 设计决策**必须**为每条 layout 算法显式锁定：
+
+- 默认 width 语义（fit-content vs fill-available）
+- 默认 height 语义（auto vs explicit vs zero-fallback）
+- 隐式 strut（implicit anchor）的来源（parent ascent/descent vs context-specific）
+
+**反模式**：plan 仅写「实现 LayoutInline」不规定默认 width 语义 → build 阶段实证发现「default fill-available 反 IFC 直觉，nested inline child 永远撑满父宽度，相邻 child 必然换行」。
+
+**TASK-20260426-01 实证**：R4.6 LayoutInline 默认 `content_width = containing_width` 致 `A11_4_VerticalAlignLengthOffsetMovesUp` 触发：up_span->y 反超 base_span->y；改 fit-content (max line.end_x) 才修正。
+
+#### 9.3 Mixed TDD D3 类回归测试默认含反向探针（**P1 强制条目**，反复 5 次升级）
+
+> 累计 5 次实战零误报（TASK-11 D3 + TASK-24-01 default block + TASK-24-03 三层 SIMD + TASK-25-01 :hover + TASK-20260426-01 4 次完整循环）。
+
+**规则**：Mixed TDD 模式下「为预防特定 bug 而新增的回归测试」（D3 类，含反向断言 / 不变量验证）**必须**配反向探针验证（临时破坏实现确认 FAIL → 恢复确认 PASS）；不可省略，不可推迟。
+
+**判定标准**：以下场景视为 D3 类必加反向探针：
+
+- 验证 enum 值之间区分（`EXPECT_NE(parse("sub"), parse("super"))` 类）
+- 验证不变量（如 `Collapsed() = max(pos) + min(neg)` 反对单边 max/min）
+- 验证黑名单 / 白名单（实现可能被自然丢弃路径 over-match）
+- 验证「不应发生」（`EXPECT_LT/GT` 边界对比）
+
+**操作步骤**（写入 plan 任务模板）：
+
+```markdown
+### 任务 N：[组件名] [TDD]
+- [ ] RED 单元测试（含 D3 类反向断言 N 项）
+- [ ] **反向探针**：临时改实现为 placeholder（如 `return false;` / `return max_positive;`）
+- [ ] 跑测试 → 确认 D3 类测试 FAIL（其他测试可不受影响）
+- [ ] 恢复实现 → 跑测试 → 确认全 PASS
+- [ ] 记录反向探针结果到 progress.md（"实现已正确时也能精准 FAIL"）
+- [ ] GREEN 实施
+```
+
+**交叉引用**：`memory-bank/systemPatterns.md`「Mixed TDD RED 反向探针实践」段。
 
 ---
 

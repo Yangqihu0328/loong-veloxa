@@ -2,7 +2,7 @@
 
 ## 当前任务
 
-**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — REFLECT 完成（2026-04-29 02:10，4 子任务全部 ✅；R5 finalize 关键步骤收尾 Release 1029 PASS + 0 warn / git proxy unset / techContext #20/#21/#25/#28 状态 ⏳→✅；reflection 文档落盘 13 改进建议 + 3 P0 + 4 P1 升级 + 6 新模式沉淀 systemPatterns.md；plan × 0.6 第 13 数据点 0.44× Level 4 首数据点；等待用户 /archive）
+**TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）— Level 4** — ARCHIVE 完成（2026-04-30 00:40，归档文档 `memory-bank/archive/archive-TASK-20260426-01.md` 落盘；P0/P1 改进建议已迁移并落地到规则与长期知识库；任务进入分支收尾阶段，等待用户选择合并策略）
 
 - D1 全包策略 + 多轮次 Build 中间态；4 子任务依次：#25 origin helpers → #28 HTML 解析器接 ParseDeclarationList → #20 Block margin collapsing CSS 2.1 §8.3.1 → #21 LayoutInline line box 模型（baseline/ascent/descent/vertical-align/line-height 半-leading）
 - VAN 阶段 6 项 grep 实证：F1 修正 #28 真实缺口在 HTML parser（非 layout）/ F2 ParseDeclarationList API 已存在 / F3 origin 计算分散 20+ 处 / F4 Block 布局零 collapsing / F5 TextShaper.baseline 字段未流入 layout / F6 不引入新依赖

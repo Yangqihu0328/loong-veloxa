@@ -78,6 +78,38 @@ description: "为标记的组件执行结构化设计探索，探索多种设计
 - 解释选择理由
 - 说明如何缓解风险
 
+#### d.1 算法/坐标约定一图（**P0 强制**，涉及 ≥2 坐标系/方向算法时必填）
+
+> 反复模式「非默认路径遗漏验证」第 5 次升级 P0（TASK-20260426-01 R4 实证）：复杂坐标系算法（vertical-align 的 baseline / ascent / descent / offset / top-bottom 多方向多锚点）在 build 阶段反复出现 sign error。creative 锁定了算法但未锁定坐标约定，致 build 阶段调试 ~30 min 系统性诊断后才采用统一坐标约定。
+
+**触发条件**：算法涉及以下任一情况时必须产出「单一坐标约定 + 公式表」一图：
+
+- ≥2 个坐标系（屏幕坐标 / 局部坐标 / baseline-relative / ascent-relative 等）
+- ≥2 个方向（top/bottom、left/right、ascent/descent、main/cross 等）
+- 多锚点的偏移计算（vertical-align、flex-align、grid-place、transform-origin 等）
+
+**强制产出 3 项**：
+
+1. **统一坐标约定声明** — 文字 + 一行公式描述坐标系基准点 + 正负方向语义
+
+   范例：`item.y = baseline_y - item.ascent + offset`，`offset > 0 下沉 / < 0 上升`
+
+2. **全部公式按约定列出** — 每条算法分支（每个 enum case / 每个 branch）按统一约定写公式：
+
+   | 分支 | offset 公式 | 半-leading 应用 | 备注 |
+   |---|---|---|---|
+   | `kBaseline` | `0` | 不应用 | 默认基线 |
+   | `kSub` | `+0.2 × ascent` | 不应用 | 下沉 |
+   | ... | ... | ... | ... |
+
+3. **build 阶段引用注释格式** — 实施时每条公式实施时引用约定（代码注释含 `// per creative-X.md §Y coordinate convention`）
+
+**反模式**：creative 锁定算法（如 "strict 2-pass"）但只用文字描述「向上偏移」「下移半-leading」而不画出统一公式表 → build 阶段每条分支独立推算坐标 → 系统性 sign error。
+
+**TASK-20260426-01 实证**：creative-line-box-model.md D2.B 锁定了 strict 2-pass 但未画坐标约定单一图；R4.6 实施时 ComputeNonExtremeAlign 6 关键字 + Phase 1/2 max_ascent/max_descent 维护 + kTop/kBottom offset 多处 sign error，调试 ~30 min 才解。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「Creative 阶段「单一坐标约定 + 公式表」一图」段。
+
 #### e. 用户确认
 
 等待用户确认或调整后再继续下一个组件。

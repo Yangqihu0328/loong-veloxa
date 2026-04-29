@@ -16,6 +16,43 @@ alwaysApply: false
 - 任务大部分独立
 - 在当前会话中执行
 
+## Build 阶段重评估（**P1**，TASK-20260426-01 升级）
+
+> 反复模式新观察（TASK-20260426-01 R3/R4 实证）：plan 阶段标 D3 子代理任务 3 处（R3.3 LayoutBlock 算法 / R4.3 FT metrics / R4.6 LayoutInline）实际全直执行均成功且更快，提示「creative 锁定 + 单文件主修改 + 上下文连续」场景子代理 overhead > 收益。
+
+**触发**：plan 阶段标 D3 但 build 阶段开始前需要重评估是否真要派子代理。
+
+**降级直执行 3 条同时满足条件**：
+
+1. **Creative 完整锁定算法**（含全部公式 + 坐标约定 + 边界 case + ABI 决策）— creative-X.md 已 ACCEPT 且无未决决策
+2. **单文件主修改**（核心算法集中在 1 个 .cc/.h，外围改动 ≤ 2 文件）
+3. **plan / 上下文连续**（同一会话内 R0-R(N-1) 已完成，子代理 prompt 重复输入上下文成本 > 直执行）
+
+**保持子代理（D3）3 条任一不满足**：
+
+- ❌ creative 留有未决决策（如「2-pass 还是 3-pass 待 build 实证」）
+- ❌ 多文件协同（≥ 3 文件，含跨子库）
+- ❌ 跨会话或与其他工作并行（上下文切换成本高）
+
+**判定示例**（来自 TASK-20260426-01）：
+
+| 任务 | plan 标记 | 重评估结果 | 理由 |
+|---|---|---|---|
+| R3.3 LayoutBlock 算法重写 | D3 子代理 A | **降级直执行** | creative-margin-collapsing.md D1 5 决策全 ACCEPT + 单文件 layout_engine.cc + R0-R2 上下文连续 |
+| R4.3 FreeType FT metrics | D3 子代理 B | **降级直执行** | creative-line-box-model.md D2.C ABI 锁定 + 单文件 freetype_shaper.cc + ABI 兼容渐进式 |
+| R4.6 LayoutInline 算法重写 | D3 子代理 C | **降级直执行** | creative D2.B strict 2-pass 锁定 + 单文件 + R3 上下文连续 |
+
+**反模式**：build 阶段不重评估，盲目按 plan D3 派子代理 → 子代理需要重复 ingest creative 文档（~5-10 min） + 两阶段审查（~10-15 min）+ 失败重派（30%）；同等任务直执行可 ~30-60 min 完成。
+
+**操作步骤**（写入 build.md §6.5「轮次开始重评估」）：
+
+```markdown
+- [ ] 读取 plan §6 子代理决策表
+- [ ] 对每个标 D3 的任务，对照「降级直执行 3 条件」检查
+- [ ] 全部满足 → 降级直执行，progress.md 记「实证微调：D3 → 直执行，降级理由 X/Y/Z」
+- [ ] 任一不满足 → 保持 D3，按原计划派遣
+```
+
 ## 流程
 
 ```

@@ -5,7 +5,7 @@
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）
-- **状态：** 🟢 REFLECT 完成（2026-04-29 02:10）— 4 子任务全部 ✅（#25 origin helpers + #28 HTML inline style 三件套 + #20 margin collapsing CSS 2.1 §8.3.1 + #21 LayoutInline LineBox 模型 2-pass vertical-align）；R5 finalize 关键步骤收尾 Release 1029 PASS + 0 warn / 同窗口对照 bench mean -3.6% / median +2.65% / git proxy unset / techContext #20/#21/#25/#28 状态 ⏳→✅；reflection `memory-bank/reflection/reflection-TASK-20260426-01.md` Level 4 全维度回顾 13 改进建议 + 3 P0 + 4 P1 升级 + 8 新模式沉淀 systemPatterns.md；plan × 0.6 第 13 数据点 0.44× Level 4 首数据点；等待用户 `/archive`
+- **状态：** ✅ 已归档（2026-04-30）— 归档文档 `memory-bank/archive/archive-TASK-20260426-01.md` 已落盘；4 子任务全部完成（#25/#28/#20/#21）+ Release ctest 1029/1029 PASS + 同窗口对照 bench mean -3.6% / median +2.65%；P0/P1 改进建议均已迁移落地（规则文件与 systemPatterns 同步）
 - **创建日期：** 2026-04-26
 - **分支：** `feature/TASK-20260426-01-layout-correctness`（基于 main `9f7f338`，已创建）
 - **来源：** `techContext.md §技术债务清单` 4 项 + `tasks.md §待立项候选 包 D` + 本次 /van 用户决策 D1 全包
@@ -70,6 +70,7 @@
 | 2026-04-26 03:20 | 构建·R3 | BUILD R3 完成；#20 Block margin collapsing CSS 2.1 §8.3.1 完整 4 类规则 + V1 优化 3 项；ctest 1010/1010 PASS（+26 case）；同窗口对照 bench mean +3.2% / median +3.4%（首次 stash-swap 范式确立）；plan × 0.6 第 12 数据点 0.37× |
 | 2026-04-29 01:30 | 构建·R4 | BUILD R4 完成；#21 LayoutInline LineBox 模型 2-pass vertical-align + 半-leading + LineBox Vector + fit-content width / explicit height + inline-block atomic；ctest 1029/1029 PASS（+19 case）+ 2 wpt linebox fixture；同窗口对照 bench mean -3.6% / median +2.65%；plan × 0.6 第 13 数据点 0.5× |
 | 2026-04-29 02:10 | 回顾 | REFLECT 完成；R5 finalize 关键步骤收尾（Release 1029 + 0 warn / git proxy unset / techContext #20/#21/#25/#28 状态 ⏳→✅）；reflection 落盘 Level 4 全维度回顾 13 改进建议 + 3 P0 + 4 P1 + 8 新模式沉淀 systemPatterns.md；plan × 0.6 整体 0.44× Level 4 首数据点；等待 /archive |
+| 2026-04-30 00:40 | 归档 | ARCHIVE 完成：`archive-TASK-20260426-01.md` 落盘；P0/P1 改进建议迁移确认完成（`writing-plans.mdc` / `creative.md` / `subagent-development.mdc` + `systemPatterns.md` + `productContext.md`）；任务状态置为已归档 |
 
 #### PLAN 阶段决策（已锁定）
 
