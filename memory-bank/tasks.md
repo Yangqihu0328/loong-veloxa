@@ -2,6 +2,8 @@
 
 ## 当前任务
 
+当前无活跃任务（已进入空闲状态，等待 `/van` 新任务初始化）。
+
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统：HTML parser + Layout block flow + Layout inline formatting + LayoutBox API；#20/#21 单独够撑 Level 3）

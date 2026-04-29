@@ -1,6 +1,37 @@
 # 活跃上下文
 
 ## 当前阶段
+空闲（2026-04-30）— TASK-20260426-01 已完成归档并合并到 `main`，工作树干净，准备接受新任务。
+
+## 当前任务
+无（等待 `/van` 初始化新任务）
+
+## 最近完成
+
+- **TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）** — Level 4 ✅ 已归档
+  - 归档：`memory-bank/archive/archive-TASK-20260426-01.md`
+  - 回顾：`memory-bank/reflection/reflection-TASK-20260426-01.md`
+  - 关键结果：ctest `1029/1029 PASS`；同窗口对照 bench Flat/64 `mean -3.6% / median +2.65%`
+  - 安全：#28 inline style 路径三件套护栏（count cap / value cap / 黑名单）
+  - 技术债闭环：`techContext.md` #20/#21/#25/#28 已全部标记 ✅
+
+## 待处理事项（P1/P2 后续）
+
+- **P1**：将 TASK-20260426-01 新增规则长期验证到下一个同类任务
+  - `writing-plans.mdc`：同窗口 stash-swap 对照 + ninja 时间戳防护 + Layout 必检项 + 反向探针强制
+  - `.cursor/commands/creative.md`：多坐标系算法强制产出“单一坐标约定 + 公式表”
+  - `subagent-development.mdc`：D3 子代理 build 阶段重评估机制
+- **P2/P3 候选**：
+  - `TASK-26-02`：clearance + first/last child margin collapse 完整实施
+  - `TASK-26-03`：LayoutInline 内部 IFC 递归 + bidi/匿名 IFC 扩展
+
+## 下一步
+
+- 使用 `/van` 启动新任务
+- 若继续扩展 Layout 正确性，可直接以 `TASK-26-02 / TASK-26-03` 为触发候选
+# 活跃上下文
+
+## 当前阶段
 归档中（2026-04-30 00:40）— `archive-TASK-20260426-01.md` 已落盘；P0/P1 改进建议迁移确认完成（`writing-plans.mdc` / `.cursor/commands/creative.md` / `subagent-development.mdc` + `systemPatterns.md` + `productContext.md`）；当前待用户选择分支收尾策略（合并 main / 创建 PR / 保留分支），之后执行最终状态重置（`activeContext` → 空闲）
 
 ## 当前任务
