@@ -2,7 +2,144 @@
 
 ## 当前任务
 
-**无**。使用 `/van` 启动新任务。
+### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
+
+- **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
+- **状态：** 🔵 构建中·R0 完成（R1 必然轮次待启动）
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
+- **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
+- **实现 plan：** `docs/plans/2026-04-30-codebase-review.md`（10 段 / R0 + R1.1-R1.4 + R2 + Checkpoint 1/2 / plan ~6-10h / plan×0.6 ~3.6-6h / 7-17 commits）
+- **需要创意阶段：** ❌ 否（review 报告本身是产出物，无 UI/算法/架构空白）
+- **来源：** 用户主动发起；历史候选区累积 8 项 P3 触发型不足项作为 review 输入材料（`activeContext.md §待处理事项` + `tasks.md §待立项候选`）
+- **安全相关：** ✅ 是（V2 涵盖 security 维度 — HTML inline style 三件套护栏 / CSS parser DoS 护栏 / `BasicString`-Werror 误报 / 第三方依赖 CVE 周期审计 review）
+
+#### 范围（用户决策 V1-V4 锁定 + 策略 X 多轮次 Checkpoint）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | Review 范围 | **A 全代码库**（136 源 + 80 测试，7 子系统：foundation / core / graphics / text / script / platform / api） | 用户决策；与 30+ 已归档任务的子系统级聚焦互补，找规则未覆盖盲点 |
+| V2 | Review 维度 | **all 6 维**（性能 / 正确性 / 可维护性 / 安全 / 测试 / 一致性） | 用户决策；6 维度交叉互证可暴露单维 review 不易发现的反模式 |
+| V3 | 输出形态 | **C 完整实施**（解读为多轮次 Build + 强制 Checkpoint） | 用户决策；本任务保证 R0+R1（报告必然），R2/R3+ 由用户审报告后按 ROI 决定 |
+| V4 | Review 视角 | **D 混合**（外部 reviewer 直觉视角 + 内部 systemPatterns 规则验证视角） | 用户决策；外部视角找命名 / 反直觉 / 直观盲点 + 内部视角找规则未覆盖死角 |
+| V5 | 安全标注 | ✅ **是** | V2 含 security 维度 + 触及既有 HTML/CSS 护栏 + 第三方依赖 CVE 审计 |
+| 策略 X | 多轮次 Checkpoint | **R0+R1 必然 / R2 条件触发 / R3+ 拆出独立后续任务** | VAN push back 推荐；把不可估的修复成本关进 R3+，避免本任务跨多天误工 |
+
+#### 多轮次 Build 划分（VAN 阶段锁定）
+
+| Round | 内容 | 必然 / 条件 | 类型 | plan 估时（待精化）| 实测 |
+|:-:|---|:-:|---|---:|---:|
+| R0 | 准备：6 维度 grep fingerprint 反模式预硕 + 抽样深度策略锁定 + ctest 基线 1061/1061 核验 | ✅ 必然 | meta | ~90 min plan / ~54 min ×0.6 | **~22 min ✅ (0.41× plan)** |
+| R1 | **6 维度全代码库 review 报告** — spec 主文档列出 N 项不足 + 每项方案 + P0/P1/P2 分类 | ✅ 必然 | report | ~150-200 min plan / ~90-120 min ×0.6 | ⏳ |
+| **Checkpoint 1** | 用户审报告 + 决定 R2 范围（是否跳过为问号、是否限定某些 P0 不动）| — | — | — | ⏳ |
+| R2 | P0 quick fix（笔误 / 死代码 / 命名 / 1 行修复，预计 5-15 个）| ⚠️ 条件触发 | impl | ~1-2h | ⏳ |
+| **Checkpoint 2** | 用户决定 R3+ 范围 / 拆出后续任务 ID（每个独立 Level 1-2）| — | — | — | ⏳ |
+| R3+ | P1 大件修复 → **不在本任务内完成**；按 ROI 拆出独立子任务 TASK-* | ❌ 拆出 | — | — | — |
+| **合计上限** | R0+R1+R2 | — | — | **~5-8h plan / ~3-5h plan×0.6 实测预期** | — |
+
+#### BUILD R0 完成实绩（2026-04-30 23:08）
+
+- **产出文档：** `docs/reports/2026-04-30-codebase-review-r0-data.md`（R0 全部数据综合快照）
+- **R0.1 ctest 基线 ✅：** 1061/1061 PASS in 2.36s（1 Skip Wpt001 沉淀）
+- **R0.2 fingerprint grep ✅：** 18 项反模式覆盖 30 关键字 / 7 子系统 → veloxa/ 全代码库 0 TODO/FIXME/XXX/HACK + 0 危险 C 函数 + 0 throw + 0 sscanf/atoi 不安全转换 + 0 STL 重容器
+- **R0.3 lcov 覆盖率 ✅：** 行 **85.4%** (6152/7206) / 函数 **95.4%** (1620/1699) / 分支 **57.6%** (3905/6775)；薄弱模块 12 项（image_decoder 57.1% / rasterizer 60.4% / canvas 73.5% 是热点）
+- **R0.4 CVE 审计 ✅：** **0 CRITICAL/HIGH** 满足 D9 acceptance；5 Medium/Low（**libpng 1.6.37 命中 3 个 2026 新公布 Medium CVE 是关键发现**，与 image_decoder.cc 57.1% 覆盖薄弱形成威胁链路 → 候选 P0 F-010）
+- **R0.5 抽样名单 ✅：** R1 三层抽样确认（H 20 / M 80 / L 36）
+- **R0 候选 findings：** 14 项（F-001 ~ F-014 跨 6 维度），R1 验证 + 分级 + 写方案
+- **实测耗时：** ~22 min（plan 90 min ×0.6=54 min；实测 0.41× plan / 0.69× ×0.6） → reflect 阶段 plan ×0.6 校准协议第 16 数据点
+- **工具链补强：** OSV.dev 走 WSL2 → Windows Clash 代理 `172.22.32.1:7890`（沙箱直连 DNS 失败 → 宿主代理 fallback）；候选 systemPattern reflect 阶段沉淀
+
+#### 验收要点（待 `/plan` 精化）
+
+- R0 末：6 维度 fingerprint 完整产出（每维度 ≥ 5 反模式 grep 结果）+ 抽样深度策略明确（哪些子系统全扫 / 哪些抽样）
+- R1 末：spec 主文档落盘 `docs/specs/2026-04-30-codebase-review-report.md`，含：
+  - 不足清单 ≥ N 项（N 待 R0 fingerprint 后估算，预期 20-50 项）
+  - 每项必含：定位（文件:行）/ 维度归类 / 反模式描述 / 影响评估 / 解决方案 / 优先级（P0/P1/P2）
+  - 分类汇总表 + ROI 矩阵
+  - 与既有 systemPatterns 规则对照（哪些违反、哪些规则需新增）
+- R2（条件触发）：每 P0 修复独立 commit + 单测覆盖 + RED 反向探针（§9.3）+ ctest 1061+ → 1061+N PASS
+- Release `-O3 -Werror` 0 err/warn（继承基线）
+- `bench_*` baseline 不退化超 +5%（继承基线 — R2 不应触发 hot path 性能改动）
+- 与 TASK-26-01 R2 #28 / TASK-30-02 既有护栏兼容性验证（V2 安全维度强制项）
+
+#### 前置验证清单（VAN 阶段产出）
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | 无新依赖（纯 review + 修复，复用既有 vx_* 子系统）|
+| 环境就绪 | ✅ | `build/`(Debug 1061/1061) + `build-bench/`(Release 1030/1030) + `build-release/` 三份 `_deps/` 离线均存在可复用 |
+| 已有 artifact | ✅ | `systemPatterns.md` ≥ 30 模式 + 30+ archive 文档 + 8 项 P3 候选作为 review 输入材料 |
+| ctest 基线 | ✅ | 隐式 1061/1061 PASS（TASK-30-02 终态继承）|
+| FetchContent 代理守卫 | ⊘ 跳过 | `_deps/` 已离线预置三处；`git config --global http.proxy` 空（exit=1）|
+| 待处理事项关联 | ✅ 极强 | 8 项 P3 候选 + 30+ archive 改进建议未追踪状态全部进入 R1 输入材料 |
+
+#### VAN 阶段 push-back 决策（已沉淀）
+
+| 风险 | 应对 |
+|---|---|
+| 「样样不深」陷阱（6 × 7 × 136 = 5712 单元格）| R0 抽样深度策略：每维度全扫 grep fingerprint + 每子系统挑 1-2 个最深的代码点深扫 |
+| 不可估时（修复数量取决于 review 发现）| 强制 R3+ 拆出独立后续任务，**本任务上限封顶 R0+R1+R2**（plan ~5-8h）|
+| Checkpoint 缺失（直接「完整实施」无中途审视）| Checkpoint 1（R1 末用户审报告）+ Checkpoint 2（R2 末用户决定 R3+ 拆分）|
+| Spec 主文档过长（违反 TASK-30-02「Spec 描述粒度准则」）| R1 spec 拆分：主文档列「定位 + 优先级 + 简述」/ 复杂项独立附录 |
+| 与既有 systemPatterns 规则重叠 | R1 必须对照 systemPatterns ≥ 30 模式 — 已被规则覆盖的不再列入「不足」，避免噪音 |
+
+#### 来源待立项候选清单（R1 输入材料）
+
+| 候选 ID | 优先级 | 描述 |
+|---|:-:|---|
+| TASK-26-02-full | P3 | clearance 完整版（依赖 float/clear，需独立 Level 4）|
+| TASK-26-03 | P3 | LayoutInline 内部 IFC 递归 + bidi LTR 假设破除 |
+| TASK-20260424-02 | P3 | Layout 残余 super-linear 调查（R256 4.18× / R_flex 6.40× ~40% 未解）|
+| CSS 4 逻辑属性 shorthand | P3 | `border-block` / `border-inline` |
+| `border-image` / `border-radius` 简写 | P3 | 富装饰需求触发 |
+| TASK-20260419-06 | P3 降级 | HashMap Hash Mixing 优化 |
+| TASK-20260419-08 | P3 | `string.h` 剩余 3 处 runtime-size memcpy 防御性 noinline 化 |
+| TASK-20260419-12 | P2 | `SoftwareCanvas::DrawText` 真路径优化（K7 已被 TASK-24-04 隐式闭环，待评估）|
+
+#### PLAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | R0 抽样深度策略 | **B 优先深扫 TOP-3** — foundation/{containers,strings} + script/ + core/{dom,html} 全文件深扫；其他 4 子系统 grep 模式 | 30+ archive 任务后多数子系统已经过深度沉淀；TOP-3 选项是「最久未深度审视」的，深扫 ROI 最高 |
+| D2 | R1 报告章节组织 | **C 矩阵 + 优先级前置** | 先列 P0/P1/P2 总表方便用户审 Checkpoint 1 决策 R2 范围 |
+| D3 | 不足项「方案」深度 | **B 结构化描述**（问题 + 方向 + 工时 + 代码量，不含具体代码示例） | 报告量级可控；R3+ 拆出独立 task 时再写完整 spec |
+| D4 | 与既有 systemPatterns 对照 | **B 强制每项标注 3 状态** | 避免与已沉淀规则重叠；显化「需新增规则」候选 |
+| D5 | P0/P1/P2 分类标准 | spec §6 显式定义 | 必须显式定义避免歧义 |
+| D6 | R2 上限 | **15 个 P0 上限** | Checkpoint 1 用户决定实际启动数量 |
+| D7 | 元规则同步 review | **C 仅记长期项** | scope 收紧；元规则修改需用户亲自决策 |
+| D8 | CVE 审计 | **C 跑 + 列长期项** | 本任务一次性给出当前状态 + 长期 audit 节奏 |
+| D9 | 测试覆盖率深度 | **B lcov 实测**（line / branch / function 三维度） | 真实数据 vs grep 启发；lcov 1.14 已验证可用 |
+| D10 | 是否用子代理 | **❌ 不用**（独 agent 跑） | 单 reviewer 任务 prompt 上下文传递成本 > 并行收益 |
+
+#### PLAN 阶段安全威胁建模（V5 安全相关，T1-T10）
+
+| # | 威胁面 | 既有护栏 | 本 review 关注 |
+|:-:|---|---|---|
+| T1-T5 | HTML inline style DoS / 历史攻击向量 | TASK-26-01 R2 三件套护栏 | 仅复检不动 |
+| T6 | CSS parser N-cap | TASK-30-02 已批量 review | 仅复检 |
+| **T7** | **QuickJS 集成** | TASK-18-01 + TASK-19-01 部分 | 🔴 D1 TOP-3 含 script/ 重点深扫 |
+| **T8** | **FreeType / HarfBuzz 集成** | 部分隐式 | 🟡 抽样深扫候选 |
+| **T9** | **图片解码（libpng / libjpeg）** | 当前未审 | 🟡 抽样深扫候选 |
+| T10 | 第三方依赖 CVE | 当前未跑 | 🟡 D8=C 本任务跑 |
+
+#### 工具链验证（PLAN 阶段产出）
+
+| 工具 | 版本 | 状态 |
+|---|---|---|
+| `lcov` | 1.14 | ✅ 已装（用户确认）|
+| `gcov` | 11.4 | ✅ 已装（gcc 11.4 自带）|
+| `genhtml` | 1.14 | ✅ 已装 |
+| `rg`(ripgrep) | — | 待 R0 验证 |
+| `gh`(GitHub CLI) | — | 待 R0 验证（需 full_network for CVE 审计）|
+| FetchContent 离线 | — | ✅ 三处 `_deps/`（quickjs-ng v0.14.0 + benchmark v1.9.1）|
+| ctest 基线 | 1061/1061 | 待 R0.1 核验 |
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 22:24 | 初始化 | VAN 完成；用户决策 V1-V5（A / all / C / D / ✅）+ 策略 X（R0+R1 必然 + R2 条件 + R3+ 拆出）锁定；分支创建（基于 main `9411584`）；Memory Bank 同步；下一步 `/plan` |
+| 2026-04-30 22:42 | 规划完成 | PLAN 完成；10 决策矩阵 D1-D10 锁定（B/C/B/B/spec/15/C/C/B/❌不用子代理）；spec + plan 文档落盘；T1-T10 安全威胁建模（T7 QuickJS / T8 FreeType / T9 图片解码 + T10 CVE 为重点）；估时 plan ~6-10h / plan×0.6 ~3.6-6h；不需要 `/creative`；下一步 `/build` 进入 R0 准备阶段 |
 
 ---
 
