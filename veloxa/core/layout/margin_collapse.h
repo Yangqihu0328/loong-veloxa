@@ -44,6 +44,14 @@ struct MarginChain {
   // 当前合并值（W3C §8.3.1 collapsed margin）。
   f32 Collapsed() const { return max_positive + min_negative; }
 
+  // 把另一 MarginChain 的累积值合并入本 chain（用于 collapse-through 跨层
+  // 累积，TASK-20260430-01）。等价于把对方 max_positive / min_negative
+  // 分别 Add 进本 chain。
+  void MergeFrom(const MarginChain& other) {
+    if (other.max_positive > max_positive) max_positive = other.max_positive;
+    if (other.min_negative < min_negative) min_negative = other.min_negative;
+  }
+
   // 是否未累加任何非零 margin（含 has_clearance 标志位独立）。
   bool IsEmpty() const {
     return max_positive == 0.0f && min_negative == 0.0f;
