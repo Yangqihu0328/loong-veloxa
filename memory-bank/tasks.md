@@ -5,7 +5,7 @@
 ### TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）
 
 - **复杂度级别：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
-- **状态：** 🟡 规划中（PLAN 完成，5 决策锁定，等待 `/build`）
+- **状态：** 🔨 构建完成（2026-04-30 21:00）— P0-P6 全部 7 Phase ✅；ctest 1039/1039 PASS；wpt-005 SKIP→PASS；同窗口 stash-swap bench 主指标 -3% ~ +5.84%（A6/A7 ≤ +10% 全 PASS）；Release `-O3 -Werror` 0 err/warn；等待 `/reflect`
 - **设计 spec：** `docs/specs/2026-04-30-margin-collapse-with-parent-design.md`（17 验收 / D1-D5 决策矩阵 / §8.3.1 5 adjoining 规则状态表 / 阻断条件 truth table / 算法伪码 / 6 风险登记）
 - **实现 plan：** `docs/plans/2026-04-30-margin-collapse-with-parent.md`（7 Phase / 14 任务 / ~6.5h plan / plan×0.6 ≈ 3.9h 准确档）
 - **需要创意阶段：** ❌ 否（5 决策 D1-D5 已在 PLAN 头脑风暴中锁定，无 UI/算法/架构空白）
@@ -76,6 +76,7 @@
 |---|---|---|
 | 2026-04-30 19:33 | 初始化 | VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围；分支创建（基于 main `a84d30d`）；MB 同步 |
 | 2026-04-30 19:50 | 规划中 | PLAN 完成；5 决策矩阵（D1-D5）锁定；spec + plan 文档落盘；7 Phase / 14 任务划分；估时 ~6.5h plan / ~3.9h plan×0.6；不需要 /creative |
+| 2026-04-30 21:00 | 构建完成 | BUILD 完成；P0-P6 全 7 Phase ✅；TDD 严格 RED→GREEN→REFACTOR + §9.3 反向探针 3/3 + collapse-through 跨边界 + deep chain；D2 决策实施时调整为 in-out by-pointer（`MarginChain* incoming`，by-value out）以支持多级跨函数 propagate；隐式 BFC root 识别（root + html/body 顶层 wrapper，`box->parent->parent == nullptr`）；wpt-005 SKIP→PASS；ctest 1039/1039 PASS（Debug + Release `-O3 -Werror`）；同窗口 stash-swap bench `BM_LayoutBuildTreeFlat/64 +7.55%` / `Nested/16 +3.42%` / `Mixed -9.84%` / `Flex<1,8> +5.84%` / `Flex<8,8> +4.40%` / `Flex<16,16> +4.94%`，A6/A7 ≤ +10% 全 PASS；O(N) → O(1) 性能优化（`last_in_flow_block` 指针 hoisting）；新发现：CSS parser 不处理 `border-bottom` shorthand（限制已记入 spec），改用 `padding-bottom` 等价测试 |
 
 #### PLAN 阶段决策矩阵（已锁定）
 

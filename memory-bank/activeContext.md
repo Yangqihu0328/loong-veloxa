@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-规划中（2026-04-30 19:50）— **TASK-20260430-01: first/last child margin collapse with parent**（CSS 2.1 §8.3.1 嵌套规则）PLAN 完成；5 决策矩阵（D1-D5）锁定；spec + plan 文档落盘；7 Phase / 14 任务划分；估时 ~6.5h plan / ~3.9h plan×0.6。不需要 `/creative`。下一步 `/build`。
+构建完成（2026-04-30 21:00）— **TASK-20260430-01: first/last child margin collapse with parent**（CSS 2.1 §8.3.1 嵌套规则）BUILD ✅ 全 7 Phase 完成；ctest 1039/1039 PASS（Debug + Release `-O3 -Werror`）；wpt-005 SKIP→PASS；同窗口 stash-swap bench median ~+5%，A6/A7 ≤ +10% 全 PASS；下一步 `/reflect`。
 
 ## 当前任务
 
@@ -14,10 +14,10 @@
 - **实现 plan：** `docs/plans/2026-04-30-margin-collapse-with-parent.md`
 - **来源：** TASK-20260426-01 archive §10 P3 触发型「TASK-26-02」占位 + reflection §4.12 / activeContext 待处理事项 / wpt-005 SKIP-w/-rationale 现实直接验证目标
 - **范围限定：** ❌ 不动 clearance / float / clear（CSS layer 零实现，VAN F2 实证；clearance 完整版独立 Level 4 任务）
-- **直接验证目标：** **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse`）
+- **直接验证目标：** ✅ **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse`，已达成）
 - **安全相关：** ❌ 否（纯 layout 算法）
-- **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
-- **下一步：** `/build`（不需要 /creative，5 决策已在 PLAN 头脑风暴中锁定）
+- **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`）
+- **下一步：** `/reflect`（回顾 + 沉淀经验教训 + 验证 TASK-26-01 P0/P1 升级规则 ROI）
 
 ### PLAN 阶段产出（2026-04-30 19:50）
 
@@ -102,19 +102,16 @@
 
 ## 下一步
 
-- 执行 `/build` 启动 TASK-20260430-01 实施（按 plan §P0-P6 共 7 Phase 推进）
-  - **P0：** grep + wpt-005 拆解 + 基线核验 + spec/plan commit（~30 min plan / ~18 min ×0.6）
-  - **P1：** RED 单测全套（10 单测 + 3 反向探针位置）（~60 min / ~36 min）
-  - **P2：** API 改造 + dispatch（LayoutBlockChild skeleton 调通编译）（~30 min / ~18 min）
-  - **P3：** GREEN first child collapse（~45 min / ~27 min）
-  - **P4：** GREEN last child collapse + 4 阻断条件（~90 min / ~54 min）
-  - **P5：** 反向探针验证 + deep chain + collapse-through 递归（~60 min / ~36 min）
-  - **P6：** wpt-005 + bench 同窗口 + 收尾（~75 min / ~45 min）
-  - **直执行**（不引入子代理；子代理 D3 评估：单子系统 + 决策已锁定 + 强递归依赖单线程，不适合并行）
+- 执行 `/reflect` 启动 TASK-20260430-01 回顾
+  - 验证 TASK-26-01 P0/P1 升级规则 5 条在外部任务的 ROI（首次外部任务）
+  - 沉淀实施时设计调整经验：D2 by-value → in-out by-pointer（多级 propagate 必需）
+  - 沉淀新模式：隐式 BFC root 识别（root + html/body 顶层 wrapper）
+  - 沉淀技术债：CSS parser `border-bottom` shorthand 缺失（独立 P3 候选）
+  - plan × 0.6 第 14 数据点（Level 3 单 Round）
 
 ## 未合并分支
 
-- `feature/TASK-20260430-01-margin-collapse-parent` — TASK-20260430-01 PLAN 完成（基于 main `a84d30d`），等待 /build
+- `feature/TASK-20260430-01-margin-collapse-parent` — TASK-20260430-01 BUILD 完成（基于 main `a84d30d`），等待 /reflect
 
 ## 最近归档（速查，详细见 archive 文档）
 
