@@ -12,13 +12,11 @@
   - 分支：`feature/TASK-20260426-01-layout-correctness` 已合并到 `main`
   - 关键验证：ctest `1029/1029 PASS`；同窗口对照 bench `mean -3.6% / median +2.65%`
   - 安全结果：#28 inline style 路径三件套护栏落地
-
 - **TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260425-01.md`
-
 - **TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化** — Level 2 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260424-04.md`
 
 ## 说明
 
-详细实现过程、测试细节与经验教训均已沉淀至各任务的 `archive-*` / `reflection-*` 文档。
+详细实现过程、测试细节与经验教训均已沉淀至各任务的 `archive-`* / `reflection-*` 文档。
