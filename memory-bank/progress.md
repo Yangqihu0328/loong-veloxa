@@ -4,11 +4,15 @@
 
 **TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）** — Level 3
 
-- 阶段：🟡 初始化中（VAN 完成 2026-04-30 19:33）
+- 阶段：🟡 规划中（PLAN 完成 2026-04-30 19:50）
 - 范围：A 子项 only（first/last child collapse with parent；不动 clearance/float）
 - 直接验证：wpt-005 SKIP → PASS
 - 分支：`feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`）
-- 下一步：`/plan`
+- 设计 spec：`docs/specs/2026-04-30-margin-collapse-with-parent-design.md`
+- 实现 plan：`docs/plans/2026-04-30-margin-collapse-with-parent.md`
+- 决策：D1=A1 (LayoutBlockChild 专用辅助) / D2=A (by-value POD) / D3=A (完整规范子集) / D4=B (10 单测 + 3 反向探针) / D5=B (7 Phase)
+- 估时：~6.5h plan / ~3.9h plan×0.6（第 14 数据点）
+- 下一步：`/build`（不需要 /creative）
 
 ## 最近归档完成
 

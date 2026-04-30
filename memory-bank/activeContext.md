@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-初始化中（2026-04-30 19:33）— **TASK-20260430-01: first/last child margin collapse with parent**（CSS 2.1 §8.3.1 嵌套规则）VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围（A 子项 only，不动 clearance/float）；分支 `feature/TASK-20260430-01-margin-collapse-parent` 已创建；ctest 基线 1029/1029 PASS。下一步 `/plan`。
+规划中（2026-04-30 19:50）— **TASK-20260430-01: first/last child margin collapse with parent**（CSS 2.1 §8.3.1 嵌套规则）PLAN 完成；5 决策矩阵（D1-D5）锁定；spec + plan 文档落盘；7 Phase / 14 任务划分；估时 ~6.5h plan / ~3.9h plan×0.6。不需要 `/creative`。下一步 `/build`。
 
 ## 当前任务
 
@@ -10,12 +10,24 @@
 
 - **目标：** 完成 TASK-26-01 R3 #20 留下的 D1.2 LayoutChild API 边界限留 — 让 MarginChain 跨 LayoutBlock 函数边界 propagate，实现 W3C CSS 2.1 §8.3.1 中 first/last child 与 parent 的 margin collapse + 阻断条件（parent padding-top/border-top/min-height）
 - **复杂度：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
+- **设计 spec：** `docs/specs/2026-04-30-margin-collapse-with-parent-design.md`
+- **实现 plan：** `docs/plans/2026-04-30-margin-collapse-with-parent.md`
 - **来源：** TASK-20260426-01 archive §10 P3 触发型「TASK-26-02」占位 + reflection §4.12 / activeContext 待处理事项 / wpt-005 SKIP-w/-rationale 现实直接验证目标
 - **范围限定：** ❌ 不动 clearance / float / clear（CSS layer 零实现，VAN F2 实证；clearance 完整版独立 Level 4 任务）
 - **直接验证目标：** **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse`）
 - **安全相关：** ❌ 否（纯 layout 算法）
 - **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
-- **下一步：** `/plan`（头脑风暴 LayoutChild API in/out chain 协议设计 / 阻断条件序列 / 子代理拆分 / Phase 划分）
+- **下一步：** `/build`（不需要 /creative，5 决策已在 PLAN 头脑风暴中锁定）
+
+### PLAN 阶段产出（2026-04-30 19:50）
+
+| # | 维度 | 选择 |
+|:-:|---|---|
+| D1 | API 改造策略 | **A1** 新增 `LayoutBlockChild` 专用辅助；`LayoutChild` 不动 |
+| D2 | 传递语义 | **A** by-value in / by-value out (POD 12B) |
+| D3 | 阻断条件覆盖 | **A** 完整规范子集（padding/border + BFC root + height + min-height）|
+| D4 | 测试深度 | **B** 完整档（10 单测 + 3 反向探针 + wpt-005）|
+| D5 | Phase 划分 | **B** 7 Phase 细粒度 |
 
 ### VAN 阶段产出
 
@@ -90,15 +102,19 @@
 
 ## 下一步
 
-- 执行 `/plan` 启动 TASK-20260430-01 头脑风暴
-  - 重点决策：LayoutChild API in/out chain 协议设计（pointer / by-value / 返回 struct）
-  - 阻断条件序列：spec §8.3.1 中 parent padding-top/border-top/min-height/clearance 阻断 first child collapse 的精确顺序
-  - Phase 划分（plan 内部）：P0 grep & wpt-005 调研 / P1 API 改造 RED / P2 实现 + GREEN / P3 阻断条件 + 反向探针 / P4 wpt-005 升级 / P5 bench + 收尾
-  - 子代理 vs 直执行评估（按 subagent §D3 重评估机制）
+- 执行 `/build` 启动 TASK-20260430-01 实施（按 plan §P0-P6 共 7 Phase 推进）
+  - **P0：** grep + wpt-005 拆解 + 基线核验 + spec/plan commit（~30 min plan / ~18 min ×0.6）
+  - **P1：** RED 单测全套（10 单测 + 3 反向探针位置）（~60 min / ~36 min）
+  - **P2：** API 改造 + dispatch（LayoutBlockChild skeleton 调通编译）（~30 min / ~18 min）
+  - **P3：** GREEN first child collapse（~45 min / ~27 min）
+  - **P4：** GREEN last child collapse + 4 阻断条件（~90 min / ~54 min）
+  - **P5：** 反向探针验证 + deep chain + collapse-through 递归（~60 min / ~36 min）
+  - **P6：** wpt-005 + bench 同窗口 + 收尾（~75 min / ~45 min）
+  - **直执行**（不引入子代理；子代理 D3 评估：单子系统 + 决策已锁定 + 强递归依赖单线程，不适合并行）
 
 ## 未合并分支
 
-- `feature/TASK-20260430-01-margin-collapse-parent` — TASK-20260430-01 VAN 完成（基于 main `a84d30d`），等待 /plan
+- `feature/TASK-20260430-01-margin-collapse-parent` — TASK-20260430-01 PLAN 完成（基于 main `a84d30d`），等待 /build
 
 ## 最近归档（速查，详细见 archive 文档）
 

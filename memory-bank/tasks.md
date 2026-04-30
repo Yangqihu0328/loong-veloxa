@@ -5,7 +5,10 @@
 ### TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）
 
 - **复杂度级别：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
-- **状态：** 🟡 初始化中（VAN 完成，等待 `/plan`）
+- **状态：** 🟡 规划中（PLAN 完成，5 决策锁定，等待 `/build`）
+- **设计 spec：** `docs/specs/2026-04-30-margin-collapse-with-parent-design.md`（17 验收 / D1-D5 决策矩阵 / §8.3.1 5 adjoining 规则状态表 / 阻断条件 truth table / 算法伪码 / 6 风险登记）
+- **实现 plan：** `docs/plans/2026-04-30-margin-collapse-with-parent.md`（7 Phase / 14 任务 / ~6.5h plan / plan×0.6 ≈ 3.9h 准确档）
+- **需要创意阶段：** ❌ 否（5 决策 D1-D5 已在 PLAN 头脑风暴中锁定，无 UI/算法/架构空白）
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
 - **来源：** TASK-20260426-01 archive §10 + reflection §4.12 P3 触发型 TASK-26-02 占位 / activeContext §待处理事项「P3 候选 TASK-26-02」 / wpt-005 SKIP-w/-rationale 现实直接验证目标
@@ -72,6 +75,34 @@
 | 时间 | 阶段 | 备注 |
 |---|---|---|
 | 2026-04-30 19:33 | 初始化 | VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围；分支创建（基于 main `a84d30d`）；MB 同步 |
+| 2026-04-30 19:50 | 规划中 | PLAN 完成；5 决策矩阵（D1-D5）锁定；spec + plan 文档落盘；7 Phase / 14 任务划分；估时 ~6.5h plan / ~3.9h plan×0.6；不需要 /creative |
+
+#### PLAN 阶段决策矩阵（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | API 改造策略 | **A1** 新增 `LayoutBlockChild` 专用辅助；`LayoutChild` 不动 | LayoutInline/Flex 路径零影响；遵循 §9.1 跨 LayoutType 独立 box-model；API 边界清晰 |
+| D2 | 传递语义 | **A** by-value in / by-value out (`MarginChain` POD 12B) | 编译器 SROA 等价无开销；数据流单向可见；无 lifetime/nullable 隐形约束 |
+| D3 | 阻断条件覆盖 | **A** 完整规范子集（padding/border + BFC root + height + min-height）| W3C 浏览器对齐；wpt-005 验证；6 边界条件全覆盖 |
+| D4 | 测试深度 | **B** 完整档（10 单测 + 3 反向探针 + wpt-005）| §9.3 强制最小 ≥ 1；本任务 3 个独立 D3 维度（blocks_top / blocks_bottom / deep chain）|
+| D5 | Phase 划分 | **B** 7 Phase 细粒度 | RED 与 GREEN 分离彻底；first/last 拆开独立 phase |
+
+#### 7 Phase 划分（Plan 内部）
+
+| Phase | 内容 | plan (min) | × 0.6 (min) |
+|:-:|---|---:|---:|
+| P0 | 准备（grep + wpt-005 拆解 + 基线） | 30 | 18 |
+| P1 | RED 单测全套（10 单测 + 3 反向探针位置注释） | 60 | 36 |
+| P2 | API 改造 + dispatch（`LayoutBlockChild` skeleton 调通编译） | 30 | 18 |
+| P3 | GREEN first child collapse | 45 | 27 |
+| P4 | GREEN last child collapse + 4 阻断条件 | 90 | 54 |
+| P5 | 反向探针验证 + deep chain + collapse-through 递归 | 60 | 36 |
+| P6 | wpt-005 + bench 同窗口 + 收尾 | 75 | 45 |
+| **合计** | — | **390 (~6.5h)** | **234 (~3.9h)** |
+
+#### 需要创意阶段的组件
+
+❌ 无（5 决策 D1-D5 已在 PLAN 头脑风暴中锁定，无 UI/算法/架构空白；可直接 `/build`）
 
 ---
 
