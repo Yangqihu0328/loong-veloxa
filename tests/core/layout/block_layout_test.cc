@@ -712,4 +712,193 @@ TEST(MarginCollapseLayoutTest, A8_LastChildMarginCollapsesWithParent_Basic) {
   EXPECT_TRUE(c_box->margin_bottom_collapsed_into_ancestor);
 }
 
+// ----- 阻断条件 #3-#7 -------------------------------------------------------
+//
+// 这些测试是「保护性不变量测试」（W3C §8.3.1 阻断条件清单），R3 现状下已 PASS
+// （因 chain 不跨函数边界自然阻断），实施后保持 PASS（blocks_top/bottom 显式
+// 阻断）。它们的 D3 类反向探针在 P5（强制 blocks_top/bottom=false 时触发 FAIL）。
+
+// #3 padding-top 阻断 first-child 与 parent margin-top collapse
+TEST(MarginCollapseLayoutTest, A8_PaddingTop_BlocksFirstChildCollapse) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { margin-top: 30px; padding-top: 5px; }"
+      "#child { margin-top: 20px; height: 50px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+
+  // padding-top != 0 → blocks_top=true → child.margin-top 独立放置（不合入 parent）
+  EXPECT_FLOAT_EQ(p_box->y, 30.0f);
+  EXPECT_FLOAT_EQ(c_box->y, 20.0f);
+  // 关键 D3 不变量：阻断条件下状态字段不被设置
+  EXPECT_FALSE(c_box->margin_top_collapsed_into_ancestor);
+}
+
+// #4 padding-bottom 阻断 last-child 与 parent margin-bottom collapse
+// （§5.2.2 阻断条件：padding-bottom != 0；与 border-bottom 等价。
+//  border-bottom shorthand 当前 css parser 未支持，故用 padding-bottom 代表
+//  「parent 底部物理 separator 阻断 last-child collapse」语义。）
+TEST(MarginCollapseLayoutTest, A8_PaddingBottom_BlocksLastChildCollapse) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+  auto* sibling = doc.CreateElement(dom::TagId::kDiv);
+  sibling->set_id(InternedString::Intern("sibling"));
+  body->AppendChild(sibling);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { padding-bottom: 1px; }"
+      "#child { margin-bottom: 20px; height: 50px; }"
+      "#sibling { margin-top: 30px; height: 30px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+  auto* s_box = p_box->next_sibling;
+
+  // padding-bottom != 0 → blocks_bottom=true → trailing 计入 parent.content_height
+  EXPECT_FLOAT_EQ(p_box->content_height, 70.0f);  // 0 + 50 + 20
+  EXPECT_FLOAT_EQ(s_box->y, 101.0f);              // 0 + (70+1) + max(0,30)
+  EXPECT_FALSE(c_box->margin_bottom_collapsed_into_ancestor);
+}
+
+// #5 BFC root（overflow!=visible）阻断 first/last child 与 parent collapse
+TEST(MarginCollapseLayoutTest, A8_BFCRoot_BlocksBothCollapse) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { margin-top: 30px; overflow: hidden; }"
+      "#child { margin-top: 20px; margin-bottom: 15px; height: 50px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+
+  // BFC root → 上下都阻断；child 完全独立
+  EXPECT_FLOAT_EQ(c_box->y, 20.0f);
+  EXPECT_FALSE(c_box->margin_top_collapsed_into_ancestor);
+  EXPECT_FALSE(c_box->margin_bottom_collapsed_into_ancestor);
+}
+
+// #6 显式 height（!=auto）阻断 last-child margin-bottom 渗出
+TEST(MarginCollapseLayoutTest, A8_ExplicitHeight_BlocksLastChildCollapse) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+  auto* sibling = doc.CreateElement(dom::TagId::kDiv);
+  sibling->set_id(InternedString::Intern("sibling"));
+  body->AppendChild(sibling);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { height: 80px; }"
+      "#child { margin-bottom: 20px; height: 30px; }"
+      "#sibling { margin-top: 30px; height: 30px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+  auto* s_box = p_box->next_sibling;
+
+  EXPECT_FLOAT_EQ(p_box->content_height, 80.0f);  // height 显式
+  EXPECT_FLOAT_EQ(s_box->y, 110.0f);              // 0 + 80 + max(0,30)
+  EXPECT_FALSE(c_box->margin_bottom_collapsed_into_ancestor);
+}
+
+// #7 min-height>0 阻断 last-child margin-bottom 渗出
+TEST(MarginCollapseLayoutTest, A8_MinHeightNonZero_BlocksLastChildCollapse) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+  auto* sibling = doc.CreateElement(dom::TagId::kDiv);
+  sibling->set_id(InternedString::Intern("sibling"));
+  body->AppendChild(sibling);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { min-height: 50px; }"
+      "#child { margin-bottom: 20px; height: 30px; }"
+      "#sibling { margin-top: 30px; height: 30px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+  auto* s_box = p_box->next_sibling;
+
+  // min-height > 0 → blocks_bottom=true → trailing 计入 content_height = 50
+  EXPECT_FLOAT_EQ(p_box->content_height, 50.0f);
+  EXPECT_FLOAT_EQ(s_box->y, 80.0f);  // 0 + 50 + max(0,30)
+  EXPECT_FALSE(c_box->margin_bottom_collapsed_into_ancestor);
+}
+
 }  // namespace vx::layout
