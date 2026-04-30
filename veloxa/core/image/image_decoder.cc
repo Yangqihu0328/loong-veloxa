@@ -132,7 +132,7 @@ StatusOr<gfx::Image> DecodeFromMemory(const u8* data, usize len) {
   return Status(StatusCode::kInvalidArgument, "unsupported image format");
 }
 
-StatusOr<gfx::Image> DecodeFromFile(StringView path) {
+StatusOr<gfx::Image> DecodeFromFile(StringView path, usize max_size) {
   char path_buf[4096];
   if (path.size() >= sizeof(path_buf)) {
     return Status(StatusCode::kInvalidArgument, "path too long");
@@ -152,6 +152,14 @@ StatusOr<gfx::Image> DecodeFromFile(StringView path) {
   if (file_size <= 0) {
     std::fclose(fp);
     return Status(StatusCode::kInternal, "empty or unreadable file");
+  }
+
+  // 守卫：拒绝超出 max_size 的文件，防止一次 fread 申请超大 buffer 触发
+  // ArenaAllocator/Vector OOM abort（嵌入端无 std::bad_alloc 恢复路径）。
+  if (static_cast<usize>(file_size) > max_size) {
+    std::fclose(fp);
+    return Status(StatusCode::kOutOfMemory,
+                  "image file exceeds max_size guard");
   }
 
   Vector<u8> buffer;
