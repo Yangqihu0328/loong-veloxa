@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中·R1（2026-04-30 21:48）** — TASK-20260430-02 BUILD 启动；执行 R1（4 方向 shorthand：border-top/right/bottom/left）；plan 路径 P0 → R1.1 RED → R1.2 GREEN → R1.3 反向探针 → 用户征求 → R2。
+**构建完成（2026-04-30 22:25）** — TASK-20260430-02 BUILD 全过程完成；R1（4 方向 shorthand）+ R2（3 属性级 shorthand）共 7 shorthand 全部实施 + 双反向探针完整三态；ctest Debug 1061/1061 + Release 1030/1030 + Release `-O3 -Werror` 0 err/warn；A1-A7 验收全过；A8 待 /reflect 评估；下一步 `/reflect`。
 
 ## 当前任务
 
@@ -102,19 +102,23 @@
 
 ## 下一步
 
-- 执行 `/build` 启动 BUILD 阶段
-  - P0：grep 验证 G1-G6 + ctest 基线 1039/1039 + 反向探针位置预约
-  - R1.1：12 R1 RED 测试落地 → 验证 FAIL → commit
-  - R1.2：4 方向 shorthand GREEN 实施（parser.cc +~200 LOC）→ ctest PASS → commit
-  - R1.3：§9.3 反向探针验证（破坏 → FAIL → 恢复 → PASS）+ R1 中间态报告
-  - R2.1：13 R2 RED 测试落地 → 验证 FAIL → commit
-  - R2.2：3 属性级 shorthand GREEN 实施（parser.cc +~150 LOC）→ ctest PASS → commit
-  - R2.3：§9.3 反向探针验证 + R2 中间态报告
-  - P3：finalize（Release 构建 + MB 同步）→ commit
+- 执行 `/reflect` 启动回顾阶段
+  - 评估 plan × 0.6 第 15 数据点：实测 ~37 min ÷ plan 170 min = 0.22×（接近 TASK-30-01 P6 极速档）
+  - 评估 A8：TASK-30-01 §0 升级规则首次外部任务 ROI
+  - 记录设计偏差：spec §5.3/5.4 描述「逐方向/逐属性独立分支」实际选择「单分支聚合 + name/Mode 映射」（仿既有 margin/padding 模式），等价决策不悖 D1/D2=A 精神
+  - 提取潜在改进建议
+  - 准备 /archive
+
+## BUILD 完成证据
+
+- 5 commits（PLAN docs / R1 RED / R1 GREEN / R2 RED / R2 GREEN）+ 1 finalize 待提交
+- Debug ctest 1061/1061 PASS（基线 1039 + R1 10 + R2 12）
+- Release ctest 1030/1030 PASS + `-O3 -Werror` 0 err/warn
+- 双反向探针（R1.3 mis-route PropertyId / R2.3 mis-route 2-value 展开）完整三态切换证据
 
 ## 未合并分支
 
-- `feature/TASK-20260430-02-css-border-shorthand` — TASK-20260430-02 PLAN 完成（基于 main `6b36c87`），等待 /build
+- `feature/TASK-20260430-02-css-border-shorthand` — TASK-20260430-02 BUILD 完成（基于 main `6b36c87`），等待 /reflect
 
 ## 最近归档（速查，详细见 archive 文档）
 
