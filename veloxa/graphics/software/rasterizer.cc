@@ -10,6 +10,9 @@ struct Segment {
   vx::gfx::Point a, b;
 };
 
+// 二次贝塞尔扁平化阈值：控制点偏离弦中点的平方距离 < 0.0625 px²（= 0.25 px²）
+// 即偏移 < 0.25 像素时视为线段。FlattenCubic 用相同 0.25 px 阈值但比距离本身
+// （sqrt 后）；此处比平方避免 sqrt — 数学等价 0.25² = 0.0625。
 void FlattenQuadCollect(vx::Vector<Segment>& segments, vx::gfx::Point p0,
                         vx::gfx::Point ctrl, vx::gfx::Point p2, int depth) {
   if (depth >= 16) {
@@ -19,7 +22,7 @@ void FlattenQuadCollect(vx::Vector<Segment>& segments, vx::gfx::Point p0,
   vx::gfx::Point mid = {(p0.x + p2.x) * 0.5f, (p0.y + p2.y) * 0.5f};
   vx::f32 dx = ctrl.x - mid.x;
   vx::f32 dy = ctrl.y - mid.y;
-  if (dx * dx + dy * dy < 0.0625f) {
+  if (dx * dx + dy * dy < 0.0625f) {  // 0.25² subpixel tolerance²
     segments.push_back({p0, p2});
     return;
   }
@@ -53,7 +56,7 @@ void FlattenCubicCollect(vx::Vector<Segment>& segments, vx::gfx::Point p0,
     d2 = std::sqrt((c2.x - p0.x) * (c2.x - p0.x) +
                    (c2.y - p0.y) * (c2.y - p0.y));
   }
-  if (std::max(d1, d2) < 0.25f) {
+  if (std::max(d1, d2) < 0.25f) {  // 0.25 px subpixel tolerance（与 FlattenQuad 同阈值）
     segments.push_back({p0, p3});
     return;
   }
