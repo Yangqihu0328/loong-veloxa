@@ -2,7 +2,97 @@
 
 ## 当前任务
 
-**无**。使用 `/van` 启动新任务。
+### TASK-20260430-04：规划 UI 编辑器与调试器（DevTool 主线蓝图设计）
+
+- **复杂度级别：** Level 4（待 V1-V5 锁定后确认；预期多子系统蓝图设计 + 大量架构决策）
+- **状态：** 🟡 初始化中（VAN 阶段进行中，等待 V1-V5 用户决策）
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-04-ui-editor-debugger`（基于 main `9411584`，已创建）
+- **来源：** 用户主动发起；TASK-20260425-01 archive 备注「解锁 DevTool 主线（hot reload / Inspector / FPS overlay 前置）」首发触发
+- **意图判读：** 用户用「**规划**」二字（非「实现」）→ 主交付物预期为蓝图级 spec + plan + 子任务 ID 列表；可选 MVP 子集实施
+- **安全相关：** ⚠️ 大概率（Hot Reload 涉及文件系统监听 / JS 调试器若选 CDP 协议涉及外部 socket / Inspector 暴露内部状态有信息泄漏面）— 待 V5 决策
+
+#### 候选 DevTool 子系统（待 V1 选择范围）
+
+| # | 子系统 | 描述 | 量级 | 依赖 |
+|:-:|---|---|---|---|
+| 1 | **Inspector**（DOM / Style / Layout 检查器）| 鼠标悬停高亮 / 点击选取 / 显示 ComputedStyle / LayoutBox 坐标 / 事件监听器列表 | Level 3 单子系统 | F2 C API + F4 LayoutBox.Dump |
+| 2 | **Hot Reload** | 监听 HTML/CSS/JS 文件变更 → 增量重新加载（保留滚动/状态） | Level 3 | OS 文件监听（inotify/ReadDirectoryChangesW）+ Application::LoadHTML/CSS reentrancy |
+| 3 | **Performance Overlay** | FPS / 帧时长 / Layout/Render 各阶段耗时 / 重绘区域可视化 | Level 2-3 | F5 UpdateManager 帧钩子 |
+| 4 | **Console** | `console.log` 桥接 / 错误栈 / JS 表达式 REPL | Level 3 | QuickJS Console 对象 + DevTool UI 输出区 |
+| 5 | **JS 调试器** | 断点 / 单步 / 变量检查 / 调用栈 | Level 4 单独 | F6 QuickJS Debug API（首先要做基础设施） |
+| 6 | **完整 UI 编辑器**（所见即所得） | 拖拽布局 / 实时编辑 → 反向写回 HTML/CSS | Level 4+ | 上述 1-3 项 + 双向数据绑定层 |
+
+#### 候选 V3 — DevTool UI 渲染层 3 方案
+
+| 方案 | 描述 | 优 | 劣 |
+|---|---|---|---|
+| A — Veloxa 自渲染 | DevTool UI 本身就是一个 Veloxa View（HTML+CSS+JS），与目标 View 共享渲染管线但隔离文档 | dogfooding 极强 / 0 新依赖 / 体积零增长 | self-hosting 复杂度高（DevTool bug 影响目标 View）/ JS 调试器自调试矛盾 |
+| B — ImGui-like immediate mode | 引入 imgui 或自实现 immediate mode UI 库专为 DevTool | 与目标 View 完全隔离 / 工业界惯例 | +2-3 MB 依赖 / 与项目嵌入式定位略偏 |
+| C — CDP 兼容外置协议 | 暴露 Chrome DevTools Protocol over WebSocket，DevTool UI 在浏览器 | 复用 Chrome DevTools UI / 远程调试可能 | 需引入 WebSocket 库 / 运行时需活动浏览器 |
+| D — 多模式蓝图共存 | Spec 设计可插拔抽象层，未来可选 A/B/C | 灵活 / 渐进 | 抽象层设计成本最高 |
+
+#### VAN 阶段 grep 实证（前置验证）
+
+| # | 命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | 现有代码是否已有 inspector / devtool / debugger 实现 | ❌ **0 处实现代码**（仅历史 spec / archive 提及） | 完全从零设计 |
+| F2 | C API 是否已有 introspection 接口 | ❌ 无 `vx_view_get_document` / `vx_view_dump_*` / `vx_view_get_fps`（C API ~125 行 `veloxa_api.h`） | C API 需扩展（与技术债 #40 重叠） |
+| F3 | DOM 序列化能力 | ✅ `vx::dom::Serialize(node)` 已可输出 HTML 字符串 | Inspector DOM 树文本化复用基础 |
+| F4 | LayoutBox / DisplayList Dump | ❌ 无 `Dump()` 方法（**技术债 #26**） | 需新增 |
+| F5 | UpdateManager 帧生命周期钩子 | ❌ 无 `OnBeforeUpdate` / `OnAfterUpdate`（**技术债 #35**） | Performance Overlay 必需 |
+| F6 | JS Debug API 集成 | ❌ `JS_SetInterruptHandler` / 执行预算未实施（**技术债 #44**） | JS 调试器需先做基础设施 |
+| F7 | SDL2 后端 / 可见窗口 | ✅ TASK-25-01 已就绪（`hello_sdl2` 范本，`Sdl2WindowSurface` + `Sdl2EventLoop`） | DevTool UI 渲染主线起点 |
+| F8 | EventManager hover/active/focus | ✅ HitTest + 状态指针（TASK-08/09 沉淀） | Inspector 元素高亮选取复用基础 |
+| F9 | Application 暴露内部状态 | ✅ `document() / event_manager() / update_manager() / event_loop()` 全已 expose | Inspector 读取无障碍 |
+
+**初步识别 Veloxa 引擎的 DevTool 基础设施成熟度：**
+- 🟢 **已就绪**（无需新做）：可见窗口 / DOM 序列化 / EventManager 状态 / Application getters / SDL2 输入桥接
+- 🟡 **需扩展**（小工程）：C API 加 introspection / LayoutBox.Dump / DisplayList.Dump / UpdateManager 钩子（4 项约 ~3-5h plan 量级）
+- 🔴 **需新建**（大工程）：Inspector UI 渲染层 / Hot Reload 文件监听 + 增量解析 / FPS overlay / Console JS 桥接 / JS 调试器 backend / 完整 UI 编辑器（每项 Level 3 量级）
+
+#### 待用户决策维度（V1-V5）
+
+| # | 维度 | 候选选项 | VAN 推荐 |
+|:-:|---|---|---|
+| V1 | 范围 — 哪些 DevTool 子系统纳入本次规划？ | **A 全 6 子系统**（Inspector + Hot Reload + Overlay + Console + 编辑器 + JS 调试器）/ B 渐进 3 件套（Inspector + Overlay + Console）/ C 单子系统聚焦（用户指定，如仅 Inspector 或仅 JS 调试器）/ D 用户自选组合 | **B 渐进 3 件套** — 实用价值核心 80%；编辑器 + Hot Reload + JS 调试器留作蓝图后续单独 Level 4 子任务 |
+| V2 | 输出形态 | **a 纯蓝图**（spec 蓝图 + plan 子任务列表 + 优先级矩阵，零代码）/ b 蓝图 + MVP（最小可运行子集即一个 DevTool 子系统的 R1 实施）/ c 蓝图 + 完整全 V1 子系统实施 | **a 纯蓝图** 或 **b 蓝图 + MVP**（V1=B 时 MVP = Inspector R1 实施）— 严守「规划」语义 |
+| V3 | DevTool UI 渲染层 | A Veloxa 自渲染 / B ImGui-like immediate mode / C CDP 兼容外置协议 / D 多模式蓝图共存 | **A Veloxa 自渲染** — 与项目嵌入式定位最一致 / 0 新依赖 / dogfooding ROI 最高；CDP 留作未来可选扩展 |
+| V4 | 复杂度级别 | Level 3（如 V1=C 单子系统聚焦）/ **Level 4**（如 V1=A/B 多子系统蓝图） | **Level 4**（多子系统蓝图量级） |
+| V5 | 安全标注 | ✅ 是（默认；Hot Reload 文件系统访问 + JS 调试器 socket 暴露 + Inspector 信息泄漏） | **✅ 是**（即使 V1 不含 Hot Reload / JS 调试器，Inspector 仍涉及内部状态暴露面） |
+
+#### 前置验证清单（VAN 阶段产出）
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ⚠️ 部分待 V3 | Veloxa 自渲染（A）零新依赖；ImGui（B）需 FetchContent；CDP（C）需 WebSocket 库 |
+| 环境就绪 | ✅ | `build/`(1061/1061) + `build-bench/`(1030/1030) 隐式继承 |
+| 已有 artifact | ✅ 强 | DOM `Serialize` + `Application` getters + SDL2 后端 + HitTest 全部可复用作 Inspector 基础 |
+| ctest 基线 | ✅ | 1061/1061 PASS（codebase review R0 实证） |
+| FetchContent 代理守卫 | ⏳ 待 V3 | 若 V3=B/C 需新依赖则触发（参考 techContext §FetchContent 与代理 `172.22.32.1:7890`） |
+| 待处理事项关联 | ✅ 强 | 至少触及技术债 #26（LayoutBox Dump）/ #35（UpdateManager 钩子）/ #40（C API 扩展）/ #44（QuickJS Interrupt Handler）4 项 — 蓝图阶段需明确这些 prerequisite 是单独立项还是融入本任务 |
+| Sticky ID 一致性 | ✅ | 用当天序号 04（继 TASK-30-01/02/03） |
+
+#### VAN 阶段 push-back 候选（spec 阶段需深入讨论）
+
+| 风险 | 应对建议 |
+|---|---|
+| **「规划样样不深」陷阱**（6 子系统 × 3 渲染方案 × N 蓝图维度 = 设计空间巨大）| V1 收紧到 B 三件套 + V3 选定 A 单方案 + V2=a 纯蓝图 |
+| **prerequisite 技术债融入边界**（#26 / #35 / #40 / #44 是先做还是融入本任务？） | spec 阶段明确「先决条件子任务」拆分（4 个 Level 1-2 micro task）vs 本任务范围 |
+| **意图模糊「规划」是否含 MVP** | V2 选 a 纯蓝图（默认）/ b 蓝图 + 单 MVP 实施；V2=c 全实施会令任务上限失控 |
+| **DevTool 自调试矛盾**（V3=A 自渲染时 Inspector 自身 bug 难调试） | spec §5 需明确「DevTool 隔离边界」— 双 Document 共享 EventLoop / 独立 ImageCache 等 |
+| **第三方依赖触发 FetchContent 代理守卫** | 仅 V3=B/C 时触发；V3=A 完全规避 |
+
+#### 与正在并发推进的任务关系
+
+- **TASK-20260430-03（codebase review）**：在 `feature/TASK-20260430-03-codebase-review` 分支上由 background agent 持续推进（已完成 R0+R1+R2.1+R2.2，进入 R2.3 F-040 等剩余 quick fix），与本任务**完全独立分支**，无 git 冲突；该任务自然演进完毕后用户单独审 + 收尾即可
+- **关键 P1 输入参考**：codebase review R1 报告（`docs/reports/2026-04-30-codebase-review.md`，在 codebase review feature 分支已入仓）含 Top 5 紧急修复（F-051 / F-050 / F-046 / F-025 / F-022），其中 **F-025 LoadHTML use-after-free** 与 Hot Reload 设计有协同（同一 reentrancy 问题），spec 阶段可对照引用
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 23:40 | 初始化 | VAN 启动；grep 实证 9 项（F1-F9）；意图判读「规划」→ 蓝图级 spec/plan 主交付；6 子系统候选 + 3 渲染方案 + 5 决策维度 V1-V5 列出；分支 `feature/TASK-20260430-04-ui-editor-debugger` 创建（基于 main `9411584`）；codebase review TASK-30-03 在自己 feature 分支由 background agent 持续推进，本任务对其无依赖；下一步等待用户对 V1-V5 决策 |
 
 ---
 
