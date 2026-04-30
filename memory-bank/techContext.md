@@ -624,3 +624,67 @@ cmake --build build -j
 48. ~~SoftwareCanvas::DrawText 每次调用创建 hb_font_t~~ ✅ 已缓存到 `FontManager::FontEntry`，`GetHbFont(handle, pixel_size)` 按需创建 + `hb_ft_font_changed` 响应 size 变化（TASK-20260418-01）
 49. textContent setter 不处理无 Text 子节点的情况（不创建新 Text 节点，静默返回）
 50. ~~addEventListener lambda 捕获 JSContext*~~ ✅ `DomBindings::Unbind` 先 `em->RemoveEventListeners(el)` 再 `FreeAll callbacks`，消除 UAF（TASK-20260418-01）；遗留约束：宿主必须确保 `DomBindings` 先于 `EventManager` 析构
+
+### TASK-20260430-03 全代码库 Code Review 新增条目（2026-04-30）
+
+**详细清单见 `docs/reports/2026-04-30-codebase-review.md`**（55 项 findings 跨 6 维度，28 P1 + 19 P2 + 8 P3）。
+
+**R2 已修复 6 项**（commit 链 `3b4b2e7` / `1467207` / `ddea78d` / `95ae814` / `9c6ad5f` / `668a9fe`，ctest 1062/1062 PASS）：
+- ✅ F-020 SelectorMatcher 末尾 dead `return false` 替换为 `VX_DCHECK(false); return false;` + 解释性注释
+- ✅ F-026 LayoutEngine 一参重载 arena `static` → `thread_local`（多线程并发 Layout 不再撞 arena）
+- ✅ F-033 ProcessEndTag 移除 isize/usize 重复转换 + early-return 防 underflow
+- ✅ F-040 Rasterizer FlattenQuad/Cubic 0.0625（quad 平方）vs 0.25（cubic 距离）阈值数学等价注释
+- ✅ F-053 image_decoder.cc DecodeFromFile 加 `usize max_size = 256 MiB` 默认参数 + 守卫 + 单测（防 Vector OOM abort）
+- ✅ F-055 vx_version() 改 CMake `configure_file` 从 `project(VERSION X.Y.Z)` 生成 `VELOXA_VERSION_STRING`（消除硬编码漂移）
+
+**R3+ 推荐拆分 13 项独立任务**（按 ROI 排序，完整列表见 R1 报告 §8 / reflection §6.1）：
+- 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha 丢失 / F-050 width×height 溢出 / F-051 JPEG error_exit 杀进程）— P1 安全 / 4-6 h / Level 3
+- 🟡 #2 EventDispatcher snapshot 防 listener mutation UAF（F-046）— P1 正确 / 2-3 h / Level 2
+- 🟡 #3 LoadHTML 重置 dom_bindings_ 防 UAF（F-025）— P1 正确 / 1-2 h / Level 2
+- 🔴 #4 CSS 属性元数据表（F-022）— P1 维护 / 1-2 周 / Level 4 大件 / 解 6 处 shotgun surgery
+- #5-13（DOM lifecycle / 现代选择器 / Layout 边角 / HTML5 实体表 / Rasterizer 性能 / 12 模块测试 / libpng 升级 / 8 项 P3 候选 等）
+
+**新增 systemPattern**（来自 reflection §5）：
+- Background agent 双轨模式 + worktree 隔离协议 — 见 `systemPatterns.md` §「TASK-30-03 已验证模式」
+- plan ×0.6 估时按任务类型分桶系数矩阵 — 同上
+- Quick fix 颗粒度估时基准 12 min/项（含上下文 + 验证）— 同上
+- Checkpoint 推荐默认 + 隐式批准协议 — 同上
+- Review 类任务 6 维度 × 抽样深度矩阵 spec 模板 — 同上
+
+### CMake 配置矩阵（basic vs full）
+
+ctest 数量随 CMake 选项变化（worktree 重 configure 时需注意基线匹配）：
+
+| 配置 | `VX_BUILD_BENCHMARKS` | `VX_PLATFORM_SDL2` | ctest 总数 | 备注 |
+|---|---|---|---|---|
+| basic（默认）| OFF | OFF | **1031** | 不含 SDL2 backend / benchmark smoke |
+| full（开发者基线）| ON | ON | **1062** | TASK-30-03 R0/R2 基线（1062 含 R2.5 新单测；之前 1061）|
+
+**用法**：
+- 主 worktree 默认 full（已有 CMakeCache）
+- 新建 worktree 第一次 cmake configure 需显式 `-DVX_BUILD_BENCHMARKS=ON -DVX_PLATFORM_SDL2=ON`
+- 否则 ctest 1031 会被误判为「30 测试丢失 / 回归」
+
+### Background Agent 双轨模式 worktree 隔离工程指引（来自 TASK-30-03 R2 实战）
+
+**触发场景**：用户在主 worktree 切到任务 B（如 04 DevTool 规划），agent 需在任务 A（如 03 codebase review）feature 分支推进。
+
+**避坑步骤**：
+```bash
+# 1. agent 启动时立即建立独立 worktree（沙箱限制 workspace 内路径）
+git worktree add .worktree-<task_short>/ feature/TASK-<id>-<slug>
+
+# 2. CMake 配置同步（默认 OFF → 显式开启）
+cd .worktree-<task_short>
+cmake -S . -B build -DVX_BUILD_BENCHMARKS=ON -DVX_PLATFORM_SDL2=ON
+
+# 3. 每 commit 前断言守门
+[ "$(git symbolic-ref --short HEAD)" = "feature/TASK-<id>-<slug>" ] || exit 1
+
+# 4. 完成后清理
+cd ..
+rm -rf .worktree-<task_short>/build  # 先清 cmake FetchContent generated
+git worktree remove --force .worktree-<task_short>/
+```
+
+**工程债注解**：cmake FetchContent 拉的 `google/benchmark` `_deps/benchmark-src/.git/hooks/*.sample` 是只读，WSL2 NTFS 锁可能导致 `git worktree remove` 报 `Device or resource busy` — 需先手动 rm `<wt>/build`。

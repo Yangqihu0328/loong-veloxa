@@ -1,5 +1,12 @@
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/generated/veloxa/api/version.h
+  @ONLY)
+
 add_library(vx_api STATIC veloxa_api.cc)
-target_include_directories(vx_api PUBLIC ${PROJECT_SOURCE_DIR})
+target_include_directories(vx_api
+  PUBLIC ${PROJECT_SOURCE_DIR}
+  PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(vx_api PUBLIC vx_core vx_graphics vx_platform vx_script)
 
 if(VX_PLATFORM_SDL2)

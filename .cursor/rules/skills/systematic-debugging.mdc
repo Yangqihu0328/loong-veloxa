@@ -111,6 +111,60 @@ alwaysApply: false
    - 应该重构架构还是继续修复症状？
    - **与用户讨论后再尝试更多修复**
 
+## 并发会话 / 多 agent 冲突诊断（首发工具：git reflog）
+
+**触发场景**：
+- Background agent 模式下用户主线在另一会话推进
+- 两个 agent / 工具实例在同一仓库工作
+- 主 worktree 单一性导致并发写冲突
+
+**典型症状**：
+- `git status` 显示 clean 但你刚做了 StrReplace / 文件操作
+- `git commit` 报 "nothing to commit, working tree clean"
+- 文件内容回退到改动前
+- 当前分支与预期不符
+- ctest 通过率正常但 commit 缺失改动（编译跑在切分支前的旧 working tree）
+
+**首发诊断命令**（任一症状立即跑）：
+
+```bash
+git reflog --date=iso | head -20
+```
+
+**判读标准**：
+- 看 1 秒级时间戳的多次 `checkout` / `branch` 操作 → 外部会话切分支
+- 看 `moving from X to Y` 序列 → 工具自动 reset working tree
+- 看你预期 commit 之间出现非自己发起的操作 → 并发干扰确认
+
+**实证案例**（TASK-20260430-03 R2 阶段）：
+```
+9411584 HEAD@{2026-04-30 23:45:08 +0800}: checkout: moving from main to feature/TASK-20260430-04
+9411584 HEAD@{2026-04-30 23:45:08 +0800}: checkout: moving from feature/TASK-20260430-03 to main
+1467207 HEAD@{2026-04-30 23:44:19 +0800}: checkout: moving from feature/TASK-20260430-04 to feature/TASK-20260430-03
+9411584 HEAD@{2026-04-30 23:41:30 +0800}: checkout: moving from main to feature/TASK-20260430-04
+9411584 HEAD@{2026-04-30 23:41:23 +0800}: checkout: moving from feature/TASK-20260430-03 to main
+1467207 HEAD@{2026-04-30 23:41:07 +0800}: commit: fix(html): R2.2 F-033 ...
+```
+↑ 23:41:23/30 同秒双切（main → 04） + 23:45:08 同秒再次双切 = 强冲突信号。
+
+**应对协议**（确认冲突后立刻执行）：
+
+1. **物理隔离 worktree**：
+   ```bash
+   git worktree add .worktree-<task_short>/ feature/TASK-<id>-<slug>
+   cd .worktree-<task_short>
+   ```
+2. **每 commit 前断言守门**（详见 git-workflow skill「Commit 前防御断言」段）：
+   ```bash
+   [ "$(git symbolic-ref --short HEAD)" = "feature/TASK-<id>-<slug>" ] || exit 1
+   ```
+3. **CMake / build 配置同步**：worktree 默认配置可能与主 worktree 不同（如 `VX_BUILD_BENCHMARKS=OFF`），重 configure 时显式指定选项匹配基线
+4. **完成后清理**：`rm -rf <wt>/build` 后 `git worktree remove --force <wt>/`
+
+**与 git-workflow skill 联动**：本段「reflog 诊断」+ git-workflow「Commit 前防御断言」是孪生协议，分别处理「事后定位」和「事前预防」。
+
+---
+
 ## 红色信号 — 停下并遵循流程
 
 如果你发现自己在想：

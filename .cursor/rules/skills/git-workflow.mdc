@@ -98,6 +98,48 @@ alwaysApply: false
 
 **提交流程：** TDD 循环（可多次）→ 代码审查 → 测试全部通过 → 提交
 
+## Commit 前防御断言（multi-session safety）
+
+**适用场景**：
+- Background agent 模式（用户主线 + agent 后台双轨并行）
+- 用户/工具可能在另一会话切换分支
+- 长任务（> 30 min）的多 commit 流程
+
+**防御协议**（每次 `git commit` 前必跑）：
+
+```bash
+# 1. 分支身份断言（防止 commit 误落到错误分支）
+[ "$(git symbolic-ref --short HEAD)" = "feature/TASK-<id>-<slug>" ] \
+  || { echo "WARN: NOT on expected branch"; exit 1; }
+
+# 2. working tree 状态自检（防止 race condition reset 改动后误以为 commit 成功）
+git status --short  # 应显示预期的 modified/new 文件
+
+# 3. 然后才执行 commit
+git add <files> && git commit -m "..."
+```
+
+**冲突诊断信号**（任一触发 → 立刻跑 reflog 诊断）：
+- `git status` 显示 clean 但你刚做了 StrReplace
+- `git commit` 报 "nothing to commit, working tree clean"
+- 当前分支与预期不符（`git symbolic-ref` 输出意外）
+- 文件内容回退到改动前
+
+**reflog 诊断标准命令**（systematic-debugging skill 联动）：
+```bash
+git reflog --date=iso | head -20
+# 找一秒级时间戳的 checkout / branch switch — 暴露并发会话冲突源
+```
+
+**worktree 隔离方案**（确认冲突后）：
+```bash
+git worktree add .worktree-<task_short>/ feature/TASK-<id>-<slug>
+cd .worktree-<task_short>
+# 在 worktree 内继续工作，主 worktree 切换分支不影响这里
+```
+
+**实证**：TASK-20260430-03 R2 阶段首次实战暴露并发会话切分支 race condition（reflog 显示 23:41:23/30 + 23:45:08 两次双切，R2.1 commit 混入外部 working tree 状态 + R2.3 改动被静默丢失）。本协议是该任务 reflection §5 P0 改进建议落实，已纳入 systemPatterns / techContext 长期沉淀。
+
 ## 与 Memory Bank 集成
 
 - 创建分支后 → 更新 `memory-bank/activeContext.md` 记录当前分支名

@@ -5,6 +5,7 @@
 
 #include "veloxa/core/dom/tag.h"
 #include "veloxa/core/event/event_manager.h"
+#include "veloxa/foundation/base/assert.h"
 
 namespace vx::css {
 
@@ -109,6 +110,11 @@ bool SelectorMatcher::MatchSimple(const SimpleSelector& simple,
       return false;
     }
   }
+  // Exhaustive over SimpleSelectorType (5 enum values); fall-through is
+  // unreachable today. If a new SimpleSelectorType is added without a case
+  // branch above, control reaches here. VX_DCHECK fires in debug to flag the
+  // gap during development; release returns "no-match" by safe default.
+  VX_DCHECK(false);
   return false;
 }
 
