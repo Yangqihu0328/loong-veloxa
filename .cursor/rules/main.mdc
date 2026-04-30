@@ -54,6 +54,18 @@ alwaysApply: true
 
 遇到 Bug 时使用 `/debug` 命令，它独立于主工作流。
 
+#### Level 4 蓝图任务 V2=a 工作流变体（来自 TASK-20260430-04）
+
+当 Level 4 任务的 V2 决策 = **a 纯蓝图**（spec + plan + creative ×N，不含 build 实施）时，工作流变体为：
+
+- **Level 4 蓝图（V2=a）**: `/van` → `/plan`（含 brainstorming + creative 内联）→ `/reflect` → `/archive`（**跳过 `/build`**）
+
+主交付 = 蓝图级 spec + plan + creative ×N 文档；build 由用户基于 plan 后续独立立项（拆出 N 个 Level 3 子任务）。
+
+`/reflect` 命令前置条件检查「当前阶段必须是 `构建中`」对蓝图任务应灵活解读：「广义构建 = 主交付物落盘」= plan 完成。蓝图任务的「构建中」语义即「文档产出中」。
+
+详细沉淀见 `memory-bank/systemPatterns.md` 「Level 4 蓝图任务 V2=a 工作流变体」段。
+
 ## 技能系统
 
 在执行任何任务之前，检查是否有相关技能适用。技能是强制性工作流，不是建议。

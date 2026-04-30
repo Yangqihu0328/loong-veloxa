@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**TASK-20260430-04 `/plan` 阶段完成（2026-05-01 ~01:50，4 篇文档全部落盘，等待用户路径选择）** — 头脑风暴 D1-D8 全部锁定（按 VAN 推荐默认）；spec + plan + 2 篇 creative 已产出；下一步用户在 reflect（V2=a 主线）/ build 启动（V2 → b 改路径）/ 暂停审查 三选一。
+**TASK-20260430-04 `/reflect` 阶段完成（2026-05-01 ~02:30，反思文档落盘，正在落实 P0/P1 改进建议）** — reflection-TASK-20260430-04.md 已落盘（10 节全面反思，含 plan ×0.6 第 17 数据点入库 + 10 项改进建议 P0/P1/P2 分级）；P0 #1 #3 #7 改进已落实（main.mdc V2=a 工作流变体段 + systemPatterns 极窄档第 17 数据点 + activeContext 7 项独立立项候选迁移）；P1 #4 已落实（systemPatterns Level 4 蓝图任务 V2=a 工作流变体段）；下一步进入 `/archive` 归档收尾。
 
 **D1-D8 决策矩阵（已锁定）：**
 - D1 三件套实施优先级：**B Inspector → Overlay → Hot Reload**
@@ -119,6 +119,42 @@
 
 存放在 `docs/reports/2026-04-30-codebase-review.md`（已合并到 main `2445990`）。Top 4 见上文「上次任务 §R3+ 推荐」。本 TASK-30-04 任务对这些 P1 候选**不依赖**，可在 04 任务进行中或之后独立立项。
 
+### 来自 TASK-30-04 蓝图主交付的 7 项独立立项候选（P0 reflect §5 #7）
+
+基于 `docs/plans/2026-04-30-devtool.md` 拆出，由用户后续独立立项（**不在 TASK-30-04 自身范围内**）：
+
+**主线 3 项：**
+
+- **TASK-30-04-A**：DevTool Phase A — Inspector 实施（DOM tree / Style panel / Layout panel + 元素 hover 高亮）
+  - 估时：~12.25 h plan / ~7.35 h plan ×0.6（Level 3）
+  - 触及技术债闭环：#26 LayoutBox.Dump / #40 C API introspection
+  - **强依赖**：I1 Application 双 Document 槽改造（R1 风险，重命名 `document_` → `target_document_` mitigation 已 plan）
+
+- **TASK-30-04-B**：DevTool Phase B — Performance Overlay 实施（FPS / 帧时序 / dirty rect 边框高亮）
+  - 估时：~7.25 h plan / ~4.35 h plan ×0.6（Level 2-3）
+  - 触及技术债闭环：#35 UpdateManager 帧钩子（五钩子）
+
+- **TASK-30-04-C**：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）
+  - 估时：~10 h plan / ~6 h plan ×0.6（Level 3）
+  - **强依赖**：R3+ #3 F-025 LoadHTML use-after-free 修复（如未来扩展 HTML 增量重载）— 一期 CSS-only 不踩
+  - 安全守卫：T2 路径穿越 8 步 + T8 mutation propagation 防御
+
+**扩展段 4 项**（spec §11 占位，独立立项）：
+
+- **TASK-30-04-D**（暂定）：Console JS REPL（V1=B 扩展段，威胁 T1 任意 eval mitigation）
+- **TASK-30-04-E**（暂定）：JS Debugger backend（QuickJS Debug API 对接，触及技术债 #44 + 威胁 T6 callback budget）
+- **TASK-30-04-F**（暂定）：CDP 远程调试 port（威胁 T4 HMAC token + nonce + loopback only + default off mitigation）
+- **TASK-30-04-G**（暂定）：完整 UI 编辑器（dogfood 完整闭环，spec §11 长期愿景）
+
+**立项前置条件：**
+- TASK-30-04-A 必须先于 TASK-30-04-B 立项（B 依赖 A 的 Inspector 渲染管线 + UI 框架基础）
+- TASK-30-04-C 可与 A 并行（无强依赖）
+- 扩展段 4 项独立可立，按用户优先级排期（无相互强依赖）
+
+**估时回填校准**（reflect §5 #10 P2 长期）：
+- TASK-30-04-A/B/C 立项时记录 plan 实测 vs plan 估时偏差
+- 偏差数据反哺 systemPatterns plan ×0.6 矩阵（review 类 + 蓝图任务子分桶）
+
 ### 输入材料：8 项 P3 触发型候选（codebase review R1 已分析）
 
 - TASK-26-02-full（clearance 完整版）
@@ -130,11 +166,23 @@
 - TASK-20260419-08（`string.h` 剩余 memcpy noinline 化）
 - TASK-20260419-12（DrawText 真路径优化，K7 隐式闭环待评估）
 
-## 下一步（路径三选一）
+## 下一步
 
-- **路径 A（V2=a 主线推荐）**：进入 `/reflect`（蓝图任务在 spec + plan + creative 落盘后即可 reflect/archive 收尾，build 由用户基于 plan 独立立项 TASK-30-04-A/B/C）
-- **路径 B（改路径进 build）**：用户重新决策 V2 → b（蓝图 + MVP），用 `/build` 启动 TASK-30-04-A Phase A.0 前置改造任务
-- **路径 C（暂停审查）**：用户先 review 4 篇文档（spec / plan / 2 creative），提反馈后再 reflect/build；若 review 暴露 D1-D8 任一决策需调整，回到 `/plan` 修订对应文档
+- **进入 `/archive`**（V2=a 蓝图任务收尾）：创建 `memory-bank/archive/archive-TASK-20260430-04.md` + 更新 tasks.md / progress.md / techContext.md 任务历史 + 落实剩余 P1/P2 改进建议（#2 brainstorming 协同度段 / #5 dogfood acceptance test 段 / #6 techContext 蓝图主交付摘要 / #8 R3+ 强依赖交叉记录 / #9 决策跳过率监控 / #10 估时回填校准）+ merge feature branch → main（`--no-ff`）+ 任务闭环
+
+**reflect 阶段已落实改进（P0 全部 + P1 第 1 项）：**
+- ✅ P0 #1：main.mdc 加 V2=a 蓝图任务工作流变体段（已加 § Level 4 蓝图任务 V2=a 工作流变体）
+- ✅ P0 #3：systemPatterns plan ×0.6 矩阵加蓝图极窄档（第 17 数据点入库 0.20-0.35× plan）
+- ✅ P0 #7：activeContext 待处理事项段加 7 项独立立项候选（本文件上方）
+- ✅ P1 #4：systemPatterns 加 Level 4 蓝图任务 V2=a 工作流变体段（含 spec 12 段式样 + 自我对照 ≥ 30 模式 + 批量文档 batch 协议）
+
+**archive 阶段待落实（P1 #2 #6 #8 + P2 #5 #9 #10）：**
+- ⏳ P1 #2：brainstorming.mdc 加「与已锁定决策的协同度」段
+- ⏳ P1 #6：techContext 加 TASK-30-04 蓝图主交付摘要段
+- ⏳ P1 #8：R3+ 强依赖（Hot Reload C.2 ↔ R3+ #3 F-025）显式交叉记录
+- ⏳ P2 #5：systemPatterns 加 dogfood 路径 = 探测性 acceptance test 段
+- ⏳ P2 #9：brainstorming.mdc 加决策跳过率监控（≥ 5 决策连续跳过 reflect 阶段重审）
+- ⏳ P2 #10：蓝图任务子任务清单估时颗粒度回填校准（TASK-30-04-A/B/C 立项后）
 
 **TASK-30-03 收尾（可选清理）**：`git branch -d feature/TASK-20260430-03-codebase-review`（已合并到 main，可安全删除）
 
