@@ -596,6 +596,102 @@ bool CssParser::ParseDeclaration(SmallVector<Declaration, 8>& out) {
       return true;
     }
 
+    if (EqualsIgnoreCase(name, "border-bottom") ||
+        EqualsIgnoreCase(name, "border-left") ||
+        EqualsIgnoreCase(name, "border-right") ||
+        EqualsIgnoreCase(name, "border-top")) {
+      CssToken colon = NextNonWS();
+      if (colon.type != CssTokenType::kColon) return false;
+
+      CssValue width = CssValue::None();
+      CssValue style = CssValue::None();
+      CssValue color = CssValue::None();
+
+      for (int i = 0; i < 3; ++i) {
+        SkipWhitespace();
+        CssToken peek = tokenizer_.Peek();
+        if (peek.type == CssTokenType::kSemicolon ||
+            peek.type == CssTokenType::kRightBrace ||
+            peek.type == CssTokenType::kEof) {
+          break;
+        }
+        if (peek.type == CssTokenType::kDelim && peek.value == "!") break;
+
+        if (peek.type == CssTokenType::kDimension ||
+            peek.type == CssTokenType::kNumber ||
+            peek.type == CssTokenType::kPercentage) {
+          width = ParseLengthOrPercent();
+        } else if (peek.type == CssTokenType::kHash) {
+          color = ParseColor();
+        } else if (peek.type == CssTokenType::kFunction) {
+          color = ParseColor();
+        } else if (peek.type == CssTokenType::kIdent) {
+          StringView val = peek.value;
+          if (EqualsIgnoreCase(val, "solid") || EqualsIgnoreCase(val, "dashed") ||
+              EqualsIgnoreCase(val, "dotted") || EqualsIgnoreCase(val, "none")) {
+            tokenizer_.Next();
+            BorderStyle bs = BorderStyle::kNone;
+            if (EqualsIgnoreCase(val, "solid")) bs = BorderStyle::kSolid;
+            else if (EqualsIgnoreCase(val, "dashed")) bs = BorderStyle::kDashed;
+            else if (EqualsIgnoreCase(val, "dotted")) bs = BorderStyle::kDotted;
+            style = CssValue::Enum(static_cast<u16>(bs));
+          } else {
+            color = ParseColor();
+          }
+        } else {
+          break;
+        }
+      }
+
+      bool important = false;
+      SkipWhitespace();
+      CssToken bang = tokenizer_.Peek();
+      if (bang.type == CssTokenType::kDelim && bang.value == "!") {
+        tokenizer_.Next();
+        CssToken imp = NextNonWS();
+        if (imp.type == CssTokenType::kIdent &&
+            EqualsIgnoreCase(imp.value, "important")) {
+          important = true;
+        }
+      }
+
+      SkipWhitespace();
+      if (tokenizer_.Peek().type == CssTokenType::kSemicolon) {
+        tokenizer_.Next();
+      }
+
+      // Map shorthand name to (width, style, color) longhand triple.
+      PropertyId pid_w, pid_s, pid_c;
+      if (EqualsIgnoreCase(name, "border-top")) {
+        pid_w = PropertyId::kBorderTopWidth;
+        pid_s = PropertyId::kBorderTopStyle;
+        pid_c = PropertyId::kBorderTopColor;
+      } else if (EqualsIgnoreCase(name, "border-right")) {
+        pid_w = PropertyId::kBorderRightWidth;
+        pid_s = PropertyId::kBorderRightStyle;
+        pid_c = PropertyId::kBorderRightColor;
+      } else if (EqualsIgnoreCase(name, "border-bottom")) {
+        pid_w = PropertyId::kBorderBottomWidth;
+        pid_s = PropertyId::kBorderBottomStyle;
+        pid_c = PropertyId::kBorderBottomColor;
+      } else {
+        pid_w = PropertyId::kBorderLeftWidth;
+        pid_s = PropertyId::kBorderLeftStyle;
+        pid_c = PropertyId::kBorderLeftColor;
+      }
+
+      if (width.type != ValueType::kNone) {
+        out.push_back({pid_w, width, important});
+      }
+      if (style.type != ValueType::kNone) {
+        out.push_back({pid_s, style, important});
+      }
+      if (color.type != ValueType::kNone) {
+        out.push_back({pid_c, color, important});
+      }
+      return true;
+    }
+
     if (EqualsIgnoreCase(name, "flex")) {
       CssToken colon = NextNonWS();
       if (colon.type != CssTokenType::kColon) return false;
