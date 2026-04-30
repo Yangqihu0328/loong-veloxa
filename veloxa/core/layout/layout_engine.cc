@@ -540,6 +540,9 @@ MarginChain LayoutEngine::LayoutBlockChild(LayoutBox* box,
   f32 y_cursor = 0.0f;
   bool any_in_flow = false;
   bool first_in_flow = true;
+  // 维护 last-in-flow-block-child 指针（O(1) 摊销，避免末尾 O(N) 二次扫描，
+  // P6.2 bench 优化）。
+  LayoutBox* last_in_flow_block = nullptr;
 
   for (LayoutBox* child = box->first_child; child;
        child = child->next_sibling) {
@@ -547,6 +550,7 @@ MarginChain LayoutEngine::LayoutBlockChild(LayoutBox* box,
     any_in_flow = true;
 
     if (child->type == LayoutType::kBlock) {
+      last_in_flow_block = child;
       // ---------- kBlock 子：递归 LayoutBlockChild + chain propagate -----------
       const bool is_propagate_path = first_in_flow && !blocks_top;
       MarginChain* child_incoming = is_propagate_path ? incoming : &cur_chain;
@@ -679,18 +683,9 @@ MarginChain LayoutEngine::LayoutBlockChild(LayoutBox* box,
   // ---- last-in-flow-block-child 状态字段（W3C §8.3.1 R3 last-child collapse）-
   // 「last-in-flow-block 的 mb 是否合入 box 的 outgoing chain」由 box 自身的
   // blocks_bottom 决定（与 child 自己的 blocks_bottom 无关）。
-  if (!blocks_bottom) {
-    for (LayoutBox* c = box->first_child; c; c = c->next_sibling) {
-      if (!IsInFlow(c)) continue;
-      if (c->type != LayoutType::kBlock) continue;
-      // 找最后一个 in-flow kBlock child（线性扫描）
-      LayoutBox* last = c;
-      for (LayoutBox* n = c->next_sibling; n; n = n->next_sibling) {
-        if (IsInFlow(n) && n->type == LayoutType::kBlock) last = n;
-      }
-      last->margin_bottom_collapsed_into_ancestor = true;
-      break;
-    }
+  // 使用主循环维护的 last_in_flow_block 指针（O(1)，无 O(N) 二次扫描）。
+  if (!blocks_bottom && last_in_flow_block) {
+    last_in_flow_block->margin_bottom_collapsed_into_ancestor = true;
   }
 
   // ---- outgoing chain 计算 ---------------------------------------------------
