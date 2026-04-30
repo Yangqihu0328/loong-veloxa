@@ -692,6 +692,122 @@ bool CssParser::ParseDeclaration(SmallVector<Declaration, 8>& out) {
       return true;
     }
 
+    if (EqualsIgnoreCase(name, "border-color") ||
+        EqualsIgnoreCase(name, "border-style") ||
+        EqualsIgnoreCase(name, "border-width")) {
+      CssToken colon = NextNonWS();
+      if (colon.type != CssTokenType::kColon) return false;
+
+      enum class Mode { kWidth, kStyle, kColor };
+      Mode mode;
+      if (EqualsIgnoreCase(name, "border-width")) mode = Mode::kWidth;
+      else if (EqualsIgnoreCase(name, "border-style")) mode = Mode::kStyle;
+      else mode = Mode::kColor;
+
+      SmallVector<CssValue, 4> values;
+      for (usize i = 0; i < 4; ++i) {
+        SkipWhitespace();
+        CssToken peek = tokenizer_.Peek();
+        if (peek.type == CssTokenType::kSemicolon ||
+            peek.type == CssTokenType::kRightBrace ||
+            peek.type == CssTokenType::kEof) {
+          break;
+        }
+        if (peek.type == CssTokenType::kDelim && peek.value == "!") break;
+
+        CssValue v = CssValue::None();
+        if (mode == Mode::kWidth) {
+          if (peek.type != CssTokenType::kDimension &&
+              peek.type != CssTokenType::kNumber &&
+              peek.type != CssTokenType::kPercentage) {
+            break;
+          }
+          v = ParseLengthOrPercent();
+        } else if (mode == Mode::kStyle) {
+          if (peek.type != CssTokenType::kIdent) break;
+          StringView val = peek.value;
+          BorderStyle bs;
+          if (EqualsIgnoreCase(val, "solid")) bs = BorderStyle::kSolid;
+          else if (EqualsIgnoreCase(val, "dashed")) bs = BorderStyle::kDashed;
+          else if (EqualsIgnoreCase(val, "dotted")) bs = BorderStyle::kDotted;
+          else if (EqualsIgnoreCase(val, "none")) bs = BorderStyle::kNone;
+          else break;
+          tokenizer_.Next();
+          v = CssValue::Enum(static_cast<u16>(bs));
+        } else {
+          if (peek.type != CssTokenType::kHash &&
+              peek.type != CssTokenType::kFunction &&
+              peek.type != CssTokenType::kIdent) {
+            break;
+          }
+          v = ParseColor();
+        }
+
+        if (v.type == ValueType::kNone) break;
+        values.push_back(v);
+      }
+
+      bool important = false;
+      SkipWhitespace();
+      CssToken bang = tokenizer_.Peek();
+      if (bang.type == CssTokenType::kDelim && bang.value == "!") {
+        tokenizer_.Next();
+        CssToken imp = NextNonWS();
+        if (imp.type == CssTokenType::kIdent &&
+            EqualsIgnoreCase(imp.value, "important")) {
+          important = true;
+        }
+      }
+
+      SkipWhitespace();
+      if (tokenizer_.Peek().type == CssTokenType::kSemicolon) {
+        tokenizer_.Next();
+      }
+
+      if (values.empty()) return false;
+
+      CssValue top, right, bottom, left;
+      if (values.size() == 1) {
+        top = right = bottom = left = values[0];
+      } else if (values.size() == 2) {
+        top = bottom = values[0];
+        right = left = values[1];
+      } else if (values.size() == 3) {
+        top = values[0];
+        right = left = values[1];
+        bottom = values[2];
+      } else {
+        top = values[0];
+        right = values[1];
+        bottom = values[2];
+        left = values[3];
+      }
+
+      PropertyId pid_t, pid_r, pid_b, pid_l;
+      if (mode == Mode::kWidth) {
+        pid_t = PropertyId::kBorderTopWidth;
+        pid_r = PropertyId::kBorderRightWidth;
+        pid_b = PropertyId::kBorderBottomWidth;
+        pid_l = PropertyId::kBorderLeftWidth;
+      } else if (mode == Mode::kStyle) {
+        pid_t = PropertyId::kBorderTopStyle;
+        pid_r = PropertyId::kBorderRightStyle;
+        pid_b = PropertyId::kBorderBottomStyle;
+        pid_l = PropertyId::kBorderLeftStyle;
+      } else {
+        pid_t = PropertyId::kBorderTopColor;
+        pid_r = PropertyId::kBorderRightColor;
+        pid_b = PropertyId::kBorderBottomColor;
+        pid_l = PropertyId::kBorderLeftColor;
+      }
+
+      out.push_back({pid_t, top, important});
+      out.push_back({pid_r, right, important});
+      out.push_back({pid_b, bottom, important});
+      out.push_back({pid_l, left, important});
+      return true;
+    }
+
     if (EqualsIgnoreCase(name, "flex")) {
       CssToken colon = NextNonWS();
       if (colon.type != CssTokenType::kColon) return false;
