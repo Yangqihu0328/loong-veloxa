@@ -2,7 +2,113 @@
 
 ## 当前任务
 
-**无活跃任务（空闲）— 上一任务 TASK-20260430-01 已归档。**
+**无**。使用 `/van` 启动新任务。
+
+---
+
+<details>
+<summary>TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关] — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关]
+
+- **复杂度级别：** Level 2（多文件修改 + 需求清晰 + 模式 100% 复用既有 `border` / `padding` shorthand 范本，无架构/UI/算法空白）
+- **状态：** ✅ 已归档（2026-04-30）— 归档文档 `memory-bank/archive/archive-TASK-20260430-02.md`；3 改进建议全部闭环（P1 #1 + P2 #2 systemPatterns.md 落实 / #3 评估）；A8 ROI 验证 ✅；ctest Debug 1061/1061 + Release 1030/1030 + Release `-O3 -Werror` 0 err/warn；plan × 0.6 第 15 数据点 0.22× 与 TASK-30-01 P6（0.21×）一同定型「极窄档 0.2-0.25×」
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-02-css-border-shorthand`（基于 main `6b36c87`，已创建）
+- **设计 spec：** `docs/specs/2026-04-30-css-border-shorthand-design.md`（11 段：目的 / 不做 / A1-A8 验收 / D1-D5 决策矩阵 / 架构 + 实施伪码 / T1-T8 威胁建模 / 测试策略 D3 完整档 25 测试 / R1-R2 多轮次划分 / 6 风险登记 / 与既有任务关系）
+- **实现 plan：** `docs/plans/2026-04-30-css-border-shorthand.md`（8 Phase / 25 测试 / 5 commits / plan ~170 min / plan×0.6 ~102 min 准确档预期）
+- **需要创意阶段：** ❌ 否（5 决策 D1-D5 已锁定，无 UI/算法/架构空白；可直接 `/build`）
+- **来源：** TASK-20260430-01 archive §改进建议「副发现 P3 触发型候选 — CSS parser `border-bottom` shorthand 缺失」直接落实；同时验证 TASK-30-01 升级规则 `.cursor/rules/skills/writing-plans.mdc` §0「CSS shorthand 能力 grep 表」的首次外部任务 ROI（自我应用：本任务自身是该规则的应用样板）
+- **安全相关：** ✅ 是（CSS parser 内部 declaration 展开循环 N-cap + 值长度边界 + 与上游 HTML inline style 三件套护栏交互验证；威胁模型在 spec 阶段细化）
+
+#### 范围（用户决策 V1=A 全量 7 shorthand）
+
+| 类型 | shorthand | 1-4 值规则 | 展开成 |
+|---|---|---|---|
+| 方向（R1，4 个）| `border-top` / `border-right` / `border-bottom` / `border-left` | 单边 width/style/color 任意顺序（仿 `border`）| 3 longhand × 1 边 = 3 declaration |
+| 属性级（R2，3 个）| `border-width` / `border-style` / `border-color` | 1-4 值（仿 `padding` / `margin`）| 4 longhand × 1 type = 4 declaration |
+
+合计 7 个新 shorthand，全部展开为既有 12 longhand，零新 PropertyId / 零 enum 改动。
+
+#### VAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围 | **A** 全量 7 shorthand（4 方向 + 3 属性级）| 高内聚一次性补全；reviewer 分歧最小；下次同类问题不重复 |
+| V2 | 拆分策略 | **多轮次 Build**：R1 = 4 方向 / R2 = 3 属性级 | 用户决策；R1 为 TASK-30-01 直接触发受益；R2 是与 padding/margin 完全同模式机械补全 |
+| V3 | Git 分支 | `feature/TASK-20260430-02-css-border-shorthand` | 基于 main `6b36c87` |
+| V4 | 复杂度 | **Level 2** | 多文件修改 + 模式 100% 复用 + 无架构空白；不需要 /creative |
+| V5 | 安全标注 | ✅ **是** | CSS parser declaration 展开 N-cap 护栏 + 与上游 HTML inline style 三件套护栏交互验证 |
+
+#### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-30-01 升级规则「CSS shorthand 能力 grep 表」自我应用）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | `border` 总称 shorthand 当前是否支持？ | ✅ 是。`parser.cc:517-597` 整段 4-side expansion（width/style/color，每边一致）；`tests/core/css/parser_test.cc:319 BorderShorthand` 覆盖 12 declaration 展开 | 已有成熟范本可复刻 |
+| F2 | `border-top/right/bottom/left` 4 方向 shorthand 是否支持？ | ❌ **完全无实现**。`property.cc:49-60` 只列 12 longhand；`PropertyIdFromName` 命中率 0；`ParseDeclaration` 无对应分支 | TASK-30-01 build 副发现完全确认 |
+| F3 | `border-width/style/color` 3 属性级 shorthand 是否支持？ | ❌ **完全无实现**。同 F2 — 仅 longhand 入口，无 1-4 值展开（与 padding/margin 同模式）| 一并补全可大幅减少 reviewer 分歧 |
+| F4 | PropertyId 枚举需扩展吗？ | ❌ **不需要**。所有新 shorthand 直接展开为现有 longhand 写入 declaration list | 零 ABI 风险 / 零跨子系统影响 |
+| F5 | 现有测试 fingerprint 是否充足？ | ✅ `parser_test.cc` 含 `ShorthandPadding` (4-value) + `BorderShorthand` (12 expansion) 双范本；`property_test.cc`、`enum_serialization_test.cc:117` | 测试范本 100% 复用 |
+| F6 | FetchContent 代理 / 离线状态 | ✅ `build/_deps/` + `build-bench/_deps/` 已含完整离线 | 跳过 proxy 守卫 |
+
+#### 验收要点（待 /plan 精化）
+
+- ctest 全量 PASS（基线 1039/1039；预计 +14-20 new test cases，每 shorthand 1-2 测试 + 2-3 反向探针 + 1-2 安全 N-cap 测试）
+- Release `-O3 -Werror` 0 err/warn
+- 双入口验证：`CssParser::Parse()`（stylesheet 路径）+ `CssParser::ParseDeclarationList()`（HTML inline style 路径）均覆盖
+- DoS / 病态输入护栏：每 shorthand 复用既有 `for (int i = 0; i < 3; ++i)` / `for (usize i = 0; i < 4; ++i)` N-cap
+- 与 TASK-26-01 R2 #28 上游 HTML inline style 三件套护栏（count cap 1000 / value cap 8KB / 黑名单）兼容性验证
+- §9.3 反向探针 ≥ 1 处（D3 类强制）
+- TASK-30-01 升级规则 §0「CSS shorthand 能力 grep 表」首次外部任务 ROI 自我验证
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | 无新依赖（完全在 vx_core CSS 子系统） |
+| 环境就绪 | ✅ | `build/`(Debug) + `build-bench/`(Release) 均存在可复用 |
+| 已有 artifact | ✅ | parser.cc 现有 `border` shorthand 范本 + parser_test.cc 测试范本 100% 复用 |
+| ctest 基线 | ✅ | 隐式 1039/1039 PASS（TASK-30-01 终态继承） |
+| FetchContent 代理守卫 | ⊘ 跳过 | F6 离线 |
+| 待处理事项关联 | ✅ | TASK-30-01 archive §10 P3 触发型候选直接落实 + 验证 §0 升级规则 ROI 自我应用 + plan × 0.6 第 15 数据点（Level 2 多轮次 + 安全相关）|
+
+#### PLAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | 4 方向 shorthand 实现模式 | **A 复制粘贴** 既有 `border` 模板 4 次 | 与现有 `border` / `padding` / `flex` / `transition` 风格一致；reviewer 心智成本最低；helper 抽取的 30 LOC 收益不抵 template/lambda 引入新模式风险 |
+| D2 | 3 属性级 shorthand 实现模式 | **A 复制粘贴** 既有 `padding/margin` 模板 3 次 | 同 D1；3 个 value parser（Length/Enum/Color）类型异构，统一 helper 反而需要类型擦除 |
+| D3 | 测试深度 | **C 完整档**（25 测试：12 R1 + 13 R2）| V5 安全 + §9.3 反向探针强制；双入口验证防 ParseDeclarationList 路径退化；与既有 BorderShorthand 互斥不退化测试是 §0 fingerprint 自我应用 |
+| D4 | 安全护栏复用策略 | **A 完全复用** 既有 N-cap (3-iter / 4-iter) | 已经过 TASK-26-01 R2 验证；上游 HTML inline style 三件套（count 1000 / value 8KB / 黑名单）覆盖威胁面 T1-T5；零新护栏需求 |
+| D5 | R1/R2 Phase 划分粒度 | **A 2 GREEN commits**（R1 = 4 方向同时绿 / R2 = 3 属性级同时绿）| 4 shorthand 同模式可并发实施 1 commit；3 shorthand 同模式 1 commit；与 V2 多轮次决策一致 |
+
+#### PLAN 阶段威胁建模（V5 安全相关，T1-T8）
+
+| # | 威胁 | 攻击载体 | 护栏 |
+|:-:|---|---|---|
+| T1 | DoS via 海量 declaration | inline style 含数千个 shorthand | ✅ 上游 `kInlineStyleMaxDeclarationCount = 1000` |
+| T2 | DoS via 单 value 巨长 | `style="border-width: 1234567...(8KB+)"` | ✅ 上游 `kInlineStyleMaxValueLength = 8KB` |
+| T3-T5 | 历史攻击向量（expression/behavior/javascript:）| 注入到 border-color | ✅ 上游 `ContainsBlacklistKeyword` |
+| T6 | parser 内部 token 循环耗尽 CPU（4 方向 shorthand）| `border-top: 1 1 1 1 ... ` | ⚠️ 复用既有 3-iter cap；`BorderTopShorthand_NCapSecurity` 专测 |
+| T7 | over-match 误绑（`border-top-width` 进 shorthand 路径）| longhand 抢匹配 | ✅ `EqualsIgnoreCase` 严格相等天然防御；`BorderTopShorthand_LonghandFallthrough` 专测 |
+| T8 | 4-value 解析下界绕过 | `border-width: 1 2 3 4 5 6 ...` | ⚠️ 复用既有 4-iter cap；`BorderWidthShorthand_NCapSecurity` 专测 |
+
+**结论**：威胁面被既有上游护栏 + 既有 parser 内部 N-cap 完整覆盖；零新护栏需求。
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 21:50 | 初始化 | VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1-V5 锁定（V1=A 全量 7 / V2=多轮次 / V4=Level 2 / V5=✅ 安全）；分支创建（基于 main `6b36c87`）；MB 同步；下一步 `/plan` |
+| 2026-04-30 21:55 | 规划完成 | PLAN 完成；5 决策矩阵 D1-D5 锁定（A/A/C/A/A）；spec + plan 文档落盘；威胁建模 T1-T8 完整；R1（4 方向）+ R2（3 属性级）多轮次划分；估时 ~170 min plan / ~102 min plan×0.6；不需要 `/creative`；下一步 `/build` |
+| 2026-04-30 22:05 | 构建中·R1 完成 | R1 TDD 闭环：P0 grep G1-G6 ✅ → R1.1 RED 9 FAIL + 1 sentinel PASS → R1.2 GREEN（parser.cc +96 LOC，单分支聚合 4 shorthand）→ R1.3 §9.3 反向探针完整三态；ctest 全量 1049/1049 PASS；3 commits（PLAN docs / R1 RED `f8ed62f` / R1 GREEN `5378e67`） |
+| 2026-04-30 22:25 | 构建完成 | R2 TDD 闭环：R2.1 RED 11 FAIL + 1 sentinel PASS → R2.2 GREEN（parser.cc +116 LOC，单分支聚合 3 shorthand + Mode enum 分派）→ R2.3 §9.3 反向探针（border-width 2-value 错位）完整三态；ctest Debug 1061/1061 + Release 1030/1030；A1-A7 全过；2 R2 commits（`e2688a7` / `1761b4f`）；下一步 `/reflect` |
+| 2026-04-30 22:35 | 回顾完成 | reflection 文档落盘 `memory-bank/reflection/reflection-TASK-20260430-02.md`；3 改进建议落实：P1 #1（systemPatterns.md「极窄路径 0.2-0.25×」档新增）+ P2 #2（systemPatterns.md「Spec 实施模式描述粒度准则」新段）+ A8 ROI 评估；A8 ✅ 高/中 ROI（2/4 触发，§0 grep 表 + 隐式契约 fingerprint 双触发）；plan × 0.6 第 15 数据点 0.22× 与 TASK-30-01 P6（0.21×）一同定型「极窄档」；下一步 `/archive` |
+| 2026-04-30 22:42 | 已归档 | 归档文档 `memory-bank/archive/archive-TASK-20260430-02.md`；3 改进建议全部闭环（P1 #1 + P2 #2 systemPatterns.md 落实 / #3 评估 — 无需迁移到「待处理事项」）；feature 分支已合并到 main `--no-ff` 后删除；MB 三件套重置为「空闲」 |
+
+</details>
+
+---
 
 <details>
 <summary>TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则） — ✅ 已归档（点开查看历史）</summary>

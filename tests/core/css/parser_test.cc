@@ -328,6 +328,240 @@ TEST(CssParserTest, BorderShorthand) {
   EXPECT_EQ(sheet.rules[0].declarations[8].value.color, 0xFF0000FFu);
 }
 
+// --- Border directional shorthand (TASK-20260430-02 R1) ---
+
+TEST(CssParserTest, BorderTopShorthand_FullValue) {
+  auto sheet = CssParser::Parse("div { border-top: 1px solid red; }");
+  ASSERT_EQ(sheet.rules.size(), 1u);
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 1.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderTopStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderTopColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0xFF0000FFu);
+}
+
+TEST(CssParserTest, BorderRightShorthand_FullValue) {
+  auto sheet = CssParser::Parse("div { border-right: 2px dashed blue; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderRightWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 2.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderRightStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kDashed));
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderRightColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0x0000FFFFu);
+}
+
+TEST(CssParserTest, BorderBottomShorthand_FullValue) {
+  auto sheet = CssParser::Parse("div { border-bottom: 3px dotted green; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderBottomWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 3.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderBottomStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kDotted));
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderBottomColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0x008000FFu);
+}
+
+TEST(CssParserTest, BorderLeftShorthand_FullValue) {
+  auto sheet = CssParser::Parse("div { border-left: 4px solid #FF0000; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderLeftWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 4.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderLeftStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderLeftColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0xFF0000FFu);
+}
+
+TEST(CssParserTest, BorderTopShorthand_PartialNoColor) {
+  auto sheet = CssParser::Parse("div { border-top: 2px solid; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 2u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 2.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderTopStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));
+}
+
+TEST(CssParserTest, BorderTopShorthand_OutOfOrder) {
+  auto sheet = CssParser::Parse("div { border-top: red 2px solid; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 2.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderTopStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderTopColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0xFF0000FFu);
+}
+
+TEST(CssParserTest, BorderTopShorthand_Important) {
+  auto sheet = CssParser::Parse("div { border-top: 1px solid red !important; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 3u);
+  EXPECT_TRUE(sheet.rules[0].declarations[0].important);
+  EXPECT_TRUE(sheet.rules[0].declarations[1].important);
+  EXPECT_TRUE(sheet.rules[0].declarations[2].important);
+}
+
+TEST(CssParserTest, BorderTopShorthand_DualEntry) {
+  auto decls = CssParser::ParseDeclarationList("border-top: 1px solid red");
+  ASSERT_EQ(decls.size(), 3u);
+  EXPECT_EQ(decls[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(decls[0].value.number, 1.0f);
+  EXPECT_EQ(decls[1].property, PropertyId::kBorderTopStyle);
+  EXPECT_EQ(decls[1].value.enum_value, static_cast<u16>(BorderStyle::kSolid));
+  EXPECT_EQ(decls[2].property, PropertyId::kBorderTopColor);
+  EXPECT_EQ(decls[2].value.color, 0xFF0000FFu);
+}
+
+TEST(CssParserTest, BorderTopShorthand_NCapSecurity) {
+  // T6: per-shorthand internal token cap (3 iter) MUST cut off 4th+ length tokens.
+  // 4 length tokens provided; cap consumes only first 3, all overwriting `width`,
+  // resulting in width = 3px, no style/color. 4th token (4px) leaks to next decl
+  // (parsed as junk, dropped).
+  auto sheet = CssParser::Parse("div { border-top: 1px 2px 3px 4px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 3.0f);
+}
+
+TEST(CssParserTest, BorderTopWidthLonghand_NotShorthandPath) {
+  // T7 sentinel: longhand `border-top-width` MUST traverse PropertyIdFromName
+  // direct path (not shorthand fallthrough). Expected to PASS pre/post-implementation.
+  auto sheet = CssParser::Parse("div { border-top-width: 5px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 1u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 5.0f);
+}
+
+// --- Border property-level shorthand (TASK-20260430-02 R2) ---
+
+TEST(CssParserTest, BorderWidthShorthand_OneValue) {
+  auto sheet = CssParser::Parse("div { border-width: 5px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 5.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderRightWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[1].value.number, 5.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderBottomWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[2].value.number, 5.0f);
+  EXPECT_EQ(sheet.rules[0].declarations[3].property, PropertyId::kBorderLeftWidth);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[3].value.number, 5.0f);
+}
+
+TEST(CssParserTest, BorderWidthShorthand_TwoValues) {
+  auto sheet = CssParser::Parse("div { border-width: 1px 2px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 1.0f);  // top
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[1].value.number, 2.0f);  // right
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[2].value.number, 1.0f);  // bottom
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[3].value.number, 2.0f);  // left
+}
+
+TEST(CssParserTest, BorderWidthShorthand_ThreeValues) {
+  auto sheet = CssParser::Parse("div { border-width: 1px 2px 3px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 1.0f);  // top
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[1].value.number, 2.0f);  // right
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[2].value.number, 3.0f);  // bottom
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[3].value.number, 2.0f);  // left
+}
+
+TEST(CssParserTest, BorderWidthShorthand_FourValues) {
+  auto sheet = CssParser::Parse("div { border-width: 1px 2px 3px 4px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 1.0f);  // top
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[1].value.number, 2.0f);  // right
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[2].value.number, 3.0f);  // bottom
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[3].value.number, 4.0f);  // left
+}
+
+TEST(CssParserTest, BorderStyleShorthand_OneValue) {
+  auto sheet = CssParser::Parse("div { border-style: solid; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[0].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderRightStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderBottomStyle);
+  EXPECT_EQ(sheet.rules[0].declarations[3].property, PropertyId::kBorderLeftStyle);
+}
+
+TEST(CssParserTest, BorderStyleShorthand_FourValues) {
+  auto sheet = CssParser::Parse("div { border-style: solid dashed dotted none; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].value.enum_value,
+            static_cast<u16>(BorderStyle::kSolid));   // top
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.enum_value,
+            static_cast<u16>(BorderStyle::kDashed));  // right
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.enum_value,
+            static_cast<u16>(BorderStyle::kDotted));  // bottom
+  EXPECT_EQ(sheet.rules[0].declarations[3].value.enum_value,
+            static_cast<u16>(BorderStyle::kNone));    // left
+}
+
+TEST(CssParserTest, BorderColorShorthand_OneValue) {
+  auto sheet = CssParser::Parse("div { border-color: red; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].property, PropertyId::kBorderTopColor);
+  EXPECT_EQ(sheet.rules[0].declarations[0].value.color, 0xFF0000FFu);
+  EXPECT_EQ(sheet.rules[0].declarations[1].property, PropertyId::kBorderRightColor);
+  EXPECT_EQ(sheet.rules[0].declarations[2].property, PropertyId::kBorderBottomColor);
+  EXPECT_EQ(sheet.rules[0].declarations[3].property, PropertyId::kBorderLeftColor);
+}
+
+TEST(CssParserTest, BorderColorShorthand_FourValues) {
+  auto sheet = CssParser::Parse("div { border-color: red green blue #FFFFFF; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_EQ(sheet.rules[0].declarations[0].value.color, 0xFF0000FFu);  // top: red
+  EXPECT_EQ(sheet.rules[0].declarations[1].value.color, 0x008000FFu);  // right: green
+  EXPECT_EQ(sheet.rules[0].declarations[2].value.color, 0x0000FFFFu);  // bottom: blue
+  EXPECT_EQ(sheet.rules[0].declarations[3].value.color, 0xFFFFFFFFu);  // left: #FFFFFF
+}
+
+TEST(CssParserTest, BorderWidthShorthand_DualEntry) {
+  auto decls = CssParser::ParseDeclarationList("border-width: 1px 2px");
+  ASSERT_EQ(decls.size(), 4u);
+  EXPECT_EQ(decls[0].property, PropertyId::kBorderTopWidth);
+  EXPECT_FLOAT_EQ(decls[0].value.number, 1.0f);
+  EXPECT_FLOAT_EQ(decls[3].value.number, 2.0f);  // left == right
+}
+
+TEST(CssParserTest, BorderWidthShorthand_NCapSecurity) {
+  // T8: per-shorthand 4-value cap MUST cut off 5th+ length tokens.
+  // 7 length tokens provided; cap consumes only first 4 (1,2,3,4),
+  // expansion: top=1, right=2, bottom=3, left=4. Leftover 5,6,7 leak as junk.
+  auto sheet = CssParser::Parse("div { border-width: 1px 2px 3px 4px 5px 6px 7px; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[0].value.number, 1.0f);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[1].value.number, 2.0f);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[2].value.number, 3.0f);
+  EXPECT_FLOAT_EQ(sheet.rules[0].declarations[3].value.number, 4.0f);
+}
+
+TEST(CssParserTest, BorderStyleShorthand_InvalidIdentRejected) {
+  // Non-{solid,dashed,dotted,none} ident MUST cause shorthand to reject (0 decl).
+  auto sheet = CssParser::Parse("div { border-style: foobar; }");
+  ASSERT_EQ(sheet.rules.size(), 1u);
+  EXPECT_EQ(sheet.rules[0].declarations.size(), 0u);
+}
+
+TEST(CssParserTest, BorderColorShorthand_Important) {
+  auto sheet = CssParser::Parse("div { border-color: red !important; }");
+  ASSERT_EQ(sheet.rules[0].declarations.size(), 4u);
+  EXPECT_TRUE(sheet.rules[0].declarations[0].important);
+  EXPECT_TRUE(sheet.rules[0].declarations[1].important);
+  EXPECT_TRUE(sheet.rules[0].declarations[2].important);
+  EXPECT_TRUE(sheet.rules[0].declarations[3].important);
+  EXPECT_EQ(sheet.rules[0].declarations[0].value.color, 0xFF0000FFu);
+}
+
 // --- Multiple rules / full stylesheet ---
 
 TEST(CssParserTest, MultipleRules) {
