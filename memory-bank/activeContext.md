@@ -2,113 +2,107 @@
 
 ## 当前阶段
 
-**归档完成（2026-05-01 ~00:30）** — TASK-20260430-03 全代码库 Code Review 已归档；feature 分支 `feature/TASK-20260430-03-codebase-review` 保留未合并（background agent 双轨产物，由用户决定合并 main 时机）。Checkpoint 2 R3+ 13 项任务建议待用户决策具体拆分顺序后立项。
-
-> **本会话职责**：作为 03 任务的 background agent，已完成 VAN→PLAN→BUILD R0+R1+R2→REFLECT→ARCHIVE 全流程。用户主线在 04 任务（DevTool 规划）独立演进，03 分支留待用户审 + 合并。
->
-> **后续动作主导权交还用户**：
-> 1. R3+ 拆分顺序决策（推荐 Top 3 #1/#2/#3 共 7-11 h）
-> 2. feature/TASK-20260430-03-codebase-review 合并 main 时机
-> 3. 当前主 worktree 在 04 分支 — `activeContext.md` / `tasks.md` / `progress.md` 在 03 分支独立演进，与主 worktree 04 任务的 MB 状态**互不影响**
-
-**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）+ 合并 main 时机：
-- 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG error_exit kill）— P1 安全 / 估 4-6 h / Level 3
-- 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
-- 🟡 #3 LoadHTML 重置 dom_bindings_ 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2
-- 🔴 #4 CSS 属性元数据表（F-022）— P1 维护性 / Level 4 大件 / 1-2 周（架构性重构）
-
-**Reflection 主要发现：**
-- Background agent 双轨模式首次实战 → race condition 应对协议固化（systemPatterns 新模式）
-- plan ×0.6 估时按任务类型分桶系数矩阵升级（review 0.4-0.7× / fast-fix 0.7-1.4× / racy 1.4-2.5× / 大件 0.8-1.2×）
-- Quick fix 颗粒度校准 12 min/项（plan 9 min/项 + 33%）
-- 总耗时 ~177 min（plan ×0.6 区间 0.85-1.00× ✅）— **plan ×0.6 模型有效，第 16 数据点入库**
-- P0 改进建议 1 项（git symbolic-ref commit 守门）— archive 阶段写入 git-workflow skill
-
-**R2 实绩（条件触发 ✅）：**
-- 6/6 commits 全过 ctest 1062/1062
-- F-020 R2.1 `3b4b2e7`（selector_matcher dead return + VX_DCHECK）
-- F-033 R2.2 `1467207`（html parser ProcessEndTag isize 净化）
-- F-040 R2.3 `ddea78d`（rasterizer 阈值注释统一）
-- F-026 R2.4 `95ae814`（layout_engine 单参 arena thread_local）
-- F-053 R2.5 `9c6ad5f`（image_decoder DecodeFromFile max_size 守卫 + 新单测）
-- F-055 R2.6 `668a9fe`（vx_version() CMake configure_file 生成）
-- 实测耗时 ~70 min（plan 55 min ×0.6 = 33 min；plan ×1.27 / ×0.6 ×2.12，超 ×0.6 因 worktree 隔离 + 并发会话冲突修复 ~25 min 额外开销）
-
-**TDD 模式：** R2 quick fix 不强制 RED-GREEN-REFACTOR（注释 / 单行守卫 / 文档化）；R2.5 image_decoder 是唯一行为变化，加新单测验证守卫触发；其余每项变更 ctest 1062 通过验证。
-
-> **TDD 模式：** R0/R1 不适用（review 类任务为数据收集 + 报告产出，无新代码无新测试）；R2 P0 修复阶段对有测试的修复强制 RED 反向探针（systemPatterns §9.3）。
-
-### R0 数据快照（详见 `docs/reports/2026-04-30-codebase-review-r0-data.md`）
-
-- ctest 基线：**1061/1061 PASS in 2.36s**
-- fingerprint grep：veloxa/ 全代码库 0 TODO/FIXME/XXX/HACK + 0 危险 C 函数 + 0 throw + 0 sscanf/atoi 不安全转换
-- lcov 覆盖率：行 **85.4%** / 函数 **95.4%** / 分支 **57.6%**（薄弱模块 12 项）
-- CVE 审计：**0 CRITICAL/HIGH** + 5 Medium/Low（含 libpng 3 个 2026 新公布 Medium，与 image_decoder 57.1% 覆盖薄弱形成威胁链）
-- R1 抽样名单：H 20 / M 80 / L 36 三层就绪
-- R0 候选 findings 14 项（F-001 ~ F-014），R1 验证 + 分级 + 写方案
-- 实测耗时 **~22 min**（plan 90 min ×0.6 = 54 min；实测 0.41× plan / 0.69× ×0.6） → reflect 阶段第 16 数据点
+**空闲（idle）** — TASK-20260430-04 已于 2026-05-01 ~03:00 归档并 `--no-ff` 合入 main。Memory Bank 已重置，准备接受新任务（使用 `/van` 启动）。
 
 ## 当前任务
 
-### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
+**无当前任务** — 等待用户启动新任务。
 
-- **复杂度：** Level 4
-- **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`）
-- **范围决策：** V1=A 全代码库 / V2=all 6 维度 / V3=C 完整实施（多轮次 + Checkpoint）/ V4=D 混合视角 / V5=✅ 安全相关
-- **执行策略 X：** R0+R1 必然 / R2 条件触发 / R3+ 拆出独立后续任务
-- **多轮次划分：**
-  - R0（prep）：grep fingerprint + 抽样深度策略
-  - R1（必然）：6 维度全代码库 review 报告
-  - **Checkpoint 1**（用户审报告）
-  - R2（条件触发）：P0 quick fix 5-15 个
-  - **Checkpoint 2**（用户决定 R3+ 拆分）
-  - R3+：拆出独立后续任务，不在本任务内
-- **上限封顶：** R0+R1+R2，plan ~5-8h / plan×0.6 ~3-5h
+## 上次任务（已归档闭环）
 
-## 焦点
+### TASK-20260430-04：规划 UI 编辑器与调试器（DevTool 三件套蓝图设计）— ✅ 已归档（2026-05-01 ~03:00）
 
-- R0 / R1 / R2 / Reflect / Archive 全部 ✅；任务全生命周期闭环
-- **当前 03 分支状态**：feature 分支保留未合并，由用户审 + 决定合并时机
+- **状态：** 已 `--no-ff` 合入 main；feature 分支 `feature/TASK-20260430-04-ui-editor-debugger` 仍存在（可 `git branch -d` 安全删除）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260430-04.md`
+- **核心产出：**
+  - 4 篇蓝图文档（spec + plan + 2 creative，合计 ~1879 行）
+  - 8 决策矩阵 D1-D8 全部锁定（用户连续 8 次跳过 AskQuestion 隐式批准 VAN 推荐默认）
+  - 8 项 T1-T8 安全威胁建模（一期落地 T2/T3/T5/T6/T7/T8 + 扩展段占位 T1/T4）
+  - 4 项历史技术债（#26 / #35 / #40 / #4）闭环 ROI 路径映射
+  - 7 项独立立项候选（TASK-30-04-A/B/C 主线 + 4 项扩展段）
+  - reflection 10 节全面回顾 + 10 项改进建议（P0×3 / P1×4 / P2×3）
+- **改进建议落实率 90%**：P0 3/3 + P1 4/4 + P2 2/3（剩 1 项 P2 #10 留待 TASK-30-04-A/B/C 立项后实测回填）
+- **plan ×0.6 第 17 数据点入库**：核心轮次（VAN + Plan）0.27-0.35× plan / 0.46-0.59× plan ×0.6（极窄档 + review 类下限交界）
+- **方法论沉淀**：首次 V2=a 蓝图任务工作流变体实践 + 「批量决策跳过 + 批量文档产出」3 数据点群组化「极窄档」+ dogfood 路径作为探测性 acceptance test 概念
+
+### TASK-20260430-03：全代码库 Code Review — ✅ 已归档（2026-05-01 ~00:30）
+
+- **状态：** 已 `--no-ff` 合并到 main `2445990`（11 commits + 1 merge commit）；feature 分支 `feature/TASK-20260430-03-codebase-review` 仍存在（可 `git branch -d` 安全删除）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260430-03.md`
+- **核心产出：**
+  - R0 准备（commit `ba1cf8b`，~22 min）— grep fingerprint + lcov + CVE 审计 + R1 抽样名单
+  - R1 全代码库 6 维度 review 报告（commit `802a273`，~85 min）— 934 行 / 55 项 findings（28 P1 / 19 P2 / 8 P3）
+  - R2 P0 quick fix 6 项（F-020 / F-033 / F-040 / F-026 / F-053 / F-055，~70 min，6 commits 全过 ctest 1062/1062）
+  - Reflect + Archive 全闭环（plan ×0.6 第 16 数据点入库，0.85-1.00× 区间）
 - **改进建议落实率 90%**：P0 1/1 + P1 4/4 + P2 4/5（剩 1 项 P2 #9 留作 ad-hoc）
-- **R3+ 13 项任务建议入仓**待 Checkpoint 2 用户决策具体拆分顺序后立项
-- 03 分支后续动作主导权完全交还用户（合并时机 / R3+ 拆分顺序）
+- **R3+ 13 项 P1 候选（待用户决策拆分顺序后独立立项）：** 详见 `docs/reports/2026-04-30-codebase-review.md`，Top 4 推荐：
+  - 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG `error_exit` kill）— P1 安全 / 估 4-6 h / Level 3
+  - 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
+  - 🟡 #3 LoadHTML 重置 `dom_bindings_` 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2 **— 注：与 TASK-30-04-C HTML hot reload 扩展段强依赖（已交叉记录到 codebase-review.md F-025 段）**
+  - 🔴 #4 CSS 属性元数据表（F-022）— P1 维护性 / Level 4 大件 / 1-2 周（架构性重构）
 
-## 待处理事项 — TASK-20260430-03 改进建议闭环（reflection §5）
-
-### P0（archive 前必完成）
-
-- [ ] #3 git symbolic-ref --short HEAD commit 前断言守门 → 写入 `.cursor/rules/skills/git-workflow.mdc`「commit 前防御」段（archive 阶段执行）
-
-### P1（下次同类任务前完成，迁入 activeContext 待处理事项）
-
-- [ ] #1 Background agent 双轨模式 + worktree 隔离协议固化 → systemPatterns + workflow rule（已部分写入 systemPatterns，archive 阶段补 rule 文件）
-- [ ] #2 plan ×0.6 估时按任务类型分桶系数矩阵 → systemPatterns §最窄路径表升级（已写入 systemPatterns，archive 阶段交叉验证）
-- [ ] #4 reflog 作为会话冲突首发诊断工具 → systematic-debugging skill 新段
-- [ ] #7 Quick fix 颗粒度 plan 估时 12 min/项 校准 → 已写入 systemPatterns
-
-### P2（长期沉淀，已写入 systemPatterns / techContext）
-
-- ✅ #5 Worktree 删除前 rm -rf cmake FetchContent → 已写入 techContext
-- ✅ #6 CMake basic vs full 矩阵 → 已写入 techContext
-- ✅ #8 Checkpoint 推荐默认 + 隐式批准 → 已写入 systemPatterns
-- ⏳ #9 R3+ 拆分协议「13 候选 → Top N」流程标准化（archive 阶段考虑加入 spec 模板）
-- ⏳ #10 review 类任务 spec 模板 → 已写入 systemPatterns，archive 阶段考虑加入 `.cursor/rules/templates/`
-
-### R3+ 13 项拆分任务（待 Checkpoint 2 决策具体拆分顺序）
-
-详见 reflection §6.1 / R1 报告 §8 / 上文「焦点」段 Top 4。
-
-## 待处理事项（P0/P1/P2 后续）
+## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
 
 ### 长期沉淀（已写入 systemPatterns / techContext / 规则文件）
 
+- **TASK-30-04 升级 9 条 ROI 已落实**（reflect §5 + archive §6 闭环）：
+  - `.cursor/rules/main.mdc`: § Level 4 蓝图任务 V2=a 工作流变体段
+  - `.cursor/rules/skills/brainstorming.mdc`: 跨决策协同度 + 决策跳过率监控
+  - `systemPatterns.md`: plan ×0.6 矩阵第 17 数据点（极窄档 0.20-0.35× plan）+ Level 4 蓝图任务 V2=a 工作流变体段 + dogfood 路径段
+  - `techContext.md`: TASK-30-04 蓝图主交付摘要段（4 篇文档 + D1-D8 + 7 项独立立项 + 4 技术债闭环）
+  - `docs/reports/2026-04-30-codebase-review.md`: F-025 段加 Hot Reload 强依赖交叉记录
+- **TASK-30-03 升级 9 条 ROI 已落实**：
+  - `systemPatterns.md`: Background agent 双轨模式 + worktree 隔离协议
+  - `systemPatterns.md`: plan ×0.6 任务类型分桶系数矩阵（review 0.4-0.7× / fast-fix 0.7-1.4× / racy 1.4-2.5× / 大件 0.8-1.2×）
+  - `systemPatterns.md`: Quick fix 颗粒度估时基准（12 min/项）
+  - `systemPatterns.md`: Checkpoint 推荐默认 + 隐式批准协议
+  - `systemPatterns.md`: Review 类任务 6 维度 × 抽样深度矩阵 spec 模板
+  - `techContext.md`: CMake basic vs full 配置矩阵（VX_BUILD_BENCHMARKS + VX_PLATFORM_SDL2 默认值差额导致 ctest count 1031 vs 1061-1062）
+  - `techContext.md`: Background agent 双轨 worktree 隔离工程指引（含 FetchContent root-owned hooks 清理）
+  - `.cursor/rules/skills/git-workflow.mdc`: commit 前防御断言（multi-session safety）— `git symbolic-ref --short HEAD` 守门
+  - `.cursor/rules/skills/systematic-debugging.mdc`: 并发会话 / 多 agent 冲突诊断（首发工具 `git reflog`）
 - **TASK-30-02 升级 systemPatterns.md 已生效**：
   - 「最窄路径」表「极窄档 0.2-0.25×」分类
   - 「Spec 实施模式描述粒度准则」段
 - **TASK-30-01 升级规则 4 条 ROI 已部分验证**
 - **TASK-26-01 升级规则 ROI 已部分验证**
 
-### 输入材料：8 项 P3 触发型候选（R1 必读）
+### 来自 codebase review R1 报告的新输入（13 项 R3+ 候选）
+
+存放在 `docs/reports/2026-04-30-codebase-review.md`（已合并到 main `2445990`）。Top 4 见上文「上次任务 §R3+ 推荐」。
+
+### 来自 TASK-30-04 蓝图主交付的 7 项独立立项候选
+
+基于 `docs/plans/2026-04-30-devtool.md` 拆出，由用户后续独立立项（**已不在任何当前任务范围内**）：
+
+**主线 3 项：**
+
+- **TASK-30-04-A**：DevTool Phase A — Inspector 实施（DOM tree / Style panel / Layout panel + 元素 hover 高亮）
+  - 估时：~12.25 h plan / ~7.35 h plan ×0.6（Level 3）
+  - 触及技术债闭环：#26 LayoutBox.Dump / #40 C API introspection / #4 ImageCache namespace
+  - **强依赖**：I1 Application 双 Document 槽改造（R1 风险，重命名 `document_` → `target_document_` mitigation 已 plan）
+
+- **TASK-30-04-B**：DevTool Phase B — Performance Overlay 实施（FPS / 帧时序 / dirty rect 边框高亮）
+  - 估时：~7.25 h plan / ~4.35 h plan ×0.6（Level 2-3）
+  - 触及技术债闭环：#35 UpdateManager 帧钩子（五钩子）
+  - **立项前置**：TASK-30-04-A 必须先于 B 立项（B 依赖 A 的 Inspector 渲染管线 + UI 框架基础）
+
+- **TASK-30-04-C**：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）
+  - 估时：~10 h plan / ~6 h plan ×0.6（Level 3）
+  - **强依赖**：R3+ #3 F-025 LoadHTML use-after-free 修复（如未来扩展 HTML 增量重载）— 一期 CSS-only 不踩
+  - 安全守卫：T2 路径穿越 8 步 + T8 mutation propagation 防御
+  - **立项条件**：可与 A 并行（无强依赖）
+
+**扩展段 4 项**（spec §11 占位，按用户优先级排期，无相互强依赖）：
+
+- **TASK-30-04-D**（暂定）：Console JS REPL（V1=B 扩展段，威胁 T1 任意 eval mitigation）
+- **TASK-30-04-E**（暂定）：JS Debugger backend（QuickJS Debug API 对接，触及技术债 #44 + 威胁 T6 callback budget）
+- **TASK-30-04-F**（暂定）：CDP 远程调试 port（威胁 T4 HMAC token + nonce + loopback only + default off mitigation）
+- **TASK-30-04-G**（暂定）：完整 UI 编辑器（dogfood 完整闭环，spec §11 长期愿景）
+
+**估时回填校准**（reflect §5 #10 P2 长期 — 待 TASK-30-04-A/B/C 实测后回填 systemPatterns 矩阵）
+
+### 输入材料：8 项 P3 触发型候选（codebase review R1 已分析）
 
 - TASK-26-02-full（clearance 完整版）
 - TASK-26-03（LayoutInline IFC 递归 + bidi）
@@ -119,13 +113,15 @@
 - TASK-20260419-08（`string.h` 剩余 memcpy noinline 化）
 - TASK-20260419-12（DrawText 真路径优化，K7 隐式闭环待评估）
 
-## 下一步
+## 收尾清理（可选）
 
-- 03 分支：用户决策 R3+ 拆分顺序 + feature 分支合并 main 时机（agent 不擅自合并）
-- 主线（04 任务）：用户继续在 main worktree 推进 04 DevTool 规划任务，与 03 分支独立
+- `git branch -d feature/TASK-20260430-03-codebase-review`（已合并到 main，可安全删除）
+- `git branch -d feature/TASK-20260430-04-ui-editor-debugger`（归档后合并到 main，可安全删除）
 
 ## 最近归档（速查，详细见 archive 文档）
 
+- `archive-TASK-20260430-04.md`（DevTool 三件套蓝图设计 Level 4 V2=a，2026-05-01）
+- `archive-TASK-20260430-03.md`（全代码库 Code Review Level 4，2026-05-01）
 - `archive-TASK-20260430-02.md`（CSS border shorthand 补全 Level 2，2026-04-30）
 - `archive-TASK-20260430-01.md`（first/last child margin collapse with parent Level 3，2026-04-30）
 - `archive-TASK-20260426-01.md`（Layout 正确性消化 Level 4，2026-04-30）

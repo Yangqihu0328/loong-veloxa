@@ -688,3 +688,71 @@ git worktree remove --force .worktree-<task_short>/
 ```
 
 **工程债注解**：cmake FetchContent 拉的 `google/benchmark` `_deps/benchmark-src/.git/hooks/*.sample` 是只读，WSL2 NTFS 锁可能导致 `git worktree remove` 报 `Device or resource busy` — 需先手动 rm `<wt>/build`。
+
+## TASK-20260430-04 蓝图主交付摘要（DevTool 三件套）
+
+### 任务概述
+
+**TASK-20260430-04** — 规划 UI 编辑器与调试器（DevTool 三件套蓝图设计）[安全相关]
+**复杂度：** Level 4（V2=a 纯蓝图主交付：spec + plan + creative ×2，build 由用户独立立项）
+**完成日期：** 2026-05-01
+
+### 4 篇产出文档（蓝图基线）
+
+| 类型 | 路径 | 行数 | 核心内容 |
+|---|---|---:|---|
+| spec | `docs/specs/2026-04-30-devtool-design.md` | ~600 | 12 段式样：目的 / 不做 / 14 验收 / D1-D8 决策矩阵 / I1-I8 注入点 / 数据流 / Phase 划分 / T1-T8 威胁建模 / 测试策略 / R1-R6 风险 / 30+ systemPatterns 自我对照 / 与未来任务关系 |
+| plan | `docs/plans/2026-04-30-devtool.md` | ~700 | Phase 0 全局约束 + CMake 链接审计 + 静态库循环审计 + 边界输入清单 16 项 + 测试隐式契约 + CSS shorthand 能力 grep 表 / Phase A/B/C/D 子任务 ~40 项 + plan ×0.6 估时矩阵 |
+| creative #1 | `memory-bank/creative/creative-devtool-screen-layout.md` | ~280 | 5 决策：splitter dock + HUD overlay 双层结构 / dock-to-right vs dock-to-bottom 切换协议 / HUD 透明合成 / overlay 渲染顺序双线宽 / F12-F11 toggle |
+| creative #2 | `memory-bank/creative/creative-devtool-hot-reload.md` | ~300 | 5 决策：FileWatcher 跨平台抽象 / Linux inotify CSS-only 增量 / DOM 状态保留协议 / watcher root 边界 + T2 8 步守卫 / CSS 解析失败错误恢复 |
+
+### D1-D8 决策矩阵（详见 spec §4）
+
+| # | 维度 | **锁定值** |
+|:-:|---|---|
+| D1 | 三件套实施优先级 | **B** Inspector → Overlay → Hot Reload |
+| D2 | Inspector 数据采集协议 | **B** 半结构化（JSON tree + DisplayList overlay + C API JSON）|
+| D3 | DevTool UI 主屏布局 | **B** 同窗口 splitter dock + Overlay HUD 子模式 |
+| D4 | DevTool 隔离边界 | **B** 单进程共享容器（双 Document + 共享 EventLoop / Application / ImageCache）|
+| D5 | Hot Reload file watcher + 增量策略 | **A** 嵌入式专注（Linux inotify + CSS-only 增量重载）|
+| D6 | Performance Overlay 数据采集点 | **B** Chrome DevTools 风格（五钩子 + 滑动 60 帧 + dirty rect 边框高亮）|
+| D7 | C API 扩展边界 | **C** 双层 API（内部 C++ 核心 + 公开 C API 薄封装）|
+| D8 | 安全威胁建模 | **A** T2/T3/T5/T6/T7/T8 完整 + T1/T4 扩展段占位 |
+
+### 7 项独立立项候选（用户后续基于 plan 拆出，不在 04 任务范围内）
+
+**主线 3 项：**
+- **TASK-30-04-A**：DevTool Phase A — Inspector 实施（Level 3，~12.25 h plan / ~7.35 h plan ×0.6）
+- **TASK-30-04-B**：DevTool Phase B — Performance Overlay 实施（Level 2-3，~7.25 h / ~4.35 h）
+- **TASK-30-04-C**：DevTool Phase C — Hot Reload 实施（Linux only，Level 3，~10 h / ~6 h）
+
+**扩展段 4 项**（spec §11 占位，按用户优先级排期）：
+- TASK-30-04-D Console JS REPL（威胁 T1 任意 eval mitigation）
+- TASK-30-04-E JS Debugger backend（QuickJS Debug API + 威胁 T6 callback budget）
+- TASK-30-04-F CDP 远程调试 port（威胁 T4 HMAC token + nonce + loopback only + default off）
+- TASK-30-04-G 完整 UI 编辑器（dogfood 完整闭环，长期愿景）
+
+### 触及技术债 4 项闭环 ROI 路径
+
+| # | 技术债 | DevTool 子系统 | 闭环节奏 |
+|:-:|---|---|---|
+| #26 | LayoutBox.Dump 调试方法缺失 | Inspector Layout 面板 | TASK-30-04-A Phase A.0.2 实施 |
+| #35 | UpdateManager 未暴露 frame hook | Performance Overlay 五钩子 | TASK-30-04-B Phase B.0.1 实施 |
+| #40 | C API 缺 DOM/Style/Layout introspection | Inspector 全子系统 | TASK-30-04-A Phase A.0.5/A.0.6 实施 |
+| #4 | ImageCache 命名空间隔离 | DevTool icon 防污染 | TASK-30-04-A Phase A.0.1 配套 |
+
+### 强依赖关系（立项前置守卫）
+
+- **TASK-30-04-A 必须先于 TASK-30-04-B**：B 依赖 A 的 Inspector 渲染管线 + UI 框架基础
+- **TASK-30-04-A 第一步 = I1 Application 双 Document 槽改造**（重命名 `document_` → `target_document_` 让 callsite 漏改在编译期暴露 — R1 风险 mitigation）
+- **TASK-30-04-C Hot Reload Phase C.2 增量重载 = CSS-only**（不触发 LoadHTML）→ **不踩 R3+ #3 F-025 LoadHTML use-after-free**
+- **如未来扩展 HTML 增量重载** → 必须先做 R3+ #3 修复（强依赖，spec §12.3 + R3+ #3 已交叉记录）
+- **TASK-30-04-C 可与 A 并行**（无强依赖）；扩展段 4 项独立可立（无相互强依赖）
+
+### V2=a 蓝图任务工作流变体
+
+本任务首次实践 Level 4 V2=a 工作流变体 `/van → /plan → /reflect → /archive`（跳过 `/build` / `/creative` 内联到 `/plan`）。详细沉淀见 `systemPatterns.md` § Level 4 蓝图任务 V2=a 工作流变体 + `.cursor/rules/main.mdc` § Level 4 蓝图任务 V2=a 工作流变体。
+
+### plan ×0.6 第 17 数据点
+
+主线（VAN + Plan）实测 ~74 min vs plan 估时 210-270 min → **0.27-0.35× plan / 0.46-0.59× plan ×0.6**（落「极窄档 + review 类下限交界」）。详见 `systemPatterns.md` § plan ×0.6 任务类型分桶系数矩阵 § 蓝图任务 V2=a + 多决策连续跳过 + 批量文档段。
