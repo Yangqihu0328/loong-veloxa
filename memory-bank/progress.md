@@ -2,7 +2,42 @@
 
 ## 当前任务
 
-**无**（03 分支视角 — 用户主线在 04 任务，与 03 独立演进）。03 任务 TASK-20260430-03 已归档于 2026-05-01 ~00:30，详见 `memory-bank/archive/archive-TASK-20260430-03.md`。
+**TASK-20260430-04：规划 UI 编辑器与调试器（DevTool 主线蓝图设计）[安全相关]** — Level 4 锁定，VAN 阶段已完成（2026-04-30 23:50），用户两次跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5（**B 三件套 / a 纯蓝图 / A 自渲染 / Level 4 / ✅ 安全相关**）；触及技术债 4 项映射闭环；前置验证 6/6 全 PASS。下一步：路由到 `/plan`。
+
+### VAN 阶段产出快照
+
+- **意图判读：** 用户用「**规划**」二字（非「实现」） → 主交付物预期为蓝图级 spec + plan + 子任务 ID 列表，可选 MVP 子集实施
+- **grep 实证（F1-F9）：**
+  - ❌ 0 处 inspector / devtool / debugger / hot reload / overlay 实现代码
+  - ❌ JS Debug API 未集成（技术债 #44 `JS_SetInterruptHandler` 仅 spec 提及）
+  - ❌ C API 缺 introspection 接口（技术债 #40 `vx_view_get_document` 等不存在）
+  - ❌ LayoutBox / DisplayList 无 `Dump()`（技术债 #26）
+  - ❌ UpdateManager 无帧生命周期钩子（技术债 #35）
+  - ✅ DOM `Serialize(node)` 已可用（Inspector DOM 树文本化复用基础）
+  - ✅ `Application::document() / event_manager() / update_manager() / event_loop()` 已暴露
+  - ✅ SDL2 后端已就绪（`hello_sdl2` 范本，DevTool UI 渲染主线起点）
+  - ✅ HitTest + EventManager hover/active/focus（Inspector 元素高亮选取复用基础）
+- **复杂度初判：** Level 4（多子系统 — Inspector + Hot Reload + Overlay + Console + 编辑器 + JS 调试器 6 候选）
+- **基础设施成熟度三色分级：** 🟢 已就绪 5 项 / 🟡 需扩展（小工程）4 项 / 🔴 需新建（大工程）6 项
+- **V1-V5 锁定（用户两次跳过 AskQuestion → 按 VAN 推荐默认）：**
+  - V1 = **B 三件套**（Inspector DOM/Style/Layout + Hot Reload + Performance Overlay）— Console / JS Debugger / 完整 UI Editor 标为「扩展候选」入 spec §扩展段
+  - V2 = **a 纯蓝图**（spec + plan + creative ×N，不强制实施代码）— 与「规划」语义最匹配
+  - V3 = **A Veloxa 自渲染**（dogfood 模式 — DevTool 即引擎自我应用样板）
+  - V4 = **Level 4**（多子系统蓝图 + 架构决策矩阵 → /plan + /creative 强制路径）
+  - V5 = ✅ **是 [安全相关]**（JS REPL / Hot Reload 路径 / 远程调试 port / Inspector 敏感数据 4 个威胁面）
+- **触及技术债 4 项映射：** #26 LayoutBox.Dump → Inspector Layout / #35 UpdateManager frame hook → Performance Overlay / #40 C API introspection → Inspector 全子系统 / #44 QuickJS Debug API → 扩展候选 JS Debugger
+- **前置验证清单：** 6/6 全 PASS（依赖 / 环境 / artifact / ctest 1062 基线 / FetchContent 跳过 / 待处理事项关联极强）
+- **VAN push-back 5 项风险闭环：** 「6 子系统全做」陷阱 → V1=B 收敛 / 「规划」语义模糊 → V2=a 明确 / UI 渲染层选型 → V3=A 锁定 / Spec 主文档过长 → 12 段式样 + creative 拆分 / systemPatterns 重叠 → spec 阶段强制对照 ≥ 30 模式
+- **下一步：** 路由到 `/plan` — 进入头脑风暴阶段（预期 D1-D6 决策矩阵 + spec 主文档 12 段式样 + ≥ 2 篇 creative）；不进入 `/build`（V2=a 纯蓝图，build 由用户基于产出 plan 拆出独立 build 任务）
+
+## 上次任务（已归档闭环）
+
+**TASK-20260430-03：全代码库 Code Review** — ✅ 已归档于 2026-05-01 ~00:30，已 `--no-ff` 合并到 main `2445990`（11 commits + 1 merge commit）。
+
+- **归档文档：** `memory-bank/archive/archive-TASK-20260430-03.md`
+- **核心成果：** R0 prep + R1 报告（55 findings / 6 维度归集）+ R2 P0 quick fix 6 项 + Reflect + Archive 全闭环；改进建议落实率 90%（P0 1/1 + P1 4/4 + P2 4/5）
+- **plan ×0.6 第 16 数据点入库**：核心轮次 0.85-1.00× ×0.6 阈内 ✅
+- **R3+ 13 项 P1 候选** 待用户决策拆分顺序后独立立项（详见 `docs/reports/2026-04-30-codebase-review.md`）
 
 <details>
 <summary>TASK-20260430-03 历史阶段快照（archive 已落盘，点开查看会话内进度记录）</summary>
@@ -102,7 +137,7 @@
   - 55 项 findings（28 P1 + 19 P2 + 8 P3）+ 6 项 P0 quick fix 实施 ctest 1062/1062 PASS + 13 R3+ 拆分任务建议
   - 改进建议落实率 90%（P0 1/1 + P1 4/4 + P2 4/5）；P0 #3 git symbolic-ref commit 守门 → `git-workflow.mdc` 落实；P1 #4 reflog 诊断 → `systematic-debugging.mdc` 落实
   - plan × 0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；首发 background agent 双轨模式 + worktree 隔离协议沉淀
-  - feature 分支 `feature/TASK-20260430-03-codebase-review` 保留未合并（由用户决定合并 main 时机）
+  - feature 分支已 `--no-ff` 合并到 main `2445990`（合并发生于 04 任务推进过程中）
 - **TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关]** — Level 2 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260430-02.md`
   - 22 新单测 + 双反向探针完整三态；ctest Debug 1061/1061 + Release 1030/1030

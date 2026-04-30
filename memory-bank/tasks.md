@@ -2,6 +2,104 @@
 
 ## 当前任务
 
+### TASK-20260430-04：UI 编辑器 + 调试器规划（DevTool 蓝图）[安全相关]
+
+- **复杂度级别：** Level 4（多子系统蓝图 + 架构决策矩阵 + 安全威胁建模 + 涉及 6 个 DevTool 子系统中的 3 件套主交付 + 3 件套扩展候选）
+- **状态：** 🔵 VAN 完成（用户决策 V1-V5 跳过 AskQuestion 已锁定按推荐默认；F1-F9 grep 实证完成；触及技术债 4 项映射；前置验证全 PASS；等待路由到 `/plan`）
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-04-ui-editor-debugger`（基于 main `2445990` — 已含 TASK-30-03 codebase review 全部归档 + R2 quick fix 6 项落地）
+- **设计 spec：** 待 `/plan` 阶段产出 — `docs/specs/2026-04-30-devtool-design.md`
+- **实现 plan：** 待 `/plan` 阶段产出 — `docs/plans/2026-04-30-devtool.md`
+- **创意文档：** 待 `/creative` 阶段产出（≥ 2 篇 — 预期：DevTool UI 主屏布局 / Inspector 数据采集协议）
+- **需要创意阶段：** ✅ 是（多个架构空白：Inspector 协议层 / Hot Reload 触发机制 / Overlay 数据采集点 / DevTool UI 主屏布局）
+- **来源：** 用户主动发起；`productContext.md §愿景` DevTool 主线对齐；TASK-25-01 SDL2 后端归档时定位为「实时调试 UI 主线第一步」是直接前置依赖
+- **安全相关：** ✅ 是（DevTool 触及 JS REPL（QuickJS 任意 eval）/ Hot Reload 文件路径（路径穿越）/ 远程调试可能开 socket（CDP 风格 → port 暴露）/ Inspector 可读 DOM 全状态（敏感数据回显））
+
+#### 任务语义
+
+「**规划 ui 编辑器与调试器**」用户原指令中「规划」二字是核心锚点 — **主交付 = 蓝图级 spec/plan + creative 设计决策档**，**不是端到端可运行的 DevTool 实现**。本任务进入 `/plan` → `/creative` 后即在 reflect/archive 收尾，是否触发 build 由用户基于产出 plan 拆出独立 build 任务决定。此判断与 V2=a 用户决策一致。
+
+#### 范围（用户跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 子系统范围 | **B 三件套**：Inspector（DOM/Style/Layout）+ Hot Reload + Performance Overlay | DevTool 主线 ROI 最高 3 项；Console / JS Debugger / 完整 UI Editor 标为「扩展候选」入 spec §扩展段 |
+| V2 | 输出形态 | **a 纯蓝图** — spec + plan + creative ×N，不强制实施代码 | 与「规划」语义最匹配；Level 4 多子系统蓝图任务在 build 前应有用户审视点 |
+| V3 | UI 渲染层 | **A Veloxa 自渲染** — DevTool UI 自身用 Veloxa HTML/CSS 引擎 | dogfood 模式：DevTool 即 Veloxa 自我应用样板 + 反向暴露引擎缺陷；vs ImGui-like 多一套 UI lib / vs CDP 要求外置 browser 不能离线运行 |
+| V4 | 复杂度 | **Level 4** | 多子系统蓝图 + 架构决策矩阵 + Spec 主交付 → 触发 `/plan` + `/creative` 强制路径 |
+| V5 | 安全标注 | ✅ **是** | JS REPL 任意 eval / Hot Reload 路径穿越 / 远程调试 port 暴露 / Inspector 敏感数据回显 4 个威胁面 |
+
+#### VAN 阶段实证（F1-F9）— 基础设施成熟度评估
+
+| # | 假设/命题 | grep / read 实证 | 影响蓝图 |
+|:-:|---|---|:-:|
+| F1 | C API 是否已暴露 DevTool introspection 接口 | ⚠️ 部分 — `veloxa/api/veloxa_api.h` 仅运行时接口（vx_view_inject_input / vx_view_run），**无** DOM tree dump / style query / layout box 读取；属技术债 #40 | 🟡 需扩展 — Inspector 需新增 vx_view_serialize_dom / vx_node_get_computed_style / vx_node_get_layout_box 等只读 API |
+| F2 | DOM 序列化能力 | ✅ 已就绪 — `veloxa/core/dom/serializer.h::Serialize(const Node*)`，DomBindings outerHTML 已使用 | 🟢 Inspector DOM 面板可直接复用 |
+| F3 | UpdateManager frame 钩子 | ❌ 未导出 — TASK-26-01 R3 archive 提到「frame hook 未抽象」，属技术债 #35 | 🟡 需扩展 — Overlay 需 UpdateManager 加 OnFrameStart/OnFrameEnd callback 注册 |
+| F4 | LayoutBox::Dump 调试方法 | ❌ 不存在 — `veloxa/core/layout/layout_box.h` 无 dump/print/inspect API；属技术债 #26 | 🔴 需新建 — Inspector Layout 面板第一前置 |
+| F5 | QuickJS Interrupt Handler 调试钩子 | ⚠️ 部分 — TASK-13/19-01 提到 JS_SetInterruptHandler 已暴露但未对接 DevTool；属技术债 #44 | 🟡 需扩展（仅 V1=B 扩展候选 JS Debugger 才需，三件套不阻塞）|
+| F6 | SDL2 后端是否就绪用于自渲染 | ✅ 已就绪 — TASK-25-01 已归档；Sdl2WindowSurface + Sdl2EventLoop 可见窗口 + 输入事件三阶段冒泡 | 🟢 V3=A 自渲染方案技术前置已满足 |
+| F7 | EventManager 事件注入 | ✅ 已就绪 — TASK-25-01 后 vx_view_inject_input 可注入 SDL 事件 | 🟢 Inspector hover-to-select 可复用 |
+| F8 | Hot Reload 文件 watch 基础 | ❌ 全代码库无 inotify/kqueue/FindFirstChangeNotification 调用 | 🔴 需新建 — 跨平台 file watcher 抽象（platform/ 子系统）|
+| F9 | FetchContent 状态 / 第三方依赖 | ✅ 三处 `_deps/` 离线齐全；DevTool 三件套预计零新 FetchContent 依赖 | 🟢 跳过 git proxy 守卫 |
+
+**汇总：** 5 ✅ 已就绪 / 4 ⚠️ 需扩展 / 6 🔴 需新建 — 其中 4 项触及既有技术债 #26 / #35 / #40 / #44，本任务规划即闭环这些债项的 ROI 路径
+
+#### 触及技术债映射（与 `techContext.md §技术债务清单` 对照）
+
+| # | 技术债 | DevTool 子系统 | 闭环节奏 |
+|:-:|---|---|---|
+| #26 | LayoutBox.Dump 调试方法缺失 | Inspector Layout 面板 | 本任务 plan 内规划，build 阶段实施（若推进至 build）|
+| #35 | UpdateManager 未暴露 frame hook | Performance Overlay | 同 #26 |
+| #40 | C API 缺 DOM/Style/Layout introspection | Inspector 全子系统 | 同 #26 |
+| #44 | QuickJS Debug API 未对接 DevTool | 扩展候选 JS Debugger | V1=B 扩展段，不阻塞主交付 |
+
+#### 验收要点（待 `/plan` 精化）
+
+- spec 主文档落盘 12 段式样：目的 / 不做 / 三件套验收 A1-A12（每件套 3-4 acceptance）/ D1-D6 决策矩阵 / 架构图 + 注入点核对表 / T1-T8 安全威胁建模 / 扩展候选段（Console / JS Debugger / 完整 UI Editor）/ 与既有 systemPatterns 兼容性段 / R1-R6 风险登记 / 与未来任务关系
+- plan 主文档落盘：Phase 划分 + 估时 plan ×0.6（预期 Level 4 蓝图任务落 0.5-0.7×）
+- ≥ 2 篇 creative 设计决策档（预期：DevTool UI 主屏布局 / Inspector 数据采集协议层）
+- T1-T8 安全威胁建模完整：JS REPL 隔离协议 / Hot Reload 路径 sanitize / 远程调试 port 暴露策略（含 default-off + 仅 loopback）/ Inspector 敏感数据 redact 策略
+- 与既有 systemPatterns ≥ 30 模式对照（DevTool 是 Veloxa 自我应用，多个既有规则需自我验证 ROI）
+- 与既有技术债 #26 / #35 / #40 / #44 闭环路径明确（每项标本任务规划 vs 后续 build 任务实施）
+
+#### 前置验证清单（VAN 阶段产出）
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | F9 — 三处 `_deps/` 离线齐全；DevTool 三件套预计零新 FetchContent 依赖 |
+| 环境就绪 | ✅ | `build/` + `build-bench/` + SDL2 后端可见窗口（TASK-25-01 验证）已就绪 |
+| 已有 artifact | ✅ | `systemPatterns.md` ≥ 30 模式 + 30+ archive + DOM serializer / EventManager / Sdl2WindowSurface 全部已就绪可复用 |
+| ctest 基线 | ✅ | 隐式 1062/1062 PASS（main `2445990` 终态继承）|
+| FetchContent 代理守卫 | ⊘ 跳过 | F9 — 三处 `_deps/` 离线预置；本任务零新 FetchContent 依赖 |
+| 待处理事项关联 | ✅ 极强 | 触及技术债 4 项（#26 / #35 / #40 / #44）闭环 ROI 路径 + TASK-25-01 SDL2 前置依赖明确 + TASK-30-03 R3+ 13 项部分间接相关 |
+
+#### VAN 阶段 push-back 决策（已沉淀）
+
+| 风险 | 应对 |
+|---|---|
+| 「6 个 DevTool 子系统全做」陷阱 | V1=B 三件套范围收敛 — Inspector + Hot Reload + Overlay 主交付；Console / JS Debugger / 完整 UI Editor 入 spec §扩展段 |
+| 「规划」语义模糊（用户可能期望端到端实施）| V2=a 纯蓝图主交付明确 — 在 reflect/archive 收尾，是否触发 build 由用户决定 |
+| UI 渲染层选型分歧（自渲染 vs ImGui-like vs CDP）| V3=A 自渲染锁定 — dogfood 路径 ROI 最高 + 与既有 SDL2 后端无缝衔接；外置协议接口留作扩展段 discussion |
+| Spec 主文档过长（违反 TASK-30-02「Spec 描述粒度准则」）| 12 段式样规划 + 扩展候选独立段 + 复杂决策拆出 creative 文档 |
+| 与既有 systemPatterns 重叠（DevTool 是 Veloxa 自我应用）| spec 阶段强制对照 ≥ 30 模式 — 自我验证 ROI；凡命中既有规则的标「✅ 自我应用样板」 |
+
+#### 与并发任务关系
+
+- **TASK-20260430-03**（codebase review）：✅ 已归档（2026-05-01 ~00:30），main 已 `--no-ff` 合入（merge commit `2445990`）；本任务在新 main 上独立演进，零 git 依赖
+- **TASK-20260430-03 R3+ 13 项任务建议**：用户决策 R3+ 拆分顺序仍待定；与本任务在 spec 阶段做交叉引用（Inspector 需稳定 lifecycle hook → R3+ #2 EventDispatcher snapshot iteration / #3 LoadHTML reset dom_bindings_ 是间接前置）
+- **TASK-20260425-01 SDL2 后端**：✅ 已归档（2026-04-26）；本任务 V3=A 自渲染方案的关键技术前置（Sdl2WindowSurface / Sdl2EventLoop 直接复用）
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 22:55 | 初始化（首次尝试）| 主线试图在 main `9411584` 创建 04 分支并写 MB 三件套，与 background agent 03 任务并发修改同名 MB 文件冲突；多次 StrReplace 失败 |
+| 2026-04-30 23:00 | 重启初始化 | TASK-30-03 background agent 完成 R2 + reflect + archive 并 merge main（`2445990`），04 分支 reset 到新 main 重新基线；放弃旧 VAN commit `44fc062` |
+| 2026-04-30 23:05 | VAN 完成 | 用户跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5（B/a/A/4/✅）；F1-F9 grep 实证完成（5 ✅ / 4 ⚠️ / 6 🔴）；触及技术债 4 项映射；前置验证全 PASS；分支 `feature/TASK-20260430-04-ui-editor-debugger` 基于 main `2445990` 已建立；下一步 `/plan` |
+
+---
+
 <details>
 <summary>TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关] — ✅ 已归档（点开查看历史）</summary>
 
