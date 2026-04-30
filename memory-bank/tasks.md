@@ -2,7 +2,78 @@
 
 ## 当前任务
 
-当前无活跃任务（已进入空闲状态，等待 `/van` 新任务初始化）。
+### TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）
+
+- **复杂度级别：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
+- **状态：** 🟡 初始化中（VAN 完成，等待 `/plan`）
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
+- **来源：** TASK-20260426-01 archive §10 + reflection §4.12 P3 触发型 TASK-26-02 占位 / activeContext §待处理事项「P3 候选 TASK-26-02」 / wpt-005 SKIP-w/-rationale 现实直接验证目标
+- **安全相关：** ❌ 否（纯 layout 算法，无外部输入 / 无认证 / 无新依赖）
+
+#### 范围（用户决策 V1=A）
+
+仅做 **A 子项**：first/last child margin collapse with parent。**不动** clearance / float / clear（CSS layer 完全无实现，需独立 Level 4 任务承接）。
+
+| W3C CSS 2.1 §8.3.1 规则 | 当前状态 | 本任务目标 |
+|---|---|---|
+| 同级 sibling collapse `max(pos)+min(neg)` | ✅ R3 完成 | 不动 |
+| collapse-through 空 box 串联 | ✅ R3 完成 | 不动 |
+| 负 margin 数学 | ✅ R3 完成 | 不动 |
+| BFC root 阻断（overflow!=visible）| ✅ R3 部分（仅 overflow trigger）| 不动 |
+| **first child 与 parent margin-top collapse** | ❌ 未实施（受 D1.2 LayoutChild API 边界限留）| ✅ **本任务** |
+| **last child 与 parent margin-bottom collapse** | ❌ 未实施 | ✅ **本任务** |
+| collapse 阻断条件（parent padding-top/border-top/min-height）| ❌ 未实施 | ✅ **本任务** |
+| clearance | ⚠️ stub（`MarginChain.has_clearance` 标志位）| 不动（依赖 float）|
+
+#### 验收要点（待 /plan 精化）
+
+- ctest 全量 PASS（基线 1029/1029；预计 +10-15 new test cases）
+- Release `-O3 -Werror` 0 err/warn
+- `bench_layout_*` baseline 不退化超 +10%（**§7.0.1 同窗口 stash-swap 对照强制**）
+- **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse` 是直接验证目标）
+- W3C CSS 2.1 §8.3.1 嵌套 collapse 至少 5-7 单测（first child / last child / 阻断条件 padding-top/border-top/min-height / 多层嵌套）+ wpt-005 PASS
+- 反向探针 ≥ 1 处（D3 类回归测试，§9.3 强制）
+
+#### VAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围 | **A 子项**（first/last child collapse with parent）| clearance 完整版依赖 float（CSS layer 零实现），独立 Level 4 任务 |
+| V2 | 拆分策略 | **单 Round 一次过 + plan 内部 Phase 划分** | Level 3，无明显多 Round 边界 |
+| V3 | Git 分支 | **feature/TASK-20260430-01-margin-collapse-parent** | 基于 main `a84d30d` |
+| V4 | 复杂度 | **Level 3** | 单子系统 + API 设计决策（LayoutChild 跨函数 chain 透传协议）|
+| V5 | 安全标注 | ❌ 不标 | 纯 layout 算法 |
+
+#### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | clearance 当前是否 stub | ✅ 是。`margin_collapse.h:52-54` `ApplyClearance()` 仅置标志位 + 注释「完整实施 = TASK-26-02 (float/clear)」 | 范围拆分依据；A 子项不动 clearance |
+| F2 | CSS `clear` / `float` 属性是否被解析 | ❌ **完全无实现**。`grep -i clear\|float` in `veloxa/core/css/` 仅命中 transition.cc 的 `kFloat`（数值类型 enum，无关）；CSS parser / property / style_resolver 零 clear/float 处理 | clearance 完整版需独立 Level 4 任务，本任务跳过 |
+| F3 | first/last child margin collapse with parent 当前状态 | ❌ 未实施。`layout_engine.cc:446-451` 显式注释「P3 TASK-26-02 完成」/「未跨函数 propagate」，仅做 sibling-level collapse | 本任务从零实施 |
+| F4 | `LayoutChild` API 当前签名 | ⚠️ 无 chain 参数。`LayoutChild(LayoutBox*, f32, const LayoutContext&)` — 需要扩展为带 `MarginChain*` in/out | API 改动影响面：3 处 callers（LayoutBlock / LayoutFlex / 顶层 Layout），以及 5 处 LayoutType 分支（kBlock/kFlex/kInline/kText/kReplaced）|
+| F5 | wpt-005 fixture 内容 | ✅ 是 first/last child margin collapse with parent 场景（nested `<div>` 嵌套 `#div3.margin-bottom:2em` 与外层 div bottom collapse + `#div4.margin-top:1em`）；R3.5 显式 SKIP-w/-rationale | wpt-005 是直接验证目标第一首选 |
+| F6 | FetchContent 代理 | ✅ `_deps/` 已离线预置（quickjs-ng + benchmark），不引入新依赖 | 跳过 git proxy 守卫 |
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|---|---|
+| 依赖可获取性 | ✅ | 无新依赖（全部 vx_core 已有模块）|
+| 环境就绪 | ✅ | `build/` Debug + `build-bench/` Release 均已配置可复用 |
+| 已有 artifact | ✅ | TASK-26-01 沉淀完整：`MarginChain` POD / wpt-005 fixture / `tests/integration/wpt_layout_test.cc` 框架 / `tests/core/layout/block_layout_test.cc` 风格 / `bench_layout_buildtree` baseline |
+| ctest 基线 | ✅ 1029/1029 PASS in 2.55s（含 2 SKIP-w/-rationale，本任务目标 wpt-005 SKIP → PASS） |
+| FetchContent 代理守卫 | ⊘ 跳过 | F6 不引入新依赖 |
+| 待处理事项关联 | ✅ 多条适用 | **§7.0.1 同窗口对照 bench**（首次外部任务命中验证 ROI）+ **§9.1 Layout 必检项**（默认 width/height + 跨 LayoutType 独立 box-model；本任务 LayoutChild API 改造直接命中）+ **§9.3 Mixed TDD RED 反向探针强制**（第 6 次实战）+ **subagent §D3 重评估机制**（plan 阶段标 D3 build 阶段评估）+ **plan × 0.6 第 14 数据点**（Level 3 单 Round，预期落「准确档」0.5-0.6×）|
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 19:33 | 初始化 | VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围；分支创建（基于 main `a84d30d`）；MB 同步 |
+
+---
 
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 

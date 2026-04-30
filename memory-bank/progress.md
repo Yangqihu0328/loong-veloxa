@@ -2,7 +2,13 @@
 
 ## 当前任务
 
-无（已完成归档，等待新任务）
+**TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）** — Level 3
+
+- 阶段：🟡 初始化中（VAN 完成 2026-04-30 19:33）
+- 范围：A 子项 only（first/last child collapse with parent；不动 clearance/float）
+- 直接验证：wpt-005 SKIP → PASS
+- 分支：`feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`）
+- 下一步：`/plan`
 
 ## 最近归档完成
 

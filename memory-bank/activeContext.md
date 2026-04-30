@@ -2,11 +2,69 @@
 
 ## 当前阶段
 
-空闲（2026-04-30）— TASK-20260426-01 已完成归档并合并到 `main`，工作树干净，准备接受新任务。
+初始化中（2026-04-30 19:33）— **TASK-20260430-01: first/last child margin collapse with parent**（CSS 2.1 §8.3.1 嵌套规则）VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围（A 子项 only，不动 clearance/float）；分支 `feature/TASK-20260430-01-margin-collapse-parent` 已创建；ctest 基线 1029/1029 PASS。下一步 `/plan`。
 
 ## 当前任务
 
-无（等待 `/van` 初始化新任务）
+**TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）** — Level 3
+
+- **目标：** 完成 TASK-26-01 R3 #20 留下的 D1.2 LayoutChild API 边界限留 — 让 MarginChain 跨 LayoutBlock 函数边界 propagate，实现 W3C CSS 2.1 §8.3.1 中 first/last child 与 parent 的 margin collapse + 阻断条件（parent padding-top/border-top/min-height）
+- **复杂度：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
+- **来源：** TASK-20260426-01 archive §10 P3 触发型「TASK-26-02」占位 + reflection §4.12 / activeContext 待处理事项 / wpt-005 SKIP-w/-rationale 现实直接验证目标
+- **范围限定：** ❌ 不动 clearance / float / clear（CSS layer 零实现，VAN F2 实证；clearance 完整版独立 Level 4 任务）
+- **直接验证目标：** **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse`）
+- **安全相关：** ❌ 否（纯 layout 算法）
+- **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
+- **下一步：** `/plan`（头脑风暴 LayoutChild API in/out chain 协议设计 / 阻断条件序列 / 子代理拆分 / Phase 划分）
+
+### VAN 阶段产出
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围 | **A 子项**（first/last child collapse with parent）| clearance 完整版依赖 float（CSS layer 零实现，F2 实证），独立 Level 4 任务承接 |
+| V2 | 拆分策略 | **单 Round 一次过 + plan 内部 Phase 划分** | Level 3，无明显多 Round 边界 |
+| V3 | Git 分支 | **feature/TASK-20260430-01-margin-collapse-parent** | 基于 main `a84d30d` |
+| V4 | 复杂度 | **Level 3** | 单子系统 Layout + API 设计决策（LayoutChild 跨函数 chain 透传协议）|
+| V5 | 安全标注 | ❌ 不标 | 纯 layout 算法 |
+
+### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | clearance 当前是否 stub | ✅ 是 | A 子项不动 clearance |
+| F2 | CSS clear/float 属性解析状态 | ❌ **完全无实现**（仅 transition.cc 的 kFloat 数值类型，无关）| 范围拆分关键依据 |
+| F3 | first/last child collapse 现状 | ❌ 未实施（`layout_engine.cc:446-451` 显式 P3 TASK-26-02 注释）| 本任务从零实施 |
+| F4 | LayoutChild API 现状 | ⚠️ 无 chain 参数，需扩展 in/out | 3 处 callers + 5 处 LayoutType 分支影响面 |
+| F5 | wpt-005 内容 | ✅ nested margin collapse 场景，本任务直接验证目标 | 第一首选验证 |
+| F6 | FetchContent 代理 | ✅ `_deps/` 已离线预置，不引入新依赖 | 跳过 proxy 守卫 |
+
+### 验收要点（待 /plan 精化）
+
+- ctest 全量 PASS（基线 1029/1029；预计 +10-15 new test cases）
+- Release `-O3 -Werror` 0 err/warn
+- `bench_layout_*` baseline ≤ +10%（**§7.0.1 同窗口 stash-swap 对照强制**，TASK-26-01 升级规则首次外部任务验证）
+- **wpt-005 SKIP → PASS**（核心验收信号）
+- W3C §8.3.1 嵌套 collapse 至少 5-7 单测 + wpt-005 PASS
+- 反向探针 ≥ 1 处（**§9.3 Mixed TDD D3 类强制**）
+
+### 验证 TASK-26-01 P0/P1 升级规则的 ROI（首次外部任务）
+
+本任务作为同类 Layout 正确性任务，将首次验证 TASK-20260426-01 沉淀的 5 条规则在新任务中的实际表现：
+
+| 规则段 | 触发场景 | ROI 验证标的 |
+|---|---|---|
+| `writing-plans.mdc` §7.0.1 同窗口 stash-swap | bench 验证（layout 改造必需）| 验证规则是否避免跨时间窗误判 |
+| `writing-plans.mdc` §9.1 Layout 必检项 | LayoutChild API 改造（跨 LayoutType）| 验证默认值语义 + 独立 box-model 是否被 plan 阶段强制锁定 |
+| `writing-plans.mdc` §9.3 Mixed TDD 反向探针 | 新增回归测试（D3 类）| 验证规则强制条目是否被 plan 阶段引用 |
+| `.cursor/commands/creative.md` d.1 坐标约定 | 不触发（本任务无多坐标系算法）| ⊘ 不验证 |
+| `subagent-development.mdc` D3 重评估 | plan 阶段标 D3 子代理 → build 阶段重评估 | 验证 build 阶段触发条件是否清晰 |
+
+## 最近完成
+
+- **TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）** — Level 4 ✅ 已归档（2026-04-30）
+  - 归档：`memory-bank/archive/archive-TASK-20260426-01.md`
+  - 关键结果：ctest 1029/1029 PASS；同窗口对照 bench mean -3.6% / median +2.65%
+  - 5 条 P0/P1 规则升级落地，本任务（TASK-20260430-01）首次外部验证
 
 ## 最近完成
 
@@ -32,12 +90,15 @@
 
 ## 下一步
 
-- 使用 `/van` 启动新任务
-- 若继续扩展 Layout 正确性，可直接以 `TASK-26-02 / TASK-26-03` 为触发候选
+- 执行 `/plan` 启动 TASK-20260430-01 头脑风暴
+  - 重点决策：LayoutChild API in/out chain 协议设计（pointer / by-value / 返回 struct）
+  - 阻断条件序列：spec §8.3.1 中 parent padding-top/border-top/min-height/clearance 阻断 first child collapse 的精确顺序
+  - Phase 划分（plan 内部）：P0 grep & wpt-005 调研 / P1 API 改造 RED / P2 实现 + GREEN / P3 阻断条件 + 反向探针 / P4 wpt-005 升级 / P5 bench + 收尾
+  - 子代理 vs 直执行评估（按 subagent §D3 重评估机制）
 
 ## 未合并分支
 
-无
+- `feature/TASK-20260430-01-margin-collapse-parent` — TASK-20260430-01 VAN 完成（基于 main `a84d30d`），等待 /plan
 
 ## 最近归档（速查，详细见 archive 文档）
 
