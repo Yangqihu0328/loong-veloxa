@@ -285,6 +285,14 @@ void Application::LoadHTML(StringView html) {
 
 新增单测验证。
 
+> **🔗 强依赖交叉记录（2026-05-01 添加，来自 TASK-20260430-04 spec §12.3 + reflection §5 #8）**：
+>
+> **TASK-20260430-04-C** DevTool Hot Reload 主线 Phase C.2 增量重载严格 = **CSS-only**（不触发 `LoadHTML`），故**不踩**本 F-025 use-after-free。
+>
+> **如未来扩展 HTML 增量重载**（例如 TASK-30-04-C 后续扩展段或 TASK-30-04-G 完整 UI 编辑器）→ **必须先做本 F-025 修复**（强依赖）。
+>
+> 立项 TASK-30-04-C HTML hot reload 扩展段时务必先核对本 F-025 状态（fixed / pending）。
+
 **影响**：嵌入式场景常见调用路径；**真 bug 必须修**。
 
 ---
