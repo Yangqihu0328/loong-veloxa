@@ -340,7 +340,11 @@ LayoutBox* LayoutEngine::BuildTree(dom::Element* element,
 }
 
 LayoutBox* LayoutEngine::Layout(dom::Document* doc, const LayoutContext& ctx) {
-  static ArenaAllocator layout_arena(8192);
+  // thread_local 替代 static：每线程独立 arena，避免多线程并发 Layout() 时
+  // arena.Reset() 与另一线程 Allocate() 冲突造成 use-after-free / 数据竞争。
+  // UpdateManager 已自管 arena 通过另一重载（不走此路径）；此 fallback 主要
+  // 服务一次性脚本/测试场景，保留 thread_local 提升嵌入端线程友好性。
+  thread_local ArenaAllocator layout_arena(8192);
   layout_arena.Reset();
   return Layout(doc, ctx, layout_arena);
 }
