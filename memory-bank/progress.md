@@ -2,7 +2,30 @@
 
 ## 当前任务
 
-**TASK-20260430-03：全代码库 Code Review** — Level 4 [安全相关]，**BUILD R0 完成**（2026-04-30 23:08），等待 `/build` 进入 R1 必然轮次。
+**TASK-20260430-03：全代码库 Code Review** — Level 4 [安全相关]，**BUILD R1 完成**（2026-04-30 ~24:39），Checkpoint 1 等待用户决策。
+
+### BUILD R1 阶段产出快照（2026-04-30 ~24:39）
+
+- **R1 报告主文档：** `docs/reports/2026-04-30-codebase-review.md`（11 段 / 55 项 findings / 6 维度归集 / R2 候选 6 项 / R3+ 13 拆分任务建议）
+- **R1.1 H 层深读 ✅：** 实际深读 25+ 文件（含附带头文件），按 7 子系统 a-f 分批：
+    - R1.1a CSS 5 文件 → 11 项 findings
+    - R1.1b Layout 3 文件 → 5 项 findings
+    - R1.1c DOM/HTML/App 4 文件 → 9 项 findings
+    - R1.1d Rendering 3 文件 → 5 项 findings
+    - R1.1e Script/Event/Update 4 文件 → 4 项 findings（含 F-046 真 P1 bug）
+    - R1.1f Foundation/Text/Image/API 6 文件 → 11 项 findings（含 F-049/F-050/F-051 image 安全三件套）
+- **R1.2 M 层 grep 一过 ✅：** static / memcpy / magic numbers / delete 4 模式扫描（5 个 delete 全部合理 → 嵌入式 arena 策略实施完美）
+- **R1.3-R1.4 归集 + 分级 ✅：** 0 P0 + 28 P1 + 19 P2 + 8 P3
+- **关键 finding（Top 5）：**
+    1. F-051 P1 安全：JPEG decoder 默认 `error_exit` 调 `exit()` 杀进程
+    2. F-050 P1 安全：PNG/JPEG `width × height` 无溢出检查（CVE 触发条件）
+    3. F-046 P1 正确：EventDispatcher dispatch 中 listener mutation iterator 失效
+    4. F-025 P1 正确：`LoadHTML` 不重置 `dom_bindings_` use-after-free
+    5. F-022 P1 维护：CSS 属性元数据表缺失 shotgun surgery 跨 8+ 处（最大杠杆点）
+- **R2 候选清单（6 项 quick fix / 55 min）：** F-020 dead return / F-026 thread_local / F-033 isize cast / F-040 阈值注释 / F-053 文件大小上限 / F-055 version configure_file
+- **R3+ 拆分任务建议（13 项）：** image_decoder 安全 / DOM lifecycle / LoadHTML use-after-free / CSS 元数据表 / border shorthand / 现代选择器 / Layout 边角 / HTML5 实体表 / Rasterizer 性能 / 12 个低覆盖模块测试补充 / libpng 升级
+- **实测耗时：** ~85 min（plan 150-200 min × 0.6 = 90-120 min；实测 0.50× plan / 0.78× ×0.6）→ reflect 阶段 plan ×0.6 第 16+ 数据点
+
 
 ### BUILD R0 阶段产出快照（2026-04-30 23:08）
 

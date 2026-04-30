@@ -5,7 +5,7 @@
 ### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
-- **状态：** 🔵 构建中·R0 完成（R1 必然轮次待启动）
+- **状态：** 🔵 构建中·R1 完成（Checkpoint 1 待用户决策）
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
 - **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
@@ -30,7 +30,7 @@
 | Round | 内容 | 必然 / 条件 | 类型 | plan 估时（待精化）| 实测 |
 |:-:|---|:-:|---|---:|---:|
 | R0 | 准备：6 维度 grep fingerprint 反模式预硕 + 抽样深度策略锁定 + ctest 基线 1061/1061 核验 | ✅ 必然 | meta | ~90 min plan / ~54 min ×0.6 | **~22 min ✅ (0.41× plan)** |
-| R1 | **6 维度全代码库 review 报告** — spec 主文档列出 N 项不足 + 每项方案 + P0/P1/P2 分类 | ✅ 必然 | report | ~150-200 min plan / ~90-120 min ×0.6 | ⏳ |
+| R1 | **6 维度全代码库 review 报告** — spec 主文档列出 N 项不足 + 每项方案 + P0/P1/P2 分类 | ✅ 必然 | report | ~150-200 min plan / ~90-120 min ×0.6 | **~85 min ✅ (0.50× plan / 0.78× ×0.6)** |
 | **Checkpoint 1** | 用户审报告 + 决定 R2 范围（是否跳过为问号、是否限定某些 P0 不动）| — | — | — | ⏳ |
 | R2 | P0 quick fix（笔误 / 死代码 / 命名 / 1 行修复，预计 5-15 个）| ⚠️ 条件触发 | impl | ~1-2h | ⏳ |
 | **Checkpoint 2** | 用户决定 R3+ 范围 / 拆出后续任务 ID（每个独立 Level 1-2）| — | — | — | ⏳ |
@@ -48,6 +48,30 @@
 - **R0 候选 findings：** 14 项（F-001 ~ F-014 跨 6 维度），R1 验证 + 分级 + 写方案
 - **实测耗时：** ~22 min（plan 90 min ×0.6=54 min；实测 0.41× plan / 0.69× ×0.6） → reflect 阶段 plan ×0.6 校准协议第 16 数据点
 - **工具链补强：** OSV.dev 走 WSL2 → Windows Clash 代理 `172.22.32.1:7890`（沙箱直连 DNS 失败 → 宿主代理 fallback）；候选 systemPattern reflect 阶段沉淀
+
+#### BUILD R1 完成实绩（2026-04-30 ~24:39）
+
+- **产出文档：** `docs/reports/2026-04-30-codebase-review.md`（11 段 / 55 项 findings / 6 维度归集）
+- **R1.1 H 层深读 ✅：** 实际深读 25+ 文件（H 计划 20，含附带 H 头文件 application.h / event_manager.h / node.h / element.h / dom_bindings.h / update_manager.h 等）
+- **R1.2 M 层 grep 一过 ✅：** static / memcpy / magic numbers / delete 4 模式扫描漏网 P0/P1（实际 grep 命中 5 个 delete 全部合理 — 验证嵌入式 arena 策略实施完美）
+- **R1.3 6 维度归集 ✅：** 55 项 findings 跨 7 子系统：
+    - CSS（11 项）：F-015 命名颜色 sorted assertion / F-017 sibling combinator / F-018 nth/not pseudo / F-019 attr ops / F-020 dead return / F-021 border 复制粘贴 80 行 / F-022 **CSS 元数据表缺失（最大杠杆点）** / F-023 transition lifecycle / F-024 kInitial 仅 5 / F-025 LoadHTML use-after-free
+    - Layout（5 项）：F-026 static arena multi-thread / F-029 root_incoming 边角 / F-030 inline available / F-031 absolute right/bottom / F-032 LOC split
+    - DOM/HTML/App（9 项）：F-001 / F-033 / F-034 / F-035 实体表过简 / F-036 / F-037 / F-038 / F-039 RemoveChild lifecycle hook
+    - Rendering（5 项）：F-040 / F-041 / F-042 SIMD / F-043 brush hoist / F-044 dynamic_cast
+    - Script/Event/Update（4 项）：F-045 / F-046 **dispatch mutation iterator 失效（真 bug）** / F-047 / F-048
+    - Foundation/Text/Image/API（11 项）：F-049 PNG alpha 丢失 / F-050 width×height 溢出 / F-051 JPEG default exit / F-052 / F-053 文件大小上限 / F-054 / F-055 / F-056-057 typikum 实现
+- **R1.4 P0/P1/P2 分级 ✅：** 28 个 P1 真 bug + 19 P2 + 8 P3 沉淀；**0 P0** （quick fix 标准 < 30 min/项 1 行修复）
+- **R1.5 报告落盘 ✅：** `docs/reports/2026-04-30-codebase-review.md` 11 段，含 Top 5 紧急修 + R2 6 项候选（F-020/F-026/F-033/F-040/F-053/F-055，55 min 估）+ R3+ 13 拆分任务建议
+- **实测耗时：** ~85 min（plan 150-200 min ×0.6=90-120 min；实测 0.50× plan / 0.78× ×0.6）→ reflect 阶段 plan ×0.6 校准协议第 16+ 数据点
+
+#### Checkpoint 1（用户决策待启动）
+
+- 用户审报告 → 决定 R2 范围（执行/限定/跳过 6 项 quick fix）
+- 用户决定 R3+ 拆分顺序（13 个 P1 候选任务 ID）
+- 决策后：
+    - 批 R2 → `/build` 触发 R2 quick fix 轮次
+    - 跳 R2 → `/reflect` 进入回顾阶段
 
 #### 验收要点（待 `/plan` 精化）
 

@@ -2,7 +2,15 @@
 
 ## 当前阶段
 
-**构建中·轮次 R0 完成（2026-04-30 23:08）** — R0 准备 5 子任务全过；下次 `/build` 进入 R1 必然轮次（全代码库 6 维度 review 报告产出）。
+**构建中·轮次 R1 完成（2026-04-30 ~24:39）** — R0 + R1 双轮次必然产出已完成；R1 报告 55 项 findings 跨 6 维度。Checkpoint 1 等待用户决策（R2 范围 + R3+ 拆分顺序）。
+
+**焦点：** 用户审 `docs/reports/2026-04-30-codebase-review.md` § 11 Checkpoint 决策点：
+- ✅ 选 1：批 R2 全 6 项 quick fix（55 min）→ `/build` 续 R2
+- ⚠️ 选 2：限定 R2（如跳过 F-040 注释类）→ `/build` 续选定子集
+- ⏭️ 选 3：跳过 R2 → `/reflect` 直接进入回顾
+- ➕ 选 4：决定 R3+ 13 个 P1 候选任务的拆分优先级（推荐 #1 image_decoder 安全 + #2 EventDispatcher snapshot + #3 LoadHTML use-after-free 三件套）
+
+**TDD 模式：** R2 仅 quick fix（注释 / 单行守卫 / 文档化），TDD 不强制；如批准 R2，仍要求每项变更 ctest 1061 通过。
 
 > **TDD 模式：** R0/R1 不适用（review 类任务为数据收集 + 报告产出，无新代码无新测试）；R2 P0 修复阶段对每个有测试的修复强制 RED 反向探针（systemPatterns §9.3）。
 
