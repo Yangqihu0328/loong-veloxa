@@ -1,0 +1,12 @@
+// AUTO-GENERATED from veloxa/api/version.h.in by CMake configure_file.
+// DO NOT edit version.h directly — modify project(VERSION ...) in
+// top-level CMakeLists.txt + version.h.in template.
+#ifndef VELOXA_API_VERSION_H_
+#define VELOXA_API_VERSION_H_
+
+#define VELOXA_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define VELOXA_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define VELOXA_VERSION_PATCH @PROJECT_VERSION_PATCH@
+#define VELOXA_VERSION_STRING "@PROJECT_VERSION@"
+
+#endif  // VELOXA_API_VERSION_H_

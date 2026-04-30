@@ -65,4 +65,20 @@ TEST(ImageDecoderTest, DecodeInvalidData) {
   EXPECT_FALSE(result.ok());
 }
 
+TEST(ImageDecoderTest, DecodeFromFileRejectsOversizedFile) {
+  // 创建一个真实 PNG 文件（≈ 几十字节），用 max_size=10 强制触发上限守卫。
+  // 验证：守卫先于 PNG decode 触发，返回 kOutOfMemory，避免 fread 申请大 buffer。
+  auto path = CreateTestPng();
+
+  auto result = DecodeFromFile(StringView(path.c_str()), /*max_size=*/10);
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), StatusCode::kOutOfMemory);
+
+  // 默认上限正常解码同一文件应成功（确认守卫不误伤）
+  auto ok_result = DecodeFromFile(StringView(path.c_str()));
+  EXPECT_TRUE(ok_result.ok());
+
+  std::remove(path.c_str());
+}
+
 }  // namespace vx::image

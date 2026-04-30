@@ -191,10 +191,13 @@ void Parser::ProcessStartTag(const Token& start_token) {
 
 void Parser::ProcessEndTag(const Token& token) {
   dom::TagId tag_id = dom::TagIdFromName(token.name);
-  for (isize i = static_cast<isize>(open_elements_.size()) - 1; i >= 1; --i) {
-    if (open_elements_[static_cast<usize>(i)]->tag_id() == tag_id) {
-      open_elements_.resize(static_cast<usize>(i));
-      break;
+  // 反向查找匹配的 open tag。i >= 1 跳过 open_elements_[0]（document 根），
+  // 所以至少需要 2 个元素。usize 减法在 size() < 2 时会下溢，先早返回保护。
+  if (open_elements_.size() < 2) return;
+  for (usize i = open_elements_.size() - 1; i >= 1; --i) {
+    if (open_elements_[i]->tag_id() == tag_id) {
+      open_elements_.resize(i);
+      return;
     }
   }
 }

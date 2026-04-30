@@ -2,97 +2,196 @@
 
 ## 当前任务
 
-### TASK-20260430-04：规划 UI 编辑器与调试器（DevTool 主线蓝图设计）
+<details>
+<summary>TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关] — ✅ 已归档（点开查看历史）</summary>
 
-- **复杂度级别：** Level 4（待 V1-V5 锁定后确认；预期多子系统蓝图设计 + 大量架构决策）
-- **状态：** 🟡 初始化中（VAN 阶段进行中，等待 V1-V5 用户决策）
+### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
+
+- **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
+- **状态：** ✅ 已归档（2026-05-01）— 归档文档 `memory-bank/archive/archive-TASK-20260430-03.md`；reflection 10 项改进建议落实率 90%（P0 1/1 + P1 4/4 + P2 4/5）；R0+R1+R2 三轮次完成 ctest 1062/1062 PASS（基线 1061 + R2.5 新增守卫单测）；55 项 findings（28 P1 + 19 P2 + 8 P3）+ 13 R3+ 拆分任务建议入仓；plan ×0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；首发 background agent 双轨模式 + worktree 隔离协议沉淀
 - **创建日期：** 2026-04-30
-- **分支：** `feature/TASK-20260430-04-ui-editor-debugger`（基于 main `9411584`，已创建）
-- **来源：** 用户主动发起；TASK-20260425-01 archive 备注「解锁 DevTool 主线（hot reload / Inspector / FPS overlay 前置）」首发触发
-- **意图判读：** 用户用「**规划**」二字（非「实现」）→ 主交付物预期为蓝图级 spec + plan + 子任务 ID 列表；可选 MVP 子集实施
-- **安全相关：** ⚠️ 大概率（Hot Reload 涉及文件系统监听 / JS 调试器若选 CDP 协议涉及外部 socket / Inspector 暴露内部状态有信息泄漏面）— 待 V5 决策
+- **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
+- **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
+- **实现 plan：** `docs/plans/2026-04-30-codebase-review.md`（10 段 / R0 + R1.1-R1.4 + R2 + Checkpoint 1/2 / plan ~6-10h / plan×0.6 ~3.6-6h / 7-17 commits）
+- **需要创意阶段：** ❌ 否（review 报告本身是产出物，无 UI/算法/架构空白）
+- **来源：** 用户主动发起；历史候选区累积 8 项 P3 触发型不足项作为 review 输入材料（`activeContext.md §待处理事项` + `tasks.md §待立项候选`）
+- **安全相关：** ✅ 是（V2 涵盖 security 维度 — HTML inline style 三件套护栏 / CSS parser DoS 护栏 / `BasicString`-Werror 误报 / 第三方依赖 CVE 周期审计 review）
 
-#### 候选 DevTool 子系统（待 V1 选择范围）
+#### 范围（用户决策 V1-V4 锁定 + 策略 X 多轮次 Checkpoint）
 
-| # | 子系统 | 描述 | 量级 | 依赖 |
-|:-:|---|---|---|---|
-| 1 | **Inspector**（DOM / Style / Layout 检查器）| 鼠标悬停高亮 / 点击选取 / 显示 ComputedStyle / LayoutBox 坐标 / 事件监听器列表 | Level 3 单子系统 | F2 C API + F4 LayoutBox.Dump |
-| 2 | **Hot Reload** | 监听 HTML/CSS/JS 文件变更 → 增量重新加载（保留滚动/状态） | Level 3 | OS 文件监听（inotify/ReadDirectoryChangesW）+ Application::LoadHTML/CSS reentrancy |
-| 3 | **Performance Overlay** | FPS / 帧时长 / Layout/Render 各阶段耗时 / 重绘区域可视化 | Level 2-3 | F5 UpdateManager 帧钩子 |
-| 4 | **Console** | `console.log` 桥接 / 错误栈 / JS 表达式 REPL | Level 3 | QuickJS Console 对象 + DevTool UI 输出区 |
-| 5 | **JS 调试器** | 断点 / 单步 / 变量检查 / 调用栈 | Level 4 单独 | F6 QuickJS Debug API（首先要做基础设施） |
-| 6 | **完整 UI 编辑器**（所见即所得） | 拖拽布局 / 实时编辑 → 反向写回 HTML/CSS | Level 4+ | 上述 1-3 项 + 双向数据绑定层 |
-
-#### 候选 V3 — DevTool UI 渲染层 3 方案
-
-| 方案 | 描述 | 优 | 劣 |
-|---|---|---|---|
-| A — Veloxa 自渲染 | DevTool UI 本身就是一个 Veloxa View（HTML+CSS+JS），与目标 View 共享渲染管线但隔离文档 | dogfooding 极强 / 0 新依赖 / 体积零增长 | self-hosting 复杂度高（DevTool bug 影响目标 View）/ JS 调试器自调试矛盾 |
-| B — ImGui-like immediate mode | 引入 imgui 或自实现 immediate mode UI 库专为 DevTool | 与目标 View 完全隔离 / 工业界惯例 | +2-3 MB 依赖 / 与项目嵌入式定位略偏 |
-| C — CDP 兼容外置协议 | 暴露 Chrome DevTools Protocol over WebSocket，DevTool UI 在浏览器 | 复用 Chrome DevTools UI / 远程调试可能 | 需引入 WebSocket 库 / 运行时需活动浏览器 |
-| D — 多模式蓝图共存 | Spec 设计可插拔抽象层，未来可选 A/B/C | 灵活 / 渐进 | 抽象层设计成本最高 |
-
-#### VAN 阶段 grep 实证（前置验证）
-
-| # | 命题 | grep 实证 | 影响设计 |
+| # | 维度 | 选择 | 理由 |
 |:-:|---|---|---|
-| F1 | 现有代码是否已有 inspector / devtool / debugger 实现 | ❌ **0 处实现代码**（仅历史 spec / archive 提及） | 完全从零设计 |
-| F2 | C API 是否已有 introspection 接口 | ❌ 无 `vx_view_get_document` / `vx_view_dump_*` / `vx_view_get_fps`（C API ~125 行 `veloxa_api.h`） | C API 需扩展（与技术债 #40 重叠） |
-| F3 | DOM 序列化能力 | ✅ `vx::dom::Serialize(node)` 已可输出 HTML 字符串 | Inspector DOM 树文本化复用基础 |
-| F4 | LayoutBox / DisplayList Dump | ❌ 无 `Dump()` 方法（**技术债 #26**） | 需新增 |
-| F5 | UpdateManager 帧生命周期钩子 | ❌ 无 `OnBeforeUpdate` / `OnAfterUpdate`（**技术债 #35**） | Performance Overlay 必需 |
-| F6 | JS Debug API 集成 | ❌ `JS_SetInterruptHandler` / 执行预算未实施（**技术债 #44**） | JS 调试器需先做基础设施 |
-| F7 | SDL2 后端 / 可见窗口 | ✅ TASK-25-01 已就绪（`hello_sdl2` 范本，`Sdl2WindowSurface` + `Sdl2EventLoop`） | DevTool UI 渲染主线起点 |
-| F8 | EventManager hover/active/focus | ✅ HitTest + 状态指针（TASK-08/09 沉淀） | Inspector 元素高亮选取复用基础 |
-| F9 | Application 暴露内部状态 | ✅ `document() / event_manager() / update_manager() / event_loop()` 全已 expose | Inspector 读取无障碍 |
+| V1 | Review 范围 | **A 全代码库**（136 源 + 80 测试，7 子系统：foundation / core / graphics / text / script / platform / api） | 用户决策；与 30+ 已归档任务的子系统级聚焦互补，找规则未覆盖盲点 |
+| V2 | Review 维度 | **all 6 维**（性能 / 正确性 / 可维护性 / 安全 / 测试 / 一致性） | 用户决策；6 维度交叉互证可暴露单维 review 不易发现的反模式 |
+| V3 | 输出形态 | **C 完整实施**（解读为多轮次 Build + 强制 Checkpoint） | 用户决策；本任务保证 R0+R1（报告必然），R2/R3+ 由用户审报告后按 ROI 决定 |
+| V4 | Review 视角 | **D 混合**（外部 reviewer 直觉视角 + 内部 systemPatterns 规则验证视角） | 用户决策；外部视角找命名 / 反直觉 / 直观盲点 + 内部视角找规则未覆盖死角 |
+| V5 | 安全标注 | ✅ **是** | V2 含 security 维度 + 触及既有 HTML/CSS 护栏 + 第三方依赖 CVE 审计 |
+| 策略 X | 多轮次 Checkpoint | **R0+R1 必然 / R2 条件触发 / R3+ 拆出独立后续任务** | VAN push back 推荐；把不可估的修复成本关进 R3+，避免本任务跨多天误工 |
 
-**初步识别 Veloxa 引擎的 DevTool 基础设施成熟度：**
-- 🟢 **已就绪**（无需新做）：可见窗口 / DOM 序列化 / EventManager 状态 / Application getters / SDL2 输入桥接
-- 🟡 **需扩展**（小工程）：C API 加 introspection / LayoutBox.Dump / DisplayList.Dump / UpdateManager 钩子（4 项约 ~3-5h plan 量级）
-- 🔴 **需新建**（大工程）：Inspector UI 渲染层 / Hot Reload 文件监听 + 增量解析 / FPS overlay / Console JS 桥接 / JS 调试器 backend / 完整 UI 编辑器（每项 Level 3 量级）
+#### 多轮次 Build 划分（VAN 阶段锁定）
 
-#### 待用户决策维度（V1-V5）
+| Round | 内容 | 必然 / 条件 | 类型 | plan 估时（待精化）| 实测 |
+|:-:|---|:-:|---|---:|---:|
+| R0 | 准备：6 维度 grep fingerprint 反模式预硕 + 抽样深度策略锁定 + ctest 基线 1061/1061 核验 | ✅ 必然 | meta | ~90 min plan / ~54 min ×0.6 | **~22 min ✅ (0.41× plan)** |
+| R1 | **6 维度全代码库 review 报告** — spec 主文档列出 N 项不足 + 每项方案 + P0/P1/P2 分类 | ✅ 必然 | report | ~150-200 min plan / ~90-120 min ×0.6 | **~85 min ✅ (0.50× plan / 0.78× ×0.6)** |
+| **Checkpoint 1** | 用户审报告 + 决定 R2 范围（选项 A：全 6 项 quick fix）| — | — | — | ✅ A |
+| R2 | P0 quick fix（F-020 / F-026 / F-033 / F-040 / F-053 / F-055，全 6 项）| ✅ 触发 | impl | ~55 min plan / ~33 min ×0.6 | **~70 min ✅ (1.27× plan / 2.12× ×0.6, +25 min worktree 隔离修并发会话冲突)** |
+| **Checkpoint 2** | 用户决定 R3+ 范围 / 拆出后续任务 ID（每个独立 Level 1-2）| — | — | — | ⏳ |
+| R3+ | P1 大件修复 → **不在本任务内完成**；按 ROI 拆出独立子任务 TASK-* | ❌ 拆出 | — | — | — |
+| **合计上限** | R0+R1+R2 | — | — | **~5-8h plan / ~3-5h plan×0.6 实测预期** | — |
 
-| # | 维度 | 候选选项 | VAN 推荐 |
-|:-:|---|---|---|
-| V1 | 范围 — 哪些 DevTool 子系统纳入本次规划？ | **A 全 6 子系统**（Inspector + Hot Reload + Overlay + Console + 编辑器 + JS 调试器）/ B 渐进 3 件套（Inspector + Overlay + Console）/ C 单子系统聚焦（用户指定，如仅 Inspector 或仅 JS 调试器）/ D 用户自选组合 | **B 渐进 3 件套** — 实用价值核心 80%；编辑器 + Hot Reload + JS 调试器留作蓝图后续单独 Level 4 子任务 |
-| V2 | 输出形态 | **a 纯蓝图**（spec 蓝图 + plan 子任务列表 + 优先级矩阵，零代码）/ b 蓝图 + MVP（最小可运行子集即一个 DevTool 子系统的 R1 实施）/ c 蓝图 + 完整全 V1 子系统实施 | **a 纯蓝图** 或 **b 蓝图 + MVP**（V1=B 时 MVP = Inspector R1 实施）— 严守「规划」语义 |
-| V3 | DevTool UI 渲染层 | A Veloxa 自渲染 / B ImGui-like immediate mode / C CDP 兼容外置协议 / D 多模式蓝图共存 | **A Veloxa 自渲染** — 与项目嵌入式定位最一致 / 0 新依赖 / dogfooding ROI 最高；CDP 留作未来可选扩展 |
-| V4 | 复杂度级别 | Level 3（如 V1=C 单子系统聚焦）/ **Level 4**（如 V1=A/B 多子系统蓝图） | **Level 4**（多子系统蓝图量级） |
-| V5 | 安全标注 | ✅ 是（默认；Hot Reload 文件系统访问 + JS 调试器 socket 暴露 + Inspector 信息泄漏） | **✅ 是**（即使 V1 不含 Hot Reload / JS 调试器，Inspector 仍涉及内部状态暴露面） |
+#### BUILD R0 完成实绩（2026-04-30 23:08）
+
+- **产出文档：** `docs/reports/2026-04-30-codebase-review-r0-data.md`（R0 全部数据综合快照）
+- **R0.1 ctest 基线 ✅：** 1061/1061 PASS in 2.36s（1 Skip Wpt001 沉淀）
+- **R0.2 fingerprint grep ✅：** 18 项反模式覆盖 30 关键字 / 7 子系统 → veloxa/ 全代码库 0 TODO/FIXME/XXX/HACK + 0 危险 C 函数 + 0 throw + 0 sscanf/atoi 不安全转换 + 0 STL 重容器
+- **R0.3 lcov 覆盖率 ✅：** 行 **85.4%** (6152/7206) / 函数 **95.4%** (1620/1699) / 分支 **57.6%** (3905/6775)；薄弱模块 12 项（image_decoder 57.1% / rasterizer 60.4% / canvas 73.5% 是热点）
+- **R0.4 CVE 审计 ✅：** **0 CRITICAL/HIGH** 满足 D9 acceptance；5 Medium/Low（**libpng 1.6.37 命中 3 个 2026 新公布 Medium CVE 是关键发现**，与 image_decoder.cc 57.1% 覆盖薄弱形成威胁链路 → 候选 P0 F-010）
+- **R0.5 抽样名单 ✅：** R1 三层抽样确认（H 20 / M 80 / L 36）
+- **R0 候选 findings：** 14 项（F-001 ~ F-014 跨 6 维度），R1 验证 + 分级 + 写方案
+- **实测耗时：** ~22 min（plan 90 min ×0.6=54 min；实测 0.41× plan / 0.69× ×0.6） → reflect 阶段 plan ×0.6 校准协议第 16 数据点
+- **工具链补强：** OSV.dev 走 WSL2 → Windows Clash 代理 `172.22.32.1:7890`（沙箱直连 DNS 失败 → 宿主代理 fallback）；候选 systemPattern reflect 阶段沉淀
+
+#### BUILD R2 完成实绩（2026-04-30 ~24:55）
+
+- **R2 commit 链：** 6 项 P0 quick fix 全过 ctest **1062/1062 PASS**（基线 1061 + R2.5 新增 1 测）
+  - R2.1 `3b4b2e7` fix(css): F-020 selector_matcher 末尾 dead return + VX_DCHECK 标 unreachable
+  - R2.2 `1467207` fix(html): F-033 ProcessEndTag isize/usize 重复转换净化 + early-return 防 underflow
+  - R2.3 `ddea78d` docs(rasterizer): F-040 FlattenQuad/Cubic 0.0625 vs 0.25 阈值数学等价注释
+  - R2.4 `95ae814` fix(layout): F-026 LayoutEngine 一参 arena static → thread_local 改善线程安全
+  - R2.5 `9c6ad5f` fix(image): F-053 DecodeFromFile 加 max_size 守卫（默认 256 MiB） + 单测 DecodeFromFileRejectsOversizedFile（StatusCode::kOutOfMemory）
+  - R2.6 `668a9fe` fix(api): F-055 vx_version() 改 CMake configure_file（version.h.in → @PROJECT_VERSION@）消除 hardcode
+- **执行环境：** 独立 git worktree `.worktree-03-r2` 隔离主 worktree 的并发会话分支切换冲突（reflog 见 23:41:23-30 / 23:45:08 双切）；worktree 完成后清理
+- **新增文件：** `veloxa/api/version.h.in`（CMake 模板）
+- **修改文件：** 6 文件（5 src + 1 CMakeLists + 1 test）
+- **实测耗时：** ~70 min（plan 55 min ×0.6=33 min；实测 1.27× plan / 2.12× ×0.6） → 超 ×0.6 主因 worktree 隔离 + 并发会话冲突修复 ~25 min 额外开销，扣除后 ~45 min ≈ 0.82× plan / 1.36× ×0.6 (仍超但合理)
+- **跨任务沉淀候选**（reflect 阶段决定）：
+  - 「并发会话切分支冲突」应对模式 → systemPatterns 新模式
+  - background agent 双轨 + worktree 隔离 → workflow rule 新段
+  - 6 项 fix 平均 ~12 min/项（plan ~9 min/项），plan ×0.6 fast-fix 颗粒度 ~6 min/项校准点
+
+#### BUILD R1 完成实绩（2026-04-30 ~24:39）
+
+- **产出文档：** `docs/reports/2026-04-30-codebase-review.md`（11 段 / 55 项 findings / 6 维度归集）
+- **R1.1 H 层深读 ✅：** 实际深读 25+ 文件（H 计划 20，含附带 H 头文件 application.h / event_manager.h / node.h / element.h / dom_bindings.h / update_manager.h 等）
+- **R1.2 M 层 grep 一过 ✅：** static / memcpy / magic numbers / delete 4 模式扫描漏网 P0/P1（实际 grep 命中 5 个 delete 全部合理 — 验证嵌入式 arena 策略实施完美）
+- **R1.3 6 维度归集 ✅：** 55 项 findings 跨 7 子系统：
+    - CSS（11 项）：F-015 命名颜色 sorted assertion / F-017 sibling combinator / F-018 nth/not pseudo / F-019 attr ops / F-020 dead return / F-021 border 复制粘贴 80 行 / F-022 **CSS 元数据表缺失（最大杠杆点）** / F-023 transition lifecycle / F-024 kInitial 仅 5 / F-025 LoadHTML use-after-free
+    - Layout（5 项）：F-026 static arena multi-thread / F-029 root_incoming 边角 / F-030 inline available / F-031 absolute right/bottom / F-032 LOC split
+    - DOM/HTML/App（9 项）：F-001 / F-033 / F-034 / F-035 实体表过简 / F-036 / F-037 / F-038 / F-039 RemoveChild lifecycle hook
+    - Rendering（5 项）：F-040 / F-041 / F-042 SIMD / F-043 brush hoist / F-044 dynamic_cast
+    - Script/Event/Update（4 项）：F-045 / F-046 **dispatch mutation iterator 失效（真 bug）** / F-047 / F-048
+    - Foundation/Text/Image/API（11 项）：F-049 PNG alpha 丢失 / F-050 width×height 溢出 / F-051 JPEG default exit / F-052 / F-053 文件大小上限 / F-054 / F-055 / F-056-057 typikum 实现
+- **R1.4 P0/P1/P2 分级 ✅：** 28 个 P1 真 bug + 19 P2 + 8 P3 沉淀；**0 P0** （quick fix 标准 < 30 min/项 1 行修复）
+- **R1.5 报告落盘 ✅：** `docs/reports/2026-04-30-codebase-review.md` 11 段，含 Top 5 紧急修 + R2 6 项候选（F-020/F-026/F-033/F-040/F-053/F-055，55 min 估）+ R3+ 13 拆分任务建议
+- **实测耗时：** ~85 min（plan 150-200 min ×0.6=90-120 min；实测 0.50× plan / 0.78× ×0.6）→ reflect 阶段 plan ×0.6 校准协议第 16+ 数据点
+
+#### Checkpoint 1（用户决策待启动）
+
+- 用户审报告 → 决定 R2 范围（执行/限定/跳过 6 项 quick fix）
+- 用户决定 R3+ 拆分顺序（13 个 P1 候选任务 ID）
+- 决策后：
+    - 批 R2 → `/build` 触发 R2 quick fix 轮次
+    - 跳 R2 → `/reflect` 进入回顾阶段
+
+#### 验收要点（待 `/plan` 精化）
+
+- R0 末：6 维度 fingerprint 完整产出（每维度 ≥ 5 反模式 grep 结果）+ 抽样深度策略明确（哪些子系统全扫 / 哪些抽样）
+- R1 末：spec 主文档落盘 `docs/specs/2026-04-30-codebase-review-report.md`，含：
+  - 不足清单 ≥ N 项（N 待 R0 fingerprint 后估算，预期 20-50 项）
+  - 每项必含：定位（文件:行）/ 维度归类 / 反模式描述 / 影响评估 / 解决方案 / 优先级（P0/P1/P2）
+  - 分类汇总表 + ROI 矩阵
+  - 与既有 systemPatterns 规则对照（哪些违反、哪些规则需新增）
+- R2（条件触发）：每 P0 修复独立 commit + 单测覆盖 + RED 反向探针（§9.3）+ ctest 1061+ → 1061+N PASS
+- Release `-O3 -Werror` 0 err/warn（继承基线）
+- `bench_*` baseline 不退化超 +5%（继承基线 — R2 不应触发 hot path 性能改动）
+- 与 TASK-26-01 R2 #28 / TASK-30-02 既有护栏兼容性验证（V2 安全维度强制项）
 
 #### 前置验证清单（VAN 阶段产出）
 
 | 维度 | 结果 | 备注 |
 |---|:-:|---|
-| 依赖可获取性 | ⚠️ 部分待 V3 | Veloxa 自渲染（A）零新依赖；ImGui（B）需 FetchContent；CDP（C）需 WebSocket 库 |
-| 环境就绪 | ✅ | `build/`(1061/1061) + `build-bench/`(1030/1030) 隐式继承 |
-| 已有 artifact | ✅ 强 | DOM `Serialize` + `Application` getters + SDL2 后端 + HitTest 全部可复用作 Inspector 基础 |
-| ctest 基线 | ✅ | 1061/1061 PASS（codebase review R0 实证） |
-| FetchContent 代理守卫 | ⏳ 待 V3 | 若 V3=B/C 需新依赖则触发（参考 techContext §FetchContent 与代理 `172.22.32.1:7890`） |
-| 待处理事项关联 | ✅ 强 | 至少触及技术债 #26（LayoutBox Dump）/ #35（UpdateManager 钩子）/ #40（C API 扩展）/ #44（QuickJS Interrupt Handler）4 项 — 蓝图阶段需明确这些 prerequisite 是单独立项还是融入本任务 |
-| Sticky ID 一致性 | ✅ | 用当天序号 04（继 TASK-30-01/02/03） |
+| 依赖可获取性 | ✅ | 无新依赖（纯 review + 修复，复用既有 vx_* 子系统）|
+| 环境就绪 | ✅ | `build/`(Debug 1061/1061) + `build-bench/`(Release 1030/1030) + `build-release/` 三份 `_deps/` 离线均存在可复用 |
+| 已有 artifact | ✅ | `systemPatterns.md` ≥ 30 模式 + 30+ archive 文档 + 8 项 P3 候选作为 review 输入材料 |
+| ctest 基线 | ✅ | 隐式 1061/1061 PASS（TASK-30-02 终态继承）|
+| FetchContent 代理守卫 | ⊘ 跳过 | `_deps/` 已离线预置三处；`git config --global http.proxy` 空（exit=1）|
+| 待处理事项关联 | ✅ 极强 | 8 项 P3 候选 + 30+ archive 改进建议未追踪状态全部进入 R1 输入材料 |
 
-#### VAN 阶段 push-back 候选（spec 阶段需深入讨论）
+#### VAN 阶段 push-back 决策（已沉淀）
 
-| 风险 | 应对建议 |
+| 风险 | 应对 |
 |---|---|
-| **「规划样样不深」陷阱**（6 子系统 × 3 渲染方案 × N 蓝图维度 = 设计空间巨大）| V1 收紧到 B 三件套 + V3 选定 A 单方案 + V2=a 纯蓝图 |
-| **prerequisite 技术债融入边界**（#26 / #35 / #40 / #44 是先做还是融入本任务？） | spec 阶段明确「先决条件子任务」拆分（4 个 Level 1-2 micro task）vs 本任务范围 |
-| **意图模糊「规划」是否含 MVP** | V2 选 a 纯蓝图（默认）/ b 蓝图 + 单 MVP 实施；V2=c 全实施会令任务上限失控 |
-| **DevTool 自调试矛盾**（V3=A 自渲染时 Inspector 自身 bug 难调试） | spec §5 需明确「DevTool 隔离边界」— 双 Document 共享 EventLoop / 独立 ImageCache 等 |
-| **第三方依赖触发 FetchContent 代理守卫** | 仅 V3=B/C 时触发；V3=A 完全规避 |
+| 「样样不深」陷阱（6 × 7 × 136 = 5712 单元格）| R0 抽样深度策略：每维度全扫 grep fingerprint + 每子系统挑 1-2 个最深的代码点深扫 |
+| 不可估时（修复数量取决于 review 发现）| 强制 R3+ 拆出独立后续任务，**本任务上限封顶 R0+R1+R2**（plan ~5-8h）|
+| Checkpoint 缺失（直接「完整实施」无中途审视）| Checkpoint 1（R1 末用户审报告）+ Checkpoint 2（R2 末用户决定 R3+ 拆分）|
+| Spec 主文档过长（违反 TASK-30-02「Spec 描述粒度准则」）| R1 spec 拆分：主文档列「定位 + 优先级 + 简述」/ 复杂项独立附录 |
+| 与既有 systemPatterns 规则重叠 | R1 必须对照 systemPatterns ≥ 30 模式 — 已被规则覆盖的不再列入「不足」，避免噪音 |
 
-#### 与正在并发推进的任务关系
+#### 来源待立项候选清单（R1 输入材料）
 
-- **TASK-20260430-03（codebase review）**：在 `feature/TASK-20260430-03-codebase-review` 分支上由 background agent 持续推进（已完成 R0+R1+R2.1+R2.2，进入 R2.3 F-040 等剩余 quick fix），与本任务**完全独立分支**，无 git 冲突；该任务自然演进完毕后用户单独审 + 收尾即可
-- **关键 P1 输入参考**：codebase review R1 报告（`docs/reports/2026-04-30-codebase-review.md`，在 codebase review feature 分支已入仓）含 Top 5 紧急修复（F-051 / F-050 / F-046 / F-025 / F-022），其中 **F-025 LoadHTML use-after-free** 与 Hot Reload 设计有协同（同一 reentrancy 问题），spec 阶段可对照引用
+| 候选 ID | 优先级 | 描述 |
+|---|:-:|---|
+| TASK-26-02-full | P3 | clearance 完整版（依赖 float/clear，需独立 Level 4）|
+| TASK-26-03 | P3 | LayoutInline 内部 IFC 递归 + bidi LTR 假设破除 |
+| TASK-20260424-02 | P3 | Layout 残余 super-linear 调查（R256 4.18× / R_flex 6.40× ~40% 未解）|
+| CSS 4 逻辑属性 shorthand | P3 | `border-block` / `border-inline` |
+| `border-image` / `border-radius` 简写 | P3 | 富装饰需求触发 |
+| TASK-20260419-06 | P3 降级 | HashMap Hash Mixing 优化 |
+| TASK-20260419-08 | P3 | `string.h` 剩余 3 处 runtime-size memcpy 防御性 noinline 化 |
+| TASK-20260419-12 | P2 | `SoftwareCanvas::DrawText` 真路径优化（K7 已被 TASK-24-04 隐式闭环，待评估）|
+
+#### PLAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | R0 抽样深度策略 | **B 优先深扫 TOP-3** — foundation/{containers,strings} + script/ + core/{dom,html} 全文件深扫；其他 4 子系统 grep 模式 | 30+ archive 任务后多数子系统已经过深度沉淀；TOP-3 选项是「最久未深度审视」的，深扫 ROI 最高 |
+| D2 | R1 报告章节组织 | **C 矩阵 + 优先级前置** | 先列 P0/P1/P2 总表方便用户审 Checkpoint 1 决策 R2 范围 |
+| D3 | 不足项「方案」深度 | **B 结构化描述**（问题 + 方向 + 工时 + 代码量，不含具体代码示例） | 报告量级可控；R3+ 拆出独立 task 时再写完整 spec |
+| D4 | 与既有 systemPatterns 对照 | **B 强制每项标注 3 状态** | 避免与已沉淀规则重叠；显化「需新增规则」候选 |
+| D5 | P0/P1/P2 分类标准 | spec §6 显式定义 | 必须显式定义避免歧义 |
+| D6 | R2 上限 | **15 个 P0 上限** | Checkpoint 1 用户决定实际启动数量 |
+| D7 | 元规则同步 review | **C 仅记长期项** | scope 收紧；元规则修改需用户亲自决策 |
+| D8 | CVE 审计 | **C 跑 + 列长期项** | 本任务一次性给出当前状态 + 长期 audit 节奏 |
+| D9 | 测试覆盖率深度 | **B lcov 实测**（line / branch / function 三维度） | 真实数据 vs grep 启发；lcov 1.14 已验证可用 |
+| D10 | 是否用子代理 | **❌ 不用**（独 agent 跑） | 单 reviewer 任务 prompt 上下文传递成本 > 并行收益 |
+
+#### PLAN 阶段安全威胁建模（V5 安全相关，T1-T10）
+
+| # | 威胁面 | 既有护栏 | 本 review 关注 |
+|:-:|---|---|---|
+| T1-T5 | HTML inline style DoS / 历史攻击向量 | TASK-26-01 R2 三件套护栏 | 仅复检不动 |
+| T6 | CSS parser N-cap | TASK-30-02 已批量 review | 仅复检 |
+| **T7** | **QuickJS 集成** | TASK-18-01 + TASK-19-01 部分 | 🔴 D1 TOP-3 含 script/ 重点深扫 |
+| **T8** | **FreeType / HarfBuzz 集成** | 部分隐式 | 🟡 抽样深扫候选 |
+| **T9** | **图片解码（libpng / libjpeg）** | 当前未审 | 🟡 抽样深扫候选 |
+| T10 | 第三方依赖 CVE | 当前未跑 | 🟡 D8=C 本任务跑 |
+
+#### 工具链验证（PLAN 阶段产出）
+
+| 工具 | 版本 | 状态 |
+|---|---|---|
+| `lcov` | 1.14 | ✅ 已装（用户确认）|
+| `gcov` | 11.4 | ✅ 已装（gcc 11.4 自带）|
+| `genhtml` | 1.14 | ✅ 已装 |
+| `rg`(ripgrep) | — | 待 R0 验证 |
+| `gh`(GitHub CLI) | — | 待 R0 验证（需 full_network for CVE 审计）|
+| FetchContent 离线 | — | ✅ 三处 `_deps/`（quickjs-ng v0.14.0 + benchmark v1.9.1）|
+| ctest 基线 | 1061/1061 | 待 R0.1 核验 |
 
 #### 任务历史
 
 | 时间 | 阶段 | 备注 |
 |---|---|---|
-| 2026-04-30 23:40 | 初始化 | VAN 启动；grep 实证 9 项（F1-F9）；意图判读「规划」→ 蓝图级 spec/plan 主交付；6 子系统候选 + 3 渲染方案 + 5 决策维度 V1-V5 列出；分支 `feature/TASK-20260430-04-ui-editor-debugger` 创建（基于 main `9411584`）；codebase review TASK-30-03 在自己 feature 分支由 background agent 持续推进，本任务对其无依赖；下一步等待用户对 V1-V5 决策 |
+| 2026-04-30 22:24 | 初始化 | VAN 完成；用户决策 V1-V5（A / all / C / D / ✅）+ 策略 X（R0+R1 必然 + R2 条件 + R3+ 拆出）锁定；分支创建（基于 main `9411584`）；Memory Bank 同步；下一步 `/plan` |
+| 2026-04-30 22:42 | 规划完成 | PLAN 完成；10 决策矩阵 D1-D10 锁定（B/C/B/B/spec/15/C/C/B/❌不用子代理）；spec + plan 文档落盘；T1-T10 安全威胁建模（T7 QuickJS / T8 FreeType / T9 图片解码 + T10 CVE 为重点）；估时 plan ~6-10h / plan×0.6 ~3.6-6h；不需要 `/creative`；下一步 `/build` 进入 R0 准备阶段 |
+| 2026-04-30 23:08 | R0 完成 | grep fingerprint 6 维度 × 30 关键字扫描 / lcov 覆盖率 85.4%/95.4%/57.6% / 7 依赖 CVE 审计 0 CRIT-HIGH + 5 Med-Low / 抽样名单 H 25+ + M 80 + L 36 / R0 报告落盘；实测 ~22 min（plan ×0.6 0.69×）⚡ |
+| 2026-04-30 24:39 | R1 完成 | 6 维度全代码库 review 报告产出（934 行 / 55 项 findings / 28 P1 + 19 P2 + 8 P3）；Top 5 priority + R2 候选 6 项 + R3+ 13 拆分任务建议；commit `802a273`；实测 ~85 min（plan ×0.6 0.78×）⚡ |
+| 2026-04-30 24:55 | R2 完成 | 6 项 P0 quick fix 全过 ctest 1062/1062 PASS（基线 1061 + R2.5 新单测）；commits `3b4b2e7`/`1467207`/`ddea78d`/`95ae814`/`9c6ad5f`/`668a9fe` + MB 收尾 `33c99f4`；首次实战 background agent 双轨模式（worktree 隔离应对 race condition）；实测 ~70 min（含冲突 1.27× plan，扣冲突 0.82×）|
+| 2026-05-01 00:08 | 回顾完成 | reflection 文档 10 段 + 2 附录（Level 4 全面回顾）；plan ×0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；10 改进建议（P0×1 / P1×4 / P2×5）；systemPatterns 新增 5 段 + techContext 新增 3 段；commit `77bec3c` |
+| 2026-05-01 00:30 | 归档完成 | archive 文档 10 段；P0 #3 git symbolic-ref commit 守门 → `git-workflow.mdc` 落实；P1 #4 reflog 诊断 → `systematic-debugging.mdc` 落实；R3+ 13 项任务建议入 activeContext 待 Checkpoint 2 用户决策；分支保留未合并（background agent 双轨产物，由用户决定合并时机）|
+
+</details>
 
 ---
 
