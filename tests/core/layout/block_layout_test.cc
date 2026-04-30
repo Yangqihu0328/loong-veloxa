@@ -616,4 +616,100 @@ TEST(MarginCollapseLayoutTest, AutoHeightParentReflectsCollapsedMargins) {
   EXPECT_FLOAT_EQ(p_box->content_height, 90.0f);
 }
 
+// =============================================================================
+// A8/A9/A10 — first/last child margin collapse with parent
+// CSS 2.1 §8.3.1 嵌套规则（TASK-20260430-01）
+//
+// 测试维度（D4.B 完整档）：
+//   #1-#2  主流程：first/last child collapse with parent
+//   #3-#7  阻断条件：padding-top / border-bottom / BFC root / explicit-height /
+//          min-height
+//   #8     deep chain：≥ 3 层嵌套 first child 链式合并
+//   #9     collapse-through：跨 parent 边界传播
+//   #10    outgoing chain 含 parent.margin-bottom 验证
+// =============================================================================
+
+// ----- 主流程 #1-#2 ----------------------------------------------------------
+
+// #1 first child margin-top 与 parent margin-top adjoining → collapse
+TEST(MarginCollapseLayoutTest, A8_FirstChildMarginCollapsesWithParent_Basic) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      "#parent { margin-top: 30px; }"
+      "#child { margin-top: 20px; height: 50px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+
+  // parent.margin-top + child.margin-top 合并 → max(30, 20) = 30
+  // sibling-level：parent.y 由 body's chain 决定 = 30
+  EXPECT_FLOAT_EQ(p_box->y, 30.0f);
+  // 关键 RED 信号：实施前 child.y = 20 (chain 未跨函数 propagate)
+  //              实施后 child.y = 0  (margin-top 已合入 parent.margin-top chain)
+  EXPECT_FLOAT_EQ(c_box->y, 0.0f);
+  // 状态字段验证：first-child margin-top 已合入 ancestor
+  EXPECT_TRUE(c_box->margin_top_collapsed_into_ancestor);
+}
+
+// #2 last child margin-bottom 与 parent margin-bottom adjoining → 渗出
+TEST(MarginCollapseLayoutTest, A8_LastChildMarginCollapsesWithParent_Basic) {
+  dom::Document doc;
+  auto* body = doc.CreateElement(dom::TagId::kBody);
+  doc.AppendChild(body);
+  auto* parent = doc.CreateElement(dom::TagId::kDiv);
+  parent->set_id(InternedString::Intern("parent"));
+  body->AppendChild(parent);
+  auto* child = doc.CreateElement(dom::TagId::kDiv);
+  child->set_id(InternedString::Intern("child"));
+  parent->AppendChild(child);
+  auto* sibling = doc.CreateElement(dom::TagId::kDiv);
+  sibling->set_id(InternedString::Intern("sibling"));
+  body->AppendChild(sibling);
+
+  Vector<css::Stylesheet> sheets;
+  sheets.push_back(css::CssParser::Parse(
+      // parent: height:auto, no padding/border/min-height → blocks_bottom=false
+      "#child { margin-bottom: 20px; height: 50px; }"
+      "#sibling { margin-top: 30px; height: 30px; }"));
+
+  LayoutContext ctx;
+  ctx.viewport_width = 800;
+  ctx.viewport_height = 600;
+  ctx.stylesheets = &sheets;
+
+  auto* root = LayoutEngine::Layout(&doc, ctx);
+  auto* body_box = root->first_child;
+  auto* p_box = body_box->first_child;
+  auto* c_box = p_box->first_child;
+  auto* s_box = p_box->next_sibling;
+
+  EXPECT_FLOAT_EQ(p_box->y, 0.0f);
+  EXPECT_FLOAT_EQ(c_box->y, 0.0f);
+  // 实施前：trailing 20 计入 parent.content_height = 70；sibling.y = 0+70+30 = 100
+  // 实施后：trailing 渗出 → parent.content_height = 50；
+  //         sibling 与 parent.margin-bottom (effective=20) collapse → max(20,30) = 30
+  //         sibling.y = 0 + 50 + 30 = 80
+  EXPECT_FLOAT_EQ(p_box->content_height, 50.0f);
+  EXPECT_FLOAT_EQ(s_box->y, 80.0f);
+  // 状态字段验证：last-child margin-bottom 已合入 ancestor
+  EXPECT_TRUE(c_box->margin_bottom_collapsed_into_ancestor);
+}
+
 }  // namespace vx::layout
