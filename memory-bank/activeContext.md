@@ -2,17 +2,27 @@
 
 ## 当前阶段
 
-**构建中·轮次 R1 完成（2026-04-30 ~24:39）** — R0 + R1 双轮次必然产出已完成；R1 报告 55 项 findings 跨 6 维度。Checkpoint 1 等待用户决策（R2 范围 + R3+ 拆分顺序）。
+**构建中·轮次 R2 完成（2026-04-30 ~24:55）** — R0 + R1 + R2 三轮次产出已完成；R2 6 项 P0 quick fix 全过 ctest **1062/1062 PASS**（基线 1061 + R2.5 新增守卫单测 = 1062）。Checkpoint 2 等待用户决策（R3+ 拆分顺序 + 是否进入 reflect）。
 
-**焦点：** 用户审 `docs/reports/2026-04-30-codebase-review.md` § 11 Checkpoint 决策点：
-- ✅ 选 1：批 R2 全 6 项 quick fix（55 min）→ `/build` 续 R2
-- ⚠️ 选 2：限定 R2（如跳过 F-040 注释类）→ `/build` 续选定子集
-- ⏭️ 选 3：跳过 R2 → `/reflect` 直接进入回顾
-- ➕ 选 4：决定 R3+ 13 个 P1 候选任务的拆分优先级（推荐 #1 image_decoder 安全 + #2 EventDispatcher snapshot + #3 LoadHTML use-after-free 三件套）
+**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）：
+- 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG error_exit kill）— P1 安全 / 估 4-6 h / Level 3
+- 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
+- 🟡 #3 LoadHTML 重置 dom_bindings_ 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2
+- 🔴 #4 CSS 属性元数据表（F-022）— P1 维护性 / Level 4 大件 / 1-2 周（架构性重构）
 
-**TDD 模式：** R2 仅 quick fix（注释 / 单行守卫 / 文档化），TDD 不强制；如批准 R2，仍要求每项变更 ctest 1061 通过。
+**R2 实绩（条件触发 ✅）：**
+- 6/6 commits 全过 ctest 1062/1062
+- F-020 R2.1 `3b4b2e7`（selector_matcher dead return + VX_DCHECK）
+- F-033 R2.2 `1467207`（html parser ProcessEndTag isize 净化）
+- F-040 R2.3 `ddea78d`（rasterizer 阈值注释统一）
+- F-026 R2.4 `95ae814`（layout_engine 单参 arena thread_local）
+- F-053 R2.5 `9c6ad5f`（image_decoder DecodeFromFile max_size 守卫 + 新单测）
+- F-055 R2.6 `668a9fe`（vx_version() CMake configure_file 生成）
+- 实测耗时 ~70 min（plan 55 min ×0.6 = 33 min；plan ×1.27 / ×0.6 ×2.12，超 ×0.6 因 worktree 隔离 + 并发会话冲突修复 ~25 min 额外开销）
 
-> **TDD 模式：** R0/R1 不适用（review 类任务为数据收集 + 报告产出，无新代码无新测试）；R2 P0 修复阶段对每个有测试的修复强制 RED 反向探针（systemPatterns §9.3）。
+**TDD 模式：** R2 quick fix 不强制 RED-GREEN-REFACTOR（注释 / 单行守卫 / 文档化）；R2.5 image_decoder 是唯一行为变化，加新单测验证守卫触发；其余每项变更 ctest 1062 通过验证。
+
+> **TDD 模式：** R0/R1 不适用（review 类任务为数据收集 + 报告产出，无新代码无新测试）；R2 P0 修复阶段对有测试的修复强制 RED 反向探针（systemPatterns §9.3）。
 
 ### R0 数据快照（详见 `docs/reports/2026-04-30-codebase-review-r0-data.md`）
 
@@ -43,16 +53,15 @@
 
 ## 焦点
 
-- R0 准备 5 子任务全部 ✅，commit 已打
-- 下一轮（R1 必然）：
-  1. R1.1 七大子系统深度 review（H 20 文件深读 + M 80 文件一过 + L 36 跳过）
-  2. R1.2 6 维度归集 → 不足清单
-  3. R1.3 每项不足配套修复方案（含估时 + 影响面 + 验证方法）
-  4. R1.4 P0/P1/P2 分级（spec §6 标准）
-  5. R1.5 R1 报告落盘 `docs/reports/2026-04-30-codebase-review.md`
-  6. R1.6 commit + Checkpoint 1（用户审报告决定 R2 范围）
-- 估时：R1 plan ~150-200 min / ×0.6 ~90-120 min
-- 不需要 `/creative`（review 报告本身是产出物，无 UI/算法/架构空白）
+- R0 / R1 / R2 三轮次全部 ✅；6 项 P0 quick fix 入仓 ctest 1062/1062 PASS
+- **当前 Checkpoint 2 等待用户决策**：
+  1. R3+ 拆分顺序（Top 3 推荐 + Level 4 大件单独评估）
+  2. 是否进入 `/reflect`（reflection 文档 + plan ×0.6 第 16 数据点 + R3+ task IDs 入 activeContext）
+  3. 是否直接 `/archive`（如果 R3+ 拆分留作未来 ad-hoc）
+- 下一轮（pending）：
+  - REFLECT：reflection-TASK-20260430-03.md 落盘；含 R0+R1+R2 三阶段实测耗时分析、worktree 隔离收获、并发会话冲突应对模式（systemPatterns 备料）
+  - ARCHIVE：archive-TASK-20260430-03.md + R3+ task IDs 迁入 activeContext / tasks.md
+- 注：本任务在 background agent 模式下运行（用户主线在 04 任务），03 feature 分支独立演进，最终归档时合并 main 由用户审 + 决定时机
 
 ## 待处理事项（P0/P1/P2 后续）
 
@@ -77,7 +86,7 @@
 
 ## 下一步
 
-- 执行 `/plan` 进入规划阶段
+- Checkpoint 2 用户决策 → `/reflect` 或 `/archive`
 
 ## 最近归档（速查，详细见 archive 文档）
 

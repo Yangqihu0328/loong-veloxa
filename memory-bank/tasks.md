@@ -5,7 +5,7 @@
 ### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
-- **状态：** 🔵 构建中·R1 完成（Checkpoint 1 待用户决策）
+- **状态：** 🟢 构建中·R2 完成（Checkpoint 2 待用户决策 R3+ 拆分顺序 / `/reflect` / `/archive`）
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
 - **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
@@ -31,8 +31,8 @@
 |:-:|---|:-:|---|---:|---:|
 | R0 | 准备：6 维度 grep fingerprint 反模式预硕 + 抽样深度策略锁定 + ctest 基线 1061/1061 核验 | ✅ 必然 | meta | ~90 min plan / ~54 min ×0.6 | **~22 min ✅ (0.41× plan)** |
 | R1 | **6 维度全代码库 review 报告** — spec 主文档列出 N 项不足 + 每项方案 + P0/P1/P2 分类 | ✅ 必然 | report | ~150-200 min plan / ~90-120 min ×0.6 | **~85 min ✅ (0.50× plan / 0.78× ×0.6)** |
-| **Checkpoint 1** | 用户审报告 + 决定 R2 范围（是否跳过为问号、是否限定某些 P0 不动）| — | — | — | ⏳ |
-| R2 | P0 quick fix（笔误 / 死代码 / 命名 / 1 行修复，预计 5-15 个）| ⚠️ 条件触发 | impl | ~1-2h | ⏳ |
+| **Checkpoint 1** | 用户审报告 + 决定 R2 范围（选项 A：全 6 项 quick fix）| — | — | — | ✅ A |
+| R2 | P0 quick fix（F-020 / F-026 / F-033 / F-040 / F-053 / F-055，全 6 项）| ✅ 触发 | impl | ~55 min plan / ~33 min ×0.6 | **~70 min ✅ (1.27× plan / 2.12× ×0.6, +25 min worktree 隔离修并发会话冲突)** |
 | **Checkpoint 2** | 用户决定 R3+ 范围 / 拆出后续任务 ID（每个独立 Level 1-2）| — | — | — | ⏳ |
 | R3+ | P1 大件修复 → **不在本任务内完成**；按 ROI 拆出独立子任务 TASK-* | ❌ 拆出 | — | — | — |
 | **合计上限** | R0+R1+R2 | — | — | **~5-8h plan / ~3-5h plan×0.6 实测预期** | — |
@@ -48,6 +48,24 @@
 - **R0 候选 findings：** 14 项（F-001 ~ F-014 跨 6 维度），R1 验证 + 分级 + 写方案
 - **实测耗时：** ~22 min（plan 90 min ×0.6=54 min；实测 0.41× plan / 0.69× ×0.6） → reflect 阶段 plan ×0.6 校准协议第 16 数据点
 - **工具链补强：** OSV.dev 走 WSL2 → Windows Clash 代理 `172.22.32.1:7890`（沙箱直连 DNS 失败 → 宿主代理 fallback）；候选 systemPattern reflect 阶段沉淀
+
+#### BUILD R2 完成实绩（2026-04-30 ~24:55）
+
+- **R2 commit 链：** 6 项 P0 quick fix 全过 ctest **1062/1062 PASS**（基线 1061 + R2.5 新增 1 测）
+  - R2.1 `3b4b2e7` fix(css): F-020 selector_matcher 末尾 dead return + VX_DCHECK 标 unreachable
+  - R2.2 `1467207` fix(html): F-033 ProcessEndTag isize/usize 重复转换净化 + early-return 防 underflow
+  - R2.3 `ddea78d` docs(rasterizer): F-040 FlattenQuad/Cubic 0.0625 vs 0.25 阈值数学等价注释
+  - R2.4 `95ae814` fix(layout): F-026 LayoutEngine 一参 arena static → thread_local 改善线程安全
+  - R2.5 `9c6ad5f` fix(image): F-053 DecodeFromFile 加 max_size 守卫（默认 256 MiB） + 单测 DecodeFromFileRejectsOversizedFile（StatusCode::kOutOfMemory）
+  - R2.6 `668a9fe` fix(api): F-055 vx_version() 改 CMake configure_file（version.h.in → @PROJECT_VERSION@）消除 hardcode
+- **执行环境：** 独立 git worktree `.worktree-03-r2` 隔离主 worktree 的并发会话分支切换冲突（reflog 见 23:41:23-30 / 23:45:08 双切）；worktree 完成后清理
+- **新增文件：** `veloxa/api/version.h.in`（CMake 模板）
+- **修改文件：** 6 文件（5 src + 1 CMakeLists + 1 test）
+- **实测耗时：** ~70 min（plan 55 min ×0.6=33 min；实测 1.27× plan / 2.12× ×0.6） → 超 ×0.6 主因 worktree 隔离 + 并发会话冲突修复 ~25 min 额外开销，扣除后 ~45 min ≈ 0.82× plan / 1.36× ×0.6 (仍超但合理)
+- **跨任务沉淀候选**（reflect 阶段决定）：
+  - 「并发会话切分支冲突」应对模式 → systemPatterns 新模式
+  - background agent 双轨 + worktree 隔离 → workflow rule 新段
+  - 6 项 fix 平均 ~12 min/项（plan ~9 min/项），plan ×0.6 fast-fix 颗粒度 ~6 min/项校准点
 
 #### BUILD R1 完成实绩（2026-04-30 ~24:39）
 

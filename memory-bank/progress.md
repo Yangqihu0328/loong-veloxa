@@ -2,7 +2,28 @@
 
 ## 当前任务
 
-**TASK-20260430-03：全代码库 Code Review** — Level 4 [安全相关]，**BUILD R1 完成**（2026-04-30 ~24:39），Checkpoint 1 等待用户决策。
+**TASK-20260430-03：全代码库 Code Review** — Level 4 [安全相关]，**BUILD R2 完成**（2026-04-30 ~24:55），Checkpoint 2 等待用户决策（R3+ 拆分顺序 / `/reflect` / `/archive`）。
+
+### BUILD R2 阶段产出快照（2026-04-30 ~24:55）
+
+- **R2 全过 ctest 1062/1062 PASS**（基线 1061 + R2.5 新增守卫单测 = 1062；1 Wpt001 Skip 沉淀状态保持）
+- **6 commits 链：**
+  | # | Commit | Finding | 类型 | 行为变化 |
+  |---|---|---|---|---|
+  | R2.1 | `3b4b2e7` | F-020 selector_matcher dead return | 安全防御 | ❌ 注释 + VX_DCHECK |
+  | R2.2 | `1467207` | F-033 ProcessEndTag isize 净化 | 重构 | ❌ 等价循环 |
+  | R2.3 | `ddea78d` | F-040 rasterizer 阈值注释 | 文档 | ❌ 纯注释 |
+  | R2.4 | `95ae814` | F-026 LayoutEngine arena thread_local | 线程安全 | ✅ static → thread_local |
+  | R2.5 | `9c6ad5f` | F-053 image_decoder max_size 守卫 | 安全 | ✅ 新参数 + 守卫 + 单测 |
+  | R2.6 | `668a9fe` | F-055 vx_version() configure_file | 维护 | ✅ hardcode → CMake gen |
+- **执行环境：** 独立 git worktree `.worktree-03-r2`（隔离主 worktree 并发会话分支切换冲突，reflog 显示 23:41:23/30 + 23:45:08 双切）
+- **新增文件：** `veloxa/api/version.h.in`（CMake configure_file 模板）
+- **修改文件：** 6 文件（4 src + 1 header + 1 CMakeLists + 1 test）
+- **实测耗时：** ~70 min（plan 55 min ×0.6=33 min；实测 1.27× plan / 2.12× ×0.6）；扣除 worktree 隔离 + 冲突修复 ~25 min 后 ≈ 0.82× plan / 1.36× ×0.6
+- **关键观察（reflect 阶段 systemPatterns 候选）：**
+  - 「并发会话切分支冲突」检测信号：activeContext.md 跨 commit 莫名变化 + git reflog 显示外部 checkout
+  - 应对模式：git worktree 隔离 + 每 commit 前 `git symbolic-ref --short HEAD` 防御
+  - background agent 模式（用户主线 04 + 我后台跑 03）= 双 worktree 设计，两轨独立演进
 
 ### BUILD R1 阶段产出快照（2026-04-30 ~24:39）
 
