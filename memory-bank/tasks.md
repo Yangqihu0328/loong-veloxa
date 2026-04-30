@@ -2,7 +2,122 @@
 
 ## 当前任务
 
-当前无活跃任务（已进入空闲状态，等待 `/van` 新任务初始化）。
+**无活跃任务（空闲）— 上一任务 TASK-20260430-01 已归档。**
+
+<details>
+<summary>TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则） — ✅ 已归档（点开查看历史）</summary>
+
+### TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1 嵌套规则）
+
+- **复杂度级别：** Level 3（单子系统 Layout + API 设计决策 + 跨函数 chain propagate）
+- **状态：** ✅ 已归档（2026-04-30）— 归档文档 `memory-bank/archive/archive-TASK-20260430-01.md`；4 改进建议全部落实（P0 → `writing-plans.mdc` §9.4；P1×3 → `writing-plans.mdc` §0 + `creative.md` §d.2；P2×2 → `systemPatterns.md`）；ctest 1039/1039 PASS；wpt-005 SKIP→PASS；plan × 0.6 第 14 数据点 0.46×
+- **设计 spec：** `docs/specs/2026-04-30-margin-collapse-with-parent-design.md`（17 验收 / D1-D5 决策矩阵 / §8.3.1 5 adjoining 规则状态表 / 阻断条件 truth table / 算法伪码 / 6 风险登记）
+- **实现 plan：** `docs/plans/2026-04-30-margin-collapse-with-parent.md`（7 Phase / 14 任务 / ~6.5h plan / plan×0.6 ≈ 3.9h 准确档）
+- **需要创意阶段：** ❌ 否（5 决策 D1-D5 已在 PLAN 头脑风暴中锁定，无 UI/算法/架构空白）
+- **创建日期：** 2026-04-30
+- **分支：** `feature/TASK-20260430-01-margin-collapse-parent`（基于 main `a84d30d`，已创建）
+- **来源：** TASK-20260426-01 archive §10 + reflection §4.12 P3 触发型 TASK-26-02 占位 / activeContext §待处理事项「P3 候选 TASK-26-02」 / wpt-005 SKIP-w/-rationale 现实直接验证目标
+- **安全相关：** ❌ 否（纯 layout 算法，无外部输入 / 无认证 / 无新依赖）
+
+#### 范围（用户决策 V1=A）
+
+仅做 **A 子项**：first/last child margin collapse with parent。**不动** clearance / float / clear（CSS layer 完全无实现，需独立 Level 4 任务承接）。
+
+| W3C CSS 2.1 §8.3.1 规则 | 当前状态 | 本任务目标 |
+|---|---|---|
+| 同级 sibling collapse `max(pos)+min(neg)` | ✅ R3 完成 | 不动 |
+| collapse-through 空 box 串联 | ✅ R3 完成 | 不动 |
+| 负 margin 数学 | ✅ R3 完成 | 不动 |
+| BFC root 阻断（overflow!=visible）| ✅ R3 部分（仅 overflow trigger）| 不动 |
+| **first child 与 parent margin-top collapse** | ❌ 未实施（受 D1.2 LayoutChild API 边界限留）| ✅ **本任务** |
+| **last child 与 parent margin-bottom collapse** | ❌ 未实施 | ✅ **本任务** |
+| collapse 阻断条件（parent padding-top/border-top/min-height）| ❌ 未实施 | ✅ **本任务** |
+| clearance | ⚠️ stub（`MarginChain.has_clearance` 标志位）| 不动（依赖 float）|
+
+#### 验收要点（待 /plan 精化）
+
+- ctest 全量 PASS（基线 1029/1029；预计 +10-15 new test cases）
+- Release `-O3 -Werror` 0 err/warn
+- `bench_layout_*` baseline 不退化超 +10%（**§7.0.1 同窗口 stash-swap 对照强制**）
+- **wpt-005 SKIP → PASS**（`Wpt005_NonSiblingAdjoiningMarginsCollapse` 是直接验证目标）
+- W3C CSS 2.1 §8.3.1 嵌套 collapse 至少 5-7 单测（first child / last child / 阻断条件 padding-top/border-top/min-height / 多层嵌套）+ wpt-005 PASS
+- 反向探针 ≥ 1 处（D3 类回归测试，§9.3 强制）
+
+#### VAN 阶段决策（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 范围 | **A 子项**（first/last child collapse with parent）| clearance 完整版依赖 float（CSS layer 零实现），独立 Level 4 任务 |
+| V2 | 拆分策略 | **单 Round 一次过 + plan 内部 Phase 划分** | Level 3，无明显多 Round 边界 |
+| V3 | Git 分支 | **feature/TASK-20260430-01-margin-collapse-parent** | 基于 main `a84d30d` |
+| V4 | 复杂度 | **Level 3** | 单子系统 + API 设计决策（LayoutChild 跨函数 chain 透传协议）|
+| V5 | 安全标注 | ❌ 不标 | 纯 layout 算法 |
+
+#### VAN 阶段代码实证（落实 P0「方案根因假设未先验证」+ TASK-13 反思 #2 基础假设核查）
+
+| # | 假设/命题 | grep 实证 | 影响设计 |
+|:-:|---|---|---|
+| F1 | clearance 当前是否 stub | ✅ 是。`margin_collapse.h:52-54` `ApplyClearance()` 仅置标志位 + 注释「完整实施 = TASK-26-02 (float/clear)」 | 范围拆分依据；A 子项不动 clearance |
+| F2 | CSS `clear` / `float` 属性是否被解析 | ❌ **完全无实现**。`grep -i clear\|float` in `veloxa/core/css/` 仅命中 transition.cc 的 `kFloat`（数值类型 enum，无关）；CSS parser / property / style_resolver 零 clear/float 处理 | clearance 完整版需独立 Level 4 任务，本任务跳过 |
+| F3 | first/last child margin collapse with parent 当前状态 | ❌ 未实施。`layout_engine.cc:446-451` 显式注释「P3 TASK-26-02 完成」/「未跨函数 propagate」，仅做 sibling-level collapse | 本任务从零实施 |
+| F4 | `LayoutChild` API 当前签名 | ⚠️ 无 chain 参数。`LayoutChild(LayoutBox*, f32, const LayoutContext&)` — 需要扩展为带 `MarginChain*` in/out | API 改动影响面：3 处 callers（LayoutBlock / LayoutFlex / 顶层 Layout），以及 5 处 LayoutType 分支（kBlock/kFlex/kInline/kText/kReplaced）|
+| F5 | wpt-005 fixture 内容 | ✅ 是 first/last child margin collapse with parent 场景（nested `<div>` 嵌套 `#div3.margin-bottom:2em` 与外层 div bottom collapse + `#div4.margin-top:1em`）；R3.5 显式 SKIP-w/-rationale | wpt-005 是直接验证目标第一首选 |
+| F6 | FetchContent 代理 | ✅ `_deps/` 已离线预置（quickjs-ng + benchmark），不引入新依赖 | 跳过 git proxy 守卫 |
+
+#### 前置验证清单
+
+| 维度 | 结果 | 备注 |
+|---|---|---|
+| 依赖可获取性 | ✅ | 无新依赖（全部 vx_core 已有模块）|
+| 环境就绪 | ✅ | `build/` Debug + `build-bench/` Release 均已配置可复用 |
+| 已有 artifact | ✅ | TASK-26-01 沉淀完整：`MarginChain` POD / wpt-005 fixture / `tests/integration/wpt_layout_test.cc` 框架 / `tests/core/layout/block_layout_test.cc` 风格 / `bench_layout_buildtree` baseline |
+| ctest 基线 | ✅ 1029/1029 PASS in 2.55s（含 2 SKIP-w/-rationale，本任务目标 wpt-005 SKIP → PASS） |
+| FetchContent 代理守卫 | ⊘ 跳过 | F6 不引入新依赖 |
+| 待处理事项关联 | ✅ 多条适用 | **§7.0.1 同窗口对照 bench**（首次外部任务命中验证 ROI）+ **§9.1 Layout 必检项**（默认 width/height + 跨 LayoutType 独立 box-model；本任务 LayoutChild API 改造直接命中）+ **§9.3 Mixed TDD RED 反向探针强制**（第 6 次实战）+ **subagent §D3 重评估机制**（plan 阶段标 D3 build 阶段评估）+ **plan × 0.6 第 14 数据点**（Level 3 单 Round，预期落「准确档」0.5-0.6×）|
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-04-30 19:33 | 初始化 | VAN 完成；6 项 grep 实证（F1-F6）；用户决策 V1=A 锁定范围；分支创建（基于 main `a84d30d`）；MB 同步 |
+| 2026-04-30 19:50 | 规划中 | PLAN 完成；5 决策矩阵（D1-D5）锁定；spec + plan 文档落盘；7 Phase / 14 任务划分；估时 ~6.5h plan / ~3.9h plan×0.6；不需要 /creative |
+| 2026-04-30 21:00 | 构建完成 | BUILD 完成；P0-P6 全 7 Phase ✅；TDD 严格 RED→GREEN→REFACTOR + §9.3 反向探针 3/3 + collapse-through 跨边界 + deep chain；D2 决策实施时调整为 in-out by-pointer（`MarginChain* incoming`，by-value out）以支持多级跨函数 propagate；隐式 BFC root 识别（root + html/body 顶层 wrapper，`box->parent->parent == nullptr`）；wpt-005 SKIP→PASS；ctest 1039/1039 PASS（Debug + Release `-O3 -Werror`）；同窗口 stash-swap bench `BM_LayoutBuildTreeFlat/64 +7.55%` / `Nested/16 +3.42%` / `Mixed -9.84%` / `Flex<1,8> +5.84%` / `Flex<8,8> +4.40%` / `Flex<16,16> +4.94%`，A6/A7 ≤ +10% 全 PASS；O(N) → O(1) 性能优化（`last_in_flow_block` 指针 hoisting）；新发现：CSS parser 不处理 `border-bottom` shorthand（限制已记入 spec），改用 `padding-bottom` 等价测试 |
+| 2026-04-30 21:30 | 回顾完成 | REFLECT 完成；reflection-TASK-20260430-01.md 落盘 12 段全维度回顾；plan × 0.6 第 14 数据点 **0.46×**（实测 ~180 min vs plan 234 min plan×0.6，落 0.40-0.50× Level 3 单子系统区间）；4 改进建议（P0×1 + P1×3 + P2×2）；2 新候选反复模式定型（API 传递语义未做多级 mental trace + 算法伪码赋值符歧义）；TASK-26-01 升级规则 ROI 验证 3/5 触发全高/中（§7.0.1 同窗口 stash-swap 首次外部任务 7 BM 一次过 / §9.3 反向探针第 6 次实战 / §9.2 默认值边界 plan 阶段锁定）；2 不触发但合理留存（§9.1 Layout 必检项 + subagent D3）；等待 /archive 落实 P0 建议（升级 `writing-plans.mdc` §9 递归算法 API 决策必检项）|
+| 2026-04-30 21:45 | 归档 | ARCHIVE 完成：`archive-TASK-20260430-01.md` 落盘；P0/P1 改进建议全部迁移落实 — `.cursor/rules/skills/writing-plans.mdc` §9.4（P0 递归算法 API 决策必检项）+ §0 既有测试隐式契约 fingerprint（P1）+ §0 CSS shorthand 能力 grep 表（P1）；`.cursor/commands/creative.md` §d.2（P1 算法伪码累积语义 explicit method）；`memory-bank/systemPatterns.md` 新增 5 段（递归 API / 测试 fingerprint / CSS shorthand / 算法 explicit method / 副产品优化 3 标准）；任务状态置为已归档 |
+
+#### PLAN 阶段决策矩阵（已锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| D1 | API 改造策略 | **A1** 新增 `LayoutBlockChild` 专用辅助；`LayoutChild` 不动 | LayoutInline/Flex 路径零影响；遵循 §9.1 跨 LayoutType 独立 box-model；API 边界清晰 |
+| D2 | 传递语义 | **A** by-value in / by-value out (`MarginChain` POD 12B) | 编译器 SROA 等价无开销；数据流单向可见；无 lifetime/nullable 隐形约束 |
+| D3 | 阻断条件覆盖 | **A** 完整规范子集（padding/border + BFC root + height + min-height）| W3C 浏览器对齐；wpt-005 验证；6 边界条件全覆盖 |
+| D4 | 测试深度 | **B** 完整档（10 单测 + 3 反向探针 + wpt-005）| §9.3 强制最小 ≥ 1；本任务 3 个独立 D3 维度（blocks_top / blocks_bottom / deep chain）|
+| D5 | Phase 划分 | **B** 7 Phase 细粒度 | RED 与 GREEN 分离彻底；first/last 拆开独立 phase |
+
+#### 7 Phase 划分（Plan 内部）
+
+| Phase | 内容 | plan (min) | × 0.6 (min) |
+|:-:|---|---:|---:|
+| P0 | 准备（grep + wpt-005 拆解 + 基线） | 30 | 18 |
+| P1 | RED 单测全套（10 单测 + 3 反向探针位置注释） | 60 | 36 |
+| P2 | API 改造 + dispatch（`LayoutBlockChild` skeleton 调通编译） | 30 | 18 |
+| P3 | GREEN first child collapse | 45 | 27 |
+| P4 | GREEN last child collapse + 4 阻断条件 | 90 | 54 |
+| P5 | 反向探针验证 + deep chain + collapse-through 递归 | 60 | 36 |
+| P6 | wpt-005 + bench 同窗口 + 收尾 | 75 | 45 |
+| **合计** | — | **390 (~6.5h)** | **234 (~3.9h)** |
+
+#### 需要创意阶段的组件
+
+❌ 无（5 决策 D1-D5 已在 PLAN 头脑风暴中锁定，无 UI/算法/架构空白；可直接 `/build`）
+
+</details>
+
+---
+
+<details>
+<summary>TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关] — ✅ 已归档（点开查看历史）</summary>
 
 ### TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]
 
@@ -118,6 +233,8 @@
 | R4 | #21 LineBox + vertical-align + line-height + 9 测试 + 2 wpt fixture | impl/D3 | 360 | 216 | 子代理 B（R4.3 TextShaper FT）+ 子代理 C（R4.6 LayoutInline）|
 | R5 | finalize：techContext 闭环 + git 代理 unset + reflect | meta | 60 | 36 | — |
 | **合计** | — | — | **900 (15h)** | **540 (9h)** | **3 子代理 D3** |
+
+</details>
 
 ---
 
@@ -1043,6 +1160,8 @@ SoftwareCanvas::DrawText 真路径（FreeType+HarfBuzz）**warm** 5807 ns → **
 
 | 任务 ID | 描述 | 状态 | 完成日期 | 归档文档 |
 |---------|------|------|---------|---------|
+| TASK-20260430-01 | first/last child margin collapse with parent（Level 3 单子系统 Layout + API 设计决策）— W3C CSS 2.1 §8.3.1 嵌套规则 R1 + R3 + R5 完整实施；新增 `LayoutBlockChild` 专用辅助 + `MarginChain` in-out by-pointer 跨函数 propagate（D2 build 阶段调整）+ `MarginChain::MergeFrom` 合并语义 method + `margin_bottom_collapsed_into_ancestor` 字段 + 隐式 BFC root 识别（root + html/body 顶层 wrapper）+ 5 阻断条件（padding/border + BFC root + height + min-height）；wpt-005 SKIP→PASS（直接验证目标达成）；ctest 1029→1039 PASS（+10 cases）；同窗口 stash-swap bench A6/A7 全 PASS（mean 5%-7% 区间 ≤ +10% 退出门）；P6.2 副产品优化 O(N) → O(1) `last_in_flow_block` hoisting；plan × 0.6 第 14 数据点 0.46×；4 改进建议全部落实（P0 递归算法 API 决策必检项 + P1×3 既有测试 fingerprint / CSS shorthand grep / 算法伪码 explicit method）；TASK-26-01 升级规则 ROI 3/5 触发全部高/中验证（§7.0.1 同窗口 stash-swap 首次外部任务 7 BM 一次过 / §9.3 反向探针第 6 次实战 / §9.2 默认值边界）；CSS parser `border-bottom` shorthand 缺失列入独立 P3 候选 | ✅ 已完成 | 2026-04-30 | `archive-TASK-20260430-01.md` |
+| TASK-20260426-01 | Layout 正确性消化（#25 + #28 + #20 + #21）[安全相关]（Level 4）— 4 子任务多轮次：LayoutBox origin helpers + HTML inline style 三件套护栏 + Block margin collapsing + LineBox 模型 vertical-align；ctest 1029/1029 PASS；同窗口对照 bench mean -3.6% / median +2.65%；P0/P1 5 条规则升级落地（首次由 TASK-30-01 外部验证 ROI） | ✅ 已完成 | 2026-04-30 | `archive-TASK-20260426-01.md` |
 | TASK-20260425-01 | SDL2 窗口后端 + 输入事件桥接（Level 3 中等功能）— 第一个有可见窗口的平台后端，解锁 DevTool 主线（hot reload / inspector / FPS overlay 前置）；`Sdl2WindowSurface` + `Sdl2EventLoop`（Composition over Inheritance 内组合 `HeadlessEventLoop`）+ `Surface::Present()` virtual no-op + `vx_view_run()` 自动 wire input callback；C API：`vx_event_loop_create_sdl2 / vx_surface_create_window(VxWindowOptions*) / vx_event_loop_pump_input`；隐含技术债清理：`destroy/save_ppm` 基类化清掉 UB 隐患；CMake 双轨 SDL2 lookup + `VX_PLATFORM_SDL2=OFF` 默认；`examples/hello_sdl2.cc` + `hello_sdl2_smoke` ctest（`SDL_VIDEODRIVER=dummy` + `VX_HELLO_SDL2_AUTOQUIT_MS` env hook 0.22s 自终止）；ctest 951/951 PASS（Debug + Release `-O3 -Werror`）；plan ×0.6 第 9 数据点 0.22× 历史最快「最窄路径」第 4 次确认；5 新模式 + 2 新 plan §0 grep 子段沉淀长期知识库；P6.1 WSLg 真窗口手测标遗留 | ✅ 已完成 | 2026-04-26 | `archive-TASK-20260425-01.md` |
 | TASK-20260424-01 | Layout super-linear knee 根因调查（研究类）— 根因定位 (d) ArenaAllocator 4KB block malloc/free churn；默认 block_size 4096 → 32768；K2 R256 9.42×→4.18× / K3 R_flex 16.49×→6.40×；3 文件核心 + 7 commits；新增 `DefaultBlockSizeFitsLargeAllocations` GTest + RED 反向探针；K8 新发现（65K block > L1D 触发抖动）；plan × 0.6 第 5 数据点 0.29×（历史最快，「最窄路径」子档样板）；3 新模式沉淀 systemPatterns；残余 ~40% super-linear 拆出 TASK-20260424-02 | ✅ 已完成 | 2026-04-24 | `archive-TASK-20260424-01.md` |
 | TASK-20260419-13 | 流程规则 P0/P1 沉淀冲刺（3 条积压条目一次性闭环）— P0 FetchContent proxy 守卫（反复 9+ 次痛点终结）/ P1 smoke 工具链 grep / P1 多轮次 Build 中间态；9 文件 / 8 commits / 反例追溯 7/7 通过（含 meta-dogfooding 实时自证）/ 10 验收 9 ✅ + 1 改进；跨类型估时收敛 plan × 0.6 通用协议；5 新模式沉淀 systemPatterns | ✅ 已完成 | 2026-04-19 | `archive-TASK-20260419-13.md` |

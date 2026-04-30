@@ -381,16 +381,89 @@ void LayoutEngine::LayoutChild(LayoutBox* child, f32 containing_width,
   }
 }
 
+// 检查 ComputedStyle.min_height 是否解析为 > 0（用于 §5.2.2 阻断条件）。
+inline bool HasNonZeroMinHeightLocal(const css::ComputedStyle* style,
+                                      f32 font_size,
+                                      const LayoutContext& ctx) {
+  if (!style) return false;
+  if (style->min_height.is_none() || style->min_height.is_auto()) return false;
+  const f32 v = ResolveLength(style->min_height, 0.0f, font_size, ctx);
+  return v > 0.0f;
+}
+
+// CSS 2.1 §8.3.1 first-child margin-top 与 parent margin-top adjoining 的
+// blocks_top 计算（box 自身的 top 是否阻断 chain 与 ancestor collapse）。
+//
+// 实施约定（与 W3C 浏览器主流行为一致）：
+//   - root (document) 视为 implicit BFC root → blocks_top=true
+//   - root.first_child（body / html top-level wrapper）也视为 implicit chain
+//     consumer → blocks_top=true（防止 body 的 first-in-flow 把 chain 漏到
+//     viewport 外；与 R3 sibling collapse 测试 A4 现行期望一致）
+//   - 其他 box: padding-top / border-top / overflow != visible 任一非默认
+inline bool ComputeBlocksTop(const LayoutBox* box) {
+  if (!box->parent) return true;        // root (document level)
+  if (!box->parent->parent) return true; // root.first_child（body / 顶层 wrapper）
+  if (!box->style) return false;
+  return box->padding[LayoutBox::kTop] != 0.0f ||
+         box->border[LayoutBox::kTop] != 0.0f ||
+         box->style->overflow != css::Overflow::kVisible;
+}
+
+// CSS 2.1 §8.3.1 last-child margin-bottom 与 parent margin-bottom adjoining 的
+// blocks_bottom 计算（box 自身的 bottom 是否阻断 chain 渗出给 ancestor）。
+inline bool ComputeBlocksBottom(const LayoutBox* box, f32 font_size,
+                                 const LayoutContext& ctx) {
+  if (!box->style) return false;
+  if (box->padding[LayoutBox::kBottom] != 0.0f) return true;
+  if (box->border[LayoutBox::kBottom] != 0.0f) return true;
+  if (box->style->overflow != css::Overflow::kVisible) return true;  // BFC
+  if (!box->style->height.is_auto() && !box->style->height.is_none())
+    return true;
+  if (HasNonZeroMinHeightLocal(box->style, font_size, ctx)) return true;
+  return false;
+}
+
 void LayoutEngine::LayoutBlock(LayoutBox* box, f32 containing_width,
                                const LayoutContext& ctx) {
-  const css::ComputedStyle* style = box->style;
-  if (!style) return;
+  // 顶层 wrapper：root box 视为 implicit chain consumer（无 ancestor 物理化）。
+  // 调 LayoutBlockChild 完成全部 layout；返回值含 root 的 first-in-flow-block
+  // 链路上累积的 chain（透过 incoming in-out by-pointer 累积），物理化为
+  // root.first-in-flow-block.y += chain.Collapsed()。
+  MarginChain root_incoming;
+  (void)LayoutBlockChild(box, containing_width, ctx, &root_incoming);
 
-  f32 font_size = ResolveFontSize(style, ctx);
+  // 物理化 chain：root 内部 first-in-flow-block.y += root_incoming.collapsed
+  // 注意：margin_top_collapsed_into_ancestor 在 caller (LayoutBlockChild 主循环
+  // 的 first-in-flow-propagate 路径) 中设置。本 wrapper 只看 root 的子。
+  if (root_incoming.IsEmpty()) return;
+  for (LayoutBox* c = box->first_child; c; c = c->next_sibling) {
+    if (!IsInFlow(c)) continue;
+    if (c->type == LayoutType::kBlock &&
+        c->margin_top_collapsed_into_ancestor) {
+      c->y += root_incoming.Collapsed();
+    }
+    break;  // 只看 first-in-flow
+  }
+}
+
+MarginChain LayoutEngine::LayoutBlockChild(LayoutBox* box,
+                                            f32 containing_width,
+                                            const LayoutContext& ctx,
+                                            MarginChain* incoming) {
+  // ---------------------------------------------------------------------------
+  // CSS 2.1 §8.3.1 first/last child margin collapse with parent
+  // (TASK-20260430-01 D1.A1 — 专用辅助函数，仅在 LayoutBlock 主循环对 kBlock
+  // 子递归调用)。详见 docs/specs/2026-04-30-margin-collapse-with-parent-design.md
+  // ---------------------------------------------------------------------------
+  const css::ComputedStyle* style = box->style;
+  if (!style) return MarginChain{};
+
+  const f32 font_size = ResolveFontSize(style, ctx);
 
   ResolveBoxModel(*style, containing_width, font_size, ctx, box->padding,
                   box->border, box->margin);
 
+  // ---- width 解析 (与 R3 等价) ------------------------------------------------
   if (style->width.is_auto() || style->width.is_none()) {
     box->content_width =
         containing_width - box->padding[LayoutBox::kRight] -
@@ -433,76 +506,145 @@ void LayoutEngine::LayoutBlock(LayoutBox* box, f32 containing_width,
         std::max(0.0f, remaining / 2.0f);
   }
 
+  // ---- §8.3.1 阻断条件计算 ---------------------------------------------------
+  const bool blocks_top = ComputeBlocksTop(box);
+  const bool blocks_bottom = ComputeBlocksBottom(box, font_size, ctx);
+
+  // ---- chain propagate：把 box.margin-top 加入 incoming（if !blocks_top）------
+  // 这是 in-out 语义：caller 看到 box.mt 的合并值，可继续 propagate 给上层。
+  if (!blocks_top) {
+    incoming->Add(box->margin[LayoutBox::kTop]);
+  }
+
   // ---------------------------------------------------------------------------
-  // Children 布局：CSS 2.1 §8.3.1 vertical margin collapsing
+  // Children 布局：CSS 2.1 §8.3.1
   //
-  // 算法（creative D1.1 方案 A，spec §5.3 简化版）：
-  //   维持「滚动 chain」cur_chain 累积同级相邻 margin。
-  //   - sibling collapse：相邻 margin → max(pos)+min(neg)
-  //   - collapse-through：空 box 的 top + bottom margin 都进 chain，不占 height
-  //   - negative：MarginChain 协议自动处理
-  //   - BFC root（overflow != visible）：flush 之前 chain，自身 margin 不并入
+  // 内部状态：
+  //   cur_chain     — sibling chain（box 内部 sibling collapse）
+  //   y_cursor      — 当前光标在 box.content-box 中的 y 偏移
+  //   first_in_flow — 是否还未遇到 in-flow child（决定 kBlock 子的 propagate path）
   //
-  // 范围限制（D1.3，P3 TASK-26-02 完成）：
-  //   first/last child 与 parent 的 margin collapse 受 LayoutChild API 边界
-  //   约束（保持 D1.2「内部栈式状态」），未跨函数 propagate。当前 R3 仅做
-  //   sibling-level collapse；外层 BFC root（root box / overflow!=visible 容器）
-  //   自然吸收 first/last margin（margin chain 不出函数边界）。
+  // first-in-flow propagate path（first_in_flow=true && !blocks_top）：
+  //   - chain 透过 incoming 透传给 ancestor 物理化
+  //   - kBlock 子: child_incoming = incoming（直接共用 caller 的 chain）
+  //   - 写 child.y = 0（chain 物理化由 ancestor 完成）；child.blocks_top=true 时
+  //     child.y = child.margin[T]（chain 仍透传，但 child.mt 独立）
+  //   - 设置 child.margin_top_collapsed_into_ancestor 标志位
+  //
+  // sibling-style path（其他情况）：
+  //   - chain 物理化在 box 内部
+  //   - kBlock 子: child_incoming = &cur_chain（box 内部 sibling chain）
+  //   - 写 child.y = y_cursor + cur_chain.Collapsed()
   // ---------------------------------------------------------------------------
   MarginChain cur_chain;
   f32 y_cursor = 0.0f;
   bool any_in_flow = false;
+  bool first_in_flow = true;
+  // 维护 last-in-flow-block-child 指针（O(1) 摊销，避免末尾 O(N) 二次扫描，
+  // P6.2 bench 优化）。
+  LayoutBox* last_in_flow_block = nullptr;
 
   for (LayoutBox* child = box->first_child; child;
        child = child->next_sibling) {
     if (!IsInFlow(child)) continue;
     any_in_flow = true;
 
-    // 关键顺序：margin / padding / border / content_height 都由 LayoutChild
-    // 解析（含 auto margin 居中、box-sizing、min/max-width 等）。collapse-through
-    // 判定亦需 child 已布局完才能读 content_height，因此**必须**先 layout 再
-    // 累积 chain。
-    LayoutChild(child, box->content_width, ctx);
+    if (child->type == LayoutType::kBlock) {
+      last_in_flow_block = child;
+      // ---------- kBlock 子：递归 LayoutBlockChild + chain propagate -----------
+      const bool is_propagate_path = first_in_flow && !blocks_top;
+      MarginChain* child_incoming = is_propagate_path ? incoming : &cur_chain;
 
-    if (CreatesBlockFormattingContext(child)) {
-      // BFC root 阻断 collapse：先 flush 之前 chain，再独立放置。
-      y_cursor += cur_chain.Collapsed();
-      cur_chain = MarginChain{};
+      // 调 LayoutBlockChild：内部解析 child.box-model，决定 child.blocks_top，
+      // 把 child.margin_top 加入 *child_incoming（if !child.blocks_top），
+      // 完成 child 内部 children layout，返回 child.outgoing。
+      const MarginChain child_outgoing = LayoutBlockChild(
+          child, box->content_width, ctx, child_incoming);
 
       child->x = child->margin[LayoutBox::kLeft];
-      child->y = y_cursor + child->margin[LayoutBox::kTop];
-      y_cursor = child->margin_box_bottom();
-      // 不开新 chain — 下一 sibling 的 margin-top 与本 BFC root 的 margin-bottom
-      // 不再 collapse。
-      continue;
-    }
+      const bool child_blocks_top = ComputeBlocksTop(child);
 
-    cur_chain.Add(child->margin[LayoutBox::kTop]);
-    child->x = child->margin[LayoutBox::kLeft];
-    child->y = y_cursor + cur_chain.Collapsed();
+      if (is_propagate_path) {
+        // first-in-flow + box !blocks_top：chain 透传给 ancestor
+        if (!child_blocks_top) {
+          // child 与 ancestor (跨多层 first-in-flow) collapse；物理化由顶层
+          // wrapper 完成。child 在 box.content-box 中相对位置 = 0。
+          child->margin_top_collapsed_into_ancestor = true;
+          child->y = 0.0f;
+        } else {
+          // child 自身阻断：chain 透传到此处停止；child.mt 独立放置。
+          // chain (incoming) 继续向 ancestor propagate（已含 box.mt 但不含 child.mt）。
+          child->margin_top_collapsed_into_ancestor = false;
+          child->y = child->margin[LayoutBox::kTop];
+        }
+      } else {
+        // sibling-style 或 first-in-flow 但 box.blocks_top=true：chain 在 box 内
+        // 物理化（cur_chain 已被 LayoutBlockChild 修改，含 child.mt 等）。
+        child->margin_top_collapsed_into_ancestor = false;
+        if (!child_blocks_top) {
+          child->y = y_cursor + cur_chain.Collapsed();
+        } else {
+          y_cursor += cur_chain.Collapsed();
+          cur_chain = MarginChain{};
+          child->y = y_cursor + child->margin[LayoutBox::kTop];
+        }
+      }
 
-    if (IsCollapseThrough(child)) {
-      // 空 box：margin-bottom 也并入当前 chain，不占 vertical 空间。
-      // child.y 保持「tentative」位置（绝对位置基准，调试 / hit-test 用）。
+      // 处理 child 完成后状态
+      if (child->collapsed_through) {
+        // collapse-through：chain 继续累积，不重置（W3C §8.3.1 R5）
+        // caller's cur_chain 已通过 incoming 含 child.mt 与之前 sibling chain；
+        // child_outgoing 含 child 内部 sibling chain + child.mb；合并成总 chain。
+        cur_chain.MergeFrom(child_outgoing);
+      } else {
+        // 普通完成：chain 重置含 child 渗出（之前 sibling 累积已物理化在 child.y）
+        y_cursor = child->y + child->border_box_height();
+        cur_chain = child_outgoing;
+      }
+    } else {
+      // ---------- 非 kBlock 子：R3 路径不变 -----------------------------------
+      LayoutChild(child, box->content_width, ctx);
+
+      if (CreatesBlockFormattingContext(child)) {
+        y_cursor += cur_chain.Collapsed();
+        cur_chain = MarginChain{};
+
+        child->x = child->margin[LayoutBox::kLeft];
+        child->y = y_cursor + child->margin[LayoutBox::kTop];
+        y_cursor = child->margin_box_bottom();
+        first_in_flow = false;
+        continue;
+      }
+
+      cur_chain.Add(child->margin[LayoutBox::kTop]);
+      child->x = child->margin[LayoutBox::kLeft];
+      child->y = y_cursor + cur_chain.Collapsed();
+
+      if (IsCollapseThrough(child)) {
+        cur_chain.Add(child->margin[LayoutBox::kBottom]);
+        child->collapsed_through = true;
+        first_in_flow = false;
+        continue;
+      }
+
+      y_cursor = child->y + child->border_box_height();
+      cur_chain = MarginChain{};
       cur_chain.Add(child->margin[LayoutBox::kBottom]);
-      child->collapsed_through = true;
-      continue;
     }
 
-    // 非 collapse-through：flush chain 至 y_cursor，开始新 chain（仅含
-    // child.margin-bottom）。
-    y_cursor = child->y + child->border_box_height();
-    cur_chain = MarginChain{};
-    cur_chain.Add(child->margin[LayoutBox::kBottom]);
+    first_in_flow = false;
   }
 
-  // 末尾 chain 处理：当 parent height auto 时，最后一个 sibling 的
-  // margin-bottom（含 collapse-through 链 + 末尾普通 box）计入 content_height。
-  // P3 完整 BFC 改造将允许此 chain 跨函数 propagate 到祖先 LayoutBlock。
-  f32 trailing_margin = any_in_flow ? cur_chain.Collapsed() : 0.0f;
+  // ---- 末尾 trailing margin / box.content_height ------------------------------
+  const f32 trailing_margin = any_in_flow ? cur_chain.Collapsed() : 0.0f;
 
   if (style->height.is_auto() || style->height.is_none()) {
-    box->content_height = y_cursor + trailing_margin;
+    if (!blocks_bottom && any_in_flow) {
+      // last-child 渗出：trailing 不计入 content_height（margin 物理化在 ancestor）
+      box->content_height = y_cursor;
+    } else {
+      box->content_height = y_cursor + trailing_margin;
+    }
   } else {
     f32 resolved = ResolveLength(style->height, 0.0f, font_size, ctx);
     if (style->box_sizing == css::BoxSizing::kBorderBox) {
@@ -529,6 +671,35 @@ void LayoutEngine::LayoutBlock(LayoutBox* box, f32 containing_width,
     if (box->content_height > max_h)
       box->content_height = std::max(0.0f, max_h);
   }
+
+  // ---- box 自身 collapse-through 判定（W3C §8.3.1 R5 跨边界）-----------------
+  // 条件：content_height == 0 + 无 padding/border/BFC + height auto + min-height=0
+  // 等价 !blocks_top && !blocks_bottom && content_height == 0
+  // 注意：不要求 any_in_flow（无 children 的空 box 也可 collapsed-through）
+  if (box->content_height == 0.0f && !blocks_top && !blocks_bottom) {
+    box->collapsed_through = true;
+  }
+
+  // ---- last-in-flow-block-child 状态字段（W3C §8.3.1 R3 last-child collapse）-
+  // 「last-in-flow-block 的 mb 是否合入 box 的 outgoing chain」由 box 自身的
+  // blocks_bottom 决定（与 child 自己的 blocks_bottom 无关）。
+  // 使用主循环维护的 last_in_flow_block 指针（O(1)，无 O(N) 二次扫描）。
+  if (!blocks_bottom && last_in_flow_block) {
+    last_in_flow_block->margin_bottom_collapsed_into_ancestor = true;
+  }
+
+  // ---- outgoing chain 计算 ---------------------------------------------------
+  MarginChain outgoing;
+  if (!blocks_bottom) {
+    // last-child 与 box.margin-bottom collapse，全部渗出
+    outgoing = cur_chain;
+    outgoing.Add(box->margin[LayoutBox::kBottom]);
+  } else {
+    // 阻断：box.mb 独立计入 sibling chain（caller 视作 mb only）
+    outgoing.Add(box->margin[LayoutBox::kBottom]);
+  }
+
+  return outgoing;
 }
 
 void LayoutEngine::LayoutInline(LayoutBox* box, f32 containing_width,

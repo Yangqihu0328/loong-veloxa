@@ -1563,6 +1563,92 @@ struct TextMetrics {
 
 ---
 
+## 已验证的模式（来自 TASK-20260430-01）
+
+### 递归算法 API 传递语义决策必检项
+
+**问题**：递归算法（layout / parser / event bubble / clean-up cascade）跨函数传递「累积态 / chain / cursor / accumulator / state」时，by-value 在多级递归边界天然失效；plan 阶段仅推演单层「caller → callee」漏掉「Level N → N+1 → N+2」+「caller 是否需要看到 callee 的修改」。
+
+**模式**（升 P0，已写入 `writing-plans.mdc` §9.4）：
+
+任何递归算法 API 决策必须做以下 mental trace：
+
+1. **≥3 层最小递归路径**（Level N → N+1 → N+2 具体调用链）
+2. **每层共享状态修改清单**（chain / accumulator / cursor / counter，标注 read / write / read-modify-write）
+3. **caller 可见性判定**：每层调用站点回答「callee 完成后，caller 是否需要看到 callee 的修改？」
+   - 答 yes → by-value **必然失效**；必须 by-pointer / by-reference / 返回值显式回传
+   - 答 no → by-value 等价 by-ref（同函数内变量）
+   - 混合 → 选 in-out by-pointer + 显式 return
+
+**TASK-20260430-01 实证**：D2 plan 锁 `MarginChain incoming`（by-value，理由：POD 12B + SROA 等价无开销）→ build P3 三层递归立即失效（grandchild 修改 chain 后 parent 物理化时 chain 已丢失）→ 改 in-out by-pointer (`MarginChain* incoming`) + return MarginChain；零 ABI 风险，编译器仍可 SROA 优化。
+
+**反复模式定型**：「前置依赖/环境/API 能力未验证」第 9+ 次新维度；「API 传递语义决策未做多级 mental trace」首次显化定型。
+
+---
+
+### 既有测试隐式契约 fingerprint
+
+**问题**：layout / parser / event 等富边界子系统，既有测试隐含的边界假设（如「root 不向上 propagate」「auto width 等于 fit-content」）是隐式 spec；plan §0 grep 仅查目标功能 fingerprint，不查既有测试期望反向 fingerprint → build 阶段 GREEN 实施完后既有测试退化。
+
+**模式**（升 P1，已写入 `writing-plans.mdc` §0「既有测试隐式契约 fingerprint」段）：
+
+plan §0 batch grep 必须包含「**既有测试边界期望反向 fingerprint 表**」，对 ≥ 1 个相关测试文件做关键字 grep（layout 类必 grep `EXPECT_FLOAT_EQ.*y` / `EXPECT_FLOAT_EQ.*content_height` / `EXPECT_TRUE.*collapsed`）。命中条目必须列出每条隐含的边界假设。
+
+**TASK-20260430-01 实证**：plan §0 仅查 F1-F6（功能 fingerprint），未列「R3 sibling collapse 测试隐含 root 不 propagate」假设 → P3 GREEN 后既有 `MarginCollapseLayoutTest` 系列退化；P4 加 `box->parent == nullptr || box->parent->parent == nullptr` 隐式 BFC root 识别才修正。
+
+---
+
+### CSS shorthand 能力 grep 表
+
+**问题**：vx CSS parser 对各 shorthand 支持参差不齐（`padding` ✅ / `margin` ✅ / `border` ⚠️ / `border-bottom` ❌ / `font` ?），plan / RED 假设 shorthand 可用未单独 grep → 测试虚假通过（测试用 shorthand → parser 不识别 → 无效果 → 反而符合「不应发生」断言）。
+
+**模式**（升 P1，已写入 `writing-plans.mdc` §0「CSS shorthand 能力 grep 表」段）：
+
+plan / RED 用例使用任意 CSS shorthand 时必须单独 grep 验证 parser 能力；命中 0 处 → 强制改用兜底方案（longhand 三件套）或列入独立 P3 触发型技术债。
+
+**TASK-20260430-01 实证**：plan §1.2 测试 `BorderBottom_BlocksLastChildCollapse` 直接用 `border-bottom: 1px solid black`，VAN/plan 仅 grep 验证 `padding` 总体可解析；build P4 实施时发现 css parser 不处理 `border-bottom` shorthand → 改测试名为 `PaddingBottom_BlocksLastChildCollapse` + 用 `padding-bottom: 1px` 等价物理分隔符；border-bottom shorthand 缺失列入独立 P3 候选。
+
+---
+
+### 算法伪码累积语义 explicit method
+
+**问题**：creative / spec 算法伪码涉及 chain / accumulator / state 累积时直接用 `=` 赋值符（如 `cur_chain = child_outgoing`）→ 歧义（覆盖？合并？swap？）→ build 阶段实施退化（既有测试合并语义被覆盖语义破坏）。
+
+**模式**（升 P1，已写入 `creative.md` §d.2 段）：
+
+算法伪码**禁止**对累积量直接用 `=` 赋值符，必须用 explicit method name 替代：
+
+| 语义 | ❌ 反模式 | ✅ 正模式 |
+|---|---|---|
+| 合并（双向取极值 / union）| `cur_chain = child_outgoing` | `cur_chain.MergeFrom(other)` |
+| 覆盖（丢弃旧值）| `cur_chain = child_outgoing` | `cur_chain.Replace(other)` / `cur = std::move(other)` |
+| 交换 | 隐含 `swap` | `swap(cur_chain, other)` |
+| 累积（求和）| `total = total + delta` | `total.Add(delta)` / `total += delta` |
+
+复合赋值符 `+=` / `-=` / `|=` 视为 explicit（语义明确），不在禁用范围。
+
+**TASK-20260430-01 实证**：spec §5.4 step 4 `cur_chain = child_outgoing` 字面赋值；build P3 GREEN 后 A5 既有 sibling collapse-through 测试 FAIL（cur_chain 累积值被覆盖丢失）→ 加 `MarginChain::MergeFrom(other)` 合并语义（max_positive / min_negative 双向取极值）+ 调用站点改为 `cur_chain.MergeFrom(child_outgoing)`，A5 PASS。
+
+---
+
+### scope 边界 — 副产品「优化」3 标准（与「修复」3 标准对称）
+
+**问题**：build 阶段测试驱动发现的 pre-existing 性能优化机会（非 bug 修复，是更优算法），是否要拆任务还是顺手优化？
+
+**模式**（升 P2，已写入 `systemPatterns.md`，与「副产品修复 3 标准」对称）：
+
+满足以下 3 条同时成立时，scope 内顺手优化（不拆任务），在 progress.md「实证微调」列记：
+
+1. **由本 Round bench / 测试触发** — 不是凭印象优化
+2. **修复 ≤ 5 行** — 真实结构性改动须拆任务
+3. **不引入新结构性改动** — 仅 hoist 局部变量 / 改循环边界 / 减少冗余调用
+
+**TASK-20260430-01 实证**：P6.2 hoist `last_in_flow_block` 由 bench `BM_LayoutBuildTreeFlat/8` 边缘超 +15% 触发；O(N) end-of-loop scan → O(1) running pointer；实际 +7/-12 行；不引入新字段/接口；属典型「副产品优化」。Mixed bench 数据点 -9.84% 反向证明优化未引入 cache 抖动负面影响。
+
+→ 与「副产品修复 3 标准」并列，覆盖 build 阶段「scope 内顺手做 vs 拆任务」决策完整边界。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

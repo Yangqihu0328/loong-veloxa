@@ -110,6 +110,55 @@ description: "为标记的组件执行结构化设计探索，探索多种设计
 
 **交叉引用**：`memory-bank/systemPatterns.md`「Creative 阶段「单一坐标约定 + 公式表」一图」段。
 
+#### d.2 算法伪码 chain / accumulator / state 累积语义必须 explicit method（**P1 强制**，TASK-20260430-01 升级）
+
+> 反复模式新候选定型（TASK-20260430-01 实证）：spec §5.4 算法 step 4 写 `if (child->collapsed_through) cur_chain = child_outgoing` 用赋值符 `=`（覆盖语义）；build P3 GREEN 实施后 A5 既有 sibling collapse-through 测试退化 — 父循环已累积 sibling chain，遇到 collapse-through child 时 `cur_chain` 累积值被 `child_outgoing` 完全覆盖丢失。根因 = 算法草拟时未演练「父循环已累积 → 遇到 child outgoing → 应合并而非覆盖」场景；赋值符 `=` 是高歧义符号（覆盖？合并？swap？）。
+
+**触发条件**：creative / spec 阶段算法伪码涉及以下任一情形 → 必填本段：
+
+- `chain` / `accumulator` / `cursor` / `running pointer` / `state machine` 累积量
+- 双向取极值（`max(positive)` + `min(negative)`）
+- list / queue / stack 等容器追加
+- counter / aggregator 跨循环 / 跨递归累积
+
+**强制规则**：算法伪码**禁止**对累积量直接用 `=` 赋值符，**必须**用 explicit method name 替代：
+
+| 语义 | ❌ 反模式 | ✅ 正模式 | 说明 |
+|---|---|---|---|
+| 合并（双向取极值 / union）| `cur_chain = child_outgoing` | `cur_chain.MergeFrom(child_outgoing)` / `cur_chain.Union(child_outgoing)` | 保留双方所有信息 |
+| 覆盖（丢弃旧值）| `cur_chain = child_outgoing` | `cur_chain.Replace(child_outgoing)` / `cur_chain = std::move(child_outgoing)` | 显式声明丢弃 |
+| 交换（双向）| `swap(a, b)` 隐含 | `swap(cur_chain, child_outgoing)` | 标准库语义清晰 |
+| 追加 | `list = list + new` | `list.Append(new)` / `list.PushBack(new)` | 容器语义 |
+| 累积（计数 / 求和）| `total = total + delta` | `total.Add(delta)` / `total += delta` | `+=` 比 `=` 安全；method 更显式 |
+| 重置 / 清空 | `cur = {}` | `cur.Clear()` / `cur.Reset()` | 显式语义 |
+
+**强制产出**：creative / spec 算法伪码段必须配套「**累积量语义对照表**」，列出每个累积量的 explicit method 与对应行为：
+
+| 累积量 | 类型 | 累积语义 | 操作 method | 反模式（禁用）|
+|---|---|---|---|---|
+| `cur_chain` | `MarginChain` | 合并（max-pos / min-neg）| `MergeFrom(other)` | `cur_chain = other` |
+| `last_in_flow_block` | `LayoutBox*` | 覆盖（最后一个 in-flow）| `Replace(box)` 或 `cur = box` 显式注释「覆盖」| 隐式 `=` 无注释 |
+| `outgoing_chain` | `MarginChain` | 合并（含 parent.mb）| `MergeFrom(parent_mb)` + `Add(box.margin_bottom)` | `outgoing = box.margin_bottom` |
+
+**判读规则**：
+
+- 算法伪码出现「累积量 `=` 表达式」 → **必须**改写为 explicit method 或加注释明确「覆盖」/「合并」语义
+- 同一变量在算法不同分支既被「覆盖」又被「合并」→ 必须用不同 method 区分（`Replace()` vs `MergeFrom()`），不能两处都用 `=`
+- 编程语言原生 `+=` / `-=` / `|=` 等复合赋值符视为 explicit（语义明确），不在禁用范围
+
+**反模式**（plan / creative 阶段必拦截）：
+
+- ❌ `cur_chain = child_outgoing`（歧义：覆盖？合并？swap？）
+- ❌ `state.value = new_value`（无注释）当 `state` 是累积量
+- ❌ 算法伪码用「赋值」描述既有可能覆盖又有可能合并的操作
+- ❌ 用 `=` 但靠注释 `// merge` 解释 — 注释易丢失/不一致；method name 强制对齐语义
+
+**TASK-20260430-01 实证**：spec §5.4 step 4 `cur_chain = child_outgoing` 字面赋值；build P3 GREEN 后 A5 既有 sibling collapse-through 测试 FAIL（cur_chain 累积值被覆盖丢失）→ 加 `MarginChain::MergeFrom(other)` 合并语义（max_positive / min_negative 双向取极值）+ 调用站点改为 `cur_chain.MergeFrom(child_outgoing)`，A5 PASS。
+
+**与 §d.1 协同**：§d.1 锁定坐标约定单一图（防 sign error）；本节锁定累积量语义对照表（防赋值符歧义）。两者覆盖 creative 阶段算法伪码完整边界。
+
+**交叉引用**：`.cursor/rules/skills/writing-plans.mdc` §9.4「递归算法 API 传递语义决策必检项」（同源 reflection §6 建议 #1，强制配套使用）；`memory-bank/systemPatterns.md`「算法伪码累积语义 explicit method」段（待 archive 阶段补）。
+
 #### e. 用户确认
 
 等待用户确认或调整后再继续下一个组件。

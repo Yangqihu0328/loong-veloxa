@@ -190,6 +190,82 @@ alwaysApply: false
 
 此段产出物：「注入点核对表」一节进入设计文档。
 
+## 既有测试隐式契约 fingerprint（layout / parser / event 等富边界子系统**必填**）
+
+> 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次同源新维度（TASK-20260430-01 实证）：plan §0 grep 仅查目标功能 fingerprint（F1-F6），未对**即将 touch 的代码路径相关的所有 `*test*.cc` 做边界期望反向 fingerprint**。R3 既有 sibling collapse 测试隐含「`Layout(root, ctx)` 之后 root 自身 margin-top 不会 propagate 到 viewport」假设，build P3 GREEN 实施完后该测试退化（root 节点 propagate 到了不该 propagate 的位置）。
+
+**触发条件**：本任务即将修改的代码路径具备以下任一特征 → 必填本段 grep 表：
+
+- 子系统拥有大量边界 case 测试（layout / CSS parser / HTML parser / event system / animation / IFC）
+- 现有测试数量 ≥ 5 个且测试 fixture 含数值化几何 / 状态断言
+- 当前任务会扩展既有 API（如新增参数 / 新增分支 / 新增递归边界）
+
+**强制产出 grep 表**：plan §0 batch grep 必须包含「**既有测试边界期望反向 fingerprint 表**」，对 ≥ 1 个相关测试文件做关键字 grep 并把命中条目记录到 plan：
+
+| 子系统 | 必查测试文件 | 关键字模板 | 期望命中数（≥）|
+|---|---|---|---|
+| Layout | `tests/core/layout/*_test.cc` | `EXPECT_FLOAT_EQ.*\.y` / `EXPECT_FLOAT_EQ.*content_height` / `EXPECT_TRUE.*collapsed` / `EXPECT_FALSE.*collapsed` | 3 |
+| CSS parser | `tests/core/css/*_test.cc` | `EXPECT_EQ.*Length` / `EXPECT_EQ.*kKeyword` / `EXPECT_FALSE.*ParseDeclaration` | 3 |
+| HTML parser | `tests/core/html/*_test.cc` | `EXPECT_EQ.*tag_name` / `EXPECT_EQ.*attribute` / `EXPECT_NE.*nullptr` | 3 |
+| Event | `tests/core/event/*_test.cc` | `EXPECT_EQ.*phase` / `EXPECT_TRUE.*propagated` / `EXPECT_FALSE.*default_prevented` | 3 |
+| Animation | `tests/core/animation/*_test.cc` | `EXPECT_FLOAT_EQ.*progress` / `EXPECT_EQ.*kRunning` | 3 |
+
+**判读规则**：
+
+- 命中 ≥ 期望数 → plan §0 列出所有命中条目，标注每条隐含的边界假设（如「root 不向上 propagate」「auto width 等于 fit-content」）
+- 命中 < 期望数 → 拓展关键字模板再 grep；仍不足 → 任务范围内**禁止改动该子系统的核心算法**（fingerprint 不足以保护回归）
+
+**与 §9 Layout 必检项协同**：§9.1 锁 box-model 跨 LayoutType 独立解析；§9.2 锁默认值边界；§9.4 锁递归 API 传递语义；本节锁**既有测试边界假设的反向覆盖**，四者覆盖 layout 类任务 plan 阶段验证完整链路。
+
+**反模式**：
+
+- ❌ plan §0 grep 仅查目标功能（"first child collapse 当前是否实施"）→ 漏掉既有测试的隐含期望（"root 不向上 propagate"）
+- ❌ 把「ctest baseline N/N PASS」当作既有测试覆盖完整证据 — baseline PASS 不等于 fingerprint 完整列出
+- ❌ 测试文件命中条目 ≥ 5 但 plan 不列出具体行号与语义 — build 阶段无法快速反向判定退化点
+
+**TASK-20260430-01 实证**：plan §0 grep 仅查 F1-F6（clearance stub / float 解析 / first-child 现状 / LayoutChild API / wpt-005 / FetchContent），未列「R3 sibling collapse 测试隐含 root 不 propagate」 → P3 GREEN 后既有 `MarginCollapseLayoutTest` 系列退化；P4 加 `box->parent == nullptr || box->parent->parent == nullptr` 隐式 BFC root 识别才修正。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「既有测试隐式契约 fingerprint」段（待 archive 阶段补）。
+
+## CSS shorthand 能力 grep 表（CSS / 解析器类任务**必填**）
+
+> 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次同源新维度（TASK-20260430-01 副发现）：plan §1.2 RED 测试 `BorderBottom_BlocksLastChildCollapse` 直接用 `border-bottom: 1px solid black`，build 时发现 css parser 不解析 `border-bottom` shorthand → child 没有 border-bottom 计算值 → blocks_bottom=false → 测试反而 PASS（虚假通过）。VAN/plan 仅 grep 验证 `padding` 总体可解析，未对每个 shorthand 单独验证。
+
+**触发条件**：plan / RED 用例使用任意 CSS shorthand 时**必填**：
+
+- `margin` / `padding` / `border` / `font` / `background` / `transition` / `animation` / `flex` / `grid` 等总称属性
+- 含方向后缀的 shorthand：`margin-top` / `border-bottom` / `border-left-color` / `padding-block` 等
+- CSS variables / `calc()` / `env()` / 其他 functional notation
+
+**强制产出 grep 表**：plan §0 batch grep 必须包含「**CSS shorthand 能力验证表**」：
+
+| shorthand 候选 | 验证命令 | 命中预期 | 缺失兜底 |
+|---|---|---|---|
+| `padding` | `rg "kPadding\b\|\"padding\"" veloxa/core/css/parser.cc -n` | ≥ 1 处 longhand 展开 | — |
+| `margin` | `rg "kMargin\b\|\"margin\"" veloxa/core/css/parser.cc -n` | ≥ 1 处 longhand 展开 | — |
+| `border-bottom` | `rg '"border-bottom"\|kBorderBottom\b' veloxa/core/css/ -n` | ≥ 1 处 shorthand 解析 | 若未命中 → 改用 `border-bottom-width` + `border-bottom-style` + `border-bottom-color` longhand 三条；或用 `padding-bottom` 等价物理分隔符 |
+| `border` | `rg "ParseBorderShorthand\|kBorder\b" veloxa/core/css/parser.cc -n` | ≥ 1 处 shorthand 解析 | 若未命中 → 改用 4 边 longhand |
+| `font` | `rg "ParseFontShorthand\|kFont\b" veloxa/core/css/parser.cc -n` | ≥ 1 处 shorthand 解析 | 若未命中 → 改用 `font-size` + `font-family` + `font-weight` longhand |
+| `background` | `rg "ParseBackgroundShorthand\|kBackground\b" veloxa/core/css/parser.cc -n` | ≥ 1 处 shorthand 解析 | 若未命中 → 改用 `background-color` + `background-image` longhand |
+| CSS var (`--*`) | `rg "kCustomProperty\|--" veloxa/core/css/property.cc -n` | ≥ 1 处 dispatch | 若未命中 → 测试中禁用 CSS variable，改用直接值 |
+| `calc(...)` | `rg "ParseCalc\|kCalc\b" veloxa/core/css/parser.cc -n` | ≥ 1 处 calc 表达式解析 | 若未命中 → 改用预计算的具体数值 |
+
+**判读规则**：
+
+- 命中 ≥ 1 处 → plan / RED 可直接使用该 shorthand
+- 命中 0 处 → **强制改用兜底方案**或**列入独立 P3 触发型技术债**（不在当前任务范围扩展 parser）
+- 任何 shorthand「假定可用但未 grep」均视为反模式
+
+**反模式**：
+
+- ❌ plan 写「使用 `border-bottom: 1px solid black` 隔离 last-child collapse」未单独 grep → build 阶段测试虚假通过
+- ❌ 对一个 shorthand 命中即假定整组 shorthand 均可用（`padding` ✅ 不代表 `padding-block` ✅）
+- ❌ 用 ctest baseline PASS 代替 shorthand 能力验证 — baseline 不一定覆盖该 shorthand
+
+**TASK-20260430-01 实证**：plan §1.2 测试 `BorderBottom_BlocksLastChildCollapse` 直接用 `border-bottom: 1px solid black`，VAN/plan 仅 grep 验证 `padding` 总体可解析；build P4 实施时发现 css parser 不处理 `border-bottom` shorthand → child 没有 border-bottom 计算值 → blocks_bottom=false → 测试反而 PASS（虚假通过）→ 改测试名为 `PaddingBottom_BlocksLastChildCollapse` + 用 `padding-bottom: 1px` 等价物理分隔符；border-bottom shorthand 缺失列入独立 P3 候选 `tasks.md §待立项候选`。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「CSS shorthand 能力 grep 表」段（待 archive 阶段补）。
+
 ## 性能基准任务必检项（涉及 google/benchmark 新 .cc / 新 BM 时**必填**）
 
 > 反复出现升级 P0（TASK-20260419-02 → TASK-20260419-03 → TASK-20260419-05，至少 3 次）：性能基准任务的特殊前置条件未在 plan 阶段识别，导致 build 阶段返工或假阳性。
@@ -539,6 +615,56 @@ echo 'unsigned f(unsigned x) { return x / 255; }' | \
 ```
 
 **交叉引用**：`memory-bank/systemPatterns.md`「Mixed TDD RED 反向探针实践」段。
+
+#### 9.4 递归算法 API 传递语义决策必检项（**P0 强制**，TASK-20260430-01 升级）
+
+> 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次显化新维度（TASK-20260430-01 D2 实证）：plan 阶段锁定 `MarginChain` 为 by-value in / by-value out（POD 12B），build P3 实施 first-child margin propagate 三层递归（grandparent → parent → child）时立即发现：grandchild 修改 chain 后父层物理化拿不到累积值，by-value 在递归边界天然失效。根因 = plan mental walkthrough 仅推演单层「caller → callee」，未推演 ≥3 层「Level N → N+1 → N+2」+ 「caller 是否需要看到 callee 的修改」。
+
+**触发条件**：算法在以下任一情形下涉及 API 传递语义决策（by-value / by-ref / by-pointer / in-out / 返回值），plan / creative 阶段**必填**多级递归 mental walkthrough：
+
+- 算法本身递归（layout / parser / event bubble / clean-up cascade / DOM tree walk）
+- 跨函数边界传递「累积态 / chain / cursor / accumulator / state」
+- 同一参数同时承担 input + output 两种角色（in-out 候选）
+
+**强制产出 3 项 mental trace**：
+
+1. **≥3 层最小递归路径** — 写出 `Level N caller → Level N+1 → Level N+2` 的具体调用链（含函数名 + 参数）
+
+   范例：`LayoutBlock(root) → LayoutBlockChild(child1) → LayoutBlockChild(grandchild)`
+
+2. **每层共享状态修改清单** — 列出每层是否会修改共享状态（chain / accumulator / cursor / counter）：
+
+   | 层级 | 函数 | 修改的共享态 | 修改类型（read / write / read-modify-write）|
+   |---|---|---|---|
+   | N | LayoutBlock | cur_chain | rmw（合并 sibling outgoing）|
+   | N+1 | LayoutBlockChild(child) | incoming_chain | rmw（first-child propagate）|
+   | N+2 | LayoutBlockChild(grandchild) | incoming_chain | rmw（grandchild 也是 first-child）|
+
+3. **caller 可见性判定** — 每层调用站点回答「callee 完成后，caller 是否需要看到 callee 的修改？」
+
+   - **答 yes** → by-value **必然失效**；必须 by-pointer / by-reference / 返回值显式回传
+   - **答 no** → by-value 等价 by-ref（同函数内变量），可保留
+   - **混合**（部分子调用 yes / 部分 no）→ 选 in-out by-pointer + 显式 return；by-value 不能覆盖
+
+**判定矩阵**（plan §决策表必填一行）：
+
+| 候选 | 单层 mental trace | 三层 mental trace | 选哪个？|
+|---|---|---|---|
+| 仅修改本层局部变量 | by-value ✅ | by-value ✅ | by-value（最简）|
+| 调用 callee 修改后本层需读 | — | by-pointer / by-reference | **不能 by-value** |
+| callee 修改 + 本层物理化时读累积 | — | in-out by-pointer + return | **不能 by-value** |
+
+**反模式**（plan 阶段必拦截）：
+
+- ❌ 仅画「caller → callee」单层箭头图就锁定 by-value
+- ❌ 推演 callee 修改但忽略「caller 物理化阶段是否需读」
+- ❌ 把 POD struct 大小（12B / 16B / 24B）作为 by-value 唯一依据 — 编译器 SROA 优化与「跨函数边界 propagate 是否成立」是两个独立问题
+
+**TASK-20260430-01 实证**：D2 plan 锁 `MarginChain incoming`（by-value，理由：POD 12B + 编译器 SROA 等价无开销） → build P3 三层递归立即失效（grandchild 修改 chain 后 parent 物理化时 chain 已丢失）→ 改 in-out by-pointer (`MarginChain* incoming`) + return MarginChain；调用站点 `LayoutBlockChild(child, w, ctx, &cur_chain)`；零 ABI 风险（POD 12B），编译器仍可 SROA 优化。修改成本：签名 + 全部 callsite。
+
+**与 §9.1 / §9.2 协同**：§9.1 锁定 box-model 跨 LayoutType 独立解析；§9.2 锁定默认值边界；本节 §9.4 锁定**跨函数 chain 传递语义**，三者覆盖 layout 类算法 plan 阶段 API 设计完整边界。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「递归算法 API 传递语义决策必检项」段；`.cursor/commands/creative.md` 「6.algorithm 段算法伪码必须明确赋值 vs 合并语义」段（同源 reflection §6 建议 #4，强制配套使用）。
 
 ---
 

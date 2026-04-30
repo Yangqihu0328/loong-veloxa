@@ -2,20 +2,20 @@
 
 ## 当前任务
 
-无（已完成归档，等待新任务）
+**无活跃任务（空闲，2026-04-30 21:45）。** 使用 `/van` 启动新任务。
 
 ## 最近归档完成
 
+- **TASK-20260430-01：first/last child margin collapse with parent（CSS 2.1 §8.3.1）** — Level 3 ✅
+  - 归档文档：`memory-bank/archive/archive-TASK-20260430-01.md`
+  - 回顾文档：`memory-bank/reflection/reflection-TASK-20260430-01.md`
+  - 分支：`feature/TASK-20260430-01-margin-collapse-parent`（已合并到 `main`）
+  - 关键验证：ctest **1039/1039** PASS（+10 cases）；wpt-005 SKIP→PASS；同窗口 stash-swap bench A6/A7 全 PASS
+  - 4 改进建议全部落实：P0 → `writing-plans.mdc` §9.4；P1×3 → `writing-plans.mdc` §0 + `creative.md` §d.2；P2 → `systemPatterns.md` 5 段
 - **TASK-20260426-01：Layout 正确性消化（#25 + #28 + #20 + #21）** — Level 4 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260426-01.md`
-  - 回顾文档：`memory-bank/reflection/reflection-TASK-20260426-01.md`
-  - 分支：`feature/TASK-20260426-01-layout-correctness` 已合并到 `main`
-  - 关键验证：ctest `1029/1029 PASS`；同窗口对照 bench `mean -3.6% / median +2.65%`
-  - 安全结果：#28 inline style 路径三件套护栏落地
 - **TASK-20260425-01：SDL2 窗口后端 + 输入事件桥接** — Level 3 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260425-01.md`
-- **TASK-20260424-04：SoftwareCanvas::DrawText 真路径 warm 残余优化** — Level 2 ✅
-  - 归档文档：`memory-bank/archive/archive-TASK-20260424-04.md`
 
 ## 说明
 

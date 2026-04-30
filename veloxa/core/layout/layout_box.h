@@ -45,13 +45,17 @@ struct LayoutBox {
 
   enum { kTop = 0, kRight = 1, kBottom = 2, kLeft = 3 };
 
-  // Margin collapsing 状态（CSS 2.1 §8.3.1，TASK-20260426-01 R3）。
+  // Margin collapsing 状态（CSS 2.1 §8.3.1，TASK-20260426-01 R3 + TASK-20260430-01）。
   // collapsed_through：本 box 的 top/bottom margin 都并入了 sibling chain，
   //   自身不占 vertical 空间（高度 0、无 padding/border）。
   // margin_top_collapsed_into_ancestor：first-flow-child 与 parent 的 margin-top
-  //   collapse（P3 完整 BFC 改造时启用）。
+  //   collapse（TASK-20260430-01 启用，跨 LayoutBlockChild 函数边界 propagate）。
+  // margin_bottom_collapsed_into_ancestor：last-flow-child 与 parent 的 margin-bottom
+  //   collapse 渗出（TASK-20260430-01 启用，parent height auto + 无 padding/border/
+  //   min-height 阻断时，trailing margin 不计入 parent.content_height）。
   bool collapsed_through = false;
   bool margin_top_collapsed_into_ancestor = false;
+  bool margin_bottom_collapsed_into_ancestor = false;
 
   void AppendChild(LayoutBox* child) {
     child->parent = this;
