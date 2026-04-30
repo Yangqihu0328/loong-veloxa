@@ -5,7 +5,7 @@
 ### TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关]
 
 - **复杂度级别：** Level 2（多文件修改 + 需求清晰 + 模式 100% 复用既有 `border` / `padding` shorthand 范本，无架构/UI/算法空白）
-- **状态：** 🟢 构建完成（2026-04-30 22:25）— R1+R2 全 7 shorthand TDD 闭环（10 R1 测试 + 12 R2 测试，22 新测试全 PASS）+ 双反向探针完整三态；ctest Debug 1061/1061 + Release 1030/1030；Release `-O3 -Werror` 0 err/warn；A1-A7 验收全过；A8 待 reflection；plan × 0.6 第 15 数据点 0.22×（实测 ~37 min ÷ plan 170 min）；5 commits + 1 finalize 待提交；下一步 `/reflect`
+- **状态：** 🟢 回顾完成（2026-04-30 22:35）— reflection 落盘；3 改进建议全部落实（P1 #1 极速档 0.2-0.3× + P2 #2 Spec 描述粒度准则 + A8 ROI）；TASK-30-01 升级规则首次外部 ROI ✅ 2/4 触发 + 触发部分均高/中 ROI；下一步 `/archive`
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-02-css-border-shorthand`（基于 main `6b36c87`，已创建）
 - **设计 spec：** `docs/specs/2026-04-30-css-border-shorthand-design.md`（11 段：目的 / 不做 / A1-A8 验收 / D1-D5 决策矩阵 / 架构 + 实施伪码 / T1-T8 威胁建模 / 测试策略 D3 完整档 25 测试 / R1-R2 多轮次划分 / 6 风险登记 / 与既有任务关系）
@@ -96,6 +96,7 @@
 | 2026-04-30 21:55 | 规划完成 | PLAN 完成；5 决策矩阵 D1-D5 锁定（A/A/C/A/A）；spec + plan 文档落盘；威胁建模 T1-T8 完整；R1（4 方向）+ R2（3 属性级）多轮次划分；估时 ~170 min plan / ~102 min plan×0.6；不需要 `/creative`；下一步 `/build` |
 | 2026-04-30 22:05 | 构建中·R1 完成 | R1 TDD 闭环：P0 grep G1-G6 ✅ → R1.1 RED 9 FAIL + 1 sentinel PASS → R1.2 GREEN（parser.cc +96 LOC，单分支聚合 4 shorthand）→ R1.3 §9.3 反向探针完整三态；ctest 全量 1049/1049 PASS；3 commits（PLAN docs / R1 RED `f8ed62f` / R1 GREEN `5378e67`） |
 | 2026-04-30 22:25 | 构建完成 | R2 TDD 闭环：R2.1 RED 11 FAIL + 1 sentinel PASS → R2.2 GREEN（parser.cc +116 LOC，单分支聚合 3 shorthand + Mode enum 分派）→ R2.3 §9.3 反向探针（border-width 2-value 错位）完整三态；ctest Debug 1061/1061 + Release 1030/1030；A1-A7 全过；2 R2 commits（`e2688a7` / `1761b4f`）；下一步 `/reflect` |
+| 2026-04-30 22:35 | 回顾完成 | reflection 文档落盘 `memory-bank/reflection/reflection-TASK-20260430-02.md`；3 改进建议落实：P1 #1（systemPatterns.md「极窄路径 0.2-0.25×」档新增）+ P2 #2（systemPatterns.md「Spec 实施模式描述粒度准则」新段）+ A8 ROI 评估；A8 ✅ 高/中 ROI（2/4 触发，§0 grep 表 + 隐式契约 fingerprint 双触发）；plan × 0.6 第 15 数据点 0.22× 与 TASK-30-01 P6（0.21×）一同定型「极窄档」；下一步 `/archive` |
 
 ---
 

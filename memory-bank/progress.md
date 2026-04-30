@@ -4,7 +4,7 @@
 
 **TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关]** — Level 2
 
-- 阶段：🟢 构建完成（2026-04-30 22:25）— R1+R2 全 7 shorthand TDD 闭环 + 双反向探针 + Release `-O3 -Werror` 0 err/warn；Debug ctest 1061/1061 PASS（基线 1039 + R1 10 + R2 12）；Release ctest 1030/1030 PASS；5 commits（PLAN docs / R1 RED / R1 GREEN / R2 RED / R2 GREEN）+ 1 finalize；下一步 `/reflect`
+- 阶段：🟢 回顾完成（2026-04-30 22:35）— 反思文档落盘；3 改进建议（P1 #1 极速档 0.2-0.3× / P2 #2 Spec 描述粒度准则 / A8 ROI 评估）已全部落实到 systemPatterns.md；A8 高/中 ROI 验证 ✅；下一步 `/archive`
 - 范围（V1=A）：全量 7 shorthand — R1 = `border-top` / `-right` / `-bottom` / `-left` 4 方向；R2 = `border-width` / `border-style` / `border-color` 3 属性级
 - 拆分（V2）：多轮次 Build R1 → R2
 - 复杂度（V4）：Level 2
@@ -118,6 +118,16 @@
 - 实测：~37 min（21:48 BUILD 启动 → 22:25 finalize 完成）
 - 比例：实测 ÷ plan = 0.22×（远低于 plan×0.6 准确档预期 0.6×；接近 TASK-30-01 P6 的 0.21× 极速档）
 - 推测原因：D1+D2=A 复制粘贴决策 + 既有 border / padding-margin 范本 100% 同模式 + 单分支聚合（仿 margin/padding 既有模式）大幅减少代码 + R2 全程 0 意外
+
+### REFLECTION 完成（2026-04-30 22:35）
+
+- 反思文档：`memory-bank/reflection/reflection-TASK-20260430-02.md`
+- 3 改进建议全部落实：
+  - **P1 #1**：systemPatterns.md「最窄路径」表新增「极窄档 0.2-0.25×」分类（TASK-30-01 P6 + TASK-30-02 双数据点定型）
+  - **P2 #2**：systemPatterns.md 新增「Spec 实施模式描述粒度准则」段（避免 spec §5 过度具体化分支结构）
+  - **#3**：A8 ROI 评估记录到 reflection §A8（仅评估，不需新落实）
+- A8 验证：TASK-30-01 §0 升级规则首次外部任务 ROI **2/4 触发 + 触发部分均高/中 ROI** → 规则有效，建议保留 + 推广
+- 关键发现 4 项：plan × 0.6 极速档定型 / D 决策复制粘贴极致有效 / 升级规则 ROI 验证 / spec 描述粒度反思
 
 ## 最近归档完成
 

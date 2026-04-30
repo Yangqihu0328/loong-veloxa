@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成（2026-04-30 22:25）** — TASK-20260430-02 BUILD 全过程完成；R1（4 方向 shorthand）+ R2（3 属性级 shorthand）共 7 shorthand 全部实施 + 双反向探针完整三态；ctest Debug 1061/1061 + Release 1030/1030 + Release `-O3 -Werror` 0 err/warn；A1-A7 验收全过；A8 待 /reflect 评估；下一步 `/reflect`。
+**回顾完成（2026-04-30 22:35）** — TASK-20260430-02 reflection 落盘 `memory-bank/reflection/reflection-TASK-20260430-02.md`；关键发现 4 项；改进建议 3 条（P1 #1 「极速档 0.2-0.3×」+ P2 #2 「Spec 描述粒度准则」+ ROI 评估）已落实到 systemPatterns.md；A8 ✅ 高/中 ROI 验证；下一步 `/archive`。
 
 ## 当前任务
 
@@ -102,23 +102,21 @@
 
 ## 下一步
 
-- 执行 `/reflect` 启动回顾阶段
-  - 评估 plan × 0.6 第 15 数据点：实测 ~37 min ÷ plan 170 min = 0.22×（接近 TASK-30-01 P6 极速档）
-  - 评估 A8：TASK-30-01 §0 升级规则首次外部任务 ROI
-  - 记录设计偏差：spec §5.3/5.4 描述「逐方向/逐属性独立分支」实际选择「单分支聚合 + name/Mode 映射」（仿既有 margin/padding 模式），等价决策不悖 D1/D2=A 精神
-  - 提取潜在改进建议
-  - 准备 /archive
+- 执行 `/archive` 归档任务
+  - 归档文档落盘 `memory-bank/archive/archive-TASK-20260430-02.md`
+  - 合并到 main `--no-ff` + 删除 feature 分支
+  - 重置 MB 三件套到「空闲」
 
-## BUILD 完成证据
+## REFLECTION 完成证据
 
-- 5 commits（PLAN docs / R1 RED / R1 GREEN / R2 RED / R2 GREEN）+ 1 finalize 待提交
-- Debug ctest 1061/1061 PASS（基线 1039 + R1 10 + R2 12）
-- Release ctest 1030/1030 PASS + `-O3 -Werror` 0 err/warn
-- 双反向探针（R1.3 mis-route PropertyId / R2.3 mis-route 2-value 展开）完整三态切换证据
+- 反思文档落盘：`memory-bank/reflection/reflection-TASK-20260430-02.md`
+- P1 改进建议 #1 落实：systemPatterns.md「最窄路径」表新增「极窄档 0.2-0.25×」分类（TASK-30-01 P6 + TASK-30-02 双数据点定型）
+- P2 改进建议 #2 落实：systemPatterns.md 新增「Spec 实施模式描述粒度准则」段
+- A8 验证：TASK-30-01 §0 升级规则首次外部 ROI ✅ 2/4 触发 + 触发部分均高/中 ROI
 
 ## 未合并分支
 
-- `feature/TASK-20260430-02-css-border-shorthand` — TASK-20260430-02 BUILD 完成（基于 main `6b36c87`），等待 /reflect
+- `feature/TASK-20260430-02-css-border-shorthand` — TASK-20260430-02 REFLECT 完成（基于 main `6b36c87`），等待 /archive
 
 ## 最近归档（速查，详细见 archive 文档）
 
