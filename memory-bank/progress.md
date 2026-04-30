@@ -2,7 +2,45 @@
 
 ## 当前任务
 
-**TASK-20260430-04：规划 UI 编辑器与调试器（DevTool 主线蓝图设计）[安全相关]** — Level 4 锁定，VAN 阶段已完成（2026-04-30 23:50），用户两次跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5（**B 三件套 / a 纯蓝图 / A 自渲染 / Level 4 / ✅ 安全相关**）；触及技术债 4 项映射闭环；前置验证 6/6 全 PASS。下一步：路由到 `/plan`。
+**TASK-20260430-04：规划 UI 编辑器 + 调试器（DevTool 三件套蓝图设计）[安全相关]** — Level 4，**`/plan` 阶段完成**（2026-05-01 ~01:50），4 篇产出文档全部落盘（spec + plan + 2 creative），D1-D8 决策矩阵全部锁定（按 VAN 推荐默认）。下一步路径三选一：A 进入 `/reflect`（推荐，与 V2=a 主线一致）/ B 改路径 V2 → b 进入 `/build` / C 暂停审查（用户先 review 4 篇文档）。
+
+### `/plan` 阶段产出快照（2026-05-01 ~01:50）
+
+- **头脑风暴 D1-D8 全部锁定（用户两次跳过 AskQuestion 后按 VAN 推荐默认锁定 6 次决策）：**
+  - D1 三件套实施优先级 = **B Inspector → Overlay → Hot Reload**（Inspector 优先做 UI 渲染样板 + 闭环 #26/#40/#4 三大技术债）
+  - D2 Inspector 数据采集协议 = **B 半结构化（JSON tree + DisplayList overlay + C API JSON）**（C API 边界清晰未来对接 CDP + DisplayList overlay 不污染目标 DOM）
+  - D3 DevTool UI 主屏布局 = **B 同窗口 splitter dock + Overlay HUD 子模式**（→ creative #1 详化）
+  - D4 DevTool 隔离边界 = **B 单进程共享容器（双 Document + 共享 EventLoop / Application / ImageCache）**（嵌入式硬约束 + 与 D2 注入语义一致）
+  - D5 Hot Reload file watcher + 增量策略 = **A 嵌入式专注（Linux inotify + CSS-only 增量重载）**（→ creative #2 详化）
+  - D6 Performance Overlay 数据采集点 = **B Chrome DevTools 风格（五钩子 + 滑动 60 帧 + dirty rect 边框高亮）**（闭环技术债 #35）
+  - D7 C API 扩展边界 = **C 双层 API（内部 C++ 核心 + 公开 C API 薄封装）**（兼顾性能 + 扩展性 + 与 D2 协议一致；闭环技术债 #40）
+  - D8 安全威胁建模 = **A T2/T3/T5/T6/T7/T8 完整 + T1/T4 扩展段占位**（与 V5=✅ + 三件套实际威胁面对齐）
+
+- **4 篇产出文档：**
+  - **spec** `docs/specs/2026-04-30-devtool-design.md`（12 段 / 三件套验收 A1-A14 / D1-D8 决策矩阵 / 注入点 I1-I8 核对表 / T1-T8 威胁建模 / R1-R6 风险登记 / ≥ 30 systemPatterns 自我对照）
+  - **plan** `docs/plans/2026-04-30-devtool.md`（Phase 0 全局约束 + CMake 链接审计 + 静态库循环审计 + 测试基础设施审计 + 边界输入清单 16 项 + 既有测试隐式契约 fingerprint + CSS shorthand 能力 grep 表 / Phase A/B/C/D 子任务 ~40 项 + plan ×0.6 估时矩阵）
+  - **creative #1** `memory-bank/creative/creative-devtool-screen-layout.md`（5 决策：整体布局双层结构 / dock 模式切换 / HUD 透明合成 / overlay 渲染顺序双线宽 / F12-F11 toggle）
+  - **creative #2** `memory-bank/creative/creative-devtool-hot-reload.md`（5 决策：FileWatcher 抽象 / CSS-only 增量 / DOM 状态保留 / watcher root 边界 / 错误恢复）
+
+- **plan ×0.6 估时（主线 V2=a 蓝图任务自身）：**
+  - VAN ~25 min（实测）
+  - Plan ~180-240 min plan / ~108-144 min plan ×0.6（待实测 — 预期落 Level 4 蓝图任务区间 0.4-0.7×）
+  - Reflect ~60 min plan / ~36 min plan ×0.6（待）
+  - Archive ~45 min plan / ~27 min plan ×0.6（待）
+  - **主线合计** ~315-375 min plan / ~189-225 min plan ×0.6（plan ×0.6 第 17 数据点候选）
+
+- **用户后续独立立项候选（基于 plan 拆出）：**
+  - TASK-30-04-A：DevTool Phase A — Inspector 实施（Level 3，~12.25 h plan / ~7.35 h plan ×0.6）
+  - TASK-30-04-B：DevTool Phase B — Performance Overlay 实施（Level 2-3，~7.25 h / ~4.35 h）
+  - TASK-30-04-C：DevTool Phase C — Hot Reload 实施（Linux only，Level 3，~10 h / ~6 h）
+  - 4 项扩展段（Console / JS Debugger / CDP / 完整 UI Editor）— spec §11 占位
+
+- **触及技术债 4 项闭环 ROI 路径：** #26 LayoutBox.Dump → Inspector Layout / #35 UpdateManager frame hook → Performance Overlay / #40 C API introspection → Inspector 全子系统 / #4 ImageCache 命名空间 → DevTool icon 隔离
+
+- **下一步路径三选一：** A 进入 `/reflect`（推荐）/ B V2 → b 进 `/build` / C 暂停审查
+
+<details>
+<summary>VAN 阶段产出快照（2026-04-30 23:40，已闭环，点开查看）</summary>
 
 ### VAN 阶段产出快照
 
@@ -29,6 +67,8 @@
 - **前置验证清单：** 6/6 全 PASS（依赖 / 环境 / artifact / ctest 1062 基线 / FetchContent 跳过 / 待处理事项关联极强）
 - **VAN push-back 5 项风险闭环：** 「6 子系统全做」陷阱 → V1=B 收敛 / 「规划」语义模糊 → V2=a 明确 / UI 渲染层选型 → V3=A 锁定 / Spec 主文档过长 → 12 段式样 + creative 拆分 / systemPatterns 重叠 → spec 阶段强制对照 ≥ 30 模式
 - **下一步：** 路由到 `/plan` — 进入头脑风暴阶段（预期 D1-D6 决策矩阵 + spec 主文档 12 段式样 + ≥ 2 篇 creative）；不进入 `/build`（V2=a 纯蓝图，build 由用户基于产出 plan 拆出独立 build 任务）
+
+</details>
 
 ## 上次任务（已归档闭环）
 

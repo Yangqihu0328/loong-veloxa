@@ -2,18 +2,20 @@
 
 ## 当前任务
 
-### TASK-20260430-04：UI 编辑器 + 调试器规划（DevTool 蓝图）[安全相关]
+### TASK-20260430-04：UI 编辑器 + 调试器规划（DevTool 三件套蓝图）[安全相关]
 
-- **复杂度级别：** Level 4（多子系统蓝图 + 架构决策矩阵 + 安全威胁建模 + 涉及 6 个 DevTool 子系统中的 3 件套主交付 + 3 件套扩展候选）
-- **状态：** 🔵 VAN 完成（用户决策 V1-V5 跳过 AskQuestion 已锁定按推荐默认；F1-F9 grep 实证完成；触及技术债 4 项映射；前置验证全 PASS；等待路由到 `/plan`）
+- **复杂度级别：** Level 4（多子系统蓝图 + 8 决策矩阵 + 8 威胁面 + 涉及 6 个 DevTool 子系统中的 3 件套主交付 + 4 件扩展候选）
+- **状态：** 🟢 `/plan` 阶段完成（2026-05-01 ~01:50）— D1-D8 全部锁定 + 4 篇文档产出（spec + plan + 2 creative）；下一步路径三选一：A 进入 `/reflect`（推荐）/ B 改 V2 → b 进 `/build` / C 暂停审查
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-04-ui-editor-debugger`（基于 main `2445990` — 已含 TASK-30-03 codebase review 全部归档 + R2 quick fix 6 项落地）
-- **设计 spec：** 待 `/plan` 阶段产出 — `docs/specs/2026-04-30-devtool-design.md`
-- **实现 plan：** 待 `/plan` 阶段产出 — `docs/plans/2026-04-30-devtool.md`
-- **创意文档：** 待 `/creative` 阶段产出（≥ 2 篇 — 预期：DevTool UI 主屏布局 / Inspector 数据采集协议）
-- **需要创意阶段：** ✅ 是（多个架构空白：Inspector 协议层 / Hot Reload 触发机制 / Overlay 数据采集点 / DevTool UI 主屏布局）
+- **设计 spec：** ✅ `docs/specs/2026-04-30-devtool-design.md`（12 段 / 三件套验收 A1-A14 / D1-D8 / 注入点 I1-I8 / T1-T8 / R1-R6 / ≥ 30 systemPatterns 自我对照）
+- **实现 plan：** ✅ `docs/plans/2026-04-30-devtool.md`（Phase 0/A/B/C/D 划分 + CMake 链接审计 + 静态库循环审计 + 边界输入清单 16 项 + 子任务 ~40 项 + plan ×0.6 估时矩阵）
+- **创意文档：** ✅ 2 篇
+  - `memory-bank/creative/creative-devtool-screen-layout.md`（splitter dock + HUD overlay 双层结构 / 5 决策）
+  - `memory-bank/creative/creative-devtool-hot-reload.md`（InotifyFileWatcher T2 8 步守卫 / DOM 状态保留协议 / 5 决策）
+- **需要创意阶段：** ✅ 是（已产出 2 篇 — DevTool UI 主屏布局 + Hot Reload 协议）
 - **来源：** 用户主动发起；`productContext.md §愿景` DevTool 主线对齐；TASK-25-01 SDL2 后端归档时定位为「实时调试 UI 主线第一步」是直接前置依赖
-- **安全相关：** ✅ 是（DevTool 触及 JS REPL（QuickJS 任意 eval）/ Hot Reload 文件路径（路径穿越）/ 远程调试可能开 socket（CDP 风格 → port 暴露）/ Inspector 可读 DOM 全状态（敏感数据回显））
+- **安全相关：** ✅ 是（V5=✅；D8=A T2/T3/T5/T6/T7/T8 完整建模 + T1/T4 扩展段占位）
 
 #### 任务语义
 
@@ -28,6 +30,19 @@
 | V3 | UI 渲染层 | **A Veloxa 自渲染** — DevTool UI 自身用 Veloxa HTML/CSS 引擎 | dogfood 模式：DevTool 即 Veloxa 自我应用样板 + 反向暴露引擎缺陷；vs ImGui-like 多一套 UI lib / vs CDP 要求外置 browser 不能离线运行 |
 | V4 | 复杂度 | **Level 4** | 多子系统蓝图 + 架构决策矩阵 + Spec 主交付 → 触发 `/plan` + `/creative` 强制路径 |
 | V5 | 安全标注 | ✅ **是** | JS REPL 任意 eval / Hot Reload 路径穿越 / 远程调试 port 暴露 / Inspector 敏感数据回显 4 个威胁面 |
+
+#### `/plan` 阶段决策矩阵 D1-D8（已锁定，brainstorming 完成 2026-05-01 ~01:50）
+
+| # | 维度 | **锁定值** | 关联文档段 |
+|:-:|---|---|---|
+| **D1** | 三件套实施优先级 | **B** Inspector → Overlay → Hot Reload | spec §6 Phase 划分 + plan Phase A/B/C |
+| **D2** | Inspector 数据采集协议 | **B** 半结构化（JSON tree + DisplayList overlay + C API JSON）| spec §5.3 数据流 + plan A.0.3-A.0.6 |
+| **D3** | DevTool UI 主屏布局 | **B** 同窗口 splitter dock + Overlay HUD 子模式 | creative #1 §决策 1-5 |
+| **D4** | DevTool 隔离边界 | **B** 单进程共享容器（双 Document + 共享 EventLoop / Application / ImageCache）| spec §5.1 模块边界 + plan A.0.1（I1 改造）|
+| **D5** | Hot Reload file watcher + 增量策略 | **A** 嵌入式专注（Linux inotify + CSS-only 增量重载）| creative #2 §决策 1-5 + plan Phase C |
+| **D6** | Performance Overlay 数据采集点 | **B** Chrome DevTools 风格（五钩子 + 滑动 60 帧 + dirty rect 边框高亮）| spec §5.1 perf_overlay + plan Phase B |
+| **D7** | C API 扩展边界 | **C** 双层 API（内部 C++ 核心 + 公开 C API 薄封装）| spec §5.1 vx_devtool / vx_api + plan A.0.5/A.0.6 |
+| **D8** | 安全威胁建模 | **A** T2/T3/T5/T6/T7/T8 完整 + T1/T4 扩展段占位 | spec §7 + plan Phase A.2 / B.3 / C.5 |
 
 #### VAN 阶段实证（F1-F9）— 基础设施成熟度评估
 
@@ -97,6 +112,8 @@
 | 2026-04-30 22:55 | 初始化（首次尝试）| 主线试图在 main `9411584` 创建 04 分支并写 MB 三件套，与 background agent 03 任务并发修改同名 MB 文件冲突；多次 StrReplace 失败 |
 | 2026-04-30 23:00 | 重启初始化 | TASK-30-03 background agent 完成 R2 + reflect + archive 并 merge main（`2445990`），04 分支 reset 到新 main 重新基线；放弃旧 VAN commit `44fc062` |
 | 2026-04-30 23:05 | VAN 完成 | 用户跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5（B/a/A/4/✅）；F1-F9 grep 实证完成（5 ✅ / 4 ⚠️ / 6 🔴）；触及技术债 4 项映射；前置验证全 PASS；分支 `feature/TASK-20260430-04-ui-editor-debugger` 基于 main `2445990` 已建立；下一步 `/plan` |
+| 2026-05-01 01:01 | VAN commit | `b33d86f` — VAN 完成 commit 落地（含 MB 三件套同步）|
+| 2026-05-01 01:50 | `/plan` 完成 | brainstorming D1-D8 全部锁定（用户连续 8 次跳过 AskQuestion 后按 VAN 推荐默认）；4 篇文档落盘（spec / plan / 2 creative）；下一步路径三选一：A 进入 `/reflect`（推荐）/ B 改 V2 → b 进 `/build` / C 暂停审查 |
 
 ---
 

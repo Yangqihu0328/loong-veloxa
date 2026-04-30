@@ -2,7 +2,31 @@
 
 ## 当前阶段
 
-**TASK-20260430-04 VAN 完成（2026-04-30 23:50，决策已锁定，等待路由到 `/plan`）** — 「规划 UI 编辑器与调试器」VAN 阶段全部完成；9 项 grep 实证 F1-F9 已落地（5 ✅ 已就绪 / 4 ⚠️ 需扩展 / 6 🔴 需新建）；用户两次跳过 AskQuestion → 按 VAN 推荐默认锁定 V1-V5（**B 三件套 / a 纯蓝图 / A 自渲染 / Level 4 / ✅ 安全相关**）；触及技术债 4 项映射闭环 ROI 路径明确；前置验证 6/6 全 PASS。
+**TASK-20260430-04 `/plan` 阶段完成（2026-05-01 ~01:50，4 篇文档全部落盘，等待用户路径选择）** — 头脑风暴 D1-D8 全部锁定（按 VAN 推荐默认）；spec + plan + 2 篇 creative 已产出；下一步用户在 reflect（V2=a 主线）/ build 启动（V2 → b 改路径）/ 暂停审查 三选一。
+
+**D1-D8 决策矩阵（已锁定）：**
+- D1 三件套实施优先级：**B Inspector → Overlay → Hot Reload**
+- D2 Inspector 数据采集协议：**B 半结构化（JSON tree + DisplayList overlay + C API JSON）**
+- D3 DevTool UI 主屏布局：**B 同窗口 splitter dock + Overlay HUD 子模式**（→ creative #1）
+- D4 DevTool 隔离边界：**B 单进程共享容器（双 Document + 共享 EventLoop/App/ImageCache）**
+- D5 Hot Reload file watcher + 增量策略：**A 嵌入式专注（Linux inotify + CSS-only）**（→ creative #2）
+- D6 Performance Overlay 数据采集：**B Chrome DevTools 风格（五钩子 + 滑动 60 帧 + dirty rect 边框高亮）**
+- D7 C API 扩展边界：**C 双层 API（内部 C++ 核心 + 公开 C API 薄封装）**
+- D8 安全威胁建模：**A T2/T3/T5/T6/T7/T8 完整 + T1/T4 扩展段占位**
+
+**4 篇产出文档：**
+- spec：`docs/specs/2026-04-30-devtool-design.md`（12 段 / 三件套验收 A1-A14 / D1-D8 决策矩阵 / 注入点 I1-I8 核对表 / T1-T8 威胁建模 / R1-R6 风险登记 / ≥ 30 systemPatterns 自我对照）
+- plan：`docs/plans/2026-04-30-devtool.md`（Phase 0/A/B/C/D 划分 + CMake 链接审计 + 静态库循环审计 + 边界输入清单 16 项 + 子任务清单 ~40 项 + plan ×0.6 估时矩阵）
+- creative #1：`memory-bank/creative/creative-devtool-screen-layout.md`（splitter dock + HUD overlay 双层结构 / dock-to-right vs dock-to-bottom 切换协议 / dirty rect ↔ Inspector hover 红框双线宽渲染顺序）
+- creative #2：`memory-bank/creative/creative-devtool-hot-reload.md`（FileWatcher 跨平台抽象 + InotifyFileWatcher T2 8 步守卫 / DOM 状态保留协议 / CSS 解析失败错误恢复）
+
+**主线 plan ×0.6 总估时（V2=a 蓝图任务自身）：** 315-375 min plan / 189-225 min plan ×0.6（Level 4 蓝图，预期落 review 类 0.4-0.7× 区间）
+
+**用户后续独立立项候选（基于 plan 拆出）：**
+- TASK-30-04-A：DevTool Phase A — Inspector 实施（Level 3，~12.25 h plan / ~7.35 h plan ×0.6）
+- TASK-30-04-B：DevTool Phase B — Performance Overlay 实施（Level 2-3，~7.25 h / ~4.35 h）
+- TASK-30-04-C：DevTool Phase C — Hot Reload 实施（Level 3，~10 h / ~6 h）
+- 4 项扩展段（Console / JS Debugger / CDP 远程调试 / 完整 UI 编辑器）— spec §11 占位，独立立项
 
 > **上一任务 TASK-20260430-03**（全代码库 Code Review）已于 **2026-05-01 ~00:30 归档并 `--no-ff` 合并到 main `2445990`**（11 commits + 1 merge commit）。改进建议沉淀已落实到 `systemPatterns.md` / `techContext.md` / `git-workflow.mdc` / `systematic-debugging.mdc`；R3+ 13 项 P1 后续候选已入仓 `docs/reports/2026-04-30-codebase-review.md`，待用户决策拆分顺序后立项（不在本 TASK-30-04 范围内）。
 
@@ -106,13 +130,13 @@
 - TASK-20260419-08（`string.h` 剩余 memcpy noinline 化）
 - TASK-20260419-12（DrawText 真路径优化，K7 隐式闭环待评估）
 
-## 下一步
+## 下一步（路径三选一）
 
-- **TASK-30-04 主线**：V1-V5 已按 VAN 推荐默认锁定（B / a / A / Level 4 / ✅）→ 用户输入 `/plan` 进入头脑风暴（预期 D1-D6 决策矩阵：DevTool UI 主屏布局 / Inspector 数据采集协议层 / Hot Reload 触发粒度 / Overlay 数据流 / 自渲染下外置协议保留与否 / 安全模型）
-- **预期 spec 主交付（12 段式样）：** 目的 / 不做 / 三件套验收 A1-A12 / D1-D6 决策矩阵 / 架构图 + 注入点核对表 / T1-T8 安全威胁建模 / 扩展候选段（Console / JS Debugger / 完整 UI Editor）/ 与既有 systemPatterns 兼容性段 / R1-R6 风险登记 / 与未来任务关系
-- **预期 ≥ 2 篇 creative：** DevTool UI 主屏布局 / Inspector 数据采集协议层
-- **不进入 `/build`** — V2 = a 纯蓝图主交付，build 由用户基于产出 plan 拆出独立 build 任务
-- **TASK-30-03 收尾（可选清理）**：删除已合并的 feature 分支 `git branch -d feature/TASK-20260430-03-codebase-review`
+- **路径 A（V2=a 主线推荐）**：进入 `/reflect`（蓝图任务在 spec + plan + creative 落盘后即可 reflect/archive 收尾，build 由用户基于 plan 独立立项 TASK-30-04-A/B/C）
+- **路径 B（改路径进 build）**：用户重新决策 V2 → b（蓝图 + MVP），用 `/build` 启动 TASK-30-04-A Phase A.0 前置改造任务
+- **路径 C（暂停审查）**：用户先 review 4 篇文档（spec / plan / 2 creative），提反馈后再 reflect/build；若 review 暴露 D1-D8 任一决策需调整，回到 `/plan` 修订对应文档
+
+**TASK-30-03 收尾（可选清理）**：`git branch -d feature/TASK-20260430-03-codebase-review`（已合并到 main，可安全删除）
 
 ## 最近归档（速查，详细见 archive 文档）
 
