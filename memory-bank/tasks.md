@@ -2,10 +2,13 @@
 
 ## 当前任务
 
+<details>
+<summary>TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关] — ✅ 已归档（点开查看历史）</summary>
+
 ### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
-- **状态：** 🟣 回顾完成（Checkpoint 2 待用户决策 R3+ 拆分顺序 → `/archive`）
+- **状态：** ✅ 已归档（2026-05-01）— 归档文档 `memory-bank/archive/archive-TASK-20260430-03.md`；reflection 10 项改进建议落实率 90%（P0 1/1 + P1 4/4 + P2 4/5）；R0+R1+R2 三轮次完成 ctest 1062/1062 PASS（基线 1061 + R2.5 新增守卫单测）；55 项 findings（28 P1 + 19 P2 + 8 P3）+ 13 R3+ 拆分任务建议入仓；plan ×0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；首发 background agent 双轨模式 + worktree 隔离协议沉淀
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
 - **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
@@ -182,6 +185,13 @@
 |---|---|---|
 | 2026-04-30 22:24 | 初始化 | VAN 完成；用户决策 V1-V5（A / all / C / D / ✅）+ 策略 X（R0+R1 必然 + R2 条件 + R3+ 拆出）锁定；分支创建（基于 main `9411584`）；Memory Bank 同步；下一步 `/plan` |
 | 2026-04-30 22:42 | 规划完成 | PLAN 完成；10 决策矩阵 D1-D10 锁定（B/C/B/B/spec/15/C/C/B/❌不用子代理）；spec + plan 文档落盘；T1-T10 安全威胁建模（T7 QuickJS / T8 FreeType / T9 图片解码 + T10 CVE 为重点）；估时 plan ~6-10h / plan×0.6 ~3.6-6h；不需要 `/creative`；下一步 `/build` 进入 R0 准备阶段 |
+| 2026-04-30 23:08 | R0 完成 | grep fingerprint 6 维度 × 30 关键字扫描 / lcov 覆盖率 85.4%/95.4%/57.6% / 7 依赖 CVE 审计 0 CRIT-HIGH + 5 Med-Low / 抽样名单 H 25+ + M 80 + L 36 / R0 报告落盘；实测 ~22 min（plan ×0.6 0.69×）⚡ |
+| 2026-04-30 24:39 | R1 完成 | 6 维度全代码库 review 报告产出（934 行 / 55 项 findings / 28 P1 + 19 P2 + 8 P3）；Top 5 priority + R2 候选 6 项 + R3+ 13 拆分任务建议；commit `802a273`；实测 ~85 min（plan ×0.6 0.78×）⚡ |
+| 2026-04-30 24:55 | R2 完成 | 6 项 P0 quick fix 全过 ctest 1062/1062 PASS（基线 1061 + R2.5 新单测）；commits `3b4b2e7`/`1467207`/`ddea78d`/`95ae814`/`9c6ad5f`/`668a9fe` + MB 收尾 `33c99f4`；首次实战 background agent 双轨模式（worktree 隔离应对 race condition）；实测 ~70 min（含冲突 1.27× plan，扣冲突 0.82×）|
+| 2026-05-01 00:08 | 回顾完成 | reflection 文档 10 段 + 2 附录（Level 4 全面回顾）；plan ×0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；10 改进建议（P0×1 / P1×4 / P2×5）；systemPatterns 新增 5 段 + techContext 新增 3 段；commit `77bec3c` |
+| 2026-05-01 00:30 | 归档完成 | archive 文档 10 段；P0 #3 git symbolic-ref commit 守门 → `git-workflow.mdc` 落实；P1 #4 reflog 诊断 → `systematic-debugging.mdc` 落实；R3+ 13 项任务建议入 activeContext 待 Checkpoint 2 用户决策；分支保留未合并（background agent 双轨产物，由用户决定合并时机）|
+
+</details>
 
 ---
 

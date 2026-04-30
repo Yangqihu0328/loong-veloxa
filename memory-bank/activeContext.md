@@ -2,9 +2,16 @@
 
 ## 当前阶段
 
-**回顾中（2026-05-01 ~00:08）** — R0+R1+R2 全部完成 + reflection 文档落盘。Checkpoint 2 待用户决策 R3+ 拆分顺序 + 进入 `/archive`。
+**归档完成（2026-05-01 ~00:30）** — TASK-20260430-03 全代码库 Code Review 已归档；feature 分支 `feature/TASK-20260430-03-codebase-review` 保留未合并（background agent 双轨产物，由用户决定合并 main 时机）。Checkpoint 2 R3+ 13 项任务建议待用户决策具体拆分顺序后立项。
 
-**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）+ archive 时机：
+> **本会话职责**：作为 03 任务的 background agent，已完成 VAN→PLAN→BUILD R0+R1+R2→REFLECT→ARCHIVE 全流程。用户主线在 04 任务（DevTool 规划）独立演进，03 分支留待用户审 + 合并。
+>
+> **后续动作主导权交还用户**：
+> 1. R3+ 拆分顺序决策（推荐 Top 3 #1/#2/#3 共 7-11 h）
+> 2. feature/TASK-20260430-03-codebase-review 合并 main 时机
+> 3. 当前主 worktree 在 04 分支 — `activeContext.md` / `tasks.md` / `progress.md` 在 03 分支独立演进，与主 worktree 04 任务的 MB 状态**互不影响**
+
+**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）+ 合并 main 时机：
 - 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG error_exit kill）— P1 安全 / 估 4-6 h / Level 3
 - 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
 - 🟡 #3 LoadHTML 重置 dom_bindings_ 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2
@@ -60,13 +67,11 @@
 
 ## 焦点
 
-- R0 / R1 / R2 / Reflect 全部 ✅；6 项 P0 quick fix 入仓 ctest 1062/1062 PASS；reflection 文档落盘
-- **当前 Checkpoint 2 等待用户决策（archive 前最后一步）**：
-  1. R3+ 拆分顺序（Top 3 推荐 + Level 4 大件单独评估）— 决定哪些拆出独立任务 ID
-  2. `/archive` 时机（立即 / 等用户审 reflection / 等 R3+ 决策完）
-- 下一轮（pending）：
-  - ARCHIVE：archive-TASK-20260430-03.md（含 R3+ task IDs 迁入 activeContext / tasks.md + 改进建议 P0/P1 闭环 + 合并 main 由用户决定）
-- 注：本任务在 background agent 模式下运行（用户主线在 04 任务），03 feature 分支独立演进，最终归档时合并 main 由用户审 + 决定时机
+- R0 / R1 / R2 / Reflect / Archive 全部 ✅；任务全生命周期闭环
+- **当前 03 分支状态**：feature 分支保留未合并，由用户审 + 决定合并时机
+- **改进建议落实率 90%**：P0 1/1 + P1 4/4 + P2 4/5（剩 1 项 P2 #9 留作 ad-hoc）
+- **R3+ 13 项任务建议入仓**待 Checkpoint 2 用户决策具体拆分顺序后立项
+- 03 分支后续动作主导权完全交还用户（合并时机 / R3+ 拆分顺序）
 
 ## 待处理事项 — TASK-20260430-03 改进建议闭环（reflection §5）
 
@@ -116,7 +121,8 @@
 
 ## 下一步
 
-- Checkpoint 2 用户决策 R3+ 拆分顺序 → `/archive`（含 P0/P1 改进建议闭环 + R3+ task IDs 迁入）
+- 03 分支：用户决策 R3+ 拆分顺序 + feature 分支合并 main 时机（agent 不擅自合并）
+- 主线（04 任务）：用户继续在 main worktree 推进 04 DevTool 规划任务，与 03 分支独立
 
 ## 最近归档（速查，详细见 archive 文档）
 

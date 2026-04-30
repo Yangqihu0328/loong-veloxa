@@ -2,7 +2,10 @@
 
 ## 当前任务
 
-**TASK-20260430-03：全代码库 Code Review** — Level 4 [安全相关]，**REFLECT 完成**（2026-05-01 ~00:08），Checkpoint 2 等待用户决策（R3+ 拆分顺序 → `/archive`）。
+**无**（03 分支视角 — 用户主线在 04 任务，与 03 独立演进）。03 任务 TASK-20260430-03 已归档于 2026-05-01 ~00:30，详见 `memory-bank/archive/archive-TASK-20260430-03.md`。
+
+<details>
+<summary>TASK-20260430-03 历史阶段快照（archive 已落盘，点开查看会话内进度记录）</summary>
 
 ### REFLECT 阶段产出快照（2026-05-01 ~00:08）
 
@@ -90,8 +93,16 @@
 - **前置验证：** ✅ 全过（无新依赖 / `_deps/` 三处离线 / ctest 1061/1061 隐式继承 / 8 项 P3 候选作为 R1 输入材料）
 - **Push back 决策：** 强制 R3+ 拆出 + Checkpoint 1/2 + Spec 主文档拆分附录（避免「样样不深」+「不可估时」+「主文档过长」3 风险）
 
+</details>
+
 ## 最近归档完成
 
+- **TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]** — Level 4 ✅（2026-05-01）
+  - 归档文档：`memory-bank/archive/archive-TASK-20260430-03.md`
+  - 55 项 findings（28 P1 + 19 P2 + 8 P3）+ 6 项 P0 quick fix 实施 ctest 1062/1062 PASS + 13 R3+ 拆分任务建议
+  - 改进建议落实率 90%（P0 1/1 + P1 4/4 + P2 4/5）；P0 #3 git symbolic-ref commit 守门 → `git-workflow.mdc` 落实；P1 #4 reflog 诊断 → `systematic-debugging.mdc` 落实
+  - plan × 0.6 第 16 数据点入库（核心轮次 0.85-1.00× ×0.6 阈内 ✅）；首发 background agent 双轨模式 + worktree 隔离协议沉淀
+  - feature 分支 `feature/TASK-20260430-03-codebase-review` 保留未合并（由用户决定合并 main 时机）
 - **TASK-20260430-02：CSS border shorthand 补全（4 方向 + 3 属性级）[安全相关]** — Level 2 ✅
   - 归档文档：`memory-bank/archive/archive-TASK-20260430-02.md`
   - 22 新单测 + 双反向探针完整三态；ctest Debug 1061/1061 + Release 1030/1030
