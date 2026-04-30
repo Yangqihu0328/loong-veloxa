@@ -2,13 +2,20 @@
 
 ## 当前阶段
 
-**构建中·轮次 R2 完成（2026-04-30 ~24:55）** — R0 + R1 + R2 三轮次产出已完成；R2 6 项 P0 quick fix 全过 ctest **1062/1062 PASS**（基线 1061 + R2.5 新增守卫单测 = 1062）。Checkpoint 2 等待用户决策（R3+ 拆分顺序 + 是否进入 reflect）。
+**回顾中（2026-05-01 ~00:08）** — R0+R1+R2 全部完成 + reflection 文档落盘。Checkpoint 2 待用户决策 R3+ 拆分顺序 + 进入 `/archive`。
 
-**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）：
+**焦点：** 用户决定 R3+ 13 项 P1 拆分顺序（推荐 Top 3）+ archive 时机：
 - 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG error_exit kill）— P1 安全 / 估 4-6 h / Level 3
 - 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
 - 🟡 #3 LoadHTML 重置 dom_bindings_ 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2
 - 🔴 #4 CSS 属性元数据表（F-022）— P1 维护性 / Level 4 大件 / 1-2 周（架构性重构）
+
+**Reflection 主要发现：**
+- Background agent 双轨模式首次实战 → race condition 应对协议固化（systemPatterns 新模式）
+- plan ×0.6 估时按任务类型分桶系数矩阵升级（review 0.4-0.7× / fast-fix 0.7-1.4× / racy 1.4-2.5× / 大件 0.8-1.2×）
+- Quick fix 颗粒度校准 12 min/项（plan 9 min/项 + 33%）
+- 总耗时 ~177 min（plan ×0.6 区间 0.85-1.00× ✅）— **plan ×0.6 模型有效，第 16 数据点入库**
+- P0 改进建议 1 项（git symbolic-ref commit 守门）— archive 阶段写入 git-workflow skill
 
 **R2 实绩（条件触发 ✅）：**
 - 6/6 commits 全过 ctest 1062/1062
@@ -53,15 +60,38 @@
 
 ## 焦点
 
-- R0 / R1 / R2 三轮次全部 ✅；6 项 P0 quick fix 入仓 ctest 1062/1062 PASS
-- **当前 Checkpoint 2 等待用户决策**：
-  1. R3+ 拆分顺序（Top 3 推荐 + Level 4 大件单独评估）
-  2. 是否进入 `/reflect`（reflection 文档 + plan ×0.6 第 16 数据点 + R3+ task IDs 入 activeContext）
-  3. 是否直接 `/archive`（如果 R3+ 拆分留作未来 ad-hoc）
+- R0 / R1 / R2 / Reflect 全部 ✅；6 项 P0 quick fix 入仓 ctest 1062/1062 PASS；reflection 文档落盘
+- **当前 Checkpoint 2 等待用户决策（archive 前最后一步）**：
+  1. R3+ 拆分顺序（Top 3 推荐 + Level 4 大件单独评估）— 决定哪些拆出独立任务 ID
+  2. `/archive` 时机（立即 / 等用户审 reflection / 等 R3+ 决策完）
 - 下一轮（pending）：
-  - REFLECT：reflection-TASK-20260430-03.md 落盘；含 R0+R1+R2 三阶段实测耗时分析、worktree 隔离收获、并发会话冲突应对模式（systemPatterns 备料）
-  - ARCHIVE：archive-TASK-20260430-03.md + R3+ task IDs 迁入 activeContext / tasks.md
+  - ARCHIVE：archive-TASK-20260430-03.md（含 R3+ task IDs 迁入 activeContext / tasks.md + 改进建议 P0/P1 闭环 + 合并 main 由用户决定）
 - 注：本任务在 background agent 模式下运行（用户主线在 04 任务），03 feature 分支独立演进，最终归档时合并 main 由用户审 + 决定时机
+
+## 待处理事项 — TASK-20260430-03 改进建议闭环（reflection §5）
+
+### P0（archive 前必完成）
+
+- [ ] #3 git symbolic-ref --short HEAD commit 前断言守门 → 写入 `.cursor/rules/skills/git-workflow.mdc`「commit 前防御」段（archive 阶段执行）
+
+### P1（下次同类任务前完成，迁入 activeContext 待处理事项）
+
+- [ ] #1 Background agent 双轨模式 + worktree 隔离协议固化 → systemPatterns + workflow rule（已部分写入 systemPatterns，archive 阶段补 rule 文件）
+- [ ] #2 plan ×0.6 估时按任务类型分桶系数矩阵 → systemPatterns §最窄路径表升级（已写入 systemPatterns，archive 阶段交叉验证）
+- [ ] #4 reflog 作为会话冲突首发诊断工具 → systematic-debugging skill 新段
+- [ ] #7 Quick fix 颗粒度 plan 估时 12 min/项 校准 → 已写入 systemPatterns
+
+### P2（长期沉淀，已写入 systemPatterns / techContext）
+
+- ✅ #5 Worktree 删除前 rm -rf cmake FetchContent → 已写入 techContext
+- ✅ #6 CMake basic vs full 矩阵 → 已写入 techContext
+- ✅ #8 Checkpoint 推荐默认 + 隐式批准 → 已写入 systemPatterns
+- ⏳ #9 R3+ 拆分协议「13 候选 → Top N」流程标准化（archive 阶段考虑加入 spec 模板）
+- ⏳ #10 review 类任务 spec 模板 → 已写入 systemPatterns，archive 阶段考虑加入 `.cursor/rules/templates/`
+
+### R3+ 13 项拆分任务（待 Checkpoint 2 决策具体拆分顺序）
+
+详见 reflection §6.1 / R1 报告 §8 / 上文「焦点」段 Top 4。
 
 ## 待处理事项（P0/P1/P2 后续）
 
@@ -86,7 +116,7 @@
 
 ## 下一步
 
-- Checkpoint 2 用户决策 → `/reflect` 或 `/archive`
+- Checkpoint 2 用户决策 R3+ 拆分顺序 → `/archive`（含 P0/P1 改进建议闭环 + R3+ task IDs 迁入）
 
 ## 最近归档（速查，详细见 archive 文档）
 

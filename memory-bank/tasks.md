@@ -5,7 +5,7 @@
 ### TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]
 
 - **复杂度级别：** Level 4（多子系统横扫 + 6 维度全覆盖 + 多轮次必然 + 不可估时上限拆 R3+ 后续任务消化）
-- **状态：** 🟢 构建中·R2 完成（Checkpoint 2 待用户决策 R3+ 拆分顺序 / `/reflect` / `/archive`）
+- **状态：** 🟣 回顾完成（Checkpoint 2 待用户决策 R3+ 拆分顺序 → `/archive`）
 - **创建日期：** 2026-04-30
 - **分支：** `feature/TASK-20260430-03-codebase-review`（基于 main `9411584`，已创建）
 - **设计 spec：** `docs/specs/2026-04-30-codebase-review-design.md`（12 段 / D1-D10 决策矩阵 / T7-T10 安全威胁建模 + R0/R1/R2 多轮次 + Checkpoint 协议）
