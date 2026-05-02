@@ -9,6 +9,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(VX_BUILD_TESTS "Build tests" ON)
 option(VX_BUILD_BENCHMARKS "Build benchmarks" OFF)
 option(VX_PLATFORM_SDL2 "Build SDL2 platform backend (window + input)" OFF)
+# DevTool subsystem (Inspector / Performance overlay / Hot reload).
+# OFF by default: A14 acceptance — DevTool-disabled binary size diff = 0.
+option(VX_BUILD_DEVTOOL "Build DevTool subsystem" OFF)
 set(VX_LOG_LEVEL 0 CACHE STRING "Minimum log level (0=DEBUG,1=INFO,2=WARN,3=ERROR,4=FATAL)")
 
 add_compile_definitions(VX_MIN_LOG_LEVEL=${VX_LOG_LEVEL})
@@ -35,6 +38,9 @@ add_subdirectory(veloxa/core)
 add_subdirectory(veloxa/text)
 add_subdirectory(veloxa/script)
 add_subdirectory(veloxa/api)
+if(VX_BUILD_DEVTOOL)
+  add_subdirectory(veloxa/devtool)
+endif()
 
 add_subdirectory(examples)
 

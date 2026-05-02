@@ -83,6 +83,31 @@
 - **T5 安全威胁 mitigation 落地** ✅（A5 验收准入达成）
 - **commit**：[A.0.4 实测耗时 ~15 min，vs plan 18 min ×0.6 = 0.83×；plan ×0.6 第 21 数据点候选「窄档延续」]
 
+**Phase A.0.5 完成 ✅（2026-05-02 13:35，~25 min vs plan 36 min ×0.6 = 0.69×）：**
+
+- **关键发现 — plan §A.0.5 假设全部错误，Build 阶段全部修正**：
+  - `Document::CreateElement(string)` 不存在 → 实际 `CreateElement(TagId)`（用 TagId::kHtml/kBody/kInput 等）
+  - `RedactionPolicy::kDefault` 不存在 → 用 A.0.3 已实施的 `kRedactSensitive` / `kNone`
+  - `String::Reserve/Append/contains` API 全错 → `reserve/append`（小写）+ 测试改用 `std::string::find` 经 `AsStd` helper
+  - **`ComputedStyle::SetProperty/ForEachProperty/Value::Color/PropertyIdToString` 全部不存在** — `ComputedStyle` 是 66 字段 plain struct（无 method）
+  - 因此 SerializeComputedStyle 改用「显式列 10 个常用属性」简化策略（display/position/width/height/color/background_color/font_size/opacity/margin/padding）+ 自写 helper（UnitSuffix / AppendLengthValue / AppendColorHex / AppendEnumProperty 用 EnumValueToCssString）
+  - plan §步骤 5 写 OFF baseline 1072 也是错的（漏算 SDL2/benchmark 差异）→ 实际 OFF baseline = 1031（basic 原 baseline）+ 23（A.0.1-A.0.4 加到 core/api 的非 DEVTOOL 测）= **1054**
+- **Step 1 RED**：新建 `tests/devtool/inspector/inspector_data_test.cc` 含 10 测（3 SerializeDocument + 1 T3 propagation + 2 SerializeLayoutBox delegate + 4 SerializeComputedStyle）+ 子目录 CMakeLists（含 `include(GoogleTest)` 子目录守门）
+- **Step 2 验证 RED**：cmake generate 阶段失败 `No SOURCES given to target: vx_devtool`（inspector_data.cc 缺）✅
+- **Step 3 GREEN**：
+  - 新建 `veloxa/devtool/CMakeLists.txt` + `veloxa/devtool/inspector/CMakeLists.txt`（vx_devtool STATIC + PUBLIC vx_core）
+  - 根 `CMakeLists.txt` 加 `option(VX_BUILD_DEVTOOL OFF)` + `if(VX_BUILD_DEVTOOL) add_subdirectory(veloxa/devtool)`
+  - `tests/CMakeLists.txt` 加 `if(VX_BUILD_DEVTOOL) add_subdirectory(devtool)`
+  - 新建 `inspector_data.h` 含 schema doc 注释（含 D7=C 一/二层定位 + 与 A.0.6 公开 C API 关系）
+  - 新建 `inspector_data.cc` 实现 SerializeDocument（envelope wrap + dom::ToJson 转发）/ SerializeLayoutBox（pure delegate to box->ToJson）/ SerializeComputedStyle（10 properties + 4 helpers）
+- **Step 4 验证 GREEN**：DEVTOOL=ON 全量构建 + ctest **1095/1095 PASS**（基线 1085 + 10 新测）+ 1 Skip
+- **Step 5 A14 守门**：DEVTOOL=OFF 单独 `build-noffi/` reconfigure + 全量构建 + ctest **1054/1054 PASS** ✅（inspector_data_test 不在 OFF 编译，证明 VX_BUILD_DEVTOOL guard 生效）
+- **Step 6 反向探针**：硬编码 `dom::ToJson(doc, kNone)` 替代 `policy` → 测 #1089 `SerializeDocumentT3PropagatesRedactionPolicy` FAIL ✅（T3 propagation 捕获能力 verified）；恢复后 10/10 PASS
+- **Lint clean** ✅
+- **A14 验收准入达成** ✅（DevTool OFF 时 inspector_data 0 字节贡献）
+- **commit**：[A.0.5 实测耗时 ~25 min，vs plan 36 min ×0.6 = 0.69×；候选 plan ×0.6 第 22 数据点「窄档延续」]
+- **教训 — plan ×0.6 第 22 数据点候选风险**：plan §A.0.5 写于 4-30 蓝图阶段，对 `dom::Document::CreateElement` / `ComputedStyle::SetProperty` / `RedactionPolicy::kDefault` 等 4-5 个 API 假设错误，但因 plan 步骤足够细致 + 校准成本只增加 ~5 min（5/36 = 14%），未触发 plan ×0.6 「过窄」风险。沉淀为「plan 假设 API 是否存在 → build 阶段先 grep 验证」节奏。
+
 **Phase A.0.x 进度（16 子任务总览）：**
 
 | 子任务 | 状态 | plan ×0.6 估时 | 实测 |
@@ -92,7 +117,7 @@
 | A.0.2 LayoutBox::ToJson | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.0.3 DOM Serializer::ToJson + T3 | ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
-| A.0.5 inspector_data.h 内部 C++ | ⏳ | 36 min | — |
+| A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
 | A.0.6 vx_view_serialize_*_json + T7 | ⏳ | 36 min | — |
 | A.1.1 InspectorOverlay hover | ⏳ | 27 min | — |
 | A.1.2 DevTool UI HTML/CSS/JS | ⏳ | 54 min | — |

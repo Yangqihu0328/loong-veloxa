@@ -224,6 +224,13 @@ target_link_libraries(shape_cache_test PRIVATE vx_text)
 vx_add_test(drawtext_shape_cache_test graphics/drawtext_shape_cache_test.cc)
 target_link_libraries(drawtext_shape_cache_test PRIVATE vx_graphics vx_text)
 
+# TASK-20260502-01: DevTool subsystem (opt-in, requires VX_BUILD_DEVTOOL).
+# Mirrors veloxa/devtool/ subtree; A14 acceptance ensures DevTool-OFF baseline
+# (1085 tests) is unchanged.
+if(VX_BUILD_DEVTOOL)
+  add_subdirectory(devtool)
+endif()
+
 # TASK-20260425-01: SDL2 platform backend (opt-in, requires VX_PLATFORM_SDL2)
 if(VX_PLATFORM_SDL2)
   add_executable(sdl2_input_translate_test platform/sdl2_input_translate_test.cc)

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中·轮次 1 完成（Phase A.0.1-A.0.4 of A.0.x ✅；下次进入 A.0.5）** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；本轮完成「Inspector 数据序列化层 + T3/T5 安全防护」自然分组（4 子任务 + Phase 0.1 reconfigure）；ctest 1062 → 1085（+23 新测）+ 1 Skip 沿用；下次 `/build` 续上 A.0.5（inspector_data.h 内部 C++ API）→ A.0.6（vx_view_serialize_*_json 公共 C API + T7）→ A.1.x DevTool UI 实施。
+**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施轮次 2 进行中；A.0.5 inspector_data.h 内部 C++ API + vx_devtool 静态库 ✅（DEVTOOL=ON ctest 1095/1095 + 10 新测；A14 OFF baseline 1054 ✅，inspector_data 不在 OFF 编译）；当前焦点 → A.0.6 vx_view_serialize_*_json 公共 C API + T7 buffer overflow 防护。
 
 **本轮 commit 链：**
 - `e43a5be` chore: VAN + plan 阶段产出
