@@ -172,6 +172,15 @@ VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
  * pass this same value to vx_view_inject_input to invoke the hotkey. */
 #define VX_KEY_F12 0x40000045u
 
+/* TASK-20260502-02 B.3.1 — F11 toggle Performance Overlay HUD visibility.
+ * SDL2 SDLK_F11 = 0x40000044. Same gate as F12 (only effective AFTER
+ * vx_view_attach_devtool with enable_f12_hotkey=1; renamed in mind but
+ * the option still gates BOTH F11 + F12 since both belong to the
+ * DevTool keyboard hotkey set). HUD visual response (DOM display style)
+ * is the embedder's job (B.3.2 hello_devtool integration shows one
+ * way: read vx_view_is_hud_visible each frame and apply CSS). */
+#define VX_KEY_F11 0x40000044u
+
 typedef struct {
   /* DevTool splitter dock width in px. Default 270; clamped to
    * [200, 400] when out of range (no error returned). */
@@ -189,6 +198,16 @@ VxResult vx_view_detach_devtool(VxView* view);
 
 /* Returns: 1 if DevTool currently attached, 0 if not, -1 if view is NULL. */
 int vx_view_devtool_loaded(VxView* view);
+
+/* TASK-20260502-02 B.3.1 — Performance Overlay HUD visibility flag.
+ * Returns:
+ *   1 if HUD is currently visible (default after attach when DEVTOOL=ON),
+ *   0 if HUD is hidden OR DevTool not attached OR DEVTOOL=OFF,
+ *  -1 if view is NULL.
+ * Toggled by F11 hotkey when enable_f12_hotkey=1; embedders without
+ * hotkey can still poll this via the future vx_view_set_hud_visible
+ * (not in B.3.1 scope). */
+int vx_view_is_hud_visible(VxView* view);
 
 /* ── DevTool Redaction Policy C API (TASK-20260502-01 A.2.1, T3) ──
  *

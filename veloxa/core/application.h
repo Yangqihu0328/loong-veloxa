@@ -121,6 +121,13 @@ class Application {
     devtool_default_width_ = devtool_default_width;
   }
 
+  // TASK-20260502-02 B.3.1 — Performance Overlay HUD visibility flag.
+  // Default true after LoadDevtoolDocument (HUD shows by default when
+  // DevTool attaches). F11 hotkey toggles when devtool_hotkey_enabled_.
+  // Returns false when DevTool is not attached.
+  bool hud_visible() const { return devtool_loaded() && hud_visible_; }
+  void set_hud_visible(bool v) { hud_visible_ = v; }
+
   // TASK-20260502-02 B.0.1 — set the target Application's UpdateManager
   // PipelineHooks (Performance Overlay 5 callbacks). Application stores
   // an internal copy so the caller does not need to keep the hooks
@@ -170,6 +177,8 @@ class Application {
   // Update).
   PipelineHooks external_hooks_{};
   bool external_hooks_set_ = false;
+  // B.3.1 — HUD visibility flag (true after LoadDevtoolDocument; F11 toggles).
+  bool hud_visible_ = true;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;

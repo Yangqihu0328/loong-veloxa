@@ -333,6 +333,16 @@ int vx_view_devtool_loaded(VxView* view) {
 #endif
 }
 
+int vx_view_is_hud_visible(VxView* view) {
+  if (!view) return -1;
+#ifndef VX_BUILD_DEVTOOL
+  return 0;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  return app->hud_visible() ? 1 : 0;
+#endif
+}
+
 /* ── DevTool Redaction Policy (TASK-20260502-01 A.2.1, T3) ──────── */
 
 VxResult vx_inspector_set_redaction_policy(VxView* view,

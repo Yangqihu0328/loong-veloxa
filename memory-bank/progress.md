@@ -198,7 +198,25 @@
 - **A14 守门：** ✅ 隐式守门（OverlayDirtyRect 工厂在 vx_core/render/paint_command.h — 静态内联工厂；DEVTOOL=OFF 编进 vx_core 但不被引用 — dead code elim 无开销）
 - **反向探针：** ✅ 跳 IsEmpty filter → `InjectDirtyRectHighlightsSkipsEmptyRects` 精准 FAIL（list size 3 vs 1）
 - **T5 mitigation 协议复用：** ResetOverlayCommands 同时清 hover + dirty rect overlays（同 type kOverlayHighlight）— 不扩增 reset 路径
-- **commit：** 待 B.2.3 commit
+- **commit：** `55a8c68 feat(devtool): OverlayDirtyRect 工厂 + InjectDirtyRectHighlights (B.2.3)`
+
+#### `/build` Phase B.3.1 完成快照（2026-05-02 ~23:42，~10 min 实测）
+
+- **任务：** F11 toggle HUD 可见性（事件层 + flag 层；HUD 视觉响应留 B.3.2 hello_devtool 集成时实施）
+- **plan ×0.6 估时：** 9 min / **实测：** ~10 min（**1.11× plan ×0.6**，「中件实施」桶 — 跨 5 文件更新但 F12 范式精确复用 + 测试 fixture 复用）— 这是首次接近 plan ×0.6 估计的子任务，反映文件跨度对实测的影响
+- **改动文件：**
+  - `veloxa/api/veloxa_api.h`：加 `VX_KEY_F11 0x40000044u` 宏 + `int vx_view_is_hud_visible(VxView*)` C API 声明
+  - `veloxa/platform/sdl2/sdl2_input_translate.cc`：加 SDLK_F11 → 0x40000044 映射（VX_KEY_F11 镜像值）
+  - `veloxa/core/application.h`：加 `hud_visible()`/`set_hud_visible()` 公开方法 + `hud_visible_ = true` 私有字段
+  - `veloxa/core/application.cc`：加 kVxKeyF11 常量；MaybeHandleDevtoolHotkey 扩展 F11 分支（DevTool attached 时 toggle hud_visible_，否则仍 consume 保持 UX 一致）；UnloadDevtoolDocument 内 reset hud_visible_=true（避免 toggle 状态跨 attach 周期泄漏）
+  - `veloxa/api/veloxa_api.cc`：实施 `vx_view_is_hud_visible`（OFF 路径返 0 stub，NULL view 返 -1）
+  - `tests/api/devtool_attach_api_test.cc`：+5 F11/HUD 测（HudVisibleDefaultTrueAfterAttach / HudVisibleZeroBeforeAttach / F11HotkeyTogglesHudVisibleWhenEnabled / F11HotkeyDisabledIgnoresF11 / F11DoesNotToggleDevtoolAttach）
+
+- **测试增量：** **DEVTOOL=ON 1222 → 1227 PASS（+5）/ DEVTOOL=OFF 1082 unchanged（vx_view_is_hud_visible OFF 是 stub 返 0；devtool_attach_api_test 在 ON-only 块编译）**
+- **A14 守门：** ✅ libvx_api.a OFF + ~50 bytes（vx_view_is_hud_visible C ABI stub 公开符号）；零 vx_devtool 内部符号泄漏
+- **反向探针：** ✅ 删 F11 toggle 路径（return false 直接） → `F11HotkeyTogglesHudVisibleWhenEnabled` 精准 FAIL（hud_visible 未变，期望 0 实际 1）
+- **B.3.2 切口：** F11 切 hud_visible_ flag 完成；HUD 视觉响应（DOM display style）通过 hello_devtool 集成时 `vx_view_is_hud_visible(view) ? "flex" : "none"` 应用到 #devtool-hud
+- **commit：** 待 B.3.1 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 

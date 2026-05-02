@@ -153,6 +153,69 @@ TEST_F(DevtoolAttachApiTest, F12HotkeyOnlyTriggersOnDevtoolLoaded) {
   EXPECT_EQ(vx_view_devtool_loaded(view_), 0);
 }
 
+// =============================================================================
+// TASK-20260502-02 B.3.1 — F11 toggle HUD visibility
+//
+// F11 toggles Application::hud_visible_ flag (default true at attach time).
+// Only effective AFTER DevTool is attached AND enable_f12_hotkey=1 (same
+// gate as F12 — embedders that disable hotkeys handle F11 themselves).
+// HUD visual response (DOM display style) is wired up at integration time
+// (B.3.2 hello_devtool perf smoke).
+// =============================================================================
+
+TEST_F(DevtoolAttachApiTest, HudVisibleDefaultTrueAfterAttach) {
+  ASSERT_EQ(vx_view_attach_devtool(view_, nullptr), VX_OK);
+  EXPECT_EQ(vx_view_is_hud_visible(view_), 1);
+}
+
+TEST_F(DevtoolAttachApiTest, HudVisibleZeroBeforeAttach) {
+  EXPECT_EQ(vx_view_is_hud_visible(view_), 0);
+}
+
+TEST_F(DevtoolAttachApiTest, F11HotkeyTogglesHudVisibleWhenEnabled) {
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 1;
+  ASSERT_EQ(vx_view_attach_devtool(view_, &opts), VX_OK);
+  ASSERT_EQ(vx_view_is_hud_visible(view_), 1);
+
+  VxInputEvent f11{};
+  f11.type = VX_EVENT_KEY_DOWN;
+  f11.key_code = VX_KEY_F11;
+  vx_view_inject_input(view_, &f11);
+  EXPECT_EQ(vx_view_is_hud_visible(view_), 0);
+
+  vx_view_inject_input(view_, &f11);
+  EXPECT_EQ(vx_view_is_hud_visible(view_), 1);
+}
+
+TEST_F(DevtoolAttachApiTest, F11HotkeyDisabledIgnoresF11) {
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 0;
+  ASSERT_EQ(vx_view_attach_devtool(view_, &opts), VX_OK);
+  ASSERT_EQ(vx_view_is_hud_visible(view_), 1);
+
+  VxInputEvent f11{};
+  f11.type = VX_EVENT_KEY_DOWN;
+  f11.key_code = VX_KEY_F11;
+  vx_view_inject_input(view_, &f11);
+  // Hotkey disabled → state unchanged.
+  EXPECT_EQ(vx_view_is_hud_visible(view_), 1);
+}
+
+TEST_F(DevtoolAttachApiTest, F11DoesNotToggleDevtoolAttach) {
+  // F11 is HUD-only; DevTool attach state must stay unchanged after F11.
+  ASSERT_EQ(vx_view_attach_devtool(view_, nullptr), VX_OK);
+  ASSERT_EQ(vx_view_devtool_loaded(view_), 1);
+
+  VxInputEvent f11{};
+  f11.type = VX_EVENT_KEY_DOWN;
+  f11.key_code = VX_KEY_F11;
+  vx_view_inject_input(view_, &f11);
+  EXPECT_EQ(vx_view_devtool_loaded(view_), 1);  // unchanged
+}
+
 #else  // VX_BUILD_DEVTOOL OFF — A14 zero-byte stub guard
 
 TEST_F(DevtoolAttachApiTest, AttachOffPathReturnsInvalidState) {
