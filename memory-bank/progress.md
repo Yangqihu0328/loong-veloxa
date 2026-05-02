@@ -128,7 +128,27 @@
 - **A14 守门：** ✅ 隐式守门（vx_devtool 内部 PerfOverlay 符号自然不在 OFF build；`add_subdirectory(overlay)` 在 `if(VX_BUILD_DEVTOOL)` guard 下）
 - **反向探针：** ✅ 去 modulo（`head_ + 1` 不取模）→ `RingBufferOverwritesOldestFrameAfter60` 精准 FAIL（数组越界 UB → aggregated 计算错值）
 - **friend pattern 引入：** ✅ plan §0.5 测试基础设施审计实施 — `friend class PerfOverlayTest;` 白名单（首次在 veloxa/devtool 子树引入，与 inspector_overlay 既有模式区分）
-- **commit：** 待 B.1.1 commit
+- **commit：** `df2c050 feat(devtool): PerfOverlay FrameStats ring buffer + 60 帧聚合 + FPS (B.1.1)`
+
+#### `/build` Phase B.1.2 完成快照（2026-05-02 ~23:05，~15 min 实测）
+
+- **任务：** PerfOverlay::Attach + 5 trampolines + T6 budget abort + 单 instance 验证 + 自动填 FrameStats（OnFrameEnd 计算时间差 → RecordFrame；OnFrameStart 清 dirty_rects 累加器为 B.2.3 准备）
+- **plan ×0.6 估时：** 27 min / **实测：** ~15 min（**0.56× plan ×0.6**，落「中件实施」桶下端 — 涉及 SteadyTimePoint 时间差 + 跨 lib 边界 + 5 trampoline + budget guard 边缘场景；vs 前 3 子任务平均 0.29× 显著上升 — 中件复杂度合理）
+- **改动文件：**
+  - `veloxa/devtool/overlay/perf_overlay.h`：扩展 PerfOverlay class — Attach/Detach/attached/budget setters/abort_count/last_attach_error/last_abort_reason；私有 5 trampoline 静态方法 + HandleHook + hooks_storage_ + hook_times_[5] + frame_total_us_ + budget_us_=1000 默认；析构 safety net 调 Detach
+  - `veloxa/devtool/overlay/perf_overlay.cc`：实施 Attach（单 instance 守 + hooks_storage 初始化 + SetPipelineHooks）+ Detach + 5 trampoline + HandleHook（OnFrameStart 清 dirty_rects + frame_total_us 重置；OnFrameEnd 5 timestamp 算 FrameStats + RecordFrame；T6 budget guard 累加 + budget_us_==0 显式短路）
+  - `tests/devtool/overlay/perf_overlay_attach_test.cc`：新建 12 integration 测覆盖（NotAttached / AttachValid / AttachNullRejects / AttachTwiceRejects / DetachClears / AttachAfterDetach / OnFrameEndAutoFills / MultipleAccumulate / OnFrameStartClearsDirty / BudgetDefault1ms / BudgetZeroAlwaysAborts / ResetClearsAbort）
+  - `tests/devtool/overlay/CMakeLists.txt`：新增 perf_overlay_attach_test target（vx_devtool + vx_core + vx_foundation 链接 — integration 测含 UpdateManager + Document + Canvas fixture）
+
+- **测试增量：** **DEVTOOL=ON 1194 → 1206 PASS（+12）/ DEVTOOL=OFF 1082 unchanged（VX_BUILD_DEVTOOL guard）**
+- **A14 守门：** ✅ 隐式守门（perf_overlay_attach 在 vx_devtool 内 + 测在 `if(VX_BUILD_DEVTOOL)` 子目录）
+- **反向探针：** ✅ 跳 single-instance check（`if (attached_to_) return false` 整段注释）→ `AttachTwiceRejectsSecond` 精准 FAIL
+- **T6 mitigation 落地：**
+  - 单 instance 验证：第 2 次 Attach 拒绝（同 / 异 UpdateManager 都拒）+ last_attach_error 设值
+  - budget guard：`budget_us_ == 0` 显式短路（plan-fact 校准 — sub-microsecond 硬件精度下 cb_us 可能转 0）
+  - 析构 safety net 自动 Detach（避免 dangling PipelineHooks 指针）
+- **plan-fact 校准：** plan §B.1.2 budget guard `frame_total_us_ > budget_us_` 在 budget=0 + sub-µs cb_us 场景下不触发 → 改为 `budget_us_ == 0 || frame_total_us_ > budget_us_` 显式 disabled 语义；BudgetGuardDefaultIs1MsAllowsNormalFrame 测保持有效（normal frame 0us, 1000us budget → false → 不 abort）
+- **commit：** 待 B.1.2 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 

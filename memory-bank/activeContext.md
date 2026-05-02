@@ -4,16 +4,17 @@
 
 **构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:35）：
 
-**已完成 3/10 子任务：**
+**已完成 4/10 子任务：**
 - B.0.1 PipelineHooks 五钩子 ✅（**#35 阶段 1 闭环**；~25 min = **0.46× plan ×0.6**）
 - B.0.2 dirty_rects_ Vector 累积扩展 ✅（~7 min = **0.19× plan ×0.6**）
-- B.1.1 PerfOverlay FrameStats ring buffer + 60 帧聚合 + FPS ✅（~8 min = **0.22× plan ×0.6**）
+- B.1.1 PerfOverlay FrameStats ring buffer ✅（~8 min = **0.22× plan ×0.6**）
+- B.1.2 PerfOverlay::Attach + T6 budget abort + 单 instance ✅（~15 min = **0.56× plan ×0.6**，「中件实施」桶下端）
 
-**测试基线：** DEVTOOL=ON 1194 / DEVTOOL=OFF 1082 双绿；A14 ctest smoke PASS
+**测试基线：** DEVTOOL=ON 1206 / DEVTOOL=OFF 1082 双绿；A14 ctest smoke PASS
 
-**累计 plan ×0.6 比值：** 实测 40 min vs plan ×0.6 计 126 min = **0.32×**（接近「极窄档延续」桶下界 0.3-0.4×）；3 子任务平均 0.29× — 显著低于估时假设 0.55-0.75×，说明 Phase 0 grep 实证 + Phase A 范式复用 ROI 极高
+**累计 plan ×0.6 比值：** 实测 55 min vs plan ×0.6 计 153 min = **0.36×**（4 子任务平均 — Phase 0 grep + Phase A 范式 ROI 持续高）
 
-**当前：** 准备 B.1.2 T6 callback 1ms/frame budget abort + 单 instance 验证（plan 45 min ×0.6 = 27 min，PerfOverlay::Attach + 5 trampoline + budget guard）
+**当前：** 准备 B.2.1 HUD HTML/CSS（plan 45 min ×0.6 = 27 min，inspector_panel.html/css 加 #devtool-hud + 4 stage bars + 3 smoke 测）
 
 ---
 
