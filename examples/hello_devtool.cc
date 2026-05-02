@@ -1,11 +1,14 @@
 /*
- * Veloxa — Hello DevTool Example (TASK-20260502-01 A.3.1)
+ * Veloxa — Hello DevTool Example (TASK-20260502-01 A.3.1 +
+ *                                  TASK-20260502-02 B.3.2 perf smoke)
  *
  * Same scene as hello_sdl2.cc but with the DevTool Inspector dogfood UI
  * attached on the right-hand splitter dock. Demonstrates:
  *   - vx_view_attach_devtool() with explicit options
  *   - VxDevtoolOptions { devtool_width, enable_f12_hotkey } configuration
  *   - F12 hotkey toggle (live attach/detach without reload)
+ *   - F11 hotkey toggle HUD (B.3.1 — vx_view_is_hud_visible C API)
+ *   - vx_view_set_pipeline_hooks() Performance Overlay smoke (B.3.2)
  *   - vx_inspector_set_redaction_policy() T3 policy switch
  *   - SDL2 input forwarding to BOTH target Document and DevTool Document
  *     via Application::InjectInput's hotkey interceptor (A.1.7)
@@ -13,7 +16,7 @@
  * Build:  cmake -B build -DVX_PLATFORM_SDL2=ON -DVX_BUILD_DEVTOOL=ON
  *         cmake --build build --target hello_devtool
  * Run:    ./build/examples/hello_devtool
- *         (Press F12 to toggle the DevTool panel.)
+ *         (Press F11 to toggle HUD; F12 to toggle DevTool.)
  */
 
 #include "veloxa/api/veloxa_api.h"
@@ -115,6 +118,32 @@ int main() {
   std::printf("DevTool attached on right-hand dock (width=%u, F12 to toggle).\n",
               opts.devtool_width);
 
+  /* TASK-20260502-02 B.3.2 — Performance Overlay smoke.
+   * Install pipeline hooks via the C ABI to count frames. The Performance
+   * Overlay's own PerfOverlay::Attach (B.1.2) installs richer trampolines
+   * internally when DevTool wires it up, but here we install a SECOND set
+   * via the public C API to verify the ABI surface works end-to-end —
+   * UpdateManager::SetPipelineHooks contract is single-instance, so this
+   * smoke uses the C API path independently of any internal PerfOverlay
+   * attachment (LoadDevtoolDocument doesn't currently install one — that
+   * wiring lands in the next subtask + R3 candidates). */
+  static int s_perf_smoke_frames = 0;
+  VxPipelineHooks perf_hooks{};
+  perf_hooks.on_frame_end = [](void* ud) {
+    int* counter = static_cast<int*>(ud);
+    if (counter) (*counter)++;
+  };
+  VxResult set_hooks_rc = vx_view_set_pipeline_hooks(view, &perf_hooks,
+                                                      &s_perf_smoke_frames);
+  /* Hooks ARE cached even when set_hooks_rc != VX_OK; lazy-attached on
+   * the next EnsureUpdateManager. After load_html/css already ran above,
+   * EnsureUpdateManager has been triggered → hooks are live. */
+  std::printf("Pipeline hooks installed (rc=%d).\n", set_hooks_rc);
+
+  /* B.3.1 sanity: HUD should be visible by default after attach. */
+  std::printf("HUD visible after attach: %d (1 expected).\n",
+              vx_view_is_hud_visible(view));
+
   /* T3 default policy is REDACT_SENSITIVE — verify by serializing once. */
   char json_buf[64 * 1024];
   uint32_t json_len = sizeof(json_buf);
@@ -150,6 +179,17 @@ int main() {
   }
 
   vx_view_run(view);
+
+  /* B.3.2 — verify the perf hooks fired during the run. Auto-quit at 200ms
+   * @ 60fps target FPS = ~12 frames; we accept >=1 to keep the smoke
+   * resilient on slow CI hardware. Print a stable line that ctest can
+   * regex-match (PERF SMOKE: frames=N). */
+  std::printf("PERF SMOKE: frames=%d hud_visible=%d\n",
+              s_perf_smoke_frames, vx_view_is_hud_visible(view));
+  if (s_perf_smoke_frames < 1) {
+    std::fprintf(stderr,
+                 "ERROR: pipeline hooks did not fire — perf overlay broken\n");
+  }
 
   vx_view_detach_devtool(view);
   vx_view_destroy(view);

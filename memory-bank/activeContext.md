@@ -2,9 +2,9 @@
 
 ## 当前阶段
 
-**构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:35）：
+**构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:50）：
 
-**已完成 8/10 子任务：**
+**已完成 9/10 子任务：**
 - B.0.1 PipelineHooks 五钩子 ✅（~25 min = **0.46×**）
 - B.0.2 dirty_rects_ Vector 累积 ✅（~7 min = **0.19×**）
 - B.1.1 PerfOverlay ring buffer ✅（~8 min = **0.22×**）
@@ -13,12 +13,13 @@
 - B.2.2 HUD JS + binding ✅（~13 min = **0.72×**）
 - B.2.3 OverlayDirtyRect + InjectDirtyRectHighlights ✅（~7 min = **0.39×**）
 - B.3.1 F11 toggle HUD（事件层 + flag）✅（~10 min = **1.11×**）
+- B.3.2 hello_devtool perf smoke（C API ABI 端到端）✅（~7 min = **0.39×**）
 
-**测试基线：** DEVTOOL=ON 1227 / DEVTOOL=OFF 1082 双绿
+**测试基线：** DEVTOOL=ON 1228 (+1 hello_devtool_perf_smoke) / DEVTOOL=OFF 1082 双绿
 
-**累计 plan ×0.6 比值：** 实测 92 min vs plan ×0.6 225 min = **0.41×**（8 子任务平均）
+**累计 plan ×0.6 比值：** 实测 99 min vs plan ×0.6 243 min = **0.41×**（9 子任务平均）
 
-**当前：** 准备 B.3.2 hello_devtool perf smoke（plan 30 min ×0.6 = 18 min；examples/hello_devtool 扩展跑 5 帧 + 验证 perf stats + 渲染 dirty rect 边框 + HUD 显示）
+**当前：** 准备 B.3.3 Phase B finalize + A14 smoke 黑名单更新（plan 30 min ×0.6 = 18 min；最终一轮 ON+OFF 校验 + Phase B 总结 + A14 baseline 更新到 1228）
 
 ---
 

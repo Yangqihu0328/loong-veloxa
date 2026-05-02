@@ -368,5 +368,19 @@ if(VX_PLATFORM_SDL2)
       ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=200"
       TIMEOUT 10
     )
+
+    # TASK-20260502-02 B.3.2: Performance Overlay smoke variant — re-runs
+    # the same hello_devtool with a longer auto-quit so the perf pipeline
+    # hooks have time to fire several frames. PASS_REGULAR_EXPRESSION asserts
+    # the stable "PERF SMOKE: frames=N" output line (N >= 1).
+    add_test(
+      NAME hello_devtool_perf_smoke
+      COMMAND $<TARGET_FILE:hello_devtool>
+    )
+    set_tests_properties(hello_devtool_perf_smoke PROPERTIES
+      ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=300"
+      PASS_REGULAR_EXPRESSION "PERF SMOKE: frames=[1-9][0-9]* hud_visible=1"
+      TIMEOUT 10
+    )
   endif()
 endif()

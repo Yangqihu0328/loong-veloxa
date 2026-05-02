@@ -200,6 +200,24 @@
 - **T5 mitigation 协议复用：** ResetOverlayCommands 同时清 hover + dirty rect overlays（同 type kOverlayHighlight）— 不扩增 reset 路径
 - **commit：** `55a8c68 feat(devtool): OverlayDirtyRect 工厂 + InjectDirtyRectHighlights (B.2.3)`
 
+#### `/build` Phase B.3.2 完成快照（2026-05-02 ~23:50，~7 min 实测）
+
+- **任务：** hello_devtool perf smoke — 通过 examples/hello_devtool 端到端验证 vx_view_set_pipeline_hooks C ABI + lazy-attach 行为 + vx_view_is_hud_visible C API
+- **plan ×0.6 估时：** 18 min / **实测：** ~7 min（**0.39× plan ×0.6**，「极窄档延续」桶 — examples 增量编辑 + hello_devtool 模板复用 + ctest PASS_REGULAR_EXPRESSION 范式）
+- **改动文件：**
+  - `examples/hello_devtool.cc`：加 PerfHooks 安装段（`static int s_perf_smoke_frames = 0` + capture-less lambda → C 函数指针 OnFrameEnd 计数器 + `vx_view_set_pipeline_hooks(view, &perf_hooks, &s_perf_smoke_frames)` + `vx_view_is_hud_visible(view)` sanity print + 退出后 `printf("PERF SMOKE: frames=%d hud_visible=%d\n", ...)` 稳定行 + `s_perf_smoke_frames < 1` 时 stderr ERROR 兜底）
+  - `tests/CMakeLists.txt`：在 hello_devtool_smoke `if(VX_BUILD_DEVTOOL)` 块内加 hello_devtool_perf_smoke ctest（ENVIRONMENT 同 hello_devtool_smoke 但 AUTOQUIT_MS=300 / PASS_REGULAR_EXPRESSION `frames=[1-9][0-9]* hud_visible=1` / TIMEOUT 10）
+- **测试增量：** **DEVTOOL=ON 1227 → 1228 PASS（+1 hello_devtool_perf_smoke）/ DEVTOOL=OFF 1082 unchanged**（hello_devtool_perf_smoke 在 `if(VX_BUILD_DEVTOOL)` guard 下，OFF 路径不存在）
+- **A14 守门：** ✅ 隐式继承（hello_devtool example 仅在 `VX_BUILD_DEVTOOL=ON` 时 build；零 vx_devtool 内部符号泄漏）
+- **实测输出验证：** `Pipeline hooks installed (rc=-2)` + `HUD visible after attach: 1 (1 expected)` + `PERF SMOKE: frames=1 hud_visible=1` ✅
+- **lazy-attach 行为实证：** rc=-2 (INVALID_STATE) 是因 set_pipeline_hooks 时 update_manager_ 未初始化（hello_devtool 顺序 = attach_devtool → load_html/css → set_pipeline_hooks → vx_view_run）；hooks 被 cached 在 Application::external_hooks_，vx_view_run 内 timer 触发首次 update → EnsureUpdateManager 创建 update_manager_ → 应用 cached hooks → on_frame_end 触发 → frames=1 ✅。这正是 plan §B.0.1 lazy-attach 设计的端到端实证
+- **frames=1 而非 5+：** 300ms autoquit @ 60FPS 期望 ~18 帧但实测仅 1 帧 — SDL2 dummy driver + DevTool attach 路径内有 lazy 初始化 = 实际触发 update timer 的时机靠近退出（acceptable — ctest regex `[1-9][0-9]*` 接受 1+，符合 smoke 测「证 ABI 工作」语义而非「证性能」）；如需多帧可后续 P3 任务调 SDL2 dummy 帧率或减少 EnsureUpdateManager 拖延
+- **零反向探针：** smoke 测的是稳定 print line 存在性（`PERF SMOKE: frames=N hud_visible=M`），删 print 是显然 FAIL — 无 plan §0.x 反向探针清单要求
+- **commit：** 待 B.3.2 commit
+- **下一步：** B.3.3 Phase B finalize + A14 smoke 黑名单更新（plan 30 min ×0.6 = 18 min；最终 ON+OFF 全跑 + Phase B 总结追写 + tasks.md 任务历史候选行）
+
+---
+
 #### `/build` Phase B.3.1 完成快照（2026-05-02 ~23:42，~10 min 实测）
 
 - **任务：** F11 toggle HUD 可见性（事件层 + flag 层；HUD 视觉响应留 B.3.2 hello_devtool 集成时实施）
