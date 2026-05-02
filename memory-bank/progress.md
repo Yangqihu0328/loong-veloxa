@@ -146,7 +146,7 @@
 | A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.1.3 inspector_panel.html/css/js 编写 | ✅ 完成 | 54 min | ~25 min（0.46×）|
 | A.1.4 JS native binding 扩展 | ✅ 完成 | 36 min | ~22 min（0.61×）|
-| A.1.5 InputDispatchSplitter（新增）| ⏳ plan ✅ | 27 min | — |
+| A.1.5 InputDispatchSplitter（新增）| ✅ 完成 | 27 min | ~12 min（0.44×）|
 | A.1.6 Application 双 UpdateManager（M1）| ⏳ plan ✅ | 36 min | — |
 | A.1.7 vx_view_attach_devtool C API + F12 | ⏳ plan ✅ | 27 min | — |
 | A.1.8 dogfood headless smoke（新增）| ⏳ plan ✅ | 45 min | — |
@@ -240,6 +240,36 @@
   1. **DOM API 边界 caching**：`set_id` ≠ `SetAttribute("id", ...)` — 前者只写 `id_` 字段（getElementById 用），后者只写 `attributes_` map（serialize 输出）；下次写涉及 attributes 测试需先确认数据流向
   2. **QuickJS native callback 模式锁定**：C function pointer 无 closure capture → 状态必须挂在 `JS_GetContextOpaque` recoverable 的对象上；扩展 InstanceData + 公共 setter 是正确范式，不应用 thread_local global / static state
   3. **反向探针选择陷阱**：empty function body 探针在严格 -Werror=unused-function 下会变编译错（虽然也是「捕获」但不是 test FAIL）；优先用「保留代码但故意修改 string literal / 参数」探针，更接近 RED 信号
+
+**Phase A.1.5 完成 ✅（2026-05-02 14:50（轮次 5 起点）→ 15:02，~12 min vs plan 27 min ×0.6 = 0.44×）：**
+
+- **核心成果（input dispatch 状态机层启动点）：** `InputDispatchSplitter` 纯算法状态机落地，splitter dock 鼠标事件路由 + drag capture 协议；无 IO 无引擎依赖，纯函数式状态转移
+- **架构决策（plan-fact 微调）：**
+  - **文件位置**：plan 写 `veloxa/devtool/input_dispatch_splitter.{h,cc}`（devtool/ 根目录非 inspector/ 子目录）；理由：input dispatch 是跨子系统组件（未来 Performance Overlay / Hot Reload 也会复用），不应耦合 Inspector 命名空间 → **plan 决策正确，按 plan 执行**
+  - **CMake 集成方式**：用 `target_sources(vx_devtool PRIVATE ...)` append 到现有 vx_devtool target（在 inspector/CMakeLists.txt 中定义），避免目录树重构 — 最小侵入范式
+- **API 锁定（plan §A.1.5 + R1 mitigation 加强）：**
+  - `enum class DispatchTarget { kTarget, kDevTool, kSplitterHandle }`
+  - `void SetSplitterX(f32)` + `f32 splitter_x() const` getter
+  - `DispatchTarget RouteToDocument(f32 mouse_x, f32 mouse_y, bool is_pointer_down, bool is_pointer_up)`
+  - `bool dragging() const`
+  - 内部状态：`splitter_x_=530.0f`（800-270 默认）+ `hit_handle_half_width_=4.0f` + `dragging_=false` + `capture_target_=kTarget`
+- **状态机规则（实现锁定）：**
+  - **Sticky drag-capture**：`dragging_==true` 时无视 geometry，强制路由到 `capture_target_`；is_pointer_up 触发 release 但当前事件仍属 captured target（让 handle widget 收到匹配的 up 事件）
+  - **Static geometry**：`|mouse_x - splitter_x| <= 4` → kSplitterHandle；< → kTarget；> → kDevTool
+  - **R1 mitigation 守卫**：`is_pointer_down && zone == kSplitterHandle` 才engage drag capture（press 在 target/devtool 永不 sticky-route）
+- **Step 1 RED**：`tests/devtool/input_dispatch_splitter_test.cc` 新建含 7 测（plan 锁 5，加 R1 mitigation `PressInTargetZoneDoesNotStartDragCapture` + `SetSplitterXShiftsHitArea` 配置 setter 测）：
+  - RoutesToTargetWhenLeftOfSplitter / RoutesToDevToolWhenRightOfSplitter / RoutesToHandleWhenInsideHitArea（geometry 三要件）
+  - DragCaptureKeepsRoutingToHandleAcrossBoundary / PointerUpReleasesDragCapture（drag 状态转移）
+  - PressInTargetZoneDoesNotStartDragCapture（R1 守卫）
+  - SetSplitterXShiftsHitArea（参数化）
+- **Step 2 验证 RED**：header missing → 编译失败 ✅
+- **Step 3 GREEN**：实现 `input_dispatch_splitter.{h,cc}` 状态机；CMake `target_sources` append；7 测全 PASS
+- **Step 4 验证 GREEN**：ctest **1128 → 1135 PASS**（+7 测，全在 vx_devtool）
+- **Step 5 反向探针**：移除 `if (dragging_)` 提前返回分支（drag capture 失效）→ `DragCaptureKeepsRoutingToHandleAcrossBoundary` FAIL（与 plan §1501 锁定的探针目标完全一致）✅；恢复后 7/7 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF baseline **1058/1058 PASS** + libvx_api.a **12156 bytes 维持**（InputDispatchSplitter 在 vx_devtool 内，OFF 时不参编译，零字节）
+- **Lint clean** ✅
+- **commit**：[A.1.5 实测 ~12 min vs plan 27 min ×0.6 = **0.44×**，候选 plan ×0.6 第 28 数据点「极窄档延续」— 纯算法状态机无外部依赖，与 A.1.3/A.1.4 共同构成「轮次 4-5 极窄档延续群组」（0.46×/0.61×/0.44×）]
+- **教训沉淀新增：** `target_sources(target PRIVATE ...)` append 到现有 target 是「跨目录加 source 文件且不重构」的最小侵入 CMake 范式，比 `add_subdirectory` 创建新 lib 或 `../` 相对路径都干净
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
