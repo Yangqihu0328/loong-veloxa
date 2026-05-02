@@ -143,7 +143,7 @@
 | A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
 | A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
 | A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ✅ 完成 | 18 min | ~10 min（0.56×）|
-| A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ⏳ plan ✅ | 27 min | — |
+| A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.1.3 inspector_panel.html/css/js 编写 | ⏳ plan ✅ | 54 min | — |
 | A.1.4 JS native binding 扩展 | ⏳ plan ✅ | 36 min | — |
 | A.1.5 InputDispatchSplitter（新增）| ⏳ plan ✅ | 27 min | — |
@@ -170,6 +170,26 @@
 - **Step 6 A14 守门**：DEVTOOL=OFF baseline 1057/1057 PASS 维持（inspector_overlay_test 不参与编译，零字节贡献）✅
 - **Lint clean** ✅
 - **commit**：[A.1.1 实测耗时 ~10 min vs plan 18 min ×0.6 = 0.56×，候选 plan ×0.6 第 24 数据点「窄档延续」]
+
+**Phase A.1.2 完成 ✅（2026-05-02 14:50，~15 min vs plan 27 min ×0.6 = 0.56×）：**
+
+- **核心成果（B-A1.1=b 落地）：** DevTool UI HTML/CSS/JS 编译期嵌入基础设施建立 — Python codegen + CMake `add_custom_command` + `vx_devtool_resources` STATIC 库；3 个占位 resource 文件（A.1.3 填充实质内容）；T2 路径穿越威胁面**完全消除** ✅
+- **Step 1 RED**：`tests/devtool/resources/inspector_resources_test.cc` +3 测（HtmlExportedAndNonEmpty / CssExportedAndNonEmpty / JsExportedAndNonEmpty），`tests/devtool/CMakeLists.txt` 加 `add_subdirectory(resources)`
+- **Step 2 验证 RED**：`fatal error: veloxa/devtool/resources/inspector_resources.h: No such file or directory` ✅
+- **Step 3 GREEN（5 个新文件 + 3 个修改）**：
+  - `veloxa/devtool/resources/inspector_panel.{html,css,js}` — 占位（每个 ~3 行，A.1.3 填实质内容）
+  - `veloxa/devtool/resources/inspector_resources.h` — 导出 3 个 `extern const char* const`（带 schema doc 注释 + B-A1.1 推翻 B4=B 说明 + T2 消除标注）
+  - `veloxa/devtool/resources/embed_resources.py` — Python codegen（`json.dumps()` 处理转义，与 CMake `add_custom_command` 配合）
+  - `veloxa/devtool/resources/CMakeLists.txt` — `find_package(Python3)` + `add_custom_command` 生成 `inspector_resources.cc` + `vx_devtool_resources` STATIC 库
+  - `veloxa/devtool/CMakeLists.txt` — 加 `add_subdirectory(resources)` 在 inspector 之前
+  - `veloxa/devtool/inspector/CMakeLists.txt` — `vx_devtool` link `vx_devtool_resources`
+  - `tests/devtool/resources/CMakeLists.txt` — `inspector_resources_test` exec
+- **Step 4 验证 GREEN**：DEVTOOL=ON 全量构建 + ctest **1110/1110 PASS**（基线 1107 + 3 新测 = 1110）+ 1 Skip
+- **Step 5 反向探针**：`embed_resources.py` 加 `content = ""` 强制空 → 3/3 InspectorResourcesTest FAIL ✅；恢复后 3/3 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF rebuild + ctest **1057/1057 PASS** ✅；libvx_api.a size **12156 bytes 维持**（vs A.1.1 后 12156，零字节增长 — vx_devtool_resources 不进 OFF binary，验证 `if(VX_BUILD_DEVTOOL)` guard 生效）
+- **Lint clean** ✅
+- **commit**：[A.1.2 实测耗时 ~15 min vs plan 27 min ×0.6 = 0.56×，候选 plan ×0.6 第 25 数据点「窄档延续，与 A.1.1 0.56× 群组对齐」]
+- **教训沉淀（继 A.0.5 + A.1.1 经验）：** plan 假设的 API/structure 在 build 阶段先 grep 验证已成 SOP；本子任务 plan-fact 一致度高（CMake `find_package(Python3)` + `add_custom_command` 模式标准），无重大偏移
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
