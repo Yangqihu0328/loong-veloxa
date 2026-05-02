@@ -110,7 +110,25 @@
 - **A14 守门：** ✅ 隐式继承（dirty_rects_ 是 vx_core 内部字段，零 vx_devtool 泄漏）
 - **反向探针：** ✅ 注释 push_back → `FirstUpdateAccumulatesOneDirtyRect` 精准 FAIL（size = 0 vs 1）+ vx::Vector `back()` on empty CHECK abort 兜底
 - **plan-fact 校准：** plan §B.0.2 「同帧 3 次 invalidate 累积 size=3」假设错误（既有 `DirtyRectComputedOnUpdate` 测显示第 2 次无变化时 last_dirty_rect 返 empty）→ 实际累积模型按「visual change 才 push 非空」语义，与 last_dirty_rect_ 既有 empty 语义一致；测改为 hover-driven 累积场景
-- **commit：** 待 B.0.2 commit
+- **commit：** `e3189ec feat(core): dirty_rects_ Vector 累积扩展 (B.0.2)`
+
+#### `/build` Phase B.1.1 完成快照（2026-05-02 ~22:50，~8 min 实测）
+
+- **任务：** PerfOverlay FrameStats ring buffer + 60 帧滑动聚合 + FPS 计算（cap 999 / div-by-zero guard）
+- **plan ×0.6 估时：** 36 min / **实测：** ~8 min（**0.22× plan ×0.6**，落「极窄档延续」桶 — 纯算法零外部依赖单元测）
+- **改动文件：**
+  - 新建 `veloxa/devtool/overlay/perf_overlay.h`：`FrameStats` struct（5 字段 + 完整公式注释）+ `PerfOverlay` class（kCapacity=60 / RecordFrame / Reset / aggregated / fps + friend class PerfOverlayTest 白名单）
+  - 新建 `veloxa/devtool/overlay/perf_overlay.cc`：35 行实施（ring buffer + modulo wrap + sliding average + FPS guards）
+  - 新建 `tests/devtool/overlay/perf_overlay_test.cc`：8 测覆盖（InitialFrameCountIsZero / RecordOneFrame / SixtyFramesAggregates / RingBufferOverwrites / ZeroTotalGuarded / FpsCappedAt999 / ResetClears / AggregatedOnEmpty）
+  - 新建 `tests/devtool/overlay/CMakeLists.txt`：vx_add_test 范式注册
+  - 改 `veloxa/devtool/CMakeLists.txt`：target_sources(vx_devtool PRIVATE overlay/perf_overlay.cc) append（与 input_dispatch_splitter.cc 同范式 — 不新建子 lib）
+  - 改 `tests/devtool/CMakeLists.txt`：add_subdirectory(overlay)
+
+- **测试增量：** **DEVTOOL=ON 1186 → 1194 PASS（+8）/ DEVTOOL=OFF 1082 unchanged（VX_BUILD_DEVTOOL guard 工作 — perf_overlay_test 仅 ON 编译）**
+- **A14 守门：** ✅ 隐式守门（vx_devtool 内部 PerfOverlay 符号自然不在 OFF build；`add_subdirectory(overlay)` 在 `if(VX_BUILD_DEVTOOL)` guard 下）
+- **反向探针：** ✅ 去 modulo（`head_ + 1` 不取模）→ `RingBufferOverwritesOldestFrameAfter60` 精准 FAIL（数组越界 UB → aggregated 计算错值）
+- **friend pattern 引入：** ✅ plan §0.5 测试基础设施审计实施 — `friend class PerfOverlayTest;` 白名单（首次在 veloxa/devtool 子树引入，与 inspector_overlay 既有模式区分）
+- **commit：** 待 B.1.1 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 
