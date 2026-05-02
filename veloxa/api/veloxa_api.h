@@ -31,6 +31,13 @@ typedef enum {
   VX_OK = 0,
   VX_ERROR_NULL_PARAM = -1,
   VX_ERROR_INVALID_STATE = -2,
+  /* TASK-20260502-01 A.0.6: T7 mitigation for DevTool serialization API.
+   * Returned when serialized JSON would exceed caller-provided max_size or
+   * caller's *out_len buffer is too small to receive the JSON. */
+  VX_ERROR_OUT_OF_MEMORY = -3,
+  /* TASK-20260502-01 A.0.6: reserved for node_id-keyed APIs (A.1.x).
+   * Returned when a node_id handle does not resolve in the current document. */
+  VX_ERROR_NOT_FOUND = -4,
 } VxResult;
 
 /* ── Event types ────────────────────────────────────────────────── */
@@ -112,6 +119,100 @@ VxResult vx_view_load_script(VxView* view, const char* source, uint32_t len);
 VxResult vx_view_update(VxView* view);
 VxResult vx_view_run(VxView* view);
 VxResult vx_view_quit(VxView* view);
+
+/* ── DevTool Inspector C API (TASK-20260502-01 A.0.6) ─────────────
+ *
+ * Public thin wrapper over vx::devtool::SerializeDocument (D7=C 第二层).
+ * Available only when built with -DVX_BUILD_DEVTOOL=ON; otherwise returns
+ * VX_ERROR_INVALID_STATE.
+ *
+ * Double-call protocol (T7 mitigation against caller buffer overflow):
+ *   1. First call with out_buf=NULL → returns needed size in *out_len
+ *      (size excludes trailing NUL — JSON is not NUL-terminated).
+ *   2. Caller allocates a buffer of size *out_len.
+ *   3. Second call writes JSON into out_buf; *out_len updated to actual
+ *      bytes written. If *out_len < required, returns VX_ERROR_OUT_OF_MEMORY
+ *      without writing.
+ *
+ * max_size is a hard upper bound on JSON serialization size — defends
+ * against DevTool exhaustion when target document is malicious / extremely
+ * deep. Returns VX_ERROR_OUT_OF_MEMORY if needed > max_size (no allocation
+ * is performed in that path beyond the inner devtool::SerializeDocument
+ * which is bounded by reserve()). Recommended: 16 MiB for DOM, 1 MiB for
+ * style/box.
+ *
+ * Sensitive attribute values (e.g. input[type=password] value) are redacted
+ * to "[REDACTED]" (T3 mitigation enforced by devtool::SerializeDocument
+ * default policy).
+ */
+VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
+                                    uint32_t* out_len, uint32_t max_size);
+
+/* ── DevTool Attach C API (TASK-20260502-01 A.1.7) ────────────────
+ *
+ * Public C wrapper around Application::LoadDevtoolDocument /
+ * UnloadDevtoolDocument (A.1.6 dual UpdateManager + dogfood UI). When
+ * built with -DVX_BUILD_DEVTOOL=OFF, vx_view_attach_devtool returns
+ * VX_ERROR_INVALID_STATE (A14 zero-byte stub guard) and devtool_loaded
+ * always returns 0.
+ *
+ * F12 hotkey: when enable_f12_hotkey=1, a VX_EVENT_KEY_DOWN with
+ * key_code == VX_KEY_F12 fed via vx_view_inject_input is consumed
+ * internally to toggle DevTool attach/detach (the event is NOT
+ * forwarded to the target Document's event handlers). Embedders that
+ * want to handle F12 themselves should pass enable_f12_hotkey=0.
+ *
+ * F12 hotkey only triggers AFTER an initial vx_view_attach_devtool —
+ * it never auto-loads DevTool from a fresh view (avoids surprise
+ * activation in apps that did not opt-in).
+ */
+
+/* SDL2 SDLK_F12 keycode (cf. veloxa/platform/sdl2/sdl2_input_translate
+ * which now maps SDLK_F12 → VX_KEY_F12). Embedders not using SDL2 can
+ * pass this same value to vx_view_inject_input to invoke the hotkey. */
+#define VX_KEY_F12 0x40000045u
+
+typedef struct {
+  /* DevTool splitter dock width in px. Default 270; clamped to
+   * [200, 400] when out of range (no error returned). */
+  uint32_t devtool_width;
+  /* 0=off, 1=on. When NULL opts is passed, defaults to 1. */
+  uint8_t enable_f12_hotkey;
+} VxDevtoolOptions;
+
+/* Attach DevTool dogfood UI to view. opts may be NULL → uses
+ * defaults (devtool_width=270, enable_f12_hotkey=1). */
+VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts);
+
+/* Detach (no-op if not attached). */
+VxResult vx_view_detach_devtool(VxView* view);
+
+/* Returns: 1 if DevTool currently attached, 0 if not, -1 if view is NULL. */
+int vx_view_devtool_loaded(VxView* view);
+
+/* ── DevTool Redaction Policy C API (TASK-20260502-01 A.2.1, T3) ──
+ *
+ * T3 mitigation policy switch for DevTool DOM serialization. Affects
+ * BOTH vx_view_serialize_dom_json (C-API path) and the DevTool JS
+ * binding's vx_devtool_get_dom_json on subsequent calls. Default
+ * policy is VX_REDACTION_REDACT_SENSITIVE — embedders may opt out
+ * with VX_REDACTION_NONE under their own threat model.
+ *
+ * Returns:
+ *   VX_OK on success
+ *   VX_ERROR_NULL_PARAM when view is NULL
+ *   VX_ERROR_INVALID_STATE when policy is not a recognised enum value,
+ *                          OR when built with VX_BUILD_DEVTOOL=OFF.
+ */
+typedef enum {
+  /* Default: input[type=password] etc. → "[REDACTED]" */
+  VX_REDACTION_REDACT_SENSITIVE = 0,
+  /* Escape hatch for embedder-controlled deep inspection */
+  VX_REDACTION_NONE = 1,
+} VxRedactionPolicy;
+
+VxResult vx_inspector_set_redaction_policy(VxView* view,
+                                           VxRedactionPolicy policy);
 
 /* ── Info ───────────────────────────────────────────────────────── */
 

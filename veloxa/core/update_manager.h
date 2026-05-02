@@ -30,6 +30,12 @@ class UpdateManager {
   bool is_dirty() const { return dirty_; }
   layout::LayoutBox* layout_root() const { return layout_root_; }
   const render::DisplayList& display_list() const { return display_list_; }
+  // TASK-20260502-01 A.1.6 — exposed so DevTool overlays (e.g. A.1.1
+  // InspectorOverlay::InjectHoverHighlight) can append PaintCommands to
+  // the live frame's DisplayList from outside UpdateManager. Caller
+  // must respect the kOverlayHighlight reset contract (T5 mitigation:
+  // ResetOverlayCommands runs at frame boundary, see Renderer/Replay).
+  render::DisplayList& mutable_display_list() { return display_list_; }
   gfx::Rect last_dirty_rect() const { return last_dirty_rect_; }
   css::TransitionManager& transition_manager() { return transition_mgr_; }
 

@@ -5,6 +5,7 @@
 #include "veloxa/core/dom/element.h"
 #include "veloxa/core/dom/text.h"
 #include "veloxa/foundation/base/types.h"
+#include "veloxa/foundation/strings/string.h"
 
 namespace vx::layout {
 
@@ -138,6 +139,12 @@ struct LayoutBox {
     for (auto* c = first_child; c; c = c->next_sibling) ++count;
     return count;
   }
+
+  // 序列化 box 几何 + margin collapsing 状态为 JSON（DevTool Inspector A4 +
+  // 技术债 #26 闭环，TASK-20260502-01 A.0.2）。
+  // 输出 schema 见 tests/core/layout/layout_box_test.cc 注释。
+  // 浮点用 %g 紧凑输出（无尾零），float 仅在结构中作为 layout 几何快照，无安全敏感。
+  String ToJson() const;
 };
 
 }  // namespace vx::layout

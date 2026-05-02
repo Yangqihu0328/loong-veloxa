@@ -22,6 +22,16 @@ namespace vx::script {
 struct DomBindings::InstanceData {
   JSContext* ctx = nullptr;
   dom::Document* doc = nullptr;
+  // TASK-20260502-01 A.1.4 — target Document inspected by DevTool dogfood
+  // UI's vx_devtool_get_dom_json() native binding (see RegisterDevtoolBindings
+  // / DomBindings::SetDevtoolTargetDocument). nullptr is the unset state
+  // (VxDevtoolGetDomJson returns the JSON string "null").
+  dom::Document* devtool_target_doc = nullptr;
+  // A.2.1 T3 mitigation: redaction policy applied by VxDevtoolGetDomJson
+  // when serializing the target Document. Defaults to the safe value;
+  // synced from Application::redaction_policy() via SetRedactionPolicy.
+  dom::RedactionPolicy redaction_policy =
+      dom::RedactionPolicy::kRedactSensitive;
   event::EventManager* em = nullptr;
   // Token returned by em->AddDestructionObserver in Bind. Used in two places:
   //   - Unbind (when em is still alive) calls em->RemoveDestructionObserver
@@ -753,6 +763,19 @@ event::EventManager* DomBindings::event_manager() const { return data_->em; }
 dom::Document* DomBindings::document() const { return data_->doc; }
 JSContext* DomBindings::context() const { return data_->ctx; }
 
+void DomBindings::SetDevtoolTargetDocument(dom::Document* target) {
+  data_->devtool_target_doc = target;
+}
+dom::Document* DomBindings::devtool_target_document() const {
+  return data_->devtool_target_doc;
+}
+void DomBindings::SetRedactionPolicy(dom::RedactionPolicy policy) {
+  data_->redaction_policy = policy;
+}
+dom::RedactionPolicy DomBindings::redaction_policy() const {
+  return data_->redaction_policy;
+}
+
 void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
                        event::EventManager* em) {
   Unbind();
@@ -814,6 +837,68 @@ void DomBindings::Unbind() {
   data_->ctx = nullptr;
   data_->doc = nullptr;
   data_->em = nullptr;
+  data_->devtool_target_doc = nullptr;
 }
+
+// =============================================================================
+// TASK-20260502-01 A.1.4 — DevTool dogfood UI native binding
+//
+// `RegisterDevtoolBindings(ctx)` installs the global JS function
+// `vx_devtool_get_dom_json()` on `ctx`'s global object. The function
+// recovers the target Document via JS_GetContextOpaque(ctx) →
+// DomBindings → devtool_target_document() and returns
+// `vx::devtool::SerializeDocument(target, kRedactSensitive)` as a JS
+// string.
+//
+// When VX_BUILD_DEVTOOL=OFF the implementation is a no-op stub (A14
+// zero-byte guard). The vx_devtool dependency (which provides
+// SerializeDocument) is only linked into vx_script when DEVTOOL=ON; see
+// veloxa/script/CMakeLists.txt.
+// =============================================================================
+
+#ifdef VX_BUILD_DEVTOOL
+
+}  // namespace vx::script
+
+#include "veloxa/devtool/inspector/inspector_data.h"
+
+namespace vx::script {
+
+namespace {
+
+JSValue VxDevtoolGetDomJson(JSContext* ctx, JSValueConst /*this_val*/,
+                            int /*argc*/, JSValueConst* /*argv*/) {
+  auto* bindings = static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+  dom::Document* target =
+      bindings ? bindings->devtool_target_document() : nullptr;
+  if (target == nullptr) {
+    static constexpr char kNullJson[] = "null";
+    return JS_NewStringLen(ctx, kNullJson, sizeof(kNullJson) - 1);
+  }
+  /* A.2.1: pull policy from DomBindings (synced via Application by
+   * vx_inspector_set_redaction_policy). Defaults to kRedactSensitive. */
+  vx::String json = vx::devtool::SerializeDocument(
+      target, bindings->redaction_policy());
+  return JS_NewStringLen(ctx, json.data(), json.size());
+}
+
+}  // namespace
+
+void RegisterDevtoolBindings(JSContext* ctx) {
+  JSValue global = JS_GetGlobalObject(ctx);
+  JS_SetPropertyStr(
+      ctx, global, "vx_devtool_get_dom_json",
+      JS_NewCFunction(ctx, VxDevtoolGetDomJson,
+                      "vx_devtool_get_dom_json", 0));
+  JS_FreeValue(ctx, global);
+}
+
+#else  // VX_BUILD_DEVTOOL OFF — A14 zero-byte stub guard
+
+void RegisterDevtoolBindings(JSContext* /*ctx*/) {
+  // Intentionally empty: dogfood UI is not compiled when DEVTOOL=OFF.
+}
+
+#endif  // VX_BUILD_DEVTOOL
 
 }  // namespace vx::script

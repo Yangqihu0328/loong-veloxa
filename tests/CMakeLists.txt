@@ -61,6 +61,9 @@ target_link_libraries(element_test PRIVATE vx_core)
 vx_add_test(document_test core/dom/document_test.cc)
 target_link_libraries(document_test PRIVATE vx_core)
 
+vx_add_test(dom_serializer_test core/dom/serializer_test.cc)
+target_link_libraries(dom_serializer_test PRIVATE vx_core)
+
 vx_add_test(parser_test core/html/parser_test.cc)
 target_link_libraries(parser_test PRIVATE vx_core)
 
@@ -179,6 +182,66 @@ target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform v
 vx_add_test(application_integration_test core/application_integration_test.cc)
 target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
+# TASK-20260502-01 A.1.6: Application dual UpdateManager + LoadDevtoolDocument.
+# Compiled only when DEVTOOL=ON (these tests exercise LoadDevtoolDocument
+# which lives behind #ifdef VX_BUILD_DEVTOOL — A14 zero-byte guard).
+if(VX_BUILD_DEVTOOL)
+  vx_add_test(application_devtool_test core/application_devtool_test.cc)
+  target_link_libraries(application_devtool_test
+    PRIVATE vx_core vx_graphics vx_platform vx_text vx_script vx_devtool)
+  target_compile_definitions(application_devtool_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
+# TASK-20260502-01 A.1.7: vx_view_attach_devtool / detach / devtool_loaded
+# C API wrapper. Compiled in BOTH ON and OFF builds; OFF path verifies
+# the VX_ERROR_INVALID_STATE stub guard via the #else branch test.
+vx_add_test(devtool_attach_api_test api/devtool_attach_api_test.cc)
+target_link_libraries(devtool_attach_api_test
+  PRIVATE vx_foundation vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_attach_api_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
+# TASK-20260502-01 A.2.1 [SECURITY]: vx_inspector_set_redaction_policy
+# T3 mitigation policy switch unit tests. ON path covers default-redact /
+# NONE-emits / round-trip / invalid-enum; OFF path covers stub guard.
+vx_add_test(devtool_redaction_policy_test api/devtool_redaction_policy_test.cc)
+target_link_libraries(devtool_redaction_policy_test
+  PRIVATE vx_foundation vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_redaction_policy_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
+# TASK-20260502-01 A.2.4 [A14]: link-closure smoke for the DevTool
+# subsystem. Runs nm against libvx_api.a + libvx_core.a and asserts
+# OFF builds contain ZERO DevTool internal symbols (RegisterDevtoolBindings,
+# kInspectorPanel*, InspectorOverlay, InjectHoverHighlight, InputDispatchSplitter,
+# SerializeDocument). ON builds verify the public C ABI stub is present.
+# Pure CMake script test — no compiled artifact, runs every ctest.
+if(VX_BUILD_DEVTOOL)
+  set(_devtool_a14_flag "ON")
+else()
+  set(_devtool_a14_flag "OFF")
+endif()
+add_test(NAME devtool_a14_link_closure_smoke
+  COMMAND ${CMAKE_COMMAND}
+    -DLIB=$<TARGET_FILE:vx_api>
+    -DCORELIB=$<TARGET_FILE:vx_core>
+    -DDEVTOOL_ON=${_devtool_a14_flag}
+    -P ${CMAKE_SOURCE_DIR}/tests/smoke/devtool_a14_link_closure.cmake)
+
+# TASK-20260502-01 A.1.8: dogfood headless smoke — attach DevTool over
+# a real C-API view path, drive one Update frame, and assert that
+# inspector_panel.js executes without error AND that
+# vx_devtool_get_dom_json reaches the target Document. Compiled only
+# when DEVTOOL=ON (entire scenario presupposes the subsystem).
+if(VX_BUILD_DEVTOOL)
+  vx_add_test(devtool_dogfood_smoke_test integration/devtool_dogfood_smoke_test.cc)
+  target_link_libraries(devtool_dogfood_smoke_test
+    PRIVATE vx_foundation vx_api vx_core vx_platform vx_script vx_devtool)
+  target_compile_definitions(devtool_dogfood_smoke_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 # API: C API
 add_executable(api_test api/api_test.cc)
 target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)
@@ -189,11 +252,30 @@ gtest_discover_tests(api_test PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 vx_add_test(api_integration_test api/api_integration_test.cc)
 target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 
+# TASK-20260502-01 A.0.6: DevTool C API thin wrapper tests. The test source
+# uses #ifdef VX_BUILD_DEVTOOL to switch between real-behavior assertions
+# (T7 max_size, double-call, T3 redaction) and the A14 stub assertion
+# (INVALID_STATE). Always built; always linked; behavior diverges by macro.
+vx_add_test(devtool_api_test api/devtool_api_test.cc)
+target_link_libraries(devtool_api_test PRIVATE vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_api_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 
 vx_add_test(dom_bindings_test script/dom_bindings_test.cc)
 target_link_libraries(dom_bindings_test PRIVATE vx_script vx_core)
+
+# TASK-20260502-01 A.1.4: DevTool JS native binding test.
+# Both ON and OFF builds compile this test; OFF path validates the
+# zero-byte stub guard via the typeof === "undefined" branch.
+vx_add_test(devtool_bindings_test script/devtool_bindings_test.cc)
+target_link_libraries(devtool_bindings_test PRIVATE vx_script vx_core)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_bindings_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
 
 # Core: Image
 find_package(PNG REQUIRED)
@@ -220,6 +302,13 @@ target_link_libraries(shape_cache_test PRIVATE vx_text)
 # TASK-20260424-04: DrawText hb_shape cache end-to-end (P3)
 vx_add_test(drawtext_shape_cache_test graphics/drawtext_shape_cache_test.cc)
 target_link_libraries(drawtext_shape_cache_test PRIVATE vx_graphics vx_text)
+
+# TASK-20260502-01: DevTool subsystem (opt-in, requires VX_BUILD_DEVTOOL).
+# Mirrors veloxa/devtool/ subtree; A14 acceptance ensures DevTool-OFF baseline
+# (1085 tests) is unchanged.
+if(VX_BUILD_DEVTOOL)
+  add_subdirectory(devtool)
+endif()
 
 # TASK-20260425-01: SDL2 platform backend (opt-in, requires VX_PLATFORM_SDL2)
 if(VX_PLATFORM_SDL2)
@@ -254,4 +343,18 @@ if(VX_PLATFORM_SDL2)
     ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_SDL2_AUTOQUIT_MS=200"
     TIMEOUT 10
   )
+
+  # TASK-20260502-01 A.3.1: end-to-end smoke for hello_devtool example.
+  # Requires VX_BUILD_DEVTOOL=ON (the example only compiles then). Same
+  # SDL2 dummy-driver + auto-quit pattern as hello_sdl2_smoke.
+  if(VX_BUILD_DEVTOOL)
+    add_test(
+      NAME hello_devtool_smoke
+      COMMAND $<TARGET_FILE:hello_devtool>
+    )
+    set_tests_properties(hello_devtool_smoke PROPERTIES
+      ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=200"
+      TIMEOUT 10
+    )
+  endif()
 endif()

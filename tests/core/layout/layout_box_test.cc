@@ -2,8 +2,16 @@
 
 #include <gtest/gtest.h>
 
+#include <string>
+
 namespace vx::layout {
 namespace {
+
+// Helper: convert vx::String to std::string for substring assertions
+// (vx::String has no contains() method; this avoids reaching for one).
+inline std::string AsStd(const vx::String& s) {
+  return std::string(s.data(), s.size());
+}
 
 TEST(LayoutBoxTest, DefaultValues) {
   LayoutBox box;
@@ -316,6 +324,66 @@ TEST(LayoutBoxTest, OriginHelpersAreInversesByMutation) {
   Point bottom_unchanged = box.padding_box_origin();
   EXPECT_FLOAT_EQ(bottom_unchanged.x, 50.0f);
   EXPECT_FLOAT_EQ(bottom_unchanged.y, 87.0f);
+}
+
+// ToJson() — DevTool Inspector A4 acceptance + tech debt #26 closure
+// (TASK-20260502-01 A.0.2). JSON schema:
+// { "type": "block", "x": ..., "y": ..., "content_width": ..., "content_height": ...,
+//   "padding":[t,r,b,l], "border":[t,r,b,l], "margin":[t,r,b,l],
+//   "collapsed_through": bool, "margin_top_collapsed_into_ancestor": bool,
+//   "margin_bottom_collapsed_into_ancestor": bool, "child_count": N }
+
+TEST(LayoutBoxTest, ToJsonBasicGeometry) {
+  LayoutBox box;
+  box.x = 10.5f;
+  box.y = 20.0f;
+  box.content_width = 100.0f;
+  box.content_height = 50.0f;
+  box.padding[LayoutBox::kTop] = 4.0f;
+  box.border[LayoutBox::kLeft] = 1.0f;
+  box.margin[LayoutBox::kBottom] = 8.0f;
+
+  std::string json = AsStd(box.ToJson());
+  EXPECT_NE(json.find("\"type\":\"block\""), std::string::npos);
+  EXPECT_NE(json.find("\"x\":10.5"), std::string::npos);
+  EXPECT_NE(json.find("\"y\":20"), std::string::npos);
+  EXPECT_NE(json.find("\"content_width\":100"), std::string::npos);
+  EXPECT_NE(json.find("\"content_height\":50"), std::string::npos);
+  EXPECT_NE(json.find("\"padding\":[4,0,0,0]"), std::string::npos);
+  EXPECT_NE(json.find("\"border\":[0,0,0,1]"), std::string::npos);
+  EXPECT_NE(json.find("\"margin\":[0,0,8,0]"), std::string::npos);
+}
+
+TEST(LayoutBoxTest, ToJsonMarginCollapseStateSerialized) {
+  LayoutBox box;
+  box.collapsed_through = true;
+  box.margin_top_collapsed_into_ancestor = true;
+  std::string json = AsStd(box.ToJson());
+  EXPECT_NE(json.find("\"collapsed_through\":true"), std::string::npos);
+  EXPECT_NE(json.find("\"margin_top_collapsed_into_ancestor\":true"),
+            std::string::npos);
+  EXPECT_NE(json.find("\"margin_bottom_collapsed_into_ancestor\":false"),
+            std::string::npos);
+}
+
+TEST(LayoutBoxTest, ToJsonAllLayoutTypeVariants) {
+  for (auto t : {LayoutType::kBlock, LayoutType::kInline, LayoutType::kFlex,
+                 LayoutType::kText, LayoutType::kReplaced}) {
+    LayoutBox box;
+    box.type = t;
+    std::string json = AsStd(box.ToJson());
+    EXPECT_NE(json.find("\"type\":\""), std::string::npos);
+  }
+}
+
+TEST(LayoutBoxTest, ToJsonChildCountReflectsAppendedChildren) {
+  LayoutBox parent;
+  LayoutBox c1, c2, c3;
+  parent.AppendChild(&c1);
+  parent.AppendChild(&c2);
+  parent.AppendChild(&c3);
+  std::string json = AsStd(parent.ToJson());
+  EXPECT_NE(json.find("\"child_count\":3"), std::string::npos);
 }
 
 }  // namespace

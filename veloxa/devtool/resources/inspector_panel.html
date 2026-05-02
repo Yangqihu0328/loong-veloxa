@@ -1,0 +1,34 @@
+<!--
+  TASK-20260502-01 A.1.3: DevTool Inspector UI dogfood HTML.
+
+  Loaded as the second Document inside Veloxa's own engine
+  (Application::LoadDevtoolDocument, see A.1.6). The two placeholders
+  __INLINE_CSS__ and __INLINE_JS__ are replaced at runtime by
+  Application::LoadDevtoolDocument with the contents of
+  kInspectorPanelCss / kInspectorPanelJs (both also embedded at compile
+  time via veloxa/devtool/resources/CMakeLists.txt). Inlining avoids
+  triggering DevTool Document <link> / <script src> sub-resource loading
+  whose chain has not been validated yet.
+
+  Layout: per creative #1 decision 1, splitter dock holds 3 tabs
+  (DOM / Style / Layout) over 3 panel divs. JS toggles the active tab
+  by mutating the .active class on tab buttons and panel divs in sync.
+-->
+<html>
+<head><style>__INLINE_CSS__</style></head>
+<body>
+  <div id="devtool-root">
+    <div id="devtool-tabs">
+      <button data-tab="dom" class="active">DOM</button>
+      <button data-tab="style">Style</button>
+      <button data-tab="layout">Layout</button>
+    </div>
+    <div id="devtool-content">
+      <div id="dom-tree-panel" class="active"></div>
+      <div id="style-panel"></div>
+      <div id="layout-panel"></div>
+    </div>
+  </div>
+  <script>__INLINE_JS__</script>
+</body>
+</html>

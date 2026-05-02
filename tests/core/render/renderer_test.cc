@@ -584,5 +584,56 @@ TEST(ComputeDirtyRectTest, EmptyListsReturnEmpty) {
   EXPECT_TRUE(dirty.IsEmpty());
 }
 
+// ===========================================================================
+// ResetOverlayCommands — T5 mitigation (TASK-20260502-01 A.0.4).
+// DevTool overlay 命令必须在每帧开始时清除，防止跨帧累积污染或被 DOM 内
+// 恶意脚本通过 PaintCommand 注入 (现实威胁：DevTool/业务共用 DisplayList，
+// 若 overlay 不清空，业务侧可观察到 DevTool 内部状态或反向构造 PaintCommand)。
+// 实现：erase-remove 模式，仅删除 type==kOverlayHighlight，保留所有业务命令。
+// ===========================================================================
+
+TEST(ResetOverlayCommandsTest, RemovesAllOverlayHighlightCommands) {
+  DisplayList list;
+  list.push_back(PaintCommand::OverlayHighlight({10, 10, 20, 20},
+                                                  gfx::Color::Blue(), 1.0f));
+  list.push_back(PaintCommand::OverlayHighlight({40, 40, 30, 30},
+                                                  gfx::Color::Red(), 2.0f));
+
+  ResetOverlayCommands(list);
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(ResetOverlayCommandsTest, PreservesNonOverlayCommands) {
+  DisplayList list;
+  list.push_back(PaintCommand::FillRect({0, 0, 100, 100}, gfx::Color::Red()));
+  list.push_back(PaintCommand::OverlayHighlight({10, 10, 20, 20},
+                                                  gfx::Color::Blue(), 1.0f));
+  list.push_back(PaintCommand::DrawText("hi", {0, 0, 50, 20}, 12.0f,
+                                         gfx::Color::Black()));
+  list.push_back(PaintCommand::OverlayHighlight({40, 40, 30, 30},
+                                                  gfx::Color::Red(), 2.0f));
+
+  ResetOverlayCommands(list);
+  ASSERT_EQ(list.size(), 2u);
+  EXPECT_EQ(list[0].type, PaintCommand::Type::kFillRect);
+  EXPECT_EQ(list[1].type, PaintCommand::Type::kDrawText);
+}
+
+TEST(ResetOverlayCommandsTest, NoOpOnEmptyList) {
+  DisplayList list;
+  ResetOverlayCommands(list);
+  EXPECT_TRUE(list.empty());
+}
+
+TEST(ResetOverlayCommandsTest, NoOpOnListWithoutOverlays) {
+  DisplayList list;
+  list.push_back(PaintCommand::FillRect({0, 0, 100, 100}, gfx::Color::Red()));
+  list.push_back(PaintCommand::DrawText("hi", {0, 0, 50, 20}, 12.0f,
+                                         gfx::Color::Black()));
+
+  ResetOverlayCommands(list);
+  EXPECT_EQ(list.size(), 2u);
+}
+
 }  // namespace
 }  // namespace vx::render

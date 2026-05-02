@@ -5,6 +5,8 @@
 // CMakeLists.txt. Do not hardcode version literal in this file.
 #include "veloxa/api/version.h"
 
+#include <cstring>
+
 #include "veloxa/core/application.h"
 #include "veloxa/platform/event_loop.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
@@ -14,6 +16,11 @@
 #ifdef VX_PLATFORM_SDL2
 #include "veloxa/platform/sdl2/sdl2_event_loop.h"
 #include "veloxa/platform/sdl2/sdl2_window_surface.h"
+#endif
+
+#ifdef VX_BUILD_DEVTOOL
+#include "veloxa/core/dom/serializer.h"
+#include "veloxa/devtool/inspector/inspector_data.h"
 #endif
 
 static vx::event::EventType MapEventType(VxEventType type) {
@@ -215,6 +222,143 @@ VxResult vx_view_quit(VxView* view) {
   auto* app = reinterpret_cast<vx::Application*>(view);
   app->Quit();
   return VX_OK;
+}
+
+/* ── DevTool C API thin wrapper (TASK-20260502-01 A.0.6) ────────── */
+
+VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
+                                    uint32_t* out_len, uint32_t max_size) {
+  if (!view || !out_len) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  /* A14 acceptance: when DevTool is not built, the wrapper returns
+   * VX_ERROR_INVALID_STATE without touching any DevTool code path so the
+   * binary contains zero DevTool bytes. */
+  (void)out_buf;
+  (void)max_size;
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  const auto* doc = app->target_document();
+  if (!doc) {
+    *out_len = 0;
+    return VX_OK;
+  }
+
+  /* A.2.1: policy comes from per-view state (default kRedactSensitive,
+   * embedder may flip via vx_inspector_set_redaction_policy). */
+  vx::String json =
+      vx::devtool::SerializeDocument(doc, app->redaction_policy());
+  const uint32_t needed = static_cast<uint32_t>(json.size());
+
+  /* T7: max_size is the platform-policy hard cap. Refuse before any caller
+   * allocation can happen. Boundary inclusive: needed == max_size accepts. */
+  if (needed > max_size) {
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+
+  /* Double-call protocol: NULL out_buf → just return required size. */
+  if (!out_buf) {
+    *out_len = needed;
+    return VX_OK;
+  }
+
+  /* T7: caller buffer too small → refuse, do not write. */
+  if (*out_len < needed) {
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+
+  std::memcpy(out_buf, json.data(), needed);
+  *out_len = needed;
+  return VX_OK;
+#endif
+}
+
+/* ── DevTool Attach C API (TASK-20260502-01 A.1.7) ────────────────
+ * Thin wrapper around Application::LoadDevtoolDocument /
+ * UnloadDevtoolDocument + F12 hotkey toggle. OFF path returns
+ * VX_ERROR_INVALID_STATE (A14 zero-byte stub guard). */
+
+VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  (void)opts;
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+
+  /* Defaults when caller passes NULL opts (matches A.1.7 plan contract). */
+  uint32_t width = 270;
+  uint8_t hotkey = 1;
+  if (opts) {
+    width = opts->devtool_width != 0 ? opts->devtool_width : 270;
+    hotkey = opts->enable_f12_hotkey;
+  }
+
+  /* Clamp to documented range [200, 400] silently. */
+  if (width < 200) width = 200;
+  if (width > 400) width = 400;
+
+  /* Update hotkey state BEFORE Load — Load is what actually publishes
+   * the DevTool Document; hotkey enables future F12 toggles. */
+  app->SetDevtoolHotkey(hotkey != 0, static_cast<vx::f32>(width));
+  if (!app->LoadDevtoolDocument(static_cast<vx::f32>(width))) {
+    /* canvas-missing or other failure path */
+    return VX_ERROR_INVALID_STATE;
+  }
+  return VX_OK;
+#endif
+}
+
+VxResult vx_view_detach_devtool(VxView* view) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  app->UnloadDevtoolDocument();
+  /* Disable hotkey so subsequent F12 events don't auto-reattach
+   * (preserves "F12 only after explicit attach" plan contract). */
+  app->SetDevtoolHotkey(false);
+  return VX_OK;
+#endif
+}
+
+int vx_view_devtool_loaded(VxView* view) {
+  if (!view) return -1;
+#ifndef VX_BUILD_DEVTOOL
+  return 0;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  return app->devtool_loaded() ? 1 : 0;
+#endif
+}
+
+/* ── DevTool Redaction Policy (TASK-20260502-01 A.2.1, T3) ──────── */
+
+VxResult vx_inspector_set_redaction_policy(VxView* view,
+                                           VxRedactionPolicy policy) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  (void)policy;
+  return VX_ERROR_INVALID_STATE;
+#else
+  vx::dom::RedactionPolicy mapped;
+  switch (policy) {
+    case VX_REDACTION_REDACT_SENSITIVE:
+      mapped = vx::dom::RedactionPolicy::kRedactSensitive;
+      break;
+    case VX_REDACTION_NONE:
+      mapped = vx::dom::RedactionPolicy::kNone;
+      break;
+    default:
+      /* Reject unknown enum values so a zero-init memory bug or future
+       * enum extension cannot silently disable redaction. */
+      return VX_ERROR_INVALID_STATE;
+  }
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  app->set_redaction_policy(mapped);
+  return VX_OK;
+#endif
 }
 
 /* ── Info ───────────────────────────────────────────────────────── */

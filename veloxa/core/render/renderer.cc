@@ -198,6 +198,11 @@ void Replay(const DisplayList& list, gfx::Canvas* canvas,
       case PaintCommand::Type::kPopLayer:
         canvas->PopLayer();
         break;
+      case PaintCommand::Type::kOverlayHighlight:
+        // DevTool overlay：StrokeRoundedRect with radius 0 等价 thin border。
+        canvas->StrokeRoundedRect(cmd.rect, 0.0f,
+                                  gfx::Brush::Solid(cmd.color), cmd.param);
+        break;
     }
   }
 }
@@ -222,6 +227,18 @@ gfx::Rect ComputeDirtyRect(const DisplayList& old_list,
     }
   }
   return dirty;
+}
+
+void ResetOverlayCommands(DisplayList& list) {
+  // In-place erase-remove. vx::Vector::erase returns iterator to the next
+  // element, so we walk forward and skip the increment when erasing.
+  for (auto it = list.begin(); it != list.end();) {
+    if (it->type == PaintCommand::Type::kOverlayHighlight) {
+      it = list.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 }  // namespace vx::render
