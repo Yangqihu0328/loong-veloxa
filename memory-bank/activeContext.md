@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中·A.1 detailed plan 已落盘（Phase A.0 build 已完成 / Level 4 升级）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:30 完成 plan escalation：用户选 escalation A 升级 + brainstorming 锁定 B-A1.1=b 编译期嵌入 + B-A1.2=a full viewport；Phase A.1 plan 从粗 4 子任务概念 → 8 子任务 detailed 5-步 TDD 模板（plan 文档 +384 行）；Phase A 总子任务 16 → 20；**0 篇新 creative**（架构决策全锁定）；下一步直接 `/build` 续上 A.1.1。
+**构建中·轮次 3 启动 A.1.x（Level 4，Phase A.0 + plan escalation 已完成）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:30 完成 plan escalation：用户选 escalation A 升级 + brainstorming 锁定 B-A1.1=b 编译期嵌入 + B-A1.2=a full viewport；Phase A.1 plan 从粗 4 子任务概念 → 8 子任务 detailed 5-步 TDD 模板（plan 文档 +384 行）；Phase A 总子任务 16 → 20；**0 篇新 creative**（架构决策全锁定）；下一步直接 `/build` 续上 A.1.1。
 
 **Brainstorming 锁定决策（B-A1.x 系列）：**
 

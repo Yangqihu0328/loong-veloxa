@@ -142,7 +142,7 @@
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
 | A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
 | A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
-| A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ⏳ plan ✅ | 18 min | — |
+| A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ⏳ plan ✅ | 27 min | — |
 | A.1.3 inspector_panel.html/css/js 编写 | ⏳ plan ✅ | 54 min | — |
 | A.1.4 JS native binding 扩展 | ⏳ plan ✅ | 36 min | — |
@@ -152,6 +152,24 @@
 | A.1.8 dogfood headless smoke（新增）| ⏳ plan ✅ | 45 min | — |
 | A.2.1-4 安全单测 + A14 守门 | ⏳ | 63 min | — |
 | A.3.1-2 example smoke + reflect prep | ⏳ | 45 min | — |
+
+**Phase A.1.1 完成 ✅（2026-05-02 14:35，~10 min vs plan 18 min ×0.6 = 0.56×）：**
+
+- **关键发现 — plan 假设修正（继 A.0.5 经验，再次验证「plan 假设 API 是否存在 → build 阶段先 grep 验证」节奏）：**
+  - `DisplayList = Vector<PaintCommand>` 是 type alias，**不是 struct**（plan 写 `list.commands.push_back()` 错误） → 改 `list.push_back()`
+  - `LayoutBox` 无 `border_box` 字段，实为 `x/y` + `border_box_width()/height()` method → rect 构造 `gfx::Rect{box->x, box->y, box->border_box_width(), box->border_box_height()}`
+- **Step 1 RED**：`tests/devtool/inspector/inspector_overlay_test.cc` 含 5 测（plan 写 3 测，扩展 +2 加强覆盖：`InjectHoverHighlightCustomColorAndStrokeWidth` + `InjectHoverHighlightUsesBorderBoxIncludingPadding`）
+- **Step 2 验证 RED**：`fatal error: veloxa/devtool/inspector/inspector_overlay.h: No such file or directory` ✅
+- **Step 3 GREEN**：
+  - `inspector_overlay.h`: `class InspectorOverlay { static InjectHoverHighlight(DisplayList&, const LayoutBox*, Color, f32); };` + 完整 doc 注释（M2 修正说明 + T5 lifecycle 协议 + creative #1 决策 4 末位渲染契约）
+  - `inspector_overlay.cc`: ~10 LOC 实现（null check → push_back OverlayHighlight）
+  - `tests/devtool/inspector/CMakeLists.txt` 加 `inspector_overlay_test` exec
+  - `veloxa/devtool/inspector/CMakeLists.txt` 加 `inspector_overlay.cc` 源
+- **Step 4 验证 GREEN**：DEVTOOL=ON 全量构建 + ctest **1107/1107 PASS**（基线 1102 + 5 新测 = 1107）+ 1 Skip
+- **Step 5 反向探针**：函数体改 no-op (`(void)list; ...`) → 4/5 测 FAIL ✅（仅 `NullBoxIsNoOp` 测仍 PASS，无效探针 — null path 本身是 no-op，与 A.0.2 探针 1 同型）；恢复后 5/5 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF baseline 1057/1057 PASS 维持（inspector_overlay_test 不参与编译，零字节贡献）✅
+- **Lint clean** ✅
+- **commit**：[A.1.1 实测耗时 ~10 min vs plan 18 min ×0.6 = 0.56×，候选 plan ×0.6 第 24 数据点「窄档延续」]
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
