@@ -2,9 +2,13 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施轮次 2 进行中；A.0.5 inspector_data.h 内部 C++ API + vx_devtool 静态库 ✅（DEVTOOL=ON ctest 1095/1095 + 10 新测；A14 OFF baseline 1054 ✅，inspector_data 不在 OFF 编译）；当前焦点 → A.0.6 vx_view_serialize_*_json 公共 C API + T7 buffer overflow 防护。
+**构建中·轮次 2 完成（Phase A.0.1-A.0.6 of A.0.x ✅；下次进入 A.1.1）** — TASK-20260502-01 DevTool Phase A · Inspector 实施轮次 2 完成「DevTool 数据 API 整合层」自然分组；A.0.5 vx_devtool 静态库 + inspector_data.h 内部 C++ API ✅ commit `3f3bd38`；A.0.6 vx_view_serialize_dom_json 公共 C API + T7 buffer overflow 防护 ✅（DEVTOOL=ON ctest 1102/1102 + 7 新测；A14 OFF baseline 1057 ✅，stub path INVALID_STATE）；技术债 #40 闭环 ✅；下次 `/build` 续上 A.1.1 InspectorOverlay hover highlight 注入（Phase A.1 DevTool UI 实施）。
 
-**本轮 commit 链：**
+**轮次 2 commit 链：**
+- `3f3bd38` feat(devtool): vx_devtool 静态库 + Inspector 内部 C++ API（A.0.5）
+- `(pending)` feat(api): vx_view_serialize_dom_json + T7（A.0.6 闭环 #40）
+
+**轮次 1 commit 链（已完成）：**
 - `e43a5be` chore: VAN + plan 阶段产出
 - `0e8e40c` refactor(application): I1 双 Document 槽 → R1 callsite 4 处零漏改
 - `4131700` feat(layout): LayoutBox::ToJson() → 闭环技术债 #26（A4 验收）

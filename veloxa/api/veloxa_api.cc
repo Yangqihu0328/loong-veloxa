@@ -5,6 +5,8 @@
 // CMakeLists.txt. Do not hardcode version literal in this file.
 #include "veloxa/api/version.h"
 
+#include <cstring>
+
 #include "veloxa/core/application.h"
 #include "veloxa/platform/event_loop.h"
 #include "veloxa/platform/headless/headless_event_loop.h"
@@ -14,6 +16,11 @@
 #ifdef VX_PLATFORM_SDL2
 #include "veloxa/platform/sdl2/sdl2_event_loop.h"
 #include "veloxa/platform/sdl2/sdl2_window_surface.h"
+#endif
+
+#ifdef VX_BUILD_DEVTOOL
+#include "veloxa/core/dom/serializer.h"
+#include "veloxa/devtool/inspector/inspector_data.h"
 #endif
 
 static vx::event::EventType MapEventType(VxEventType type) {
@@ -215,6 +222,53 @@ VxResult vx_view_quit(VxView* view) {
   auto* app = reinterpret_cast<vx::Application*>(view);
   app->Quit();
   return VX_OK;
+}
+
+/* ── DevTool C API thin wrapper (TASK-20260502-01 A.0.6) ────────── */
+
+VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
+                                    uint32_t* out_len, uint32_t max_size) {
+  if (!view || !out_len) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  /* A14 acceptance: when DevTool is not built, the wrapper returns
+   * VX_ERROR_INVALID_STATE without touching any DevTool code path so the
+   * binary contains zero DevTool bytes. */
+  (void)out_buf;
+  (void)max_size;
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  const auto* doc = app->target_document();
+  if (!doc) {
+    *out_len = 0;
+    return VX_OK;
+  }
+
+  vx::String json = vx::devtool::SerializeDocument(
+      doc, vx::dom::RedactionPolicy::kRedactSensitive);
+  const uint32_t needed = static_cast<uint32_t>(json.size());
+
+  /* T7: max_size is the platform-policy hard cap. Refuse before any caller
+   * allocation can happen. */
+  if (needed > max_size) {
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+
+  /* Double-call protocol: NULL out_buf → just return required size. */
+  if (!out_buf) {
+    *out_len = needed;
+    return VX_OK;
+  }
+
+  /* T7: caller buffer too small → refuse, do not write. */
+  if (*out_len < needed) {
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+
+  std::memcpy(out_buf, json.data(), needed);
+  *out_len = needed;
+  return VX_OK;
+#endif
 }
 
 /* ── Info ───────────────────────────────────────────────────────── */

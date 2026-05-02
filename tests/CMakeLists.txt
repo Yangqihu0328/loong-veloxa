@@ -192,6 +192,16 @@ gtest_discover_tests(api_test PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 vx_add_test(api_integration_test api/api_integration_test.cc)
 target_link_libraries(api_integration_test PRIVATE vx_api vx_platform)
 
+# TASK-20260502-01 A.0.6: DevTool C API thin wrapper tests. The test source
+# uses #ifdef VX_BUILD_DEVTOOL to switch between real-behavior assertions
+# (T7 max_size, double-call, T3 redaction) and the A14 stub assertion
+# (INVALID_STATE). Always built; always linked; behavior diverges by macro.
+vx_add_test(devtool_api_test api/devtool_api_test.cc)
+target_link_libraries(devtool_api_test PRIVATE vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_api_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 

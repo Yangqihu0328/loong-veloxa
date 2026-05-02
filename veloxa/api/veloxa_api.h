@@ -31,6 +31,13 @@ typedef enum {
   VX_OK = 0,
   VX_ERROR_NULL_PARAM = -1,
   VX_ERROR_INVALID_STATE = -2,
+  /* TASK-20260502-01 A.0.6: T7 mitigation for DevTool serialization API.
+   * Returned when serialized JSON would exceed caller-provided max_size or
+   * caller's *out_len buffer is too small to receive the JSON. */
+  VX_ERROR_OUT_OF_MEMORY = -3,
+  /* TASK-20260502-01 A.0.6: reserved for node_id-keyed APIs (A.1.x).
+   * Returned when a node_id handle does not resolve in the current document. */
+  VX_ERROR_NOT_FOUND = -4,
 } VxResult;
 
 /* ── Event types ────────────────────────────────────────────────── */
@@ -112,6 +119,34 @@ VxResult vx_view_load_script(VxView* view, const char* source, uint32_t len);
 VxResult vx_view_update(VxView* view);
 VxResult vx_view_run(VxView* view);
 VxResult vx_view_quit(VxView* view);
+
+/* ── DevTool Inspector C API (TASK-20260502-01 A.0.6) ─────────────
+ *
+ * Public thin wrapper over vx::devtool::SerializeDocument (D7=C 第二层).
+ * Available only when built with -DVX_BUILD_DEVTOOL=ON; otherwise returns
+ * VX_ERROR_INVALID_STATE.
+ *
+ * Double-call protocol (T7 mitigation against caller buffer overflow):
+ *   1. First call with out_buf=NULL → returns needed size in *out_len
+ *      (size excludes trailing NUL — JSON is not NUL-terminated).
+ *   2. Caller allocates a buffer of size *out_len.
+ *   3. Second call writes JSON into out_buf; *out_len updated to actual
+ *      bytes written. If *out_len < required, returns VX_ERROR_OUT_OF_MEMORY
+ *      without writing.
+ *
+ * max_size is a hard upper bound on JSON serialization size — defends
+ * against DevTool exhaustion when target document is malicious / extremely
+ * deep. Returns VX_ERROR_OUT_OF_MEMORY if needed > max_size (no allocation
+ * is performed in that path beyond the inner devtool::SerializeDocument
+ * which is bounded by reserve()). Recommended: 16 MiB for DOM, 1 MiB for
+ * style/box.
+ *
+ * Sensitive attribute values (e.g. input[type=password] value) are redacted
+ * to "[REDACTED]" (T3 mitigation enforced by devtool::SerializeDocument
+ * default policy).
+ */
+VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
+                                    uint32_t* out_len, uint32_t max_size);
 
 /* ── Info ───────────────────────────────────────────────────────── */
 

@@ -13,3 +13,12 @@ if(VX_PLATFORM_SDL2)
   target_compile_definitions(vx_api PUBLIC VX_PLATFORM_SDL2)
   target_link_libraries(vx_api PUBLIC vx_platform_sdl2)
 endif()
+
+# TASK-20260502-01 A.0.6: DevTool C API thin wrapper.
+# Compiled in when VX_BUILD_DEVTOOL=ON; otherwise the wrapper returns
+# VX_ERROR_INVALID_STATE via #ifdef stub (A14 acceptance — zero DevTool
+# bytes in OFF-builds).
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(vx_api PUBLIC VX_BUILD_DEVTOOL)
+  target_link_libraries(vx_api PRIVATE vx_devtool)
+endif()

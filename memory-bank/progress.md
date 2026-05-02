@@ -108,6 +108,29 @@
 - **commit**：[A.0.5 实测耗时 ~25 min，vs plan 36 min ×0.6 = 0.69×；候选 plan ×0.6 第 22 数据点「窄档延续」]
 - **教训 — plan ×0.6 第 22 数据点候选风险**：plan §A.0.5 写于 4-30 蓝图阶段，对 `dom::Document::CreateElement` / `ComputedStyle::SetProperty` / `RedactionPolicy::kDefault` 等 4-5 个 API 假设错误，但因 plan 步骤足够细致 + 校准成本只增加 ~5 min（5/36 = 14%），未触发 plan ×0.6 「过窄」风险。沉淀为「plan 假设 API 是否存在 → build 阶段先 grep 验证」节奏。
 
+**Phase A.0.6 完成 ✅（2026-05-02 13:55，~20 min vs plan 36 min ×0.6 = 0.56×）：**
+
+- **简化决策**：plan §A.0.6 列 3 个 API（vx_view_serialize_dom_json + vx_node_get_computed_style_json + vx_node_get_layout_box_json），后两个需要 node_id 系统（plan 提到「stable handle」），但 node_id 系统在 A.1.x 才会建立 → A.0.6 仅实现 `vx_view_serialize_dom_json`（不依赖 node_id），其余 2 个 by-node API 留待 A.1.x
+- **Step 1 RED**：新建 `tests/api/devtool_api_test.cc` 含 8 测：
+  - 2 个无条件测（NullView / NullOutLen 错误处理）
+  - 5 个 `#ifdef VX_BUILD_DEVTOOL` 测（DoubleCallProtocol / NoDocument / T7 max_size / T7 caller buffer / T3 password redaction propagation）
+  - 1 个 `#else` 分支 stub 测（`SerializeDomJsonReturnsInvalidStateWhenDevtoolDisabled`）
+- **Step 2 验证 RED**：编译失败 `'vx_view_serialize_dom_json' was not declared in this scope` ✅
+- **Step 3 GREEN**：
+  - `veloxa_api.h`: 扩展 `VxResult` enum 加 `VX_ERROR_OUT_OF_MEMORY = -3` + `VX_ERROR_NOT_FOUND = -4`（A.1.x 用）+ 加 `vx_view_serialize_dom_json` 声明（带完整 doc：double-call protocol + T3 + T7 + max_size 推荐值）
+  - `veloxa_api.cc`: 实现 thin wrapper — `#ifndef VX_BUILD_DEVTOOL` 路径直接 return `VX_ERROR_INVALID_STATE`（A14 zero-byte），`#else` 路径调用 `vx::devtool::SerializeDocument(doc, kRedactSensitive)` + T7 守卫（needed > max_size → OOM 在 caller alloc 之前）+ double-call protocol（NULL out_buf → 写 size return；out_buf 太小 → OOM）
+  - `veloxa/api/CMakeLists.txt`: 加 `if(VX_BUILD_DEVTOOL) target_compile_definitions(vx_api PUBLIC VX_BUILD_DEVTOOL) + target_link_libraries(vx_api PRIVATE vx_devtool)`
+  - `tests/CMakeLists.txt`: 加 `vx_add_test(devtool_api_test ...)` + 条件 `target_compile_definitions ... VX_BUILD_DEVTOOL`
+- **Step 4 验证 GREEN**：DEVTOOL=ON 全量构建 + ctest **1102/1102 PASS**（基线 1095 + 7 新测 = 1102）+ 1 Skip
+- **Step 5 反向探针 + A14 守门**：
+  - **T7 反向探针**（拆 `if (needed > max_size) return OOM`）：测 #991 `SerializeDomJsonMaxSizeExceededReturnsOutOfMemory` FAIL ✅ — T7 防护捕获能力 verified
+  - **A14 OFF 守门**：DEVTOOL=OFF reconfigure（独立 `build-noffi/`）→ devtool_api_test 只编译 3 个测（NullView + NullOutLen + Stub），其余 5 个 `#ifdef VX_BUILD_DEVTOOL` 测不进 binary ✅；OFF 完整 baseline **1057/1057 PASS** = 1054（A.0.5 后）+ 3（新加 stub 测）
+- **Lint clean** ✅
+- **A14 验收准入维持** ✅（OFF binary 中 vx_view_serialize_dom_json 仅余 stub，无 vx_devtool 链接）
+- **T7 安全威胁 mitigation 落地** ✅（buffer overflow 双重防护：max_size + caller buffer 太小）
+- **技术债 #40 闭环** ✅（C API DOM introspection — Style/Layout by-node 待 A.1.x node_id 系统建立后补）
+- **commit**：[A.0.6 实测耗时 ~20 min，vs plan 36 min ×0.6 = 0.56×；候选 plan ×0.6 第 23 数据点「极窄档延续」]
+
 **Phase A.0.x 进度（16 子任务总览）：**
 
 | 子任务 | 状态 | plan ×0.6 估时 | 实测 |
@@ -118,7 +141,7 @@
 | A.0.3 DOM Serializer::ToJson + T3 | ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
 | A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
-| A.0.6 vx_view_serialize_*_json + T7 | ⏳ | 36 min | — |
+| A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
 | A.1.1 InspectorOverlay hover | ⏳ | 27 min | — |
 | A.1.2 DevTool UI HTML/CSS/JS | ⏳ | 54 min | — |
 | A.1.3 Style/Layout panel 数据 | ⏳ | 36 min | — |
