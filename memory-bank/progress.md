@@ -200,6 +200,45 @@
 - **T5 mitigation 协议复用：** ResetOverlayCommands 同时清 hover + dirty rect overlays（同 type kOverlayHighlight）— 不扩增 reset 路径
 - **commit：** `55a8c68 feat(devtool): OverlayDirtyRect 工厂 + InjectDirtyRectHighlights (B.2.3)`
 
+#### `/reflect` 阶段产出快照（2026-05-03 ~00:10，~15 min 实测）
+
+**回顾文档：** `memory-bank/reflection/reflection-TASK-20260502-02.md`（Level 3 详细 11 段 ~370 行）
+
+**核心发现 5 项：**
+
+1. **plan ×0.6 0.40× 落「极窄档延续高效区」候选新子档（0.30-0.45×）** — VAN 预测 0.55-0.75× 偏保守 -50%；10 数据点群组入库 systemPatterns（B.0.1 0.46× / B.0.2 0.19× / B.1.1 0.22× / B.1.2 0.56× / B.2.1 0.26× / B.2.2 0.72× / B.2.3 0.39× / B.3.1 1.11× / B.3.2 0.39× / B.3.3 0.28×）
+2. **plan-fact reconcile 11→1 处 = -91%（vs Phase A）** — 证明「蓝图 plan + Phase 0 11 子段实测细化」双重质量保护范式有效
+3. **5 大可复用架构范式（Phase A 沉淀）100% 命中且加深** — 中央调度协议 / 函数指针 nullptr / 双层 API / #ifdef CMake / dogfood 全部连续生效 = 设计资产化
+4. **0/7 反复模式命中**（连续两次任务零反复 — Phase A 同样 0/7） — 工作流规则 + Phase 0 + 范式复用 = 反复模式有效抑制器
+5. **lazy-attach C ABI 容错模式实证**（B.0.1 + B.3.2 端到端 — INVALID_STATE 提示 + cache hooks + EnsureUpdateManager 激活） = 候选入库 systemPatterns
+
+**改进建议 11 项分布：**
+- P0：**0 项**（build 全部按 plan 执行无重大偏差 — 创纪录）
+- P1：3 项（plan ×0.6 矩阵更新 / Phase 0 ROI 定律 dual-evidence / lazy-attach C ABI 模式）
+- P2：8 项（A14 黑名单维护范式 / 5 大范式连续生效证明 / Level 3 vs Level 4 子代理决策法则 / T6 边界场景测设计原则 / 蓝图 plan 双重保护范式 / #35 阶段 2 P3 / R9 EventManager HitTest P3 / hello_devtool perf smoke 多帧 P3）
+
+**Phase B vs Phase A 对照表（关键趋势）：**
+| 维度 | Phase A | Phase B | 趋势 |
+|---|---|---|:-:|
+| 复杂度级别 | Level 4（中途 escalation 升级）| Level 3（VAN 锁定不升级）| **更准** |
+| 子任务数 | 16 | 10 | **更紧凑** |
+| 实测耗时（主线）| 281 min | ~104 min | **-63%** |
+| plan ×0.6 比值 | 0.64× | **0.40×** | **-37%** |
+| plan-fact reconcile | 11 | 1 | **-91%** |
+| 反复模式命中 | 0/7 | 0/7 | **保持** |
+| commits 数 | 28 | 11 | **更少（无 abort / 无 escalation pause）** |
+
+**安全评估：** T5（DisplayList overlay 跨帧累积）+ T6（UpdateManager callback 任意代码执行）双 ✅；零新依赖 / 零 CVE 暴露面新增 / C ABI null check 全覆盖 / 错误信息脱敏（last_attach_error / last_abort_reason 仅含错误类型描述）
+
+**3 P3 候选入待处理事项（来源 TASK-20260502-02）：**
+- #35 阶段 2 — 拆 LayoutEngine 内 style/layout 子阶段（OnAfterStyle vs OnAfterLayout 真实分离）
+- R9 EventManager HitTest 改造 — HUD pointer-events 真支持（当前 data-passthrough="1" 占位）
+- hello_devtool_perf_smoke 多帧 P3 候选 — 调 SDL2 dummy 帧率或减少 EnsureUpdateManager 拖延
+
+**下一步：** `/archive` 归档（reflection 已就绪；systemPatterns/techContext/productContext 同步更新将在 archive 阶段执行 — 其中 systemPatterns 将入库新子档「极窄档延续高效区 0.30-0.45×」+ Phase 0 ROI 定律 + lazy-attach C ABI 模式 + Level 3 vs Level 4 子代理决策法则）
+
+---
+
 #### `/build` Phase B 10/10 全部完成总览（2026-05-02 ~23:55）
 
 | 子任务 | plan | 实测 | 比值 | 桶 | 关键产物 |

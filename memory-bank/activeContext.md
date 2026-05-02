@@ -2,7 +2,28 @@
 
 ## 当前阶段
 
-**构建中·已完成（Build 收尾）** — TASK-20260502-02 Phase B 实施 build **10/10 全部完成**（2026-05-02 ~23:55）：
+**回顾中** — TASK-20260502-02 Phase B reflect 阶段进行（2026-05-03 ~00:10）：
+
+reflection 文档 `memory-bank/reflection/reflection-TASK-20260502-02.md` 已落盘（Level 3 详细 11 段 ~370 行）：
+- 核心发现 1：plan ×0.6 0.40×（VAN 预测 0.55-0.75× 偏保守 -50%）落「极窄档延续高效区」候选新子档（0.30-0.45×）
+- 核心发现 2：plan-fact reconcile 11→1 处（vs Phase A）= **-91%**，证明蓝图 plan + Phase 0 实测细化双重质量保护
+- 核心发现 3：5 大可复用架构范式（Phase A 沉淀）100% 命中且加深 — 设计资产化
+- 核心发现 4：0/7 反复模式命中（Phase A 同样 0/7） — 工作流规则 + Phase 0 + 范式复用 = 反复模式有效抑制器
+- 核心发现 5：lazy-attach C ABI 容错模式实证（B.0.1 + B.3.2 端到端）— 候选入库 systemPatterns
+- 改进建议 11 项（P1 ×3 + P2 ×8）
+
+**待处理事项（来源 TASK-20260502-02 P3 候选）：**
+- ⏳ #35 阶段 2 — 拆 LayoutEngine 内 style/layout 子阶段（OnAfterStyle vs OnAfterLayout 真实分离）
+- ⏳ R9 EventManager HitTest 改造 — HUD pointer-events 真支持（当前 data-passthrough="1" 占位）
+- ⏳ hello_devtool_perf_smoke 多帧 P3 候选 — 调 SDL2 dummy 帧率或减少 EnsureUpdateManager 拖延
+
+**下一步：** `/archive` 归档（reflection 已就绪，systemPatterns/techContext/productContext 在 archive 阶段同步更新）
+
+---
+
+## Build 完成快照（保留供 archive 参考）
+
+**已完成 10/10 子任务（按 commit 时间倒序）：**
 
 **已完成 10/10 子任务（按 commit 时间倒序）：**
 - B.3.3 Phase B finalize + A14 smoke 黑名单 +PerfOverlay/InjectDirtyRectHighlights ✅（~5 min = **0.28×**）

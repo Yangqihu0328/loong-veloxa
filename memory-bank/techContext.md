@@ -847,6 +847,42 @@ auto value = std::move(result).value();
 - TASK-20260502-01 A.1.8 GREEN 期间踩坑：`devtool_script_status_ = eval.status()` 当 `eval.ok() == true` 时 abort
 - 修正：`devtool_script_status_ = eval.ok() ? Status::Ok() : eval.status()`
 
+---
+
+## 安全测设计 — 边界场景显式语义状态优于数值阈值（TASK-20260502-02 B.1.2 教训）
+
+### 背景
+
+T6 callback budget guard 测设计原意：`budget_us_ = 0` 表示「禁用 budget」（任何 callback 时长都触发 abort），但原实施 `if (frame_total_us_ > budget_us_)` 在某些机器上不触发 — 因 sub-µs 硬件计时器精度下，capture-less / nullptr-body callback 的实际耗时 < 1 µs → cast 后归零 → `0 > 0` = false。
+
+### 规范
+
+```cpp
+// ❌ 错误：纯数值阈值依赖（受运行环境精度影响）
+if (frame_total_us_ > budget_us_) {
+  AbortBudget();
+}
+
+// ✅ 正确：显式语义状态短路 + 数值阈值（双重保护）
+if (budget_us_ == 0 || frame_total_us_ > budget_us_) {
+  AbortBudget();  // budget=0 表示「禁用」语义，任何 callback 都 abort
+}
+```
+
+### 启动条件
+
+T6 / 性能 / 边界场景测时，如设计意图含「特殊值 = 特殊语义」（e.g. 0 = disabled / -1 = unlimited / max = no-op），必须显式短路语义状态，不能依赖数值比较结果。
+
+### 反模式
+
+❌ **「特殊值 = 边界数值，依赖比较结果」** — 浮点 / 时间 / 转换精度受硬件影响，可能漏报
+❌ **「假设 cast 结果与原值同符号同零性」** — `static_cast<u64>(0.5e-6)` = 0，与原值 0.5e-6 不同语义
+
+### 实证
+
+- TASK-20260502-02 B.1.2 BudgetGuardZeroAlwaysAborts 测在某些机器上 FAIL（false negative）
+- 修正：`budget_us_ == 0 || frame_total_us_ > budget_us_` 显式短路 → ON+OFF 双绿
+
 ### 后续 Action（P1）
 
 - 全 codebase grep `StatusOr.*\.status\(\)` audit 现有用法

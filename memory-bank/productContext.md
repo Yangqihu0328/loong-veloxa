@@ -84,3 +84,17 @@
   - **3 项 R2 引擎缺陷暴露 → P3 候选**（DomBindings.Element.children / addEventListener / innerHTML setter）— P3 修复后 DevTool UI 视觉完整 + 第三方 DevTool-like 工具可在 Veloxa 上实现
   - **下一步路线图**：TASK-30-04-B Performance Overlay（估时下调 ~30% 至 ~3.5-5 h）+ TASK-30-04-C Hot Reload（估时下调 ~20% 至 ~2.5-4 h）+ DomBindings R2 P3 修复（~3-5 h plan ×0.6）
 
+- ✅ **DevTool Phase B · Performance Overlay 主线落地（TASK-20260502-02）** 🎉
+  - **公开 C API 4 个新函数 / 宏**：`vx_view_set_pipeline_hooks` + `vx_view_get_perf_stats`（JS native binding 形式，不直接公开 C 函数）+ `vx_view_is_hud_visible` + `VX_KEY_F11` 宏 + `VxPipelineHooks` struct（5 callback 字段 + userdata）+ `VxPipelineCallback` typedef
+  - **F11 hotkey 内化** — Application 层拦截 KeyDown(F11) 自动 toggle HUD 可见性（仅 DevTool attached 时生效；UnloadDevtoolDocument 自动 reset hud_visible_=true 防泄漏）
+  - **PipelineHooks 五钩子机制** — UpdateManager 暴露 5 个 frame lifecycle 钩子（OnFrameStart / OnAfterStyle / OnAfterLayout / OnAfterRender / OnFrameEnd）+ lazy-attach 设计（caller 不需要先 LoadHTML）；**技术债 #35 阶段 1 闭环 ✅**（阶段 2 拆 LayoutEngine 内 style/layout 留 P3）
+  - **PerfOverlay 子系统** — `vx::devtool::overlay::PerfOverlay` 新子系统：FrameStats 5 字段（style_ms/layout_ms/render_ms/paint_ms/total_ms）+ 60 帧 ring buffer + 滑动平均聚合 + FPS 计算守卫（除零 + 999 cap）+ T6 mitigation 三层（单 instance Attach + budget=0 显式短路 + 1ms/frame budget guard 累加 abort + abort_count + last_abort_reason）
+  - **HUD overlay UI** — `#devtool-hud` absolute + opacity 0.85 + 4 stage bars（S/L/R/P style/layout/render/paint）+ FPS row + R8 fallback `position: absolute`（视觉等价 fixed）+ R9 占位 `data-passthrough="1"`（pointer-events 真支持留 R3+）
+  - **dirty rect 边框可视化** — `PaintCommand::OverlayDirtyRect` 工厂复用 `kOverlayHighlight` 类型（不新增 enum）+ `InspectorOverlay::InjectDirtyRectHighlights` 静态方法 + T5 mitigation 复用 ResetOverlayCommands 协议（不扩增 reset 路径）
+  - **`examples/hello_devtool.cc` 增强** — 新增 PerfHooks 安装段 + lazy-attach 实证 + `PERF SMOKE: frames=N hud_visible=M` 稳定 print + `hello_devtool_perf_smoke` ctest（PASS_REGULAR_EXPRESSION）
+  - **2 安全威胁面 mitigation**：T5（DisplayList overlay 跨帧累积 — 复用 ResetOverlayCommands 协议）+ T6（callback 任意代码执行 — 三层 guard）
+  - **A14 链接闭包黑名单 +2 项**（PerfOverlay + InjectDirtyRectHighlights 内部符号）+ Phase A/B 区分注释 + NOT in blacklist intentional 排除项清单
+  - **3 项 R2/R3 P3 候选**：#35 阶段 2 拆 LayoutEngine / R9 EventManager HitTest 改造（HUD pointer-events 真支持）/ hello_devtool_perf_smoke 多帧验证（调 SDL2 dummy 帧率）
+  - **效率指标**：~104 min 主线（vs plan ×0.6 261 min = **0.40×** 极窄档延续高效区候选新子档）— Phase 0 投入越深 / build phase 越快定律 dual-evidence 第二次实证（ROI 5.2× 接近 Phase A 5.3×）；连续两次任务 0/7 反复模式命中
+  - **下一步路线图**：TASK-30-04-C Hot Reload（估时进一步下调 ~20% 至 ~2-3 h plan ×0.6 — 受益于 Phase A + Phase B 5 大范式 + 5 大 ROI 复用）+ DomBindings R2 P3 修复（~3-5 h plan ×0.6）+ #35 阶段 2 拆 LayoutEngine（~2-3 h plan ×0.6）
+
