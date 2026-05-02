@@ -144,7 +144,7 @@
 | A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
 | A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ✅ 完成 | 27 min | ~15 min（0.56×）|
-| A.1.3 inspector_panel.html/css/js 编写 | ⏳ plan ✅ | 54 min | — |
+| A.1.3 inspector_panel.html/css/js 编写 | ✅ 完成 | 54 min | ~25 min（0.46×）|
 | A.1.4 JS native binding 扩展 | ⏳ plan ✅ | 36 min | — |
 | A.1.5 InputDispatchSplitter（新增）| ⏳ plan ✅ | 27 min | — |
 | A.1.6 Application 双 UpdateManager（M1）| ⏳ plan ✅ | 36 min | — |
@@ -190,6 +190,30 @@
 - **Lint clean** ✅
 - **commit**：[A.1.2 实测耗时 ~15 min vs plan 27 min ×0.6 = 0.56×，候选 plan ×0.6 第 25 数据点「窄档延续，与 A.1.1 0.56× 群组对齐」]
 - **教训沉淀（继 A.0.5 + A.1.1 经验）：** plan 假设的 API/structure 在 build 阶段先 grep 验证已成 SOP；本子任务 plan-fact 一致度高（CMake `find_package(Python3)` + `add_custom_command` 模式标准），无重大偏移
+
+**Phase A.1.3 完成 ✅（2026-05-02 14:50（轮次 4 起点）→ 15:15，~25 min vs plan 54 min ×0.6 = 0.46×）：**
+
+- **核心成果（dogfood UI 落地）：** DevTool Inspector UI 三件套实质内容（HTML 结构 + R2-verified CSS + DOM tree 渲染 JS）；为 A.1.6 Application::LoadDevtoolDocument 准备好 `__INLINE_CSS__` / `__INLINE_JS__` 占位符接口
+- **Plan §A.1.3 步骤 0 同步检查（grep CSS shorthand 支持）实证：**
+  - ✅ Verified shorthand: `flex` / `padding` / `margin` / `border` / `border-{top,right,bottom,left}` / `border-color/style/width` / `transition`
+  - ✅ Verified longhand: `display:flex` / `position` / `width` / `height` / `overflow` / `background-color` / `color` / `font-size` / `font-family` / `border-radius`
+  - ❌ Not supported: `background:` shorthand / `font:` shorthand / `pointer-events`（creative #1 决策 3 警告确认）
+  - **R2 mitigation 已锁入测试守卫**（3 个 `Avoids*` smoke 测）
+- **Step 1 RED**：`tests/devtool/resources/inspector_panel_smoke_test.cc` 新建含 14 测：
+  - 5 个 HtmlSmoke（devtool-root / 3 tabs / 3 panels / `__INLINE_CSS__` placeholder / `__INLINE_JS__` placeholder）
+  - 5 个 CssSmoke（#devtool-root selector / display:flex / 3 个 R2 Avoids guards）
+  - 4 个 JsSmoke（renderDomTree / renderTreeNode / vx_devtool_get_dom_json 桩 / data-tab handler）
+- **Step 2 验证 RED**：8/14 测 FAIL（占位文件已 incidentally 满足 6 测）✅
+- **Step 3 GREEN**：
+  - `inspector_panel.html`：splitter dock + 3 tabs (DOM/Style/Layout) + 3 panel divs + `__INLINE_CSS__`/`__INLINE_JS__` 占位符（A.1.6 runtime 替换）
+  - `inspector_panel.css`：仅用 R2-verified shorthand/longhand 子集，~76 行，含 `display: flex` / `flex-direction` / `padding`/`margin`/`border-{top,right,bottom,left}` / `background-color` / `color` / `font-size` / `font-family`
+  - `inspector_panel.js`：~80 行，含 `renderDomTree()` / `renderTreeNode()` / `setupTabs()` + `vx_devtool_get_dom_json()` 调用桩 + escapeHtml XSS 防护
+- **Step 4 验证 GREEN**：发现 **测试自身 bug** — `Avoids*` 测在 CSS 文件**注释里**找到了字面字符串（"AVOID: background: shorthand"）；修复加 `StripCssComments` helper 后 ctest **1110 → 1124 PASS**（+14 测）
+- **Step 5 反向探针**：HTML 中 `id="devtool-root"` 改为 `id="other-root-PROBE"` → `ContainsDevtoolRoot` FAIL ✅（捕获能力 verified）；恢复后 14/14 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF baseline **1057/1057 PASS** + libvx_api.a **12156 bytes 维持**（vs A.1.2 后 12156，零字节增长 — resource 内容更新不影响 OFF binary）
+- **Lint clean** ✅
+- **commit**：[A.1.3 实测耗时 ~25 min vs plan 54 min ×0.6 = **0.46×**，候选 plan ×0.6 第 26 数据点「极窄档延续」— 写实质 dogfood UI 实际工作量低于 plan 预估，验证 R2 早期 grep 锁定子集预算法的高效性]
+- **教训沉淀新增：** 写「自我防护测试」时（如本测验证 CSS 不含某子串），需注意 source 文件**注释**里的字面字符串可能误命中 — 加 `StripCssComments` helper 是正确范式，类似可推广到 JS 注释 strip
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 

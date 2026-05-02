@@ -4,3 +4,8 @@ add_executable(inspector_resources_test inspector_resources_test.cc)
 target_link_libraries(inspector_resources_test
   PRIVATE vx_devtool_resources GTest::gtest_main)
 gtest_discover_tests(inspector_resources_test)
+
+add_executable(inspector_panel_smoke_test inspector_panel_smoke_test.cc)
+target_link_libraries(inspector_panel_smoke_test
+  PRIVATE vx_devtool_resources GTest::gtest_main)
+gtest_discover_tests(inspector_panel_smoke_test)
