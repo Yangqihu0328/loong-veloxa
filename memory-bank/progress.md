@@ -2,7 +2,52 @@
 
 ## 当前任务
 
-**无当前任务（空闲）** — TASK-20260430-04 已于 2026-05-01 ~03:00 归档并 `--no-ff` 合入 main。Memory Bank 已重置，准备接受新任务（使用 `/van` 启动）。
+### TASK-20260502-01：DevTool Phase A — Inspector 实施（DOM tree / Style / Layout panel + hover 高亮）[安全相关]
+
+#### `/plan` 阶段产出快照（2026-05-02 13:10）
+
+- **plan 文档：** `docs/plans/2026-05-02-devtool-inspector.md`（~700 行）— B1-B8 决策表 + 16 子任务 5-步 TDD 模板（RED → GREEN → 反向探针 → A14 守门 → commit）+ Phase 0 11 子段实测填写 + 完整代码片段
+- **B1-B8 build 级精化决策（用户 1 次 AskQuestion 选 all_recommended，跳过率 8/8 = 100%）：** 全部按 VAN 推荐锁定 — 与蓝图 D1-D8 协同度 8/8 ✅
+  - B1=A 独立 plan / B2=A 严格串行 / B3=B 混合测试组织 / B4=B runtime 文件读取 / B5=OFF / B6=A 每子任务 1 commit / B7=A 沿用蓝图估时 / B8=A 复用 spec
+- **Phase 0 11 子段实证关键发现：**
+  - **0.1 ctest 基线漂移**：build/ 过期 mtime 2026-04-26 → 实测 1061，与 R2.5 落地后预期 1062 不符 → Phase A.0 启动前必跑 reconfigure（plan §0.1 已注明）
+  - **0.7 R1 callsite 二次实证**：`->document()` 实际 4 处（全在 application_test.cc）+ 1 处 dom_bindings 不相关 → R1 风险 🟡→🟢 进一步降级（远低于蓝图估 10-15）
+  - **0.8 既有测试 fingerprint**：layout 65 / parser 45 / paint_command 8 / renderer 17 ≥ 期望 ✅；event/application 子系统命中略低 ⚠️ → A.0.1/A.1.1 实施前补 grep 扩展关键字
+  - **0.10 工具链**：rg/awk/python3 ✅；jq 缺失 → A.2.4 binary size diff smoke 用 python3 兜底
+  - **0.9 CSS shorthand**：`flex` ✅ 6 处；`background`/`font`/`border-radius` 待 A.1.2 build 时 grep（缺失改 longhand 或 P3）
+- **plan 文档结构亮点：**
+  - 16 子任务全部 5-6 步 TDD 模板 + 完整代码片段（A.0.2 LayoutBox::ToJson()、A.0.3 DOM Serializer::ToJson() T3 redact、A.0.4 PaintCommand kOverlayHighlight、A.0.5 inspector_data.h、A.0.6 vx_view_serialize_*_json T7 双调用模式 + max_size 守卫）
+  - writing-plans.mdc 必填 9 段全部就绪
+  - 安全任务 4 项（A.2.1 T3 / A.2.2 T5 / A.2.3 T7 / A.2.4 A14 守门）独立段
+  - 2 Checkpoint（A.0 完成 / A.1 完成）+ 默认隐式批准协议
+  - R7「蓝图 plan 漂移」+ R8「runtime resource 加载失败」2 新风险登记
+- **plan ×0.6 第 18 数据点假设：** 沿用蓝图基线 7.35 h plan ×0.6（B7=A）；reflect 阶段验证：落「大件类 0.8-1.2×」（实测 0.85-1.15× plan ×0.6 区间）vs「极窄档 0.46-0.59× 群组延续」(plan 蓝图全照搬 + 决策跳过率 100% 时可能)
+- **MB 同步：** tasks.md（plan 完成段 + 任务历史 +1 行）/ activeContext.md（阶段 → 规划中）/ progress.md（本快照）
+- **决策跳过率监控（来自 brainstorming.mdc）：** 本任务连续 2 次跳过（VAN 5+1 + plan 1）= 总 7 次；触发 ≥ 5 监控但 reflect 阶段需重审 B1-B8 合理性
+- **下一步：** `/build` 启动 — Phase 0.1 reconfigure（关键前置 — 确认 ctest 1062 基线）+ A.0.1 I1 改造
+- **实测耗时（plan 阶段）：** ~25 min（读上下文 5 min + grep Phase 0 实证 5 min + AskQuestion B1-B8 3 min + 写 plan 文档 10 min + MB 同步 2 min）
+
+#### `/van` 阶段产出快照（2026-05-02 12:30）
+
+- **任务来源：** 用户 `/van TASK-20260430-04` + AskQuestion 选 subtask_a → 启动 TASK-30-04 蓝图主线 A 子任务（实际任务 ID `TASK-20260502-01`）
+- **复杂度：** Level 3（中等功能 — 跨 4 子系统但 plan 蓝图已就绪 16 子任务，无新架构决策）
+- **分支：** `feature/TASK-20260502-01-devtool-inspector` 基于 main `679304e`（已含 TASK-30-04 蓝图全部归档 + TASK-30-03 codebase review R2 quick fix 6 项）
+- **环境检测：** Linux 6.6 / WSL2 + CMake 3.20 / clang/gcc + git 工作区干净 ✅
+- **R1 callsite 量化（关键 push-back 决策）：** spec §9 估 10-15 处 → 实证 **5-9 处**（src `application.{h,cc}` 9 处字段访问 + tests `application_test.cc` 4 处 + `dom_bindings_test.cc` 1 处不相关）→ R1 风险等级 🟡→🟢-🟡，A.0.1 改造可控性增强
+- **F1-F9 grep 实证：** 5 ✅ 已就绪 / 2 ⚠️ 需扩展 / 2 🔴 需新建（属技术债 #26 + #40 — 本任务一次性闭环）
+- **触及技术债 2 项（一次性闭环）：** #26 LayoutBox.Dump → A.0.2 / #40 C API introspection → A.0.5 + A.0.6
+- **Phase A 子任务清单（plan 已就绪，build 阶段执行）：** 16 个 — A.0 前置改造 6 + A.1 DevTool UI 4 + A.2 安全单测 4 + A.3 example/reflect 2；估时 ~441 min plan ×0.6（7.35 h）
+- **创意决策：** ❌ 无新 creative 需求（creative #1 screen-layout 已覆盖 splitter dock + DOM tree view + F12 toggle + HUD 透明合成 + overlay 渲染顺序双线宽 5 决策）
+- **安全相关：** ✅ 是（T3 Inspector 敏感数据 redact / T5 DisplayList overlay 隔离 / T7 C API buffer overflow 双调用模式 / T8 共享容器 mutation propagation 4 个威胁面）
+- **前置验证 6/6 全 PASS：** 依赖 / 环境 / artifact / ctest 1062 基线 / FetchContent 跳过 / 待处理事项关联（极强 — 闭环 2 项技术债 + R3+ #2/#3 间接相关）
+- **VAN push-back 5 项风险闭环：** R1 callsite 漏改 → 重命名 + grep / R2 dogfood 反向暴露引擎缺陷 → 「已验证 OK」CSS 子集 / R5 ComputedStyle JSON hover hot path → 双层 API + lazy 序列化 / 「跳过 plan 精化」诱惑 → 拒绝（Level 3 默认进 plan）/「TASK-30-04 plan 全照搬」陷阱 → plan 阶段须验证 main 终态 + 沉淀 plan ×0.6 第 18 数据点
+- **MB 三件套同步：** tasks.md / activeContext.md / progress.md 完整写入
+- **下一步：** `/plan` 进入 build 级精化（Phase 0 grep callsite 全表 + 既有测试 fingerprint + CMake 链接审计 + plan ×0.6 估时校准 + 生成本任务专属 plan §0 子段）
+- **实测耗时：** ~5 min（环境检测 + grep 实证 + MB 同步 + 分支创建）
+
+## 上次任务（已归档闭环）
+
+**TASK-20260430-04：规划 UI 编辑器 + 调试器（DevTool 三件套蓝图设计）[安全相关]** — ✅ 已归档于 2026-05-01 ~03:00，已 `--no-ff` 合入 main。**A 子任务已立项为本任务 TASK-20260502-01。**
 
 <details>
 <summary>TASK-20260430-04：规划 UI 编辑器 + 调试器（DevTool 三件套蓝图设计）[安全相关] — ✅ 已归档（点开查看历史）</summary>

@@ -2,11 +2,24 @@
 
 ## 当前阶段
 
-**空闲（idle）** — TASK-20260430-04 已于 2026-05-01 ~03:00 归档并 `--no-ff` 合入 main。Memory Bank 已重置，准备接受新任务（使用 `/van` 启动）。
+**规划中（Plan 完成）** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:10 完成 plan 步骤；plan 文档 `docs/plans/2026-05-02-devtool-inspector.md` 落盘（~700 行 / 16 子任务 5-步 TDD 模板 / Phase 0 11 子段实测）；B1-B8 决策与蓝图 D1-D8 协同度 8/8 ✅；推荐下一步 `/build` 启动 Phase 0.1 ctest reconfigure（关键前置 — build/ 过期 mtime 2026-04-26）+ A.0.1 I1 改造。
 
 ## 当前任务
 
-**无当前任务** — 等待用户启动新任务。
+### TASK-20260502-01：DevTool Phase A — Inspector 实施（DOM tree / Style / Layout panel + hover 高亮）[安全相关]
+
+- **复杂度：** Level 3（中等功能 — 跨 4 子系统 core/devtool/api/tests，plan 16 子任务全部 5-步 TDD 模板就绪）
+- **来源：** TASK-20260430-04 蓝图主交付独立立项候选 §主线 3 项之 A
+- **分支：** `feature/TASK-20260502-01-devtool-inspector`（基于 main `679304e`）
+- **关键文档：**
+  - 设计 spec ✅ 复用 `docs/specs/2026-04-30-devtool-design.md`（A1-A5, A13, A14 + T3/T5/T7/T8 + I1/I3/I4/I5/I6 + R1/R2/R5）
+  - 实现 plan ✅ **本任务专属** `docs/plans/2026-05-02-devtool-inspector.md`（B1-B8 决策表 + 16 子任务 5-步 TDD 模板 + Phase 0 11 子段实测 + plan ×0.6 第 18 数据点假设 + R7/R8 新风险 + 2 Checkpoint）
+  - 蓝图 plan 参照 `docs/plans/2026-04-30-devtool.md` §Phase A（不修改）
+  - 创意 ✅ 复用 `memory-bank/creative/creative-devtool-screen-layout.md`（无新 creative 需求）
+- **触及技术债（本任务一次性闭环 2 项）：** #26 LayoutBox.Dump → A.0.2 / #40 C API introspection → A.0.5 + A.0.6
+- **Plan 关键实证：** R1 callsite 二次实证 4 处真实（远低于蓝图估 10-15）→ 风险 🟢；既有测试 fingerprint event/application 略低 ⚠️ → A.0.1/A.1.1 实施前补 grep；ctest 基线发现 build/ 过期需 reconfigure；jq 缺失 → python3 兜底
+- **plan ×0.6 第 18 数据点假设：** 沿用蓝图 7.35 h plan ×0.6 baseline；reflect 阶段验证落「大件类 0.8-1.2×」桶 vs 「极窄档 0.46-0.59× 群组延续」
+- **下一步：** `/build` 启动 Phase 0.1 reconfigure（关键前置）+ A.0.1 I1 Application 双 Document 槽改造
 
 ## 上次任务（已归档闭环）
 
@@ -19,10 +32,10 @@
   - 8 决策矩阵 D1-D8 全部锁定（用户连续 8 次跳过 AskQuestion 隐式批准 VAN 推荐默认）
   - 8 项 T1-T8 安全威胁建模（一期落地 T2/T3/T5/T6/T7/T8 + 扩展段占位 T1/T4）
   - 4 项历史技术债（#26 / #35 / #40 / #4）闭环 ROI 路径映射
-  - 7 项独立立项候选（TASK-30-04-A/B/C 主线 + 4 项扩展段）
+  - 7 项独立立项候选（TASK-30-04-A/B/C 主线 + 4 项扩展段）— **A 已立项为本任务 TASK-20260502-01**
   - reflection 10 节全面回顾 + 10 项改进建议（P0×3 / P1×4 / P2×3）
-- **改进建议落实率 90%**：P0 3/3 + P1 4/4 + P2 2/3（剩 1 项 P2 #10 留待 TASK-30-04-A/B/C 立项后实测回填）
-- **plan ×0.6 第 17 数据点入库**：核心轮次（VAN + Plan）0.27-0.35× plan / 0.46-0.59× plan ×0.6（极窄档 + review 类下限交界）
+- **改进建议落实率 90%**：P0 3/3 + P1 4/4 + P2 2/3（剩 1 项 P2 #10 留待 TASK-30-04-A/B/C 立项后实测回填 — **本任务 reflect 阶段触发回填**）
+- **plan ×0.6 第 17 数据点入库**：核心轮次 0.27-0.35× plan / 0.46-0.59× plan ×0.6（极窄档 + review 类下限交界）
 - **方法论沉淀**：首次 V2=a 蓝图任务工作流变体实践 + 「批量决策跳过 + 批量文档产出」3 数据点群组化「极窄档」+ dogfood 路径作为探测性 acceptance test 概念
 
 ### TASK-20260430-03：全代码库 Code Review — ✅ 已归档（2026-05-01 ~00:30）
@@ -37,8 +50,8 @@
 - **改进建议落实率 90%**：P0 1/1 + P1 4/4 + P2 4/5（剩 1 项 P2 #9 留作 ad-hoc）
 - **R3+ 13 项 P1 候选（待用户决策拆分顺序后独立立项）：** 详见 `docs/reports/2026-04-30-codebase-review.md`，Top 4 推荐：
   - 🔴 #1 image_decoder 安全三件套（F-049 PNG alpha / F-050 width×height 溢出 / F-051 JPEG `error_exit` kill）— P1 安全 / 估 4-6 h / Level 3
-  - 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2
-  - 🟡 #3 LoadHTML 重置 `dom_bindings_` 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2 **— 注：与 TASK-30-04-C HTML hot reload 扩展段强依赖（已交叉记录到 codebase-review.md F-025 段）**
+  - 🟡 #2 EventDispatcher snapshot iteration 防 listener mutation UAF（F-046）— P1 正确性 / 估 2-3 h / Level 2 — **本任务 A.0/A.1 间接相关**
+  - 🟡 #3 LoadHTML 重置 `dom_bindings_` 防 use-after-free（F-025）— P1 正确性 / 估 1-2 h / Level 2 — **与 TASK-30-04-C HTML hot reload 扩展段强依赖**
   - 🔴 #4 CSS 属性元数据表（F-022）— P1 维护性 / Level 4 大件 / 1-2 周（架构性重构）
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
@@ -71,22 +84,17 @@
 
 存放在 `docs/reports/2026-04-30-codebase-review.md`（已合并到 main `2445990`）。Top 4 见上文「上次任务 §R3+ 推荐」。
 
-### 来自 TASK-30-04 蓝图主交付的 7 项独立立项候选
+### 来自 TASK-30-04 蓝图主交付的 7 项独立立项候选（更新 — TASK-30-04-A 已立项）
 
-基于 `docs/plans/2026-04-30-devtool.md` 拆出，由用户后续独立立项（**已不在任何当前任务范围内**）：
+基于 `docs/plans/2026-04-30-devtool.md` 拆出：
 
-**主线 3 项：**
+**主线 3 项（A 已立项为本任务）：**
 
-- **TASK-30-04-A**：DevTool Phase A — Inspector 实施（DOM tree / Style panel / Layout panel + 元素 hover 高亮）
-  - 估时：~12.25 h plan / ~7.35 h plan ×0.6（Level 3）
-  - 触及技术债闭环：#26 LayoutBox.Dump / #40 C API introspection / #4 ImageCache namespace
-  - **强依赖**：I1 Application 双 Document 槽改造（R1 风险，重命名 `document_` → `target_document_` mitigation 已 plan）
-
+- ✅ **TASK-30-04-A** → **本任务 TASK-20260502-01**（VAN 完成 2026-05-02 12:30）
 - **TASK-30-04-B**：DevTool Phase B — Performance Overlay 实施（FPS / 帧时序 / dirty rect 边框高亮）
   - 估时：~7.25 h plan / ~4.35 h plan ×0.6（Level 2-3）
-  - 触及技术债闭环：#35 UpdateManager 帧钩子（五钩子）
-  - **立项前置**：TASK-30-04-A 必须先于 B 立项（B 依赖 A 的 Inspector 渲染管线 + UI 框架基础）
-
+  - 触及技术债闭环：#35 UpdateManager 帧钩子（五钩子）+ #4 ImageCache namespace（DevTool icon 隔离）
+  - **立项前置**：TASK-20260502-01 必须先于 B 立项（B 依赖 A 的 Inspector 渲染管线 + UI 框架基础）
 - **TASK-30-04-C**：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）
   - 估时：~10 h plan / ~6 h plan ×0.6（Level 3）
   - **强依赖**：R3+ #3 F-025 LoadHTML use-after-free 修复（如未来扩展 HTML 增量重载）— 一期 CSS-only 不踩
@@ -100,7 +108,7 @@
 - **TASK-30-04-F**（暂定）：CDP 远程调试 port（威胁 T4 HMAC token + nonce + loopback only + default off mitigation）
 - **TASK-30-04-G**（暂定）：完整 UI 编辑器（dogfood 完整闭环，spec §11 长期愿景）
 
-**估时回填校准**（reflect §5 #10 P2 长期 — 待 TASK-30-04-A/B/C 实测后回填 systemPatterns 矩阵）
+**估时回填校准**（reflect §5 #10 P2 长期 — **TASK-20260502-01 完成后是首个回填数据点**）
 
 ### 输入材料：8 项 P3 触发型候选（codebase review R1 已分析）
 
