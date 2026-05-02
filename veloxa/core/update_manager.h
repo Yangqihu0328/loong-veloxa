@@ -68,6 +68,17 @@ class UpdateManager {
   }
   const PipelineHooks* pipeline_hooks() const { return pipeline_hooks_; }
 
+  // TASK-20260502-02 B.0.2 — Vector<gfx::Rect> 累积同帧 / 同 PerfOverlay 周期
+  // 内多次 Update() 产生的非空 dirty rect（empty rect 不 push，与既有
+  // last_dirty_rect_ empty 语义一致）。Performance Overlay 用：
+  //   - PerfOverlay::OnFrameStart hook 调 ClearDirtyRects() 每帧清零
+  //   - InspectorOverlay::InjectDirtyRectHighlights(display_list, dirty_rects)
+  //     按本帧累积的 dirty rects 注入边框 PaintCommand（B.2.3）
+  // last_dirty_rect_ 的 empty 测试契约 100% 保持（独立字段 — ClearDirtyRects
+  // 不影响 last_dirty_rect_）。
+  const Vector<gfx::Rect>& dirty_rects() const { return dirty_rects_; }
+  void ClearDirtyRects() { dirty_rects_.clear(); }
+
  private:
   void DetectAndApplyTransitions();
   void TraverseForTransitions(layout::LayoutBox* box,
@@ -79,6 +90,7 @@ class UpdateManager {
   layout::LayoutBox* layout_root_ = nullptr;
   render::DisplayList display_list_;
   gfx::Rect last_dirty_rect_{};
+  Vector<gfx::Rect> dirty_rects_;  // B.0.2 — 累积非空 dirty rect
   css::TransitionManager transition_mgr_;
   const PipelineHooks* pipeline_hooks_ = nullptr;  // B.0.1
 

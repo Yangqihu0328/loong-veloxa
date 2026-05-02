@@ -95,7 +95,22 @@
   - lambda 捕获不能赋给 C function pointer → 改用 static recorder pattern（`g_pipeline_hook_order` + 5 free functions）— 与 plan §B.0.1 RED 测设计修正
   - lazy attach 设计（Application 持 PipelineHooks 拷贝 + EnsureUpdateManager 时 attach）让 caller 不需要预先 LoadHTML，**但必须返 INVALID_STATE 提示 caller 还没附加** — perf_hooks_api_test `ClearHooksOnFreshViewReturnsInvalidState` + `AfterUpdateLazyAttachInstallsHooks` 双测覆盖
   - C ABI VxPipelineHooks struct 设 `userdata` 在 `vx_view_set_pipeline_hooks` 函数参数（vs C++ PipelineHooks 内字段）— 公开 ABI 简化设计
-- **commit：** 待 B.0.1 Step 7 commit
+- **commit：** `28811f3 feat(core): UpdateManager PipelineHooks 五钩子 + vx_view_set_pipeline_hooks C API (B.0.1)`
+
+#### `/build` Phase B.0.2 完成快照（2026-05-02 ~22:42，~7 min 实测）
+
+- **任务：** dirty_rects_ Vector 累积扩展（plan §B.0.2 RED 测假设按 update_manager_test:131 现实校准 — "size=3 假设" → "hover change 累积模型"）
+- **plan ×0.6 估时：** 36 min / **实测：** ~7 min（**0.19× plan ×0.6**，落「极窄档延续」桶最低端 — Vector + push_back + clear API 极简，单点修改）
+- **改动文件：**
+  - `veloxa/core/update_manager.h`：新 `dirty_rects()` getter + `ClearDirtyRects()` 方法 + `dirty_rects_` 私有字段
+  - `veloxa/core/update_manager.cc`：在 `last_dirty_rect_ = ComputeDirtyRect(...)` 后追加 `if (!last_dirty_rect_.IsEmpty()) dirty_rects_.push_back(last_dirty_rect_)`
+  - `tests/core/update_manager_test.cc`：+6 dirty_rects 测（EmptyBeforeUpdate / FirstUpdateAccumulates / ReInvalidateNoChange / ClearResets / HoverChangeAccumulates / LastDirtyContractCompat）
+
+- **测试增量：** **DEVTOOL=ON 1180 → 1186 PASS（+6）/ DEVTOOL=OFF 1076 → 1082 PASS（+6）**
+- **A14 守门：** ✅ 隐式继承（dirty_rects_ 是 vx_core 内部字段，零 vx_devtool 泄漏）
+- **反向探针：** ✅ 注释 push_back → `FirstUpdateAccumulatesOneDirtyRect` 精准 FAIL（size = 0 vs 1）+ vx::Vector `back()` on empty CHECK abort 兜底
+- **plan-fact 校准：** plan §B.0.2 「同帧 3 次 invalidate 累积 size=3」假设错误（既有 `DirtyRectComputedOnUpdate` 测显示第 2 次无变化时 last_dirty_rect 返 empty）→ 实际累积模型按「visual change 才 push 非空」语义，与 last_dirty_rect_ 既有 empty 语义一致；测改为 hover-driven 累积场景
+- **commit：** 待 B.0.2 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 

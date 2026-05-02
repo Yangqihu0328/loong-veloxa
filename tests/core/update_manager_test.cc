@@ -287,6 +287,80 @@ TEST_F(UpdateManagerTest, PartialNullHooksOnlyNonNullCallbackFires) {
   ResetPipelineHookRecorder();
 }
 
+// =============================================================================
+// TASK-20260502-02 B.0.2 — dirty_rects_ Vector 累积扩展
+//
+// 注意：依据既有 DirtyRectComputedOnUpdate 测（line 120-132），第 2 次
+// Invalidate+Update 当 ComputeDirtyRect(old, new) 无变化时返 empty rect。
+// 因此 Vector 累积逻辑是 "只 push 非空 dirty rect"，与既有 last_dirty_rect_
+// 的 empty 语义一致 — plan §B.0.2 的 size=3 假设需现实校准为：模拟 hover
+// 等真实 visual change 才能累积多个非空 rect。
+// =============================================================================
+
+TEST_F(UpdateManagerTest, DirtyRectsEmptyBeforeUpdate) {
+  UpdateManager um(MakeConfig());
+  EXPECT_TRUE(um.dirty_rects().empty());
+}
+
+TEST_F(UpdateManagerTest, FirstUpdateAccumulatesOneDirtyRect) {
+  UpdateManager um(MakeConfig());
+  um.Update();
+  EXPECT_EQ(um.dirty_rects().size(), 1u);
+  EXPECT_EQ(um.dirty_rects().back(), um.last_dirty_rect());
+}
+
+TEST_F(UpdateManagerTest, ReInvalidateWithoutChangeDoesNotAccumulate) {
+  // 既有 DirtyRectComputedOnUpdate 行为延续：第 2 次 Update 无变化 →
+  // last_dirty_rect_ empty → Vector 不 push。
+  UpdateManager um(MakeConfig());
+  um.Update();
+  EXPECT_EQ(um.dirty_rects().size(), 1u);
+  um.Invalidate();
+  um.Update();
+  EXPECT_EQ(um.dirty_rects().size(), 1u);  // unchanged
+}
+
+TEST_F(UpdateManagerTest, ClearDirtyRectsResetsVector) {
+  UpdateManager um(MakeConfig());
+  um.Update();
+  EXPECT_EQ(um.dirty_rects().size(), 1u);
+  um.ClearDirtyRects();
+  EXPECT_TRUE(um.dirty_rects().empty());
+  EXPECT_FALSE(um.last_dirty_rect().IsEmpty());  // last_ 不变（独立字段）
+}
+
+TEST_F(UpdateManagerTest, HoverChangeAccumulatesAdditionalDirtyRect) {
+  // 复用 HoverChangeProducesDirtyRect 范式 — hover 变化产生 visual change
+  // → ComputeDirtyRect 返非空 → push。
+  sheets_.clear();
+  sheets_.push_back(css::CssParser::Parse(
+      "#box { width: 100px; height: 100px; background-color: #0000ff; } "
+      "#box:hover { background-color: #ff0000; }"));
+  event::EventManager em;
+  UpdateManager um(MakeConfig(&em));
+  um.Update();
+  usize initial = um.dirty_rects().size();
+  EXPECT_GE(initial, 1u);
+
+  auto* root = um.layout_root();
+  ASSERT_NE(root, nullptr);
+  event::InputEvent move{};
+  move.type = event::EventType::kPointerMove;
+  move.x = 50;
+  move.y = 50;
+  em.HandleInput(move, root);
+  um.Update();
+
+  EXPECT_EQ(um.dirty_rects().size(), initial + 1);
+  EXPECT_EQ(um.dirty_rects().back(), um.last_dirty_rect());
+}
+
+TEST_F(UpdateManagerTest, LastDirtyRectStaysContractCompatible) {
+  UpdateManager um(MakeConfig());
+  um.Update();
+  EXPECT_EQ(um.last_dirty_rect(), um.dirty_rects().back());
+}
+
 TEST_F(UpdateManagerTest, UserdataPassedToCallback) {
   // userdata 透传验证（PerfOverlay::Attach 时传 this 给 trampoline 用）。
   static int captured = 0;

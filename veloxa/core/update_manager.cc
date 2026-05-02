@@ -50,6 +50,12 @@ void UpdateManager::Update() {
   last_dirty_rect_ = render::ComputeDirtyRect(
       display_list_, new_list, config_.layout_context.viewport_width,
       config_.layout_context.viewport_height);
+  // B.0.2 — 累积非空 dirty rect 到 Vector（empty 不 push，与 last_dirty_rect_
+  // 既有 empty 语义一致）。Performance Overlay 在 OnFrameStart 钩子调
+  // ClearDirtyRects 重置，B.2.3 InjectDirtyRectHighlights 按本帧累积渲染边框。
+  if (!last_dirty_rect_.IsEmpty()) {
+    dirty_rects_.push_back(last_dirty_rect_);
+  }
 
   if (config_.canvas && !last_dirty_rect_.IsEmpty()) {
     config_.canvas->PushClipRect(last_dirty_rect_);
