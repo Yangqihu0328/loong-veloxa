@@ -128,6 +128,81 @@ TEST(DevtoolApiTest, SerializeDomJsonCallerBufferTooSmallReturnsOutOfMemory) {
   EXPECT_EQ(r, VX_ERROR_OUT_OF_MEMORY);
 }
 
+// =============================================================================
+// T7 boundary cases (TASK-20260502-01 A.2.3 [SECURITY])
+//
+// A.0.6 already covered the happy path + over-cap rejection. A.2.3 adds
+// the corner cases that distinguish "policy cap" from "buffer length"
+// confusion at the API edge.
+// =============================================================================
+
+// max_size = 0 must be rejected even for an empty JSON envelope, because
+// allowing 0 effectively disables the platform-level guard (caller has
+// no protection against a future payload growing past their buffer).
+TEST(DevtoolApiTest, SerializeDomJsonZeroMaxSizeRejects) {
+  ViewFixture fx;
+  fx.LoadHtml("<html><body><div>hello</div></body></html>");
+  uint32_t needed = 0;
+  EXPECT_EQ(vx_view_serialize_dom_json(fx.view, nullptr, &needed, 0),
+            VX_ERROR_OUT_OF_MEMORY);
+}
+
+// max_size = UINT32_MAX (the documented upper bound, ~4 GiB) must NOT
+// be rejected — embedders that compute max_size from a runtime policy
+// can hit this value when the policy is "no practical cap".
+TEST(DevtoolApiTest, SerializeDomJsonMaxUint32SizeAllowed) {
+  ViewFixture fx;
+  fx.LoadHtml("<html><body><div>x</div></body></html>");
+  uint32_t needed = 0;
+  VxResult r = vx_view_serialize_dom_json(
+      fx.view, nullptr, &needed, static_cast<uint32_t>(0xFFFFFFFFu));
+  EXPECT_EQ(r, VX_OK);
+  EXPECT_GT(needed, 0u);
+}
+
+// max_size exactly equal to the JSON envelope length must be accepted
+// (boundary inclusive — needed > max_size rejects, needed == max_size
+// passes). This is the tight-fit caller scenario.
+TEST(DevtoolApiTest, SerializeDomJsonMaxSizeAtExactNeededAccepts) {
+  ViewFixture fx;
+  fx.LoadHtml("<html><body><div>x</div></body></html>");
+  uint32_t needed = 0;
+  ASSERT_EQ(vx_view_serialize_dom_json(fx.view, nullptr, &needed,
+                                        16 * 1024 * 1024),
+            VX_OK);
+  ASSERT_GT(needed, 0u);
+
+  // First call with cap = needed → OK, returns required size again.
+  uint32_t probe = 0;
+  ASSERT_EQ(vx_view_serialize_dom_json(fx.view, nullptr, &probe, needed),
+            VX_OK);
+  EXPECT_EQ(probe, needed);
+
+  // And the actual write at cap = needed succeeds with exact buffer.
+  std::vector<char> buf(needed);
+  uint32_t written = needed;
+  EXPECT_EQ(vx_view_serialize_dom_json(fx.view, buf.data(), &written, needed),
+            VX_OK);
+  EXPECT_EQ(written, needed);
+}
+
+// max_size one byte below needed must be rejected. Pairs with the
+// at-exact test above to fence the boundary from both sides.
+TEST(DevtoolApiTest, SerializeDomJsonMaxSizeOneBelowNeededRejects) {
+  ViewFixture fx;
+  fx.LoadHtml("<html><body><div>x</div></body></html>");
+  uint32_t needed = 0;
+  ASSERT_EQ(vx_view_serialize_dom_json(fx.view, nullptr, &needed,
+                                        16 * 1024 * 1024),
+            VX_OK);
+  ASSERT_GT(needed, 1u);
+
+  uint32_t probe = 0;
+  EXPECT_EQ(
+      vx_view_serialize_dom_json(fx.view, nullptr, &probe, needed - 1),
+      VX_ERROR_OUT_OF_MEMORY);
+}
+
 // T3 propagation through the public API: password values redacted.
 TEST(DevtoolApiTest, SerializeDomJsonRedactsPasswordValues) {
   ViewFixture fx;

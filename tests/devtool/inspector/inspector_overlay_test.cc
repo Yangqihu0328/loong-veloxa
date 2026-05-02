@@ -4,6 +4,7 @@
 
 #include "veloxa/core/layout/layout_box.h"
 #include "veloxa/core/render/paint_command.h"
+#include "veloxa/core/render/renderer.h"  // ResetOverlayCommands
 #include "veloxa/graphics/types.h"
 
 namespace vx::devtool {
@@ -114,6 +115,68 @@ TEST(InspectorOverlayTest, InjectHoverHighlightUsesBorderBoxIncludingPadding) {
 
   ASSERT_EQ(list.size(), 1u);
   EXPECT_EQ(list[0].rect, (gfx::Rect{100.0f, 200.0f, 70.0f, 46.0f}));
+}
+
+// =============================================================================
+// T5 mitigation: cross-frame overlay isolation (TASK-20260502-01 A.2.2 [SECURITY]).
+//
+// Verifies the per-frame Reset → Inject contract: 3 consecutive "frames"
+// each Reset+Inject a different hover box → overlay command count stays
+// at 1 (no accumulation across frames). The threat being mitigated is
+// stale highlight rectangles bleeding into subsequent frames after the
+// inspector hover target moves or is cleared.
+// =============================================================================
+
+TEST(InspectorOverlayTest, MultiFrameInjectStaysIsolatedAfterReset) {
+  render::DisplayList list;
+  // Simulate a target page baseline: one fill we never want to lose.
+  list.push_back(render::PaintCommand::FillRect(
+      gfx::Rect{0, 0, 100, 100}, gfx::Color::FromRGBA(50, 50, 50, 255)));
+  ASSERT_EQ(list.size(), 1u);
+
+  layout::LayoutBox box1, box2, box3;
+  box1.x = 5;   box1.y = 5;   box1.content_width = 10; box1.content_height = 10;
+  box2.x = 50;  box2.y = 50;  box2.content_width = 20; box2.content_height = 20;
+  box3.x = 200; box3.y = 200; box3.content_width = 40; box3.content_height = 40;
+
+  for (int frame = 0; frame < 3; ++frame) {
+    // Frame head: drop any prior overlay.
+    render::ResetOverlayCommands(list);
+    // Each frame inspects a different LayoutBox.
+    const layout::LayoutBox* h =
+        (frame == 0 ? &box1 : (frame == 1 ? &box2 : &box3));
+    InspectorOverlay::InjectHoverHighlight(list, h);
+
+    // Target paint must survive (fill at index 0).
+    ASSERT_EQ(list.size(), 2u) << "frame=" << frame << " accumulated overlays";
+    EXPECT_EQ(list[0].type, render::PaintCommand::Type::kFillRect);
+    EXPECT_EQ(list[1].type, render::PaintCommand::Type::kOverlayHighlight);
+    // Position must reflect THIS frame's hover box, not prior ones.
+    EXPECT_FLOAT_EQ(list[1].rect.x, h->x);
+    EXPECT_FLOAT_EQ(list[1].rect.y, h->y);
+  }
+
+  // Final frame: empty hover (e.g. mouse left the viewport) → reset only.
+  render::ResetOverlayCommands(list);
+  EXPECT_EQ(list.size(), 1u);
+  EXPECT_EQ(list[0].type, render::PaintCommand::Type::kFillRect);
+}
+
+TEST(InspectorOverlayTest, RepeatedInjectWithoutResetAccumulatesByDesign) {
+  // Negative-control: skipping the reset between frames lets overlays
+  // accumulate (this is the threat T5 mitigates). Documenting the
+  // failure mode here keeps the contract honest — if a future
+  // refactor moves the Reset into Inject itself, this test will go
+  // GREEN unexpectedly and force a contract update.
+  render::DisplayList list;
+  layout::LayoutBox box;
+  box.x = 1; box.y = 1; box.content_width = 10; box.content_height = 10;
+
+  InspectorOverlay::InjectHoverHighlight(list, &box);
+  InspectorOverlay::InjectHoverHighlight(list, &box);
+  InspectorOverlay::InjectHoverHighlight(list, &box);
+  EXPECT_EQ(list.size(), 3u)
+      << "Inject must NOT internally Reset — that's the caller's job";
 }
 
 }  // namespace
