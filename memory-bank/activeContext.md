@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中·轮次 3 启动 A.1.x（Level 4，Phase A.0 + plan escalation 已完成）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:30 完成 plan escalation：用户选 escalation A 升级 + brainstorming 锁定 B-A1.1=b 编译期嵌入 + B-A1.2=a full viewport；Phase A.1 plan 从粗 4 子任务概念 → 8 子任务 detailed 5-步 TDD 模板（plan 文档 +384 行）；Phase A 总子任务 16 → 20；**0 篇新 creative**（架构决策全锁定）；下一步直接 `/build` 续上 A.1.1。
+**构建中·轮次 3 完成（Phase A.1.1-A.1.2 of A.1.x ✅；下次进入 A.1.3）** — TASK-20260502-01 DevTool Phase A · Inspector 轮次 3 完成「DevTool overlay 注入 + 资源嵌入基础设施」infrastructure layer 自然分组；A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) ✅ commit `91dbcea`；A.1.2 DevTool resource 编译期嵌入（B-A1.1=b 推翻 B4=B → B4=A，T2 路径穿越威胁面**完全消除**）✅ commit `7c26352`（DEVTOOL=ON ctest 1102→1110/1110 + 8 新测；A14 OFF baseline 1057 维持 + libvx_api.a 12156 bytes 零字节增长）；下次 `/build` 续上 A.1.3 inspector_panel.html/css/js 编写（plan 54 min ×0.6 最大单任务，含 R2 引擎缺陷暴露风险，建议新鲜上下文专注）。 — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:30 完成 plan escalation：用户选 escalation A 升级 + brainstorming 锁定 B-A1.1=b 编译期嵌入 + B-A1.2=a full viewport；Phase A.1 plan 从粗 4 子任务概念 → 8 子任务 detailed 5-步 TDD 模板（plan 文档 +384 行）；Phase A 总子任务 16 → 20；**0 篇新 creative**（架构决策全锁定）；下一步直接 `/build` 续上 A.1.1。
 
 **Brainstorming 锁定决策（B-A1.x 系列）：**
 
