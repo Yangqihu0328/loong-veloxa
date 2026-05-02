@@ -1,6 +1,9 @@
 #include "veloxa/core/update_manager.h"
 
+#include <atomic>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -166,6 +169,138 @@ TEST_F(UpdateManagerTest, HoverChangeProducesDirtyRect) {
     }
   }
   EXPECT_TRUE(found_red);
+}
+
+// =============================================================================
+// TASK-20260502-02 B.0.1 — UpdateManager PipelineHooks 五钩子（#35 阶段 1 闭环）
+// =============================================================================
+
+// 静态 recorder（PipelineHooks Callback 是 C 函数指针，不能捕获 lambda — 用
+// 文件局部静态状态记录调用顺序 + 计数）。
+namespace {
+std::vector<std::string>* g_pipeline_hook_order = nullptr;
+std::atomic<int> g_pipeline_hook_calls[5]{};
+
+void PipeRec_OnFrameStart(void*) {
+  if (g_pipeline_hook_order) g_pipeline_hook_order->push_back("start");
+  g_pipeline_hook_calls[0]++;
+}
+void PipeRec_OnAfterStyle(void*) {
+  if (g_pipeline_hook_order) g_pipeline_hook_order->push_back("style");
+  g_pipeline_hook_calls[1]++;
+}
+void PipeRec_OnAfterLayout(void*) {
+  if (g_pipeline_hook_order) g_pipeline_hook_order->push_back("layout");
+  g_pipeline_hook_calls[2]++;
+}
+void PipeRec_OnAfterRender(void*) {
+  if (g_pipeline_hook_order) g_pipeline_hook_order->push_back("render");
+  g_pipeline_hook_calls[3]++;
+}
+void PipeRec_OnFrameEnd(void*) {
+  if (g_pipeline_hook_order) g_pipeline_hook_order->push_back("end");
+  g_pipeline_hook_calls[4]++;
+}
+
+void ResetPipelineHookRecorder() {
+  g_pipeline_hook_order = nullptr;
+  for (auto& c : g_pipeline_hook_calls) c.store(0);
+}
+}  // namespace
+
+TEST_F(UpdateManagerTest, PipelineHooksAllNullByDefault) {
+  UpdateManager um(MakeConfig());
+  EXPECT_EQ(um.pipeline_hooks(), nullptr);
+}
+
+TEST_F(UpdateManagerTest, SetPipelineHooksStoresPointer) {
+  UpdateManager um(MakeConfig());
+  PipelineHooks hooks{};
+  um.SetPipelineHooks(&hooks);
+  EXPECT_EQ(um.pipeline_hooks(), &hooks);
+  um.SetPipelineHooks(nullptr);
+  EXPECT_EQ(um.pipeline_hooks(), nullptr);
+}
+
+TEST_F(UpdateManagerTest, AllFiveHooksFireInOrderOnUpdate) {
+  ResetPipelineHookRecorder();
+  std::vector<std::string> order;
+  g_pipeline_hook_order = &order;
+
+  UpdateManager um(MakeConfig());
+  PipelineHooks hooks;
+  hooks.on_frame_start  = &PipeRec_OnFrameStart;
+  hooks.on_after_style  = &PipeRec_OnAfterStyle;
+  hooks.on_after_layout = &PipeRec_OnAfterLayout;
+  hooks.on_after_render = &PipeRec_OnAfterRender;
+  hooks.on_frame_end    = &PipeRec_OnFrameEnd;
+  um.SetPipelineHooks(&hooks);
+  um.Update();
+
+  EXPECT_EQ(order, (std::vector<std::string>{"start", "style", "layout",
+                                              "render", "end"}));
+  ResetPipelineHookRecorder();
+}
+
+TEST_F(UpdateManagerTest, NullHooksUpdateRemainsLossless) {
+  // 反向 verify A14 R3 — nullptr 路径不影响既有契约（layout_root + display_list
+  // 都正确生成）。
+  UpdateManager um(MakeConfig());
+  um.SetPipelineHooks(nullptr);
+  um.Update();
+  EXPECT_NE(um.layout_root(), nullptr);
+  EXPECT_FALSE(um.display_list().empty());
+}
+
+TEST_F(UpdateManagerTest, HooksNotFiredWhenNoUpdateNeeded) {
+  ResetPipelineHookRecorder();
+  UpdateManager um(MakeConfig());
+  PipelineHooks hooks;
+  hooks.on_frame_start = &PipeRec_OnFrameStart;
+  um.SetPipelineHooks(&hooks);
+
+  // 第 1 次 Update(): dirty=true → fire
+  um.Update();
+  EXPECT_EQ(g_pipeline_hook_calls[0].load(), 1);
+
+  // 第 2 次 Update(): dirty=false (无 Invalidate) → 早期 return → 不 fire
+  um.Update();
+  EXPECT_EQ(g_pipeline_hook_calls[0].load(), 1);
+  ResetPipelineHookRecorder();
+}
+
+TEST_F(UpdateManagerTest, PartialNullHooksOnlyNonNullCallbackFires) {
+  // R3 mitigation 验证 — 部分 nullptr hook 时其它 hook 仍正常 fire（branch
+  // predictor 友好的 nullptr-check 各自独立）。
+  ResetPipelineHookRecorder();
+  UpdateManager um(MakeConfig());
+  PipelineHooks hooks;
+  hooks.on_after_layout = &PipeRec_OnAfterLayout;  // 只设这一个
+  um.SetPipelineHooks(&hooks);
+  um.Update();
+
+  EXPECT_EQ(g_pipeline_hook_calls[0].load(), 0);  // start: nullptr
+  EXPECT_EQ(g_pipeline_hook_calls[1].load(), 0);  // style: nullptr
+  EXPECT_EQ(g_pipeline_hook_calls[2].load(), 1);  // layout: ✅ fired
+  EXPECT_EQ(g_pipeline_hook_calls[3].load(), 0);  // render: nullptr
+  EXPECT_EQ(g_pipeline_hook_calls[4].load(), 0);  // end: nullptr
+  ResetPipelineHookRecorder();
+}
+
+TEST_F(UpdateManagerTest, UserdataPassedToCallback) {
+  // userdata 透传验证（PerfOverlay::Attach 时传 this 给 trampoline 用）。
+  static int captured = 0;
+  static int sentinel = 0xC0FFEE;
+  struct Local {
+    static void OnStart(void* ud) { captured = *static_cast<int*>(ud); }
+  };
+  UpdateManager um(MakeConfig());
+  PipelineHooks hooks;
+  hooks.on_frame_start = &Local::OnStart;
+  hooks.userdata = &sentinel;
+  um.SetPipelineHooks(&hooks);
+  um.Update();
+  EXPECT_EQ(captured, 0xC0FFEE);
 }
 
 }  // namespace

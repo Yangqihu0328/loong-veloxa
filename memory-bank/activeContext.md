@@ -2,7 +2,15 @@
 
 ## 当前阶段
 
-**规划中（Plan 完成 ✅）** — TASK-20260502-02 Phase B 实施 plan 落盘（2026-05-02 ~22:10，~30 min）：
+**构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:35）：
+
+**已完成 1/10 子任务：** B.0.1 PipelineHooks 五钩子 ✅（**#35 阶段 1 闭环**；plan 54 min ×0.6 / 实测 ~25 min = **0.46× plan ×0.6**，落「极窄档延续」桶）；测 +11（DEVTOOL=ON 1180 / DEVTOOL=OFF 1076 双绿）；A14 ctest smoke PASS
+
+**当前：** 准备 B.0.2 dirty_rects_ Vector 累积扩展（plan 60 min ×0.6 = 36 min；注意 plan §B.0.2 RED 测假设需校准 — `update_manager_test.cc:131` 显示第 2 次 Invalidate+Update 当无视觉变化时 `last_dirty_rect()` 返 empty，所以 `MultipleInvalidateInSameFrameAccumulates` 测不应假设 size=3）
+
+---
+
+## 之前阶段（Plan 完成）
 
 **Phase 0 11 子段实测填写完成：**
 - §0.1 ctest baseline 二次验证 ✅ DEVTOOL=ON 1169 / DEVTOOL=OFF 1065（与 main `8b2ead4` 终态一致）

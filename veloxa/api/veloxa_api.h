@@ -214,6 +214,48 @@ typedef enum {
 VxResult vx_inspector_set_redaction_policy(VxView* view,
                                            VxRedactionPolicy policy);
 
+/* ── DevTool Performance Pipeline Hooks C API (TASK-20260502-02 B.0.1) ──
+ *
+ * Public C wrapper around Application::SetPipelineHooks (technical debt
+ * #35 phase 1 closure — UpdateManager 5-hook injection points).
+ * Available regardless of -DVX_BUILD_DEVTOOL: caller may install custom
+ * pipeline observers (e.g. profilers, tracing) without DevTool. The
+ * Performance Overlay (B.1.x / B.2.x) installs its own hooks via this
+ * API internally when DEVTOOL=ON.
+ *
+ * Hook firing order in UpdateManager::Update():
+ *   on_frame_start  → entry (after dirty/config check)
+ *   on_after_style  → after DetectAndApplyTransitions
+ *   on_after_layout → same point as after_style (LayoutEngine includes
+ *                     style resolve; sub-stage split is #35 phase 2 P3)
+ *   on_after_render → after render::Record (PaintCommand recorded)
+ *   on_frame_end    → at Update() end (after Replay)
+ *
+ * The userdata pointer is forwarded as the sole argument to each
+ * callback. Application stores its own copy of VxPipelineHooks so the
+ * caller does not need to keep the struct alive.
+ *
+ * Returns:
+ *   VX_OK on success (hooks installed or cleared with hooks=NULL)
+ *   VX_ERROR_NULL_PARAM when view is NULL
+ *   VX_ERROR_INVALID_STATE when the view's UpdateManager is not yet
+ *     initialized (no LoadHTML / Update has run). The hooks ARE still
+ *     cached internally and applied on the next EnsureUpdateManager.
+ */
+typedef void (*VxPipelineCallback)(void* userdata);
+
+typedef struct {
+  VxPipelineCallback on_frame_start;
+  VxPipelineCallback on_after_style;
+  VxPipelineCallback on_after_layout;
+  VxPipelineCallback on_after_render;
+  VxPipelineCallback on_frame_end;
+} VxPipelineHooks;
+
+VxResult vx_view_set_pipeline_hooks(VxView* view,
+                                    const VxPipelineHooks* hooks,
+                                    void* userdata);
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void);

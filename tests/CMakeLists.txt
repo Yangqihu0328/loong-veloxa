@@ -205,6 +205,14 @@ endif()
 # TASK-20260502-01 A.2.1 [SECURITY]: vx_inspector_set_redaction_policy
 # T3 mitigation policy switch unit tests. ON path covers default-redact /
 # NONE-emits / round-trip / invalid-enum; OFF path covers stub guard.
+# TASK-20260502-02 B.0.1: vx_view_set_pipeline_hooks C ABI test.
+# Public ABI is intentionally available regardless of VX_BUILD_DEVTOOL —
+# profiler / tracing embedders may install pipeline observers without
+# DevTool. Compiled in BOTH ON and OFF builds.
+vx_add_test(perf_hooks_api_test api/perf_hooks_api_test.cc)
+target_link_libraries(perf_hooks_api_test
+  PRIVATE vx_foundation vx_api vx_platform)
+
 vx_add_test(devtool_redaction_policy_test api/devtool_redaction_policy_test.cc)
 target_link_libraries(devtool_redaction_policy_test
   PRIVATE vx_foundation vx_api vx_platform)

@@ -121,6 +121,20 @@ class Application {
     devtool_default_width_ = devtool_default_width;
   }
 
+  // TASK-20260502-02 B.0.1 — set the target Application's UpdateManager
+  // PipelineHooks (Performance Overlay 5 callbacks). Application stores
+  // an internal copy so the caller does not need to keep the hooks
+  // structure alive. Passing nullptr clears the hooks. Returns:
+  //   - true on success (hooks installed or cleared)
+  //   - false if the target update_manager_ has not been initialized yet
+  //     (no Application::Update has run + no LoadHTML to trigger lazy
+  //     EnsureUpdateManager). In that case the hooks are still cached
+  //     internally and applied on the next EnsureUpdateManager.
+  bool SetPipelineHooks(const PipelineHooks* hooks);
+  const PipelineHooks* pipeline_hooks() const {
+    return external_hooks_set_ ? &external_hooks_ : nullptr;
+  }
+
  private:
   void OnFrame();
   void EnsureUpdateManager();
@@ -150,6 +164,12 @@ class Application {
   // vx_devtool_get_dom_json on each call (so embedder may flip live).
   dom::RedactionPolicy redaction_policy_ =
       dom::RedactionPolicy::kRedactSensitive;
+  // B.0.1 — owned PipelineHooks copy + flag (caller does not need to
+  // keep the source struct alive). Re-applied to update_manager_ each
+  // time EnsureUpdateManager runs (lazy attach when set before first
+  // Update).
+  PipelineHooks external_hooks_{};
+  bool external_hooks_set_ = false;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;

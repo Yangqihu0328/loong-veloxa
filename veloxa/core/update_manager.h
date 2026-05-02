@@ -11,6 +11,29 @@
 
 namespace vx {
 
+// TASK-20260502-02 B.0.1 — Performance Overlay 五钩子（技术债 #35 阶段 1 闭环）。
+// callback 在 UpdateManager::Update() 内严格按下面顺序触发：
+//   on_frame_start  → 入口（dirty/config check 之后）
+//   on_after_style  → DetectAndApplyTransitions() 之后
+//   on_after_layout → 紧跟（同点触发；当前 LayoutEngine::Layout 含 style resolve，
+//                     style/layout 子阶段拆分留 #35 阶段 2 P3 候选）
+//   on_after_render → render::Record() 之后（PaintCommand 录制完成）
+//   on_frame_end    → Update() 末尾（Replay 之后）
+//
+// userdata 字段在每个 callback 调用时透传（PerfOverlay::Attach 时传 this 指针给
+// 5 trampoline 用）。全部 callback 为 nullptr 时，分支预测器优化路径开销 ~0
+// （每钩子 1 个 nullptr check 跳过）。UpdateManager 不持 PipelineHooks 所有权 —
+// 调用方（PerfOverlay）保证 hooks 生命周期 ≥ UpdateManager 持有期。
+struct PipelineHooks {
+  using Callback = void(*)(void* userdata);
+  Callback on_frame_start  = nullptr;
+  Callback on_after_style  = nullptr;
+  Callback on_after_layout = nullptr;
+  Callback on_after_render = nullptr;
+  Callback on_frame_end    = nullptr;
+  void* userdata = nullptr;
+};
+
 class UpdateManager {
  public:
   struct Config {
@@ -39,6 +62,12 @@ class UpdateManager {
   gfx::Rect last_dirty_rect() const { return last_dirty_rect_; }
   css::TransitionManager& transition_manager() { return transition_mgr_; }
 
+  // TASK-20260502-02 B.0.1 — set hooks (nullptr to clear).
+  void SetPipelineHooks(const PipelineHooks* hooks) {
+    pipeline_hooks_ = hooks;
+  }
+  const PipelineHooks* pipeline_hooks() const { return pipeline_hooks_; }
+
  private:
   void DetectAndApplyTransitions();
   void TraverseForTransitions(layout::LayoutBox* box,
@@ -51,6 +80,7 @@ class UpdateManager {
   render::DisplayList display_list_;
   gfx::Rect last_dirty_rect_{};
   css::TransitionManager transition_mgr_;
+  const PipelineHooks* pipeline_hooks_ = nullptr;  // B.0.1
 
   struct StylePtrHash {
     usize operator()(const void* p) const {

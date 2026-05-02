@@ -16,15 +16,35 @@ void UpdateManager::Invalidate() { dirty_ = true; }
 void UpdateManager::Update() {
   if (!dirty_ || !config_.document) return;
 
+  // B.0.1 — OnFrameStart 注入点 1（最早）
+  if (pipeline_hooks_ && pipeline_hooks_->on_frame_start) {
+    pipeline_hooks_->on_frame_start(pipeline_hooks_->userdata);
+  }
+
   arena_.Reset();
   layout_root_ = layout::LayoutEngine::Layout(config_.document,
                                               config_.layout_context, arena_);
 
   DetectAndApplyTransitions();
 
+  // B.0.1 — OnAfterStyle 注入点 2（DetectAndApplyTransitions 后）
+  if (pipeline_hooks_ && pipeline_hooks_->on_after_style) {
+    pipeline_hooks_->on_after_style(pipeline_hooks_->userdata);
+  }
+  // B.0.1 — OnAfterLayout 注入点 3（同点 — LayoutEngine 含 style，
+  //          style/layout 子阶段拆分留 #35 阶段 2 P3）
+  if (pipeline_hooks_ && pipeline_hooks_->on_after_layout) {
+    pipeline_hooks_->on_after_layout(pipeline_hooks_->userdata);
+  }
+
   render::DisplayList new_list;
   if (layout_root_) {
     new_list = render::Record(layout_root_, config_.image_cache);
+  }
+
+  // B.0.1 — OnAfterRender 注入点 4（PaintCommand 录制完成）
+  if (pipeline_hooks_ && pipeline_hooks_->on_after_render) {
+    pipeline_hooks_->on_after_render(pipeline_hooks_->userdata);
   }
 
   last_dirty_rect_ = render::ComputeDirtyRect(
@@ -44,6 +64,11 @@ void UpdateManager::Update() {
 
   if (transition_mgr_.HasActive()) {
     dirty_ = true;
+  }
+
+  // B.0.1 — OnFrameEnd 注入点 5（最后；Replay 之后 + dirty_ rearmed 之后）
+  if (pipeline_hooks_ && pipeline_hooks_->on_frame_end) {
+    pipeline_hooks_->on_frame_end(pipeline_hooks_->userdata);
   }
 }
 

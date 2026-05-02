@@ -361,6 +361,36 @@ VxResult vx_inspector_set_redaction_policy(VxView* view,
 #endif
 }
 
+/* ── Pipeline Hooks (TASK-20260502-02 B.0.1, #35 phase 1 closure) ── */
+
+VxResult vx_view_set_pipeline_hooks(VxView* view,
+                                    const VxPipelineHooks* hooks,
+                                    void* userdata) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  /* Public ABI is intentionally available regardless of VX_BUILD_DEVTOOL —
+   * profiler / tracing embedders may install hooks without DevTool. The
+   * vx_devtool subsystem (B.1.x PerfOverlay) installs its own hooks via
+   * the C++ Application::SetPipelineHooks API directly when DEVTOOL=ON. */
+  if (!hooks) {
+    bool ok = app->SetPipelineHooks(nullptr);
+    return ok ? VX_OK : VX_ERROR_INVALID_STATE;
+  }
+  vx::PipelineHooks cpp_hooks;
+  cpp_hooks.on_frame_start  = hooks->on_frame_start;
+  cpp_hooks.on_after_style  = hooks->on_after_style;
+  cpp_hooks.on_after_layout = hooks->on_after_layout;
+  cpp_hooks.on_after_render = hooks->on_after_render;
+  cpp_hooks.on_frame_end    = hooks->on_frame_end;
+  cpp_hooks.userdata        = userdata;
+  bool ok = app->SetPipelineHooks(&cpp_hooks);
+  /* Hooks are cached even when ok=false (lazy attached on next
+   * EnsureUpdateManager) — but we still return INVALID_STATE so the
+   * caller knows update_manager_ wasn't ready and can either call
+   * vx_view_update first or rely on the lazy attach. */
+  return ok ? VX_OK : VX_ERROR_INVALID_STATE;
+}
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void) { return VELOXA_VERSION_STRING; }

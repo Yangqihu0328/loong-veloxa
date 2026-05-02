@@ -216,6 +216,24 @@ void Application::EnsureUpdateManager() {
   cfg.canvas = canvas_.get();
   cfg.event_manager = &event_manager_;
   update_manager_ = std::make_unique<UpdateManager>(cfg);
+  // B.0.1 — lazy attach hooks set before first EnsureUpdateManager.
+  if (external_hooks_set_) {
+    update_manager_->SetPipelineHooks(&external_hooks_);
+  }
+}
+
+bool Application::SetPipelineHooks(const PipelineHooks* hooks) {
+  if (hooks) {
+    external_hooks_ = *hooks;
+    external_hooks_set_ = true;
+  } else {
+    external_hooks_ = PipelineHooks{};
+    external_hooks_set_ = false;
+  }
+  if (!update_manager_) return false;  // lazy applied by EnsureUpdateManager
+  update_manager_->SetPipelineHooks(external_hooks_set_ ? &external_hooks_
+                                                         : nullptr);
+  return true;
 }
 
 // =============================================================================

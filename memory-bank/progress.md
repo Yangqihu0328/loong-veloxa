@@ -72,6 +72,30 @@
 - **MB 三件套同步：** tasks.md（plan 完成段更新 + 实现 plan 路径标记）/ activeContext.md（阶段 → 规划中 + 11 子段实测 + B1-B8 决策 + 估时假设）/ progress.md（本快照）
 
 - **下一步：** `/build` 启动 B.0.1 PipelineHooks 五钩子（最大子任务 plan 90 min ×0.6 = 54 min）
+
+#### `/build` Phase B.0.1 完成快照（2026-05-02 ~22:35，~25 min 实测）
+
+- **任务：** UpdateManager PipelineHooks 五钩子 + vx_view_set_pipeline_hooks C API（**技术债 #35 阶段 1 闭环 ✅**）
+- **plan ×0.6 估时：** 54 min / **实测：** ~25 min（**0.46× plan ×0.6**，落「极窄档延续」桶 — 子系统位点已 grep 实证 + 测试 fixture 复用 + 反向探针清晰）
+- **改动文件：**
+  - `veloxa/core/update_manager.h`：新 `PipelineHooks` struct（5 callback + userdata）+ `SetPipelineHooks` / `pipeline_hooks()` getter + `pipeline_hooks_` 私有字段
+  - `veloxa/core/update_manager.cc`：`Update()` 内 5 注入点 fire（OnFrameStart entry / OnAfterStyle DetectAndApplyTransitions 后 / OnAfterLayout 同点 / OnAfterRender Record 后 / OnFrameEnd 末尾）
+  - `veloxa/core/application.h`：新 `SetPipelineHooks(const PipelineHooks*)` + `pipeline_hooks()` + `external_hooks_` + `external_hooks_set_` 字段（lazy attach 设计 — caller 不需要先 LoadHTML）
+  - `veloxa/core/application.cc`：`EnsureUpdateManager` lazy attach + `Application::SetPipelineHooks` 实施
+  - `veloxa/api/veloxa_api.h`：`VxPipelineCallback` typedef + `VxPipelineHooks` struct + `vx_view_set_pipeline_hooks` 声明
+  - `veloxa/api/veloxa_api.cc`：`vx_view_set_pipeline_hooks` 实施（C ABI 公开 — DEVTOOL=ON / OFF 都可用，profiler / tracing 用例支持）
+  - `tests/core/update_manager_test.cc`：+7 PipelineHooks 测（all-null / SetStoresPointer / AllFiveFireInOrder / NullLossless / NotFiredNoNeed / PartialNullSelective / UserdataPassed）
+  - `tests/api/perf_hooks_api_test.cc`：新建 4 PerfHooksApi 测（NullView / FreshViewInvalidState / LazyAttach / UserdataPassed）
+  - `tests/CMakeLists.txt`：`vx_add_test(perf_hooks_api_test ...)` 注册
+
+- **测试增量：** **DEVTOOL=ON 1169 → 1180 PASS（+11）/ DEVTOOL=OFF 1065 → 1076 PASS（+11）**
+- **A14 守门：** ✅ ctest `devtool_a14_link_closure_smoke` PASS（黑名单 8 符号 0 命中 in OFF build）；libvx_api.a OFF + ~700 bytes（C ABI 公开 stub 表面）/ libvx_core.a OFF + ~10 KB（PipelineHooks struct + UpdateManager + Application 内部公开扩展，零 vx_devtool 内部符号泄漏）
+- **反向探针：** ✅ 注释 OnAfterLayout fire 行 → `AllFiveHooksFireInOrderOnUpdate` 精准 FAIL（order 缺 "layout"）+ `PartialNullHooksOnlyNonNullCallbackFires` 精准 FAIL（layout calls = 0）；恢复后双绿
+- **Lessons learned：**
+  - lambda 捕获不能赋给 C function pointer → 改用 static recorder pattern（`g_pipeline_hook_order` + 5 free functions）— 与 plan §B.0.1 RED 测设计修正
+  - lazy attach 设计（Application 持 PipelineHooks 拷贝 + EnsureUpdateManager 时 attach）让 caller 不需要预先 LoadHTML，**但必须返 INVALID_STATE 提示 caller 还没附加** — perf_hooks_api_test `ClearHooksOnFreshViewReturnsInvalidState` + `AfterUpdateLazyAttachInstallsHooks` 双测覆盖
+  - C ABI VxPipelineHooks struct 设 `userdata` 在 `vx_view_set_pipeline_hooks` 函数参数（vs C++ PipelineHooks 内字段）— 公开 ABI 简化设计
+- **commit：** 待 B.0.1 Step 7 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 
