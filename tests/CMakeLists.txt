@@ -208,6 +208,15 @@ target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 vx_add_test(dom_bindings_test script/dom_bindings_test.cc)
 target_link_libraries(dom_bindings_test PRIVATE vx_script vx_core)
 
+# TASK-20260502-01 A.1.4: DevTool JS native binding test.
+# Both ON and OFF builds compile this test; OFF path validates the
+# zero-byte stub guard via the typeof === "undefined" branch.
+vx_add_test(devtool_bindings_test script/devtool_bindings_test.cc)
+target_link_libraries(devtool_bindings_test PRIVATE vx_script vx_core)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_bindings_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 # Core: Image
 find_package(PNG REQUIRED)
 

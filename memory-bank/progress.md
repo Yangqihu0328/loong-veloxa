@@ -145,7 +145,7 @@
 | A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.1.3 inspector_panel.html/css/js 编写 | ✅ 完成 | 54 min | ~25 min（0.46×）|
-| A.1.4 JS native binding 扩展 | ⏳ plan ✅ | 36 min | — |
+| A.1.4 JS native binding 扩展 | ✅ 完成 | 36 min | ~22 min（0.61×）|
 | A.1.5 InputDispatchSplitter（新增）| ⏳ plan ✅ | 27 min | — |
 | A.1.6 Application 双 UpdateManager（M1）| ⏳ plan ✅ | 36 min | — |
 | A.1.7 vx_view_attach_devtool C API + F12 | ⏳ plan ✅ | 27 min | — |
@@ -214,6 +214,32 @@
 - **Lint clean** ✅
 - **commit**：[A.1.3 实测耗时 ~25 min vs plan 54 min ×0.6 = **0.46×**，候选 plan ×0.6 第 26 数据点「极窄档延续」— 写实质 dogfood UI 实际工作量低于 plan 预估，验证 R2 早期 grep 锁定子集预算法的高效性]
 - **教训沉淀新增：** 写「自我防护测试」时（如本测验证 CSS 不含某子串），需注意 source 文件**注释**里的字面字符串可能误命中 — 加 `StripCssComments` helper 是正确范式，类似可推广到 JS 注释 strip
+
+**Phase A.1.4 完成 ✅（2026-05-02 15:25 → 15:47，~22 min vs plan 36 min ×0.6 = 0.61×）：**
+
+- **核心成果（dogfood UI ↔ target 闭环）：** JS native binding `vx_devtool_get_dom_json()` 落地，A.1.3 dogfood UI 调用 `vx_devtool_get_dom_json()` 现在能真实返回 target Document JSON；闭环 dogfood UI 与 target Document 的数据流
+- **架构验证（plan §A.1.4 步骤 1）：**
+  - `dom_bindings.cc` 已用 `JS_SetContextOpaque(ctx, this)` + `GetData(ctx)` 模式 recover InstanceData；不需新机制
+  - **关键发现 + 修正**：plan 假设 `RegisterDevtoolBindings(ctx, target_doc)` 但 QuickJS C function 是 C 函数指针无 closure capture → 改为扩展 `DomBindings::InstanceData` 加 `devtool_target_doc` 字段 + 公共 setter `SetDevtoolTargetDocument()`，binding 自由函数通过 `JS_GetContextOpaque(ctx) → DomBindings → devtool_target_document()` recover target
+  - 这与现有 DomBindings 模式高度一致（`doc` / `em` / `tracked_callbacks` 字段同列）
+- **Step 1 RED**：`tests/script/devtool_bindings_test.cc` 新建含 5 测：
+  - 4 个 `#ifdef VX_BUILD_DEVTOOL` 主测：RegistersGlobalFunction（typeof === "function"）/ ReturnsTargetDocumentJsonEnvelope（document.type === "document"）/ ReturnsTargetDocumentChildren（children[0].tag === "div" + children[0].children[0].data === "Hello Target"）/ ReturnsNullEnvelopeWhenTargetUnset
+  - 1 个 `#else` 分支 stub 测：StubDoesNotRegisterFunction（typeof === "undefined"）
+- **Step 2 验证 RED**：`RegisterDevtoolBindings` / `SetDevtoolTargetDocument` 未声明 → 编译失败 ✅
+- **Step 3 GREEN（plan-fact 修正点 ×2）：**
+  - `dom_bindings.h`: `DomBindings` 加 `SetDevtoolTargetDocument(dom::Document*)` + `devtool_target_document() const` + 自由函数 `RegisterDevtoolBindings(JSContext*)` 声明
+  - `dom_bindings.cc`: `InstanceData` 加 `devtool_target_doc = nullptr` 字段；`Unbind()` 同步清理；`#ifdef VX_BUILD_DEVTOOL` 块内 include `inspector_data.h` + 实现 `VxDevtoolGetDomJson`（recover target via opaque + 调用 `SerializeDocument(target, kRedactSensitive)` + JS_NewStringLen）+ `RegisterDevtoolBindings` 注册 `vx_devtool_get_dom_json` global；`#else` 分支 empty stub
+  - `veloxa/script/CMakeLists.txt`: `if(VX_BUILD_DEVTOOL)` PUBLIC define + link vx_devtool（无循环依赖：vx_devtool 仅 link vx_core / vx_devtool_resources）
+  - `tests/CMakeLists.txt`: vx_add_test devtool_bindings_test + 条件 VX_BUILD_DEVTOOL define
+- **Step 4 验证 GREEN**：发现 **plan-fact 关键修正** — `set_id(InternedString)` 直接设置 `Element::id_` 字段**不**写入 `attributes_`（仅 `SetAttribute("id",...)` 才会写）→ `JSON.parse(...).attributes.id` 返回 undefined；改用更稳健的 `tag` + `children[0].data` 路径 assertion；ctest **1124 → 1128 PASS**（+4 测，1 stub 测在 OFF 路径）
+- **Step 5 反向探针**：第一次尝试改为 empty stub 触发 `-Werror=unused-function`（编译失败也是「捕获能力」证据）→ 改为 register 错误名字 `vx_devtool_get_dom_json_PROBE_TYPO` → 4/4 主测 FAIL ✅；恢复后 4/4 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF reconfigure + ctest **1057 → 1058 PASS**（+1 = devtool_bindings_test 的 `StubDoesNotRegisterFunction` OFF 测）+ libvx_api.a **12156 bytes 维持**（零字节增长，验证 vx_script 加 vx_devtool 链接条件 guard 生效）
+- **Lint clean** ✅
+- **commit**：[A.1.4 实测 ~22 min vs plan 36 min ×0.6 = **0.61×**，候选 plan ×0.6 第 27 数据点「极窄档延续」]
+- **教训沉淀新增：**
+  1. **DOM API 边界 caching**：`set_id` ≠ `SetAttribute("id", ...)` — 前者只写 `id_` 字段（getElementById 用），后者只写 `attributes_` map（serialize 输出）；下次写涉及 attributes 测试需先确认数据流向
+  2. **QuickJS native callback 模式锁定**：C function pointer 无 closure capture → 状态必须挂在 `JS_GetContextOpaque` recoverable 的对象上；扩展 InstanceData + 公共 setter 是正确范式，不应用 thread_local global / static state
+  3. **反向探针选择陷阱**：empty function body 探针在严格 -Werror=unused-function 下会变编译错（虽然也是「捕获」但不是 test FAIL）；优先用「保留代码但故意修改 string literal / 参数」探针，更接近 RED 信号
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
