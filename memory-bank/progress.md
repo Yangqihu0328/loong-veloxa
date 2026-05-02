@@ -2,7 +2,78 @@
 
 ## 当前任务
 
-**🟢 空闲** — 上一任务 TASK-20260502-01 DevTool Phase A · Inspector 实施已归档（2026-05-02 ~18:10）。
+### TASK-20260502-02：DevTool Phase B — Performance Overlay 实施（FPS / 4 阶段 bars / dirty rect 边框高亮）[安全相关]
+
+#### `/van` 阶段产出快照（2026-05-02 ~21:35，~10 min）
+
+- **任务来源：** 用户 `/van TASK-30-04-B Performance Overlay`（直接显式 Phase B 立项；TASK-20260502-01 archive §10 / §6.3 标注「立项条件就绪」）
+- **复杂度：** Level 3（中等功能 — 跨 5 子系统 core/devtool-overlay/devtool-inspector_panel-extension/api/tests，蓝图 plan §Phase B 10 子任务，无新架构决策）
+- **分支：** `feature/TASK-20260502-02-devtool-perf-overlay` 基于 main `8b2ead4`（已含 TASK-20260502-01 Phase A 全归档 + 5 大可复用架构范式）
+- **环境检测：** Linux 6.6 / WSL2 + CMake 3.20 + clang/gcc + git 工作区干净 ✅
+- **F1-F9 grep 实证（关键核心）：** 5 ✅ 已就绪 / 1 ⚠️ 部分 / 1 🔴 需新建 — **比 Phase A 启动时 5 ✅ / 2 ⚠️ / 2 🔴 更优**
+  - F1 UpdateManager 五钩子：🔴 100% 未存在（#35 完全未闭环 → B.0.1 必做）
+  - F2 dirty rect collector：✅ **已就绪 — 比 plan 预期高 ROI**（`Renderer::ComputeDirtyRect` + `UpdateManager::last_dirty_rect()` 已可用）
+  - F3 mutable_display_list getter：✅ TASK-20260502-01 A.1.6 已暴露
+  - F4 PaintCommand kOverlayHighlight + ResetOverlayCommands：✅ TASK-20260502-01 A.0.4 + A.1.1 完整可复用
+  - F5 SteadyTimePoint / SteadyClock 时间抽象：✅ transition.h 已导出 `vx::css::SteadyTimePoint = std::chrono::steady_clock::time_point`
+  - F6 ImageCache namespace 隔离（#4）：⚠️ **HUD 不需 icon → 不闭环留 P3**（蓝图 plan 过于乐观）
+  - F7 Application::OnFrame() 单一函数：✅ 设计选择清晰（PipelineHooks 在 UpdateManager::Update() 内拆五钩子）
+  - F8 HUD overlay 设计（DevTool Document 内 absolute positioned div + CSS opacity）：✅ creative #1 决策 3 锁定
+  - F9 F11 toggle HUD 协议：✅ creative #1 决策 5 锁定 + Phase A F12 hotkey 范式可直接扩展
+- **触及技术债 1 项一次性闭环 + 1 项不闭环留 P3：** ✅ #35 → B.0.1 / ⊘ #4（HUD 不需 icon）
+- **Phase B 子任务清单（蓝图 plan 已就绪，待 plan 阶段精化）：** 10 个 — B.0 前置改造 2（五钩子 + dirty rect 扩展）+ B.1 PerfOverlay 内核 2（ring buffer + T6 budget）+ B.2 HUD UI 3（HTML/CSS + JS + dirty rect 渲染）+ B.3 集成 3（F11 toggle + example smoke + reflect prep）；估时 ~261 min plan ×0.6（4.35 h，蓝图基线）
+- **创意决策：** ❌ 无新 creative 需求（creative #1 决策 3/5 已覆盖；纯算法层面 — FrameStats ring buffer + 滑动 60 帧聚合 + 1ms/frame budget abort 是常规嵌入式范式无新架构空白）
+- **安全相关：** ✅ 是（T6 UpdateManager 钩子 callback 任意代码执行 — 1ms/frame budget abort + 单 instance 验证；T5 DisplayList overlay 跨帧累积 — dirty rect 边框高亮复用 ResetOverlayCommands 协议）
+- **前置验证 6/6 全 PASS：** 依赖 / 环境 / artifact / ctest 1169 ON / 1065 OFF baseline 隐式继承 / FetchContent 跳过 / 待处理事项关联（极强 — 闭环 #35 + 与 5 大可复用架构范式协同 + DomBindings R2 P3 三连无相互依赖）
+- **VAN push-back 6 项风险闭环：** R3 五钩子重构性能 → function pointer + nullptr branch predictor + nullptr 路径单测 / Phase B 巨大规模陷阱 → Level 3 锁定不 escalate（无 dogfood / 无 JS native binding 设计 / 无 SDL2 真窗口新例子）/ #4 蓝图过于乐观 → 不闭环留 P3 / 跳过 plan 精化诱惑 → 拒绝（Level 3 默认进 plan）/ 蓝图 plan 全照搬陷阱 → plan 阶段必须验证 main 终态后续大变 + F2 已就绪发现 + plan ×0.6 第 38 数据点 / dogfood R2 三连阻塞 → F8 plan §0.x grep 验证 `position: fixed` / `opacity` + HUD JS 复用 panel-side defensive 模式
+- **估时假设（plan ×0.6 第 38 数据点候选）：** 蓝图 4.35 h plan ×0.6 → archive §10 估时回填校准下调 ~30% → ~3.5-5 h；本次 VAN F2 dirty rect 已就绪进一步发现 → **plan 假设 ~3-4 h plan ×0.6**（reflect 阶段验证落「大件实现」桶 0.6-1.1× vs「极窄档延续」可能）
+- **MB 三件套同步：** tasks.md（新任务结构 + 任务历史 +1 行 + 上一任务折叠）/ activeContext.md（阶段 → 初始化）/ progress.md（本快照）
+
+#### `/plan` 阶段产出快照（2026-05-02 ~22:10，~30 min）
+
+- **Phase 0 11 子段实测填写完成：**
+  - §0.1 ctest baseline 二次验证 ✅ DEVTOOL=ON 1169/1169 PASS（5.75s）/ DEVTOOL=OFF 1065/1065 PASS（4.23s）— 与 main `8b2ead4` 终态一致
+  - §0.2 CMake 链接拓扑 ✅（vx_devtool 静态库 += `overlay/perf_overlay.cc` append 到既有 inspector/CMakeLists.txt 范式 / vx_core += UpdateManager + Renderer 改造 / vx_api += 2 公开 C API stub / `tests/devtool/overlay/` 兄弟子树）
+  - §0.3 静态库循环依赖审计 ✅ 无新循环（vx_devtool → vx_core 既有 B 链 A 模式持续 — 5 新符号清单 + 归属 + 调用方表）
+  - §0.4 FetchContent 守卫 ✅ 跳过（零新依赖）
+  - §0.5 测试基础设施审计 ✅（B.0.2 Vector dirty_rects PUBLIC 自然语义 / B.1.1 PerfOverlay friend pattern 引入 — veloxa/devtool 既有 0 friend 命中 / B.1.2 PUBLIC abort_count last_*_reason 自然语义）
+  - §0.6 边界输入清单 16 条（每条对应 ≥ 1 测）
+  - §0.7 调用链端到端验证 ✅ 五钩子 mapping 5 注入点 + FrameStats 5 字段公式表（style_ms = AfterStyle - FrameStart / layout_ms = AfterLayout - AfterStyle / render_ms = AfterRender - AfterLayout / paint_ms = FrameEnd - AfterRender / total_ms = FrameEnd - FrameStart）+ 标注 OnAfterStyle 与 OnAfterLayout 同点触发的 LayoutEngine 含 style 妥协（#35 阶段 2 P3 候选）
+  - §0.8 既有测试隐式契约 fingerprint ✅（5 子系统命中表）
+  - §0.9 CSS shorthand 能力 grep 表 ✅（13 条 CSS 属性 R2-verified 状态表 — `opacity` / `position: absolute` / `border-radius` 等 ✅ / `position: fixed` ⚠️ fallback 为 absolute 视觉等价 / `pointer-events: none` ❌ 用 `data-passthrough="1"` 兜底 / `z-index` ❌ 不需要 — HUD 自然在最末渲染）
+  - §0.10 工具链与子系统关闭守门 ✅
+  - §0.11 工具链 grep 命中 ✅（`rg` 不可用 → 系统 `grep -rE` + Grep tool；jq 缺失 → python3 兜底）
+
+- **B1-B8 build 级精化决策表全部锁定（用户 1 次 AskQuestion 选 all_recommended → 8/8 按推荐）：**
+  - B1=A 独立 plan 文档 / B2=A 严格串行 B.0.1 → B.3.3 / B3=A 新建 `tests/devtool/overlay/` 子树
+  - B4=A 单矩形扩展 dirty_rects_ Vector 累积（不替换 last_dirty_rect_ 既有契约）
+  - B5=A 复用 kOverlayHighlight + 新工厂 OverlayDirtyRect（不新增 enum，paint_command.h / renderer.cc switch 零改动）
+  - B6=A 每子任务 1 commit / B7=A 假设 ~3-4 h plan ×0.6 / B8=A 复用 spec
+
+- **plan 落盘：** `docs/plans/2026-05-02-devtool-perf-overlay.md`（~600 行，10 子任务 5-步 TDD 模板 + 完整代码片段 + 4 个 R 风险登记 R3/R7/R8/R9 + 3 Checkpoint + 9 条 systemPatterns 协同度自我对照）
+
+- **10 子任务总估时矩阵：**
+  - B.0.1 PipelineHooks 五钩子 + C API: 90 min ×0.6 = 54 min（最大子任务）
+  - B.0.2 dirty_rects_ Vector 扩展: 60 min ×0.6 = 36 min
+  - B.1.1 PerfOverlay ring buffer + 60 帧聚合: 60 min ×0.6 = 36 min
+  - B.1.2 T6 budget abort + 单 instance: 45 min ×0.6 = 27 min
+  - B.2.1 HUD HTML/CSS（absolute + opacity）: 45 min ×0.6 = 27 min
+  - B.2.2 HUD JS + vx_view_get_perf_stats binding: 30 min ×0.6 = 18 min
+  - B.2.3 dirty rect 边框 OverlayDirtyRect 工厂: 30 min ×0.6 = 18 min
+  - B.3.1 F11 toggle HUD: 15 min ×0.6 = 9 min
+  - B.3.2 hello_devtool perf smoke: 30 min ×0.6 = 18 min
+  - B.3.3 Phase B finalize + A14 smoke 更新: 30 min ×0.6 = 18 min
+  - **合计：435 min（7.25 h）→ ×0.6 = 261 min（4.35 h，蓝图基线）→ 最终预测 ~3-4 h（0.55-0.75× plan ×0.6）**
+
+- **plan ×0.6 第 38 数据点假设入库：** 蓝图 4.35 h → archive 校准 ~3.5-5 h → VAN F2 发现 ~3-4 h →最终预测 **~3-4 h plan ×0.6（0.55-0.75× 比值）**；reflect 阶段验证落「大件实现」桶 0.6-1.1× 中段 vs「极窄档延续」可能
+
+- **R3-R9 风险登记完整：** R3 UpdateManager 五钩子重构性能 mitigation（function pointer + nullptr branch predictor + nullptr 路径单测）/ R7 dirty_rects Vector 累积无 cap（PerfOverlay::Attach OnFrameStart 调 ClearDirtyRects 每帧清空）/ R8 HUD `position: fixed` fallback 视觉差异（fallback 为 absolute 视觉等价）/ R9 `pointer-events: none` 不支持（data-passthrough 兜底，HUD 区域 ~180×90 px 影响有限）
+
+- **MB 三件套同步：** tasks.md（plan 完成段更新 + 实现 plan 路径标记）/ activeContext.md（阶段 → 规划中 + 11 子段实测 + B1-B8 决策 + 估时假设）/ progress.md（本快照）
+
+- **下一步：** `/build` 启动 B.0.1 PipelineHooks 五钩子（最大子任务 plan 90 min ×0.6 = 54 min）
+- **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
+- **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 
 ---
 

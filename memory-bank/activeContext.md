@@ -2,9 +2,51 @@
 
 ## 当前阶段
 
-**🟢 空闲** — TASK-20260502-01 DevTool Phase A · Inspector 实施已完整闭环（VAN → Plan → Plan escalation → Build × 8 轮 → Reflect → Archive，2026-05-02 12:25 → 2026-05-02 ~18:10，~338 min 不含 archive）。归档文档 `memory-bank/archive/archive-TASK-20260502-01.md`，reflection 文档 `memory-bank/reflection/reflection-TASK-20260502-01.md`。准备接受新任务。
+**规划中（Plan 完成 ✅）** — TASK-20260502-02 Phase B 实施 plan 落盘（2026-05-02 ~22:10，~30 min）：
 
-**最新一次任务核心成果（速查）：**
+**Phase 0 11 子段实测填写完成：**
+- §0.1 ctest baseline 二次验证 ✅ DEVTOOL=ON 1169 / DEVTOOL=OFF 1065（与 main `8b2ead4` 终态一致）
+- §0.2-0.3 CMake 链接拓扑 + 静态库循环依赖审计 ✅ 无新静态库循环依赖（vx_devtool → vx_core 既有 B 链 A 模式持续）
+- §0.4 FetchContent 守卫 ✅ 跳过（零新依赖）
+- §0.5 测试基础设施审计 ✅ B.1.1 `friend class PerfOverlayTest` 引入方案明确（veloxa/devtool 既有 0 friend 命中）
+- §0.6 边界输入清单 16 条（每条对应 ≥ 1 测，分布 B.0.1 / B.0.2 / B.1.1 / B.1.2 / B.2.3 / B.3.x）
+- §0.7 调用链端到端验证 ✅ 五钩子 mapping 5 注入点（FrameStart entry / AfterStyle DetectAndApplyTransitions 后 / AfterLayout 同点 / AfterRender Record 后 / FrameEnd Replay 后）+ FrameStats 5 字段公式表
+- §0.8 既有测试隐式契约 fingerprint ✅（update_manager_test 2 测 + renderer_test 19 测 + event_test 0 测 + application_test 2 测 + inspector_panel_smoke_test 14 测）
+- §0.9 CSS shorthand 能力 grep 表 ✅ HUD CSS 可行性 100%（`opacity` / `position: fixed` fallback 为 `absolute` 视觉等价 / `border-radius` 等 R2-verified；`pointer-events: none` 不支持 → `data-passthrough="1"` 兜底）
+- §0.10 工具链与子系统关闭守门 ✅
+- §0.11 工具链 grep 命中 ✅（`rg` 不可用 → 系统 `grep -rE` + Grep tool；jq 缺失 → python3 兜底）
+
+**B1-B8 build 级精化决策表全部锁定（用户 1 次 AskQuestion 选 all_recommended → 8/8 按推荐）：**
+- B1=A 独立 plan / B2=A 严格串行 / B3=A 新建 `tests/devtool/overlay/` 子树 / B4=A 单矩形扩展 dirty_rects_ Vector（不替换 last_dirty_rect_ 既有契约）/ B5=A 复用 kOverlayHighlight + 新工厂 OverlayDirtyRect（不新增 enum）/ B6=A 每子任务 1 commit / B7=A 假设 ~3-4 h plan ×0.6 / B8=A 复用 spec
+
+**plan 落盘 ~600 行：** `docs/plans/2026-05-02-devtool-perf-overlay.md`（10 子任务 5-步 TDD 模板 + 完整代码片段 + 4 个 R 风险登记 R3/R7/R8/R9 + 3 Checkpoint + 9 条 systemPatterns 协同度自我对照）
+
+**plan ×0.6 第 38 数据点假设入库：** 蓝图 4.35 h → archive 校准 ~3.5-5 h → VAN F2 发现 ~3-4 h →最终预测 **~3-4 h plan ×0.6（0.55-0.75× 比值）**
+
+**推荐路径：** `/build` 启动 B.0.1 PipelineHooks 五钩子（最大子任务 plan 90 min ×0.6 = 54 min）
+
+**关键 push-back 决策保持：** Phase B Level 3 锁定不 escalate（vs Phase A 中途 escalate 到 Level 4）— 实际 Phase B 无 dogfood UI 子系统级风险 + 无 JS native binding 设计 + 无 SDL2 真窗口新例子。
+
+---
+
+## 当前任务
+
+### TASK-20260502-02：DevTool Phase B — Performance Overlay 实施（FPS / 4 阶段 bars / dirty rect 边框高亮）[安全相关]
+
+- **复杂度：** Level 3（中等功能 — 跨 5 子系统 core/devtool-overlay/devtool-inspector_panel-extension/api/tests，蓝图 plan §Phase B 10 子任务）
+- **来源：** TASK-20260430-04 蓝图主交付独立立项候选 §主线 3 项之 B；TASK-20260502-01 archive §10 / §6.3 标注「立项条件就绪」
+- **分支：** `feature/TASK-20260502-02-devtool-perf-overlay`（基于 main `8b2ead4`）
+- **关键文档：**
+  - 设计 spec ✅ 复用 `docs/specs/2026-04-30-devtool-design.md`（A6-A9 + A13-A14 + T5/T6 + I2/I3/I7 + R3）
+  - 实现 plan ✅ `docs/plans/2026-05-02-devtool-perf-overlay.md`（~600 行，B1-B8 决策表 + Phase 0 11 子段实测 + 10 子任务 5-步 TDD 模板 + 完整代码片段 + R3/R7/R8/R9 风险登记 + 3 Checkpoint + 9 条 systemPatterns 协同度自我对照）
+  - 创意 ✅ 复用 `creative-devtool-screen-layout.md` 决策 3（HUD overlay）+ 决策 5（F11 toggle）
+- **触及技术债（本任务一次性闭环 1 项 + 1 项不闭环留 P3）：** ✅ #35 UpdateManager frame hook → B.0.1（阶段 1 闭环；阶段 2 拆 LayoutEngine 内 style/layout 子阶段留 P3）/ ⊘ #4 ImageCache namespace（HUD 不需 icon，留 P3）
+- **F1-F9 grep 实证：** 5 ✅ 已就绪 / 1 ⚠️ 部分（#4 不闭环）/ 1 🔴 需新建（#35 五钩子）— 比 Phase A 启动时 5/2/2 更优
+- **下一步：** `/build` 启动 B.0.1 PipelineHooks 五钩子（最大子任务 plan 90 min ×0.6 = 54 min）
+
+---
+
+## 最近任务核心成果（速查 — TASK-20260502-01 Phase A）
 
 - 16/16 子任务完成（A.0/A.1/A.2/A.3 跨 4 Phase / 8 轮 build / 28 commits）
 - ctest DEVTOOL=ON 1062 → **1169 PASS（+107 测）**；DEVTOOL=OFF 1062 → **1065 PASS（+3 测）**
@@ -15,6 +57,7 @@
 - 7 公开 C API + JS native binding + Hello example + dogfood 完整链路打通
 - plan ×0.6 矩阵第 18-37 数据点入库（20 个新数据点群组），「大件实现」桶系数下调 0.8-1.2× → 0.6-1.1× + 3 子桶
 - 3 新 systemPattern 沉淀（plan escalation 中途触发 + 反向探针有效性陷阱清单 + 子系统关闭守门 ctest smoke 范式）
+- **5 大可复用架构范式**（Phase B 直接用 4 项）：双 UpdateManager / 双层 API / #ifdef + CMake conditional / canvas Translate / 资源嵌入
 
 ---
 
