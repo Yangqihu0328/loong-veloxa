@@ -18,6 +18,7 @@ add_library(vx_core STATIC
   layout/text_shaper.cc
   layout/layout_utils.cc
   layout/layout_engine.cc
+  layout/layout_box.cc
   layout/flex_layout.cc
   render/renderer.cc
   image/image_decoder.cc

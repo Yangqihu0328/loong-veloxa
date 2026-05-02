@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build 阶段；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线确认 ✅；A.0.1 I1 双 Document 槽改造完成 ✅（ctest 1064/1064 + 反向探针 verified + 0 漏改）；当前焦点 → A.0.2 LayoutBox::ToJson() 闭环技术债 #26。
+**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线 ✅；A.0.1 I1 双 Document 槽 ✅ commit `0e8e40c`（1064/1064 + 反向探针 + 0 漏改）；A.0.2 LayoutBox::ToJson 技术债 #26 闭环 ✅（1068/1068 + 4 新测 + 反向探针 #664）；当前焦点 → A.0.3 DOM Serializer::ToJson + T3 sensitive data redaction。
 
 ## 当前任务
 

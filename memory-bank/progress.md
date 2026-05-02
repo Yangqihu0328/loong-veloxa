@@ -23,13 +23,33 @@
 - **R1 风险结案**：实证 callsite 4 处 → A.0.1 实施零漏改（远低于 spec §9 估 10-15 处），R1 🟡→🟢 结案
 - **commit**：[A.0.1 实测耗时 ~10 min，远低于蓝图估 54 min plan ×0.6 = 0.18×；候选 plan ×0.6 第 18 数据点「极窄档延续」]
 
+**Phase A.0.2 完成 ✅（2026-05-02 13:25，~10 min vs plan 18 min ×0.6 = 0.56× plan ×0.6 → 窄延续）：**
+
+- **关键发现 — plan 假设修正**：
+  - `vx::String` 实际 API 是 `append/reserve`（小写，非 `Append/Reserve`）+ 无 `contains` 方法
+  - `LayoutBox` 是 header-only struct，需新建 `layout_box.cc` + 加入 `vx_core` CMakeLists.txt
+  - 测试断言改用 `std::string(s.data(), s.size()).find(...) != std::string::npos`（加 `AsStd` helper）
+- **Step 1 RED**：layout_box_test.cc +4 测（`ToJsonBasicGeometry` / `ToJsonMarginCollapseStateSerialized` / `ToJsonAllLayoutTypeVariants` / `ToJsonChildCountReflectsAppendedChildren`）
+- **Step 2 验证 RED**：编译失败 `'struct vx::layout::LayoutBox' has no member named 'ToJson'` ✅
+- **Step 3 GREEN**：
+  - `layout_box.h`: include `string.h` + 加 `String ToJson() const;` 声明（含 schema doc 注释）
+  - `layout_box.cc` (新建)：实现 `ToJson()` — `LayoutTypeName/AppendF32 (%g)/AppendBool/AppendU32/AppendQuad` helper；reserve(320) 避免多次扩容
+  - `vx_core/CMakeLists.txt`: 加 `layout/layout_box.cc` 源
+- **Step 4 验证 GREEN**：cmake reconfigure（CMakeLists 变）+ 全量构建 + ctest **1068/1068 PASS**（基线 1064 + 4 新测 = 1068）+ 1 Skip（Wpt001 沿用）
+- **Step 5 反向探针**：
+  - 探针 1（`collapsed_through` 默认 `false→true`）：不可探，因测 #665 主动 set true，默认值变化检测不到（设计上无效）
+  - 探针 2（`LayoutTypeName(kBlock)` 改 `inline`）：测 #664 FAIL ✅（捕获能力 verified）
+- **Lint clean** ✅
+- **技术债 #26 LayoutBox.Dump 缺失** 闭环 ✅（A4 验收准入达成）
+- **commit**：[A.0.2 实测耗时 ~10 min，vs plan 18 min ×0.6 = 0.56×；候选 plan ×0.6 第 19 数据点「窄档延续」：API 校准成本 ~3 min 折抵新建文件成本]
+
 **Phase A.0.x 进度（16 子任务总览）：**
 
 | 子任务 | 状态 | plan ×0.6 估时 | 实测 |
 |:-:|:-:|---:|---:|
 | Phase 0.1 reconfigure | ✅ 完成 | — | ~3 min |
 | A.0.1 I1 双 Document 槽 | ✅ 完成 | 54 min | ~10 min（0.18×）|
-| A.0.2 LayoutBox::ToJson | ⏳ 进行中 | 18 min | — |
+| A.0.2 LayoutBox::ToJson | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.0.3 DOM Serializer::ToJson + T3 | ⏳ | 27 min | — |
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ⏳ | 18 min | — |
 | A.0.5 inspector_data.h 内部 C++ | ⏳ | 36 min | — |
