@@ -71,3 +71,16 @@
   - HTML inline style 解析路径与 JS 路径一致（含三件套安全护栏）
   - 对 DevTool 主线（Inspector / 几何可视化 / 后续 z-index/IFC 扩展）提供更可靠几何基础
 
+## 最近能力更新（2026-05-02）
+
+- ✅ **DevTool Phase A · Inspector 主线落地（TASK-20260502-01）** 🎉
+  - **公开 C API 7 个新函数**：vx_view_attach_devtool / detach_devtool / devtool_loaded / vx_view_serialize_dom_json / vx_inspector_set_redaction_policy + VxRedactionPolicy enum + VxDevtoolOptions struct
+  - **F12 hotkey 内化** — Application 层拦截 KeyDown(F12) 自动 toggle DevTool 可见性
+  - **dogfood 完整链路** — Veloxa 引擎驱动 DevTool UI（panel.html/css/js + JS native binding `vx_devtool_get_dom_json()` 跨 Document inspection）
+  - **`examples/hello_devtool.cc`** — SDL2 真窗口 + DevTool attach + F12 toggle + T3 redaction 运行时验证 user-facing 范例
+  - **4 安全威胁面 mitigation**：T2 路径穿越（编译期嵌入消除）+ T3 redaction policy + T5 overlay 隔离 + T7 buffer overflow 守卫
+  - **A14 链接闭包零自动化守门** — 任何后续 DevTool 子系统扩展自动验证零字节增长（pre-merge ctest smoke 强制守门）
+  - **2 项历史技术债闭环**（#26 LayoutBox.Dump / #40 C API DOM introspection）
+  - **3 项 R2 引擎缺陷暴露 → P3 候选**（DomBindings.Element.children / addEventListener / innerHTML setter）— P3 修复后 DevTool UI 视觉完整 + 第三方 DevTool-like 工具可在 Veloxa 上实现
+  - **下一步路线图**：TASK-30-04-B Performance Overlay（估时下调 ~30% 至 ~3.5-5 h）+ TASK-30-04-C Hot Reload（估时下调 ~20% 至 ~2.5-4 h）+ DomBindings R2 P3 修复（~3-5 h plan ×0.6）
+

@@ -756,3 +756,98 @@ git worktree remove --force .worktree-<task_short>/
 ### plan ×0.6 第 17 数据点
 
 主线（VAN + Plan）实测 ~74 min vs plan 估时 210-270 min → **0.27-0.35× plan / 0.46-0.59× plan ×0.6**（落「极窄档 + review 类下限交界」）。详见 `systemPatterns.md` § plan ×0.6 任务类型分桶系数矩阵 § 蓝图任务 V2=a + 多决策连续跳过 + 批量文档段。
+
+---
+
+## TASK-20260502-01 DevTool Phase A · Inspector 实施摘要
+
+### 任务概述
+
+DevTool Phase A · Inspector 主线落地 — TASK-30-04 蓝图主交付的第一项 (subtask_a) 实施版，Level 4 实施类大件任务，16 子任务跨 4 Phase 8 轮 build 完成。
+
+### 主要交付
+
+- **公开 C API**（`veloxa/api/veloxa_api.h`）新增：
+  - `vx_view_attach_devtool / detach_devtool / devtool_loaded`（DevTool lifecycle）
+  - `vx_view_serialize_dom_json`（T7 双调用 + max_size 守卫）
+  - `vx_inspector_set_redaction_policy`（T3 mitigation policy switch）
+  - `VxRedactionPolicy { REDACT_SENSITIVE, NONE }` enum
+  - `VxDevtoolOptions { devtool_width, enable_f12_hotkey }` struct
+  - `VX_KEY_F12 = 0x40000045u` 常量
+- **内部 C++ API**（`veloxa/devtool/inspector/inspector_data.h`）— `SerializeDocument / SerializeLayoutBox / SerializeComputedStyle`（D7=C 第一层零拷贝）
+- **JS native binding** — `vx_devtool_get_dom_json()` 全局函数（DomBindings::SetDevtoolTargetDocument 跨 Document inspection）
+- **编译期嵌入资源** — `veloxa/devtool/resources/inspector_panel.{html,css,js}` 通过 Python codegen + CMake `add_custom_command` 嵌入 binary（B-A1.1=b T2 路径穿越威胁面消除）
+- **Hello example** — `examples/hello_devtool.cc`（SDL2 真窗口 + F12 toggle + T3 redaction 运行时验证）
+
+### 技术债闭环
+
+- **#26 LayoutBox.Dump 缺失** ✅ 闭环（A.0.2 LayoutBox::ToJson() + 4 单测）
+- **#40 C API 缺 DOM/Style/Layout introspection** ✅ 闭环（A.0.5 + A.0.6 双层 API + by-node API 待 P3 node_id 系统建立后补）
+
+### 安全威胁 mitigation
+
+- **T2 路径穿越** ✅ 完全消除（编译期嵌入路径推翻 B4=B 改 B-A1.1=b）
+- **T3 Inspector 敏感数据 redact** ✅ 完整 mitigation（C-API + JS binding 路径统一安全策略）
+- **T5 DisplayList overlay 隔离** ✅ 完整 mitigation（kOverlayHighlight + ResetOverlayCommands + 多帧隔离测）
+- **T7 C API buffer overflow** ✅ 完整 mitigation（双调用模式 + max_size + 4 边界测）
+- **A14 链接闭包零** ✅ 自动化守门（A.2.4 ctest smoke 每次 ctest 跑 nm 验证 8 符号黑名单零命中）
+
+### R2 缺陷暴露 → P3 候选 3 项
+
+- **DomBindings.Element.children** collection getter 缺失（HTMLCollection 风格）
+- **DomBindings.element.addEventListener** 缺失（已有 EventManager API，需 JS binding 暴露）
+- **DomBindings.element.innerHTML setter** 缺失（HTML parser 重新解析子树）
+
+### plan ×0.6 第 18-37 数据点入库
+
+20 个新数据点群组，~281 min 主线 vs 441 min plan ×0.6 = **0.64×（落「大件实现」桶下沿外，触发桶系数下调 0.8-1.2× → 0.6-1.1×）**。详见 `systemPatterns.md` § plan ×0.6 任务类型分桶系数矩阵实证段。
+
+### 4 大跨阶段教训沉淀
+
+1. plan-fact reconcile 是 Level 4 大件任务的常态（11 处修正）
+2. 多层 A14 zero-byte guard 范式锁定（5 子任务复用）
+3. C ABI stub 公开表面 vs DevTool 闭包精确区分（3 处出现）
+4. dogfood = R2 缺陷暴露清单产出（A.1.8 集中产出 3 P3 候选）
+
+### 新模式入库
+
+- `systemPatterns.md` § plan escalation 中途触发（首次完整实证 — Phase A.1 escalation 后 0.99×）
+- `systemPatterns.md` § 反向探针有效性陷阱清单（4 类陷阱）
+- `systemPatterns.md` § 子系统关闭守门 ctest smoke 范式（pure CMake script + nm 自动化）
+
+---
+
+## Status / StatusOr 使用规范（TASK-20260502-01 A.1.8 教训沉淀）
+
+### 背景
+
+`StatusOr<T>` 在 `has_value=true` 时调 `.status()` 会 `VX_DCHECK(!has_value_)` abort（设计上 status() 仅在错误状态时返回 Status，OK 状态由 `T` 持有）。直接写 `Status s = result.status()` 而 result 已成功会触发 abort。
+
+### 规范
+
+```cpp
+// ✅ 正确：三元守卫
+StatusOr<MyType> result = ComputeSomething();
+Status s = result.ok() ? Status::Ok() : result.status();
+
+// ❌ 错误：has_value=true 时 status() abort
+StatusOr<MyType> result = ComputeSomething();
+Status s = result.status();  // DCHECK abort if result.ok()
+
+// ✅ 正确：直接消费 value 或处理错误
+StatusOr<MyType> result = ComputeSomething();
+if (!result.ok()) {
+  return result.status();  // 仅在错误时调 .status()
+}
+auto value = std::move(result).value();
+```
+
+### 实证
+
+- TASK-20260502-01 A.1.8 GREEN 期间踩坑：`devtool_script_status_ = eval.status()` 当 `eval.ok() == true` 时 abort
+- 修正：`devtool_script_status_ = eval.ok() ? Status::Ok() : eval.status()`
+
+### 后续 Action（P1）
+
+- 全 codebase grep `StatusOr.*\.status\(\)` audit 现有用法
+- 考虑加 clang-tidy custom check 强制规范
