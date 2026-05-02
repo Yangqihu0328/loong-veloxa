@@ -192,6 +192,16 @@ if(VX_BUILD_DEVTOOL)
   target_compile_definitions(application_devtool_test PRIVATE VX_BUILD_DEVTOOL)
 endif()
 
+# TASK-20260502-01 A.1.7: vx_view_attach_devtool / detach / devtool_loaded
+# C API wrapper. Compiled in BOTH ON and OFF builds; OFF path verifies
+# the VX_ERROR_INVALID_STATE stub guard via the #else branch test.
+vx_add_test(devtool_attach_api_test api/devtool_attach_api_test.cc)
+target_link_libraries(devtool_attach_api_test
+  PRIVATE vx_foundation vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_attach_api_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 # API: C API
 add_executable(api_test api/api_test.cc)
 target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)

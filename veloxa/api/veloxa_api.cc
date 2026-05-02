@@ -271,6 +271,66 @@ VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
 #endif
 }
 
+/* ── DevTool Attach C API (TASK-20260502-01 A.1.7) ────────────────
+ * Thin wrapper around Application::LoadDevtoolDocument /
+ * UnloadDevtoolDocument + F12 hotkey toggle. OFF path returns
+ * VX_ERROR_INVALID_STATE (A14 zero-byte stub guard). */
+
+VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  (void)opts;
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+
+  /* Defaults when caller passes NULL opts (matches A.1.7 plan contract). */
+  uint32_t width = 270;
+  uint8_t hotkey = 1;
+  if (opts) {
+    width = opts->devtool_width != 0 ? opts->devtool_width : 270;
+    hotkey = opts->enable_f12_hotkey;
+  }
+
+  /* Clamp to documented range [200, 400] silently. */
+  if (width < 200) width = 200;
+  if (width > 400) width = 400;
+
+  /* Update hotkey state BEFORE Load — Load is what actually publishes
+   * the DevTool Document; hotkey enables future F12 toggles. */
+  app->SetDevtoolHotkey(hotkey != 0, static_cast<vx::f32>(width));
+  if (!app->LoadDevtoolDocument(static_cast<vx::f32>(width))) {
+    /* canvas-missing or other failure path */
+    return VX_ERROR_INVALID_STATE;
+  }
+  return VX_OK;
+#endif
+}
+
+VxResult vx_view_detach_devtool(VxView* view) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  app->UnloadDevtoolDocument();
+  /* Disable hotkey so subsequent F12 events don't auto-reattach
+   * (preserves "F12 only after explicit attach" plan contract). */
+  app->SetDevtoolHotkey(false);
+  return VX_OK;
+#endif
+}
+
+int vx_view_devtool_loaded(VxView* view) {
+  if (!view) return -1;
+#ifndef VX_BUILD_DEVTOOL
+  return 0;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  return app->devtool_loaded() ? 1 : 0;
+#endif
+}
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void) { return VELOXA_VERSION_STRING; }

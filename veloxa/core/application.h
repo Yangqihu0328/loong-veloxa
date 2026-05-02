@@ -84,11 +84,26 @@ class Application {
   void UnloadDevtoolDocument();
   bool devtool_loaded() const { return devtool_document_ != nullptr; }
 
+  // TASK-20260502-01 A.1.7 — F12 hotkey toggle for attach/detach.
+  // When set, InjectInput intercepts KeyDown(F12) and toggles
+  // LoadDevtoolDocument(devtool_default_width_) / UnloadDevtoolDocument
+  // (the F12 event itself is NOT forwarded to event_manager_ in that
+  // case). The hotkey is only effective AFTER an initial attach (i.e.
+  // we do not auto-load DevTool from a fresh Application — avoids
+  // surprise activation per A.1.7 plan contract).
+  void SetDevtoolHotkey(bool enabled, f32 devtool_default_width = 270.0f) {
+    devtool_hotkey_enabled_ = enabled;
+    devtool_default_width_ = devtool_default_width;
+  }
+
  private:
   void OnFrame();
   void EnsureUpdateManager();
   void EnsureDevtoolUpdateManager(f32 devtool_width);
   void RenderDevtoolWithTranslate();
+  // Returns true if the input was consumed by the hotkey handler (and
+  // must NOT be forwarded). False = forward as usual.
+  bool MaybeHandleDevtoolHotkey(const event::InputEvent& input);
 
   Config config_;
   dom::Document* target_document_ = nullptr;
@@ -99,6 +114,12 @@ class Application {
   // case ownership stays external (matches A.0.1 contract).
   std::unique_ptr<dom::Document> owned_devtool_document_;
   f32 devtool_width_ = 0.0f;
+  // A.1.7 — F12 hotkey state (set by C API vx_view_attach_devtool /
+  // SetDevtoolHotkey). enabled gates whether KeyDown(F12) is consumed
+  // and toggles attach/detach; default_width is the width passed back
+  // into LoadDevtoolDocument when the hotkey re-attaches.
+  bool devtool_hotkey_enabled_ = false;
+  f32 devtool_default_width_ = 270.0f;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;

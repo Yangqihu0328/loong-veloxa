@@ -13,6 +13,14 @@
 #include "veloxa/devtool/resources/inspector_resources.h"
 #endif
 
+// SDLK_F12 keycode forwarded by sdl2_input_translate (A.1.7). We avoid
+// pulling in veloxa_api.h here (would create a core→api header cycle);
+// the value MUST match VX_KEY_F12 there. Keep these two constants in
+// sync via tests/api/devtool_attach_api_test.cc::F12HotkeyTogglesAttach.
+namespace {
+constexpr vx::u32 kVxKeyF12 = 0x40000045u;
+}  // namespace
+
 namespace vx {
 
 namespace {
@@ -99,10 +107,35 @@ Status Application::LoadScript(StringView source) {
 }
 
 void Application::InjectInput(const event::InputEvent& input) {
+  // A.1.7 — F12 hotkey interception happens BEFORE forwarding so the
+  // event is fully consumed (target Document never sees the F12 in
+  // hotkey-on mode, avoiding double-handling).
+  if (MaybeHandleDevtoolHotkey(input)) return;
+
   EnsureUpdateManager();
   if (update_manager_) {
     event_manager_.HandleInput(input, update_manager_->layout_root());
   }
+}
+
+bool Application::MaybeHandleDevtoolHotkey(const event::InputEvent& input) {
+#ifdef VX_BUILD_DEVTOOL
+  // Only react when (a) hotkey was enabled by an explicit attach and
+  // (b) the event is KeyDown(F12). Any other event shape (or a fresh
+  // Application that never attached) is forwarded normally.
+  if (!devtool_hotkey_enabled_) return false;
+  if (input.type != event::EventType::kKeyDown) return false;
+  if (input.key_code != kVxKeyF12) return false;
+  if (devtool_loaded()) {
+    UnloadDevtoolDocument();
+  } else {
+    LoadDevtoolDocument(devtool_default_width_);
+  }
+  return true;
+#else
+  (void)input;
+  return false;
+#endif
 }
 
 void Application::Run() {

@@ -33,10 +33,15 @@ bool TranslateSdlEvent(const SDL_Event& sdl, VxInputEvent& out) {
 }
 
 uint32_t TranslateSdlKey(SDL_Keycode key) {
-  // ASCII subset only: SDLK_<ascii> values equal their ASCII code.
-  // F-keys, arrows, etc. fall outside [0,127] and return 0 for now.
+  // ASCII subset: SDLK_<ascii> values equal their ASCII code.
   if (key >= 0 && key < 128) {
     return static_cast<uint32_t>(key);
+  }
+  // TASK-20260502-01 A.1.7: SDLK_F12 → VX_KEY_F12 so SDL2-driven hosts
+  // can deliver the DevTool F12 hotkey naturally via vx_event_loop_pump_input.
+  // Other F-keys / arrows still return 0 until embedders need them.
+  if (key == SDLK_F12) {
+    return 0x40000045u;  // mirrors VX_KEY_F12 in veloxa/api/veloxa_api.h
   }
   return 0;
 }

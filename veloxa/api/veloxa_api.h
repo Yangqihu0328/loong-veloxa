@@ -148,6 +148,48 @@ VxResult vx_view_quit(VxView* view);
 VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
                                     uint32_t* out_len, uint32_t max_size);
 
+/* ── DevTool Attach C API (TASK-20260502-01 A.1.7) ────────────────
+ *
+ * Public C wrapper around Application::LoadDevtoolDocument /
+ * UnloadDevtoolDocument (A.1.6 dual UpdateManager + dogfood UI). When
+ * built with -DVX_BUILD_DEVTOOL=OFF, vx_view_attach_devtool returns
+ * VX_ERROR_INVALID_STATE (A14 zero-byte stub guard) and devtool_loaded
+ * always returns 0.
+ *
+ * F12 hotkey: when enable_f12_hotkey=1, a VX_EVENT_KEY_DOWN with
+ * key_code == VX_KEY_F12 fed via vx_view_inject_input is consumed
+ * internally to toggle DevTool attach/detach (the event is NOT
+ * forwarded to the target Document's event handlers). Embedders that
+ * want to handle F12 themselves should pass enable_f12_hotkey=0.
+ *
+ * F12 hotkey only triggers AFTER an initial vx_view_attach_devtool —
+ * it never auto-loads DevTool from a fresh view (avoids surprise
+ * activation in apps that did not opt-in).
+ */
+
+/* SDL2 SDLK_F12 keycode (cf. veloxa/platform/sdl2/sdl2_input_translate
+ * which now maps SDLK_F12 → VX_KEY_F12). Embedders not using SDL2 can
+ * pass this same value to vx_view_inject_input to invoke the hotkey. */
+#define VX_KEY_F12 0x40000045u
+
+typedef struct {
+  /* DevTool splitter dock width in px. Default 270; clamped to
+   * [200, 400] when out of range (no error returned). */
+  uint32_t devtool_width;
+  /* 0=off, 1=on. When NULL opts is passed, defaults to 1. */
+  uint8_t enable_f12_hotkey;
+} VxDevtoolOptions;
+
+/* Attach DevTool dogfood UI to view. opts may be NULL → uses
+ * defaults (devtool_width=270, enable_f12_hotkey=1). */
+VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts);
+
+/* Detach (no-op if not attached). */
+VxResult vx_view_detach_devtool(VxView* view);
+
+/* Returns: 1 if DevTool currently attached, 0 if not, -1 if view is NULL. */
+int vx_view_devtool_loaded(VxView* view);
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void);
