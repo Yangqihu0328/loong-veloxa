@@ -2,7 +2,14 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线 ✅；A.0.1 commit `0e8e40c`（1064/1064 + 反向探针 + 0 漏改）；A.0.2 LayoutBox::ToJson #26 闭环 ✅ commit `4131700`（1068/1068）；A.0.3 DOM Serializer::ToJson + T3 password redaction ✅ commit `30d54ee`（1080/1080）；A.0.4 PaintCommand::kOverlayHighlight + T5 ResetOverlayCommands ✅（1085/1085 + 5 新测 + 反向探针 no-op ResetOverlayCommands → #837 FAIL）；当前焦点 → A.0.5 inspector_data.h 内部 C++ API（DevTool 内部数据接口）。
+**构建中·轮次 1 完成（Phase A.0.1-A.0.4 of A.0.x ✅；下次进入 A.0.5）** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；本轮完成「Inspector 数据序列化层 + T3/T5 安全防护」自然分组（4 子任务 + Phase 0.1 reconfigure）；ctest 1062 → 1085（+23 新测）+ 1 Skip 沿用；下次 `/build` 续上 A.0.5（inspector_data.h 内部 C++ API）→ A.0.6（vx_view_serialize_*_json 公共 C API + T7）→ A.1.x DevTool UI 实施。
+
+**本轮 commit 链：**
+- `e43a5be` chore: VAN + plan 阶段产出
+- `0e8e40c` refactor(application): I1 双 Document 槽 → R1 callsite 4 处零漏改
+- `4131700` feat(layout): LayoutBox::ToJson() → 闭环技术债 #26（A4 验收）
+- `30d54ee` feat(dom): Serializer::ToJson() + T3 password redaction（A1 验收）
+- `e98f9fa` feat(render): PaintCommand::kOverlayHighlight + T5 ResetOverlayCommands（A5 验收）
 
 ## 当前任务
 
