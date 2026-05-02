@@ -179,5 +179,63 @@ TEST(InspectorOverlayTest, RepeatedInjectWithoutResetAccumulatesByDesign) {
       << "Inject must NOT internally Reset — that's the caller's job";
 }
 
+// =============================================================================
+// TASK-20260502-02 B.2.3 — InjectDirtyRectHighlights
+//
+// 复用 kOverlayHighlight type (T5 mitigation 协议复用) — 调用方约定每帧首端
+// ResetOverlayCommands(list) 清旧 overlay，再调 InjectDirtyRectHighlights 追
+// 加本帧 dirty rect 边框。OverlayDirtyRect 工厂语义专用 helper（区分 hover）。
+// =============================================================================
+
+TEST(InspectorOverlayTest, OverlayDirtyRectFactoryYellowHighlight) {
+  const gfx::Rect r{10, 20, 100, 50};
+  const auto cmd = render::PaintCommand::OverlayDirtyRect(r);
+  EXPECT_EQ(cmd.type, render::PaintCommand::Type::kOverlayHighlight);
+  EXPECT_EQ(cmd.rect, r);
+  // 默认黄绿色 (creative #1 决策 4 — 区分 hover red)
+  EXPECT_EQ(cmd.color,
+            gfx::Color::FromRGBA(255, 255, 0, 200));
+  // 默认 stroke 1px (比 hover 2px 细，避免视觉冲突)
+  EXPECT_FLOAT_EQ(cmd.param, 1.0f);
+}
+
+TEST(InspectorOverlayTest, InjectDirtyRectHighlightsAppendsAllRects) {
+  render::DisplayList list;
+  Vector<gfx::Rect> rects;
+  rects.push_back(gfx::Rect{0, 0, 50, 50});
+  rects.push_back(gfx::Rect{60, 60, 80, 80});
+  rects.push_back(gfx::Rect{200, 100, 30, 30});
+
+  InspectorOverlay::InjectDirtyRectHighlights(list, rects);
+
+  ASSERT_EQ(list.size(), 3u);
+  for (vx::usize i = 0; i < 3; i++) {
+    EXPECT_EQ(list[i].type, render::PaintCommand::Type::kOverlayHighlight);
+    EXPECT_EQ(list[i].rect, rects[i]);
+  }
+}
+
+TEST(InspectorOverlayTest, InjectDirtyRectHighlightsEmptyListIsNoOp) {
+  render::DisplayList list;
+  list.push_back(render::PaintCommand::FillRect(
+      gfx::Rect{0, 0, 100, 100}, gfx::Color::Red()));
+  Vector<gfx::Rect> rects;  // empty
+  InspectorOverlay::InjectDirtyRectHighlights(list, rects);
+  EXPECT_EQ(list.size(), 1u);  // unchanged
+  EXPECT_EQ(list[0].type, render::PaintCommand::Type::kFillRect);
+}
+
+TEST(InspectorOverlayTest, InjectDirtyRectHighlightsSkipsEmptyRects) {
+  // 防御 — 空 rect 不产 overlay (避免 0×0 视觉伪影)
+  render::DisplayList list;
+  Vector<gfx::Rect> rects;
+  rects.push_back(gfx::Rect{0, 0, 0, 0});  // empty
+  rects.push_back(gfx::Rect{10, 10, 50, 50});  // valid
+  rects.push_back(gfx::Rect{100, 100, 0, 50});  // partial-empty (w=0)
+  InspectorOverlay::InjectDirtyRectHighlights(list, rects);
+  EXPECT_EQ(list.size(), 1u);
+  EXPECT_EQ(list[0].rect, (gfx::Rect{10, 10, 50, 50}));
+}
+
 }  // namespace
 }  // namespace vx::devtool

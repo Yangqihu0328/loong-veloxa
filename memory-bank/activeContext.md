@@ -4,19 +4,20 @@
 
 **构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:35）：
 
-**已完成 6/10 子任务：**
-- B.0.1 PipelineHooks 五钩子 ✅（**#35 阶段 1 闭环**；~25 min = **0.46×**）
+**已完成 7/10 子任务：**
+- B.0.1 PipelineHooks 五钩子 ✅（~25 min = **0.46×**）
 - B.0.2 dirty_rects_ Vector 累积 ✅（~7 min = **0.19×**）
 - B.1.1 PerfOverlay ring buffer ✅（~8 min = **0.22×**）
 - B.1.2 PerfOverlay::Attach + T6 budget ✅（~15 min = **0.56×**）
 - B.2.1 HUD HTML/CSS ✅（~7 min = **0.26×**）
-- B.2.2 HUD JS + vx_view_get_perf_stats binding ✅（~13 min = **0.72×**）
+- B.2.2 HUD JS + binding ✅（~13 min = **0.72×**）
+- B.2.3 OverlayDirtyRect 工厂 + InjectDirtyRectHighlights ✅（~7 min = **0.39×**）
 
-**测试基线：** DEVTOOL=ON 1218 / DEVTOOL=OFF 1082 双绿
+**测试基线：** DEVTOOL=ON 1222 / DEVTOOL=OFF 1082 双绿
 
-**累计 plan ×0.6 比值：** 实测 75 min vs plan ×0.6 198 min = **0.38×**（6 子任务平均）
+**累计 plan ×0.6 比值：** 实测 82 min vs plan ×0.6 216 min = **0.38×**（7 子任务平均）
 
-**当前：** 准备 B.2.3 dirty rect 边框 OverlayDirtyRect 工厂（plan 30 min ×0.6 = 18 min；PaintCommand::OverlayDirtyRect 工厂 + InspectorOverlay::InjectDirtyRectHighlights）
+**当前：** 准备 B.3.1 F11 toggle HUD（plan 15 min ×0.6 = 9 min；veloxa_api.h 加 VX_KEY_F11 + sdl2_input_translate 加映射 + Application::MaybeHandleDevtoolHotkey 加 F11 处理）
 
 ---
 

@@ -84,6 +84,17 @@ struct PaintCommand {
     return {Type::kOverlayHighlight, r, c, stroke_width, 0, {}, 0};
   }
 
+  // TASK-20260502-02 B.2.3 — DevTool Performance Overlay dirty rect 边框.
+  // 复用 kOverlayHighlight type (T5 mitigation 协议复用 — ResetOverlayCommands
+  // 同时清 hover + dirty rect overlays). 默认黄绿色区分 hover red, stroke 1px
+  // 比 hover 2px 细避免视觉冲突 (creative #1 决策 4).
+  static PaintCommand OverlayDirtyRect(
+      const gfx::Rect& r,
+      gfx::Color c = gfx::Color::FromRGBA(255, 255, 0, 200),
+      f32 stroke_width = 1.0f) {
+    return {Type::kOverlayHighlight, r, c, stroke_width, 0, {}, 0};
+  }
+
   bool operator==(const PaintCommand& other) const {
     return type == other.type && rect == other.rect &&
            color == other.color && param == other.param &&

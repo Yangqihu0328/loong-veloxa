@@ -16,4 +16,12 @@ void InspectorOverlay::InjectHoverHighlight(render::DisplayList& list,
       render::PaintCommand::OverlayHighlight(border_box, color, stroke_width));
 }
 
+void InspectorOverlay::InjectDirtyRectHighlights(
+    render::DisplayList& list, const Vector<gfx::Rect>& rects) {
+  for (vx::usize i = 0; i < rects.size(); i++) {
+    if (rects[i].IsEmpty()) continue;
+    list.push_back(render::PaintCommand::OverlayDirtyRect(rects[i]));
+  }
+}
+
 }  // namespace vx::devtool

@@ -182,7 +182,23 @@
 - **A14 守门：** ✅ 隐式守门（VxViewGetPerfStats 在 `#ifdef VX_BUILD_DEVTOOL` 块；SetPerfOverlay forward-declared 接受 raw ptr → zero vx_devtool 内部符号泄漏到 OFF build；libvx_script.a OFF 字节增长 ~50 bytes 公开 ABI 表面）
 - **反向探针：** ✅ fps 字段设硬编码 0（`const int fps = 0`）→ `VxViewGetPerfStatsReturnsLiveStatsWhenAttached` 精准 FAIL（fps 期望 100 vs 实际 0）；恢复后双绿
 - **架构亮点：** forward declare PerfOverlay 解 vx_script → vx_devtool 循环依赖（vx_script.h 公开 ABI，vx_script.cc 内部 include 实施 — 经典 pImpl 范式延续）
-- **commit：** 待 B.2.2 commit
+- **commit：** `647df3b feat(devtool): HUD JS updateHud + vx_view_get_perf_stats native binding (B.2.2)`
+
+#### `/build` Phase B.2.3 完成快照（2026-05-02 ~23:32，~7 min 实测）
+
+- **任务：** dirty rect 边框 OverlayDirtyRect 工厂 + `InspectorOverlay::InjectDirtyRectHighlights`（B.0.2 dirty_rects_ Vector + B.1.2 PerfOverlay 配套渲染端实施）
+- **plan ×0.6 估时：** 18 min / **实测：** ~7 min（**0.39× plan ×0.6**，「极窄档延续」桶 — InspectorOverlay 范式复用 + 测试 fixture 复用）
+- **改动文件：**
+  - `veloxa/core/render/paint_command.h`：加 `OverlayDirtyRect(rect, color, stroke_width)` 静态工厂 — 复用 `kOverlayHighlight` type，默认黄绿色 (255,255,0,200) + stroke 1px（区分 hover red 2px，creative #1 决策 4）
+  - `veloxa/devtool/inspector/inspector_overlay.h`：加 `static void InjectDirtyRectHighlights(list, rects)` 声明（`Vector<gfx::Rect>` 输入）
+  - `veloxa/devtool/inspector/inspector_overlay.cc`：实施 — for-loop push_back OverlayDirtyRect cmd；空 rect (IsEmpty) 跳过避免 0×0 视觉伪影
+  - `tests/devtool/inspector/inspector_overlay_test.cc`：+4 测（OverlayDirtyRectFactoryYellowHighlight / InjectAppendsAllRects / InjectEmptyListIsNoOp / InjectSkipsEmptyRects）
+
+- **测试增量：** **DEVTOOL=ON 1218 → 1222 PASS（+4）/ DEVTOOL=OFF 1082 unchanged**
+- **A14 守门：** ✅ 隐式守门（OverlayDirtyRect 工厂在 vx_core/render/paint_command.h — 静态内联工厂；DEVTOOL=OFF 编进 vx_core 但不被引用 — dead code elim 无开销）
+- **反向探针：** ✅ 跳 IsEmpty filter → `InjectDirtyRectHighlightsSkipsEmptyRects` 精准 FAIL（list size 3 vs 1）
+- **T5 mitigation 协议复用：** ResetOverlayCommands 同时清 hover + dirty rect overlays（同 type kOverlayHighlight）— 不扩增 reset 路径
+- **commit：** 待 B.2.3 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 
