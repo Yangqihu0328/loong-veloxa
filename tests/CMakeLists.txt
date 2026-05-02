@@ -182,6 +182,16 @@ target_link_libraries(application_test PRIVATE vx_core vx_graphics vx_platform v
 vx_add_test(application_integration_test core/application_integration_test.cc)
 target_link_libraries(application_integration_test PRIVATE vx_core vx_graphics vx_platform vx_script)
 
+# TASK-20260502-01 A.1.6: Application dual UpdateManager + LoadDevtoolDocument.
+# Compiled only when DEVTOOL=ON (these tests exercise LoadDevtoolDocument
+# which lives behind #ifdef VX_BUILD_DEVTOOL — A14 zero-byte guard).
+if(VX_BUILD_DEVTOOL)
+  vx_add_test(application_devtool_test core/application_devtool_test.cc)
+  target_link_libraries(application_devtool_test
+    PRIVATE vx_core vx_graphics vx_platform vx_text vx_script vx_devtool)
+  target_compile_definitions(application_devtool_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 # API: C API
 add_executable(api_test api/api_test.cc)
 target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)

@@ -59,15 +59,46 @@ class Application {
   dom::Document* devtool_document() const { return devtool_document_; }
   event::EventManager& event_manager() { return event_manager_; }
   const UpdateManager* update_manager() const { return update_manager_.get(); }
+  const UpdateManager* devtool_update_manager() const {
+    return devtool_update_manager_.get();
+  }
   platform::EventLoop* event_loop() const { return config_.event_loop; }
+
+  // TASK-20260502-01 A.1.6 — DevTool dogfood UI lifecycle.
+  //
+  // LoadDevtoolDocument parses the embedded inspector_panel.html (A.1.2
+  // compile-time embed) with __INLINE_CSS__ / __INLINE_JS__ placeholders
+  // runtime-replaced by kInspectorPanelCss / kInspectorPanelJs (A.1.3
+  // R2-verified content), creates devtool_document_ + a paired
+  // UpdateManager whose layout viewport is (devtool_width, surface_height)
+  // (B-A1.2=a full-viewport overlay model — DevTool renders on top of
+  // the right-hand splitter dock zone).
+  //
+  // Returns false when DEVTOOL=OFF (#ifdef stubbed; A14 zero-byte
+  // guard) or when the surface is missing. Idempotent: a second call
+  // replaces the prior DevTool Document.
+  //
+  // UnloadDevtoolDocument tears down the DevTool Document + its
+  // UpdateManager. Safe to call when no DevTool was loaded.
+  bool LoadDevtoolDocument(f32 devtool_width = 270.0f);
+  void UnloadDevtoolDocument();
+  bool devtool_loaded() const { return devtool_document_ != nullptr; }
 
  private:
   void OnFrame();
   void EnsureUpdateManager();
+  void EnsureDevtoolUpdateManager(f32 devtool_width);
+  void RenderDevtoolWithTranslate();
 
   Config config_;
   dom::Document* target_document_ = nullptr;
   dom::Document* devtool_document_ = nullptr;
+  // A.1.6 — DevTool Document instances created by LoadDevtoolDocument
+  // are owned here. External attach paths (future) may instead set
+  // devtool_document_ directly without populating this slot, in which
+  // case ownership stays external (matches A.0.1 contract).
+  std::unique_ptr<dom::Document> owned_devtool_document_;
+  f32 devtool_width_ = 0.0f;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;
@@ -78,6 +109,10 @@ class Application {
   u32* surface_pixels_ = nullptr;
   std::unique_ptr<gfx::Canvas> canvas_;
   std::unique_ptr<UpdateManager> update_manager_;
+  // A.1.6 M1 — second UpdateManager driving the DevTool Document.
+  // Shares canvas_ + image_cache_ with the target one; renders with a
+  // canvas Translate offset to land on the right-hand dock zone.
+  std::unique_ptr<UpdateManager> devtool_update_manager_;
   std::unique_ptr<script::QuickjsEngine> script_engine_;
   std::unique_ptr<script::DomBindings> dom_bindings_;
   platform::EventLoop::TimerId frame_timer_id_ = 0;

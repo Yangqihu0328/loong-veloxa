@@ -147,7 +147,7 @@
 | A.1.3 inspector_panel.html/css/js 编写 | ✅ 完成 | 54 min | ~25 min（0.46×）|
 | A.1.4 JS native binding 扩展 | ✅ 完成 | 36 min | ~22 min（0.61×）|
 | A.1.5 InputDispatchSplitter（新增）| ✅ 完成 | 27 min | ~12 min（0.44×）|
-| A.1.6 Application 双 UpdateManager（M1）| ⏳ plan ✅ | 36 min | — |
+| A.1.6 Application 双 UpdateManager（M1）| ✅ 完成 | 36 min | ~22 min（0.61×）|
 | A.1.7 vx_view_attach_devtool C API + F12 | ⏳ plan ✅ | 27 min | — |
 | A.1.8 dogfood headless smoke（新增）| ⏳ plan ✅ | 45 min | — |
 | A.2.1-4 安全单测 + A14 守门 | ⏳ | 63 min | — |
@@ -270,6 +270,46 @@
 - **Lint clean** ✅
 - **commit**：[A.1.5 实测 ~12 min vs plan 27 min ×0.6 = **0.44×**，候选 plan ×0.6 第 28 数据点「极窄档延续」— 纯算法状态机无外部依赖，与 A.1.3/A.1.4 共同构成「轮次 4-5 极窄档延续群组」（0.46×/0.61×/0.44×）]
 - **教训沉淀新增：** `target_sources(target PRIVATE ...)` append 到现有 target 是「跨目录加 source 文件且不重构」的最小侵入 CMake 范式，比 `add_subdirectory` 创建新 lib 或 `../` 相对路径都干净
+
+**Phase A.1.6 完成 ✅（2026-05-02 15:30（轮次 6 起点）→ 15:52，~22 min vs plan 36 min ×0.6 = 0.61×）：**
+
+- **核心成果（M1 修正实施 + dogfood UI 渲染管线落地）：** Application 双 UpdateManager 框架成形 + DevTool Document 加载（runtime placeholder 替换嵌入 HTML/CSS/JS）+ canvas Translate 偏移渲染（B-A1.2=a full viewport 模型）；UpdateManager 暴露 `mutable_display_list()` getter 为 InspectorOverlay 注入做准备；plan 任务最复杂之一（除 A.1.8）一次性按 plan 通过
+- **架构实施（M1 修正完整落地）：**
+  - **owned_devtool_document_** unique_ptr 字段（Application owns LoadDevtoolDocument 创建的 Document）+ 保留 raw `devtool_document_` 槽（A.0.1 外部 attach 路径不破坏，外部 set 时不污染 owned slot）；析构时 unique_ptr 自动释放，外部 attach 仍按 A.0.1 契约不释放
+  - **devtool_update_manager_** 字段（plan 设计）+ `EnsureDevtoolUpdateManager(devtool_width)` 私有 helper（layout viewport = `(devtool_width, surface_height)`，B-A1.2=a 模型 — DevTool Document 在 splitter dock 区域的 viewport 大小）
+  - **Update() 序列调用 + canvas Translate**：抽离 `RenderDevtoolWithTranslate()` private helper：`PushState → SetTransform(Matrix3x2::Translation(window_w - devtool_w, 0)) → devtool_update_manager_->Update() → PopState`；target Update 先于 DevTool Update（DevTool 渲染叠加在 target 之上）
+- **API 锁定（plan §A.1.6）：**
+  - `bool LoadDevtoolDocument(f32 devtool_width = 270.0f)` — 创建 owned Document + EnsureDevtoolUpdateManager；返回 false 当 canvas 缺失或 OFF stub；幂等（第二次调用替换前实例）
+  - `void UnloadDevtoolDocument()` — tear down devtool_update_manager_ 先（停止引用 Document）+ 仅当 owned 时清 raw slot；不破坏外部 attach 路径
+  - `bool devtool_loaded() const` — `devtool_document_ != nullptr` 简单查询
+  - `const UpdateManager* devtool_update_manager() const` getter
+  - `UpdateManager::mutable_display_list()` getter — 返回非 const `render::DisplayList&`，注释引用 T5 reset contract
+- **placeholder 替换实施（B-A1.1=b 编译期嵌入 + A.1.6 runtime 注入闭环）：**
+  - 私有 anon-namespace `ReplaceFirst(std::string& host, const char* placeholder, const char* replacement)` helper（仅 DEVTOOL=ON 编译）
+  - LoadDevtoolDocument: 拷贝 `kInspectorPanelHtml` 到 `std::string` → `ReplaceFirst("__INLINE_CSS__", kInspectorPanelCss)` → `ReplaceFirst("__INLINE_JS__", kInspectorPanelJs)` → `html::Parser::Parse(StringView(html.data(), html.size()))` 创建 Document
+- **A14 zero-byte guard 多层防护（DEVTOOL=OFF 编译保护）：**
+  - `application.cc` 顶部 `#ifdef VX_BUILD_DEVTOOL` 才 include `inspector_resources.h`（OFF 不引入符号依赖）
+  - `LoadDevtoolDocument` / `UnloadDevtoolDocument` / `EnsureDevtoolUpdateManager` 用 `#ifdef VX_BUILD_DEVTOOL ... #else stub ... #endif` 条件编译（OFF 时返回 false / 空函数）
+  - `veloxa/core/CMakeLists.txt`: `if(VX_BUILD_DEVTOOL) PUBLIC define + PRIVATE link vx_devtool_resources`（OFF 时 vx_core 不依赖 vx_devtool_resources，零字节）
+- **Step 1 RED**：`tests/core/application_devtool_test.cc` 新建含 7 测：
+  - `LoadDevtoolDocumentSetsLoadedFlag` — devtool_loaded() == true + devtool_document() != nullptr
+  - `LoadDevtoolDocumentReplacesCssPlaceholder` — Serialize(devtool_document) 含 "display: flex"（CSS 内容已 inline）
+  - `LoadDevtoolDocumentReplacesJsPlaceholder` — Serialize(devtool_document) 含 "renderDomTree"（JS 内容已 inline）
+  - `UnloadDevtoolDocumentClearsState` — Unload 后 devtool_loaded() == false
+  - `ReloadDevtoolDocumentReplacesPriorInstance` — 幂等性（2 次 Load 不泄漏）
+  - `UpdateBuildsBothLayoutTrees` — 双 update_manager 各自 layout_root() != nullptr
+  - `UpdateManagerExposesMutableDisplayList` — mutable_display_list() 写入后 display_list().size() 增 1
+- **Step 2 验证 RED**：`LoadDevtoolDocument` / `devtool_update_manager` / `mutable_display_list` 全部缺失 → 编译失败 ✅
+- **Step 3 GREEN**：实施 application.h/cc 改造 + update_manager.h getter；CMake 加 vx_devtool_resources 条件 link；application_devtool_test CMake 加 `if(VX_BUILD_DEVTOOL)` guard
+- **Step 4 验证 GREEN**：ctest **1135 → 1142 PASS**（+7 测，全部 ApplicationDevtoolTest）一次过，零迭代修正
+- **Step 5 反向探针**：第一次 empty body 又踩 `-Werror=unused-function`（继 A.1.4 教训）→ 改为「保留实施 + 注释掉 `devtool_document_ = owned_devtool_document_.get();` 那一行」→ 6/7 测 FAIL（仅 `UpdateManagerExposesMutableDisplayList` 不依赖 LoadDevtoolDocument 仍 PASS — 符合捕获能力期望）✅；恢复后 7/7 PASS
+- **Step 6 A14 守门**：DEVTOOL=OFF reconfigure + ctest **1058/1058 PASS** + libvx_api.a **12156 bytes 维持**（vs A.1.5 后 12156，零字节增长 — 验证 #ifdef + CMake 双层 guard 生效）；libvx_core.a OFF size 1771620 bytes 首次记录
+- **Lint clean** ✅
+- **commit**：[A.1.6 实测 ~22 min vs plan 36 min ×0.6 = **0.61×**，候选 plan ×0.6 第 29 数据点；plan 任务最复杂之一**一次过**——验证 plan §A.1.6 5 步 + M1/M2/M3 修正 + B-A1.1/B-A1.2 brainstorming 决策的 plan-stage 锁定质量很高]
+- **教训沉淀新增：**
+  1. **owned_ vs raw pointer 槽双轨设计**：A.0.1 外部 attach 路径（raw devtool_document_ 槽）+ A.1.6 内部 LoadDevtoolDocument 路径（owned_devtool_document_ unique_ptr）协同——析构 + Unload 都 check ownership 标记决定是否释放，不破坏现有 contract 的同时支持新内部路径，是「向后兼容地添加 ownership」的优雅范式
+  2. **canvas Translate via PushState/SetTransform/PopState**：Veloxa Canvas 没有直接 `Translate()` API，但 PushState + SetTransform(Matrix3x2::Translation) + PopState 是等价的「scoped translate」模式，符合 RAII 不变量
+  3. **#ifdef + CMake 双层 A14 guard 模式锁定**：A.1.4/A.1.6 都用「.cc 文件 #ifdef block + CMake `if(VX_BUILD_DEVTOOL) target_link_libraries`」双层条件编译——前者保证不引入符号依赖（编译期），后者保证不引入静态库依赖（链接期），两层独立但协同；下次涉及 conditional 子系统直接复用此范式
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
