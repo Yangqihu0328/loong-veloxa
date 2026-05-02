@@ -7,6 +7,10 @@
 #include "veloxa/script/dom_bindings.h"
 #include "veloxa/script/quickjs_engine.h"
 
+#ifdef VX_BUILD_DEVTOOL
+#include "veloxa/devtool/overlay/perf_overlay.h"
+#endif
+
 namespace vx::script {
 namespace {
 
@@ -108,6 +112,46 @@ TEST_F(DevtoolBindingsTest, ReturnsNullEnvelopeWhenTargetUnset) {
       "typeof vx_devtool_get_dom_json()", "test.js");
   ASSERT_TRUE(result.ok());
   EXPECT_EQ(result.value(), "string");
+}
+
+// =============================================================================
+// TASK-20260502-02 B.2.2 — vx_view_get_perf_stats native binding
+// =============================================================================
+
+TEST_F(DevtoolBindingsTest, VxViewGetPerfStatsRegistersGlobal) {
+  RegisterDevtoolBindings(engine_.context());
+  auto result = engine_.EvalGlobal("typeof vx_view_get_perf_stats",
+                                   "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "function");
+}
+
+TEST_F(DevtoolBindingsTest, VxViewGetPerfStatsReturnsZeroJsonWhenNoOverlay) {
+  RegisterDevtoolBindings(engine_.context());
+  // No PerfOverlay attached → must return safe zero-stats JSON envelope.
+  auto fps = engine_.EvalGlobal(
+      "JSON.parse(vx_view_get_perf_stats()).fps", "test.js");
+  ASSERT_TRUE(fps.ok());
+  EXPECT_EQ(fps.value(), "0");
+}
+
+TEST_F(DevtoolBindingsTest, VxViewGetPerfStatsReturnsLiveStatsWhenAttached) {
+  vx::devtool::overlay::PerfOverlay perf;
+  // Push a single synthetic frame: total=10ms → fps=100, style=1ms.
+  perf.RecordFrame({1.0f, 2.0f, 3.0f, 4.0f, 10.0f});
+
+  bindings_.SetPerfOverlay(&perf);
+  RegisterDevtoolBindings(engine_.context());
+
+  auto fps = engine_.EvalGlobal(
+      "JSON.parse(vx_view_get_perf_stats()).fps", "test.js");
+  ASSERT_TRUE(fps.ok());
+  EXPECT_EQ(fps.value(), "100");
+
+  auto style = engine_.EvalGlobal(
+      "JSON.parse(vx_view_get_perf_stats()).style", "test.js");
+  ASSERT_TRUE(style.ok());
+  EXPECT_EQ(style.value(), "1");
 }
 
 #else  // VX_BUILD_DEVTOOL OFF — A14 zero-byte stub guard

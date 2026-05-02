@@ -27,6 +27,9 @@ struct DomBindings::InstanceData {
   // / DomBindings::SetDevtoolTargetDocument). nullptr is the unset state
   // (VxDevtoolGetDomJson returns the JSON string "null").
   dom::Document* devtool_target_doc = nullptr;
+  // B.2.2 — PerfOverlay live FrameStats source (borrowed; nullptr when not
+  // attached). vx_view_get_perf_stats binding reads aggregated() + fps().
+  vx::devtool::overlay::PerfOverlay* perf_overlay = nullptr;
   // A.2.1 T3 mitigation: redaction policy applied by VxDevtoolGetDomJson
   // when serializing the target Document. Defaults to the safe value;
   // synced from Application::redaction_policy() via SetRedactionPolicy.
@@ -769,6 +772,12 @@ void DomBindings::SetDevtoolTargetDocument(dom::Document* target) {
 dom::Document* DomBindings::devtool_target_document() const {
   return data_->devtool_target_doc;
 }
+void DomBindings::SetPerfOverlay(vx::devtool::overlay::PerfOverlay* perf) {
+  data_->perf_overlay = perf;
+}
+vx::devtool::overlay::PerfOverlay* DomBindings::perf_overlay() const {
+  return data_->perf_overlay;
+}
 void DomBindings::SetRedactionPolicy(dom::RedactionPolicy policy) {
   data_->redaction_policy = policy;
 }
@@ -838,6 +847,7 @@ void DomBindings::Unbind() {
   data_->doc = nullptr;
   data_->em = nullptr;
   data_->devtool_target_doc = nullptr;
+  data_->perf_overlay = nullptr;
 }
 
 // =============================================================================
@@ -860,7 +870,10 @@ void DomBindings::Unbind() {
 
 }  // namespace vx::script
 
+#include <cstdio>
+
 #include "veloxa/devtool/inspector/inspector_data.h"
+#include "veloxa/devtool/overlay/perf_overlay.h"
 
 namespace vx::script {
 
@@ -882,6 +895,45 @@ JSValue VxDevtoolGetDomJson(JSContext* ctx, JSValueConst /*this_val*/,
   return JS_NewStringLen(ctx, json.data(), json.size());
 }
 
+// TASK-20260502-02 B.2.2 — vx_view_get_perf_stats() native binding.
+// Returns a JSON envelope:
+//   {"fps":N,"style":S,"layout":L,"render":R,"paint":P,"total":T,
+//    "frame_count":F,"abort_count":A}
+// All numbers are integers (rounded from PerfOverlay sliding average) so
+// the JS HUD can format them cheaply with no decimal noise.
+// When PerfOverlay is unattached returns the zero-stats envelope.
+JSValue VxViewGetPerfStats(JSContext* ctx, JSValueConst /*this_val*/,
+                           int /*argc*/, JSValueConst* /*argv*/) {
+  auto* bindings = static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+  vx::devtool::overlay::PerfOverlay* perf =
+      bindings ? bindings->perf_overlay() : nullptr;
+
+  // Format buffer is bounded; max ~150 chars even with abort_count=u64-max.
+  char buf[256];
+  if (perf == nullptr) {
+    std::snprintf(buf, sizeof(buf),
+                  "{\"fps\":0,\"style\":0,\"layout\":0,\"render\":0,"
+                  "\"paint\":0,\"total\":0,\"frame_count\":0,"
+                  "\"abort_count\":0}");
+  } else {
+    auto agg = perf->aggregated();
+    const int fps        = static_cast<int>(perf->fps() + 0.5f);
+    const int style_ms   = static_cast<int>(agg.style_ms + 0.5f);
+    const int layout_ms  = static_cast<int>(agg.layout_ms + 0.5f);
+    const int render_ms  = static_cast<int>(agg.render_ms + 0.5f);
+    const int paint_ms   = static_cast<int>(agg.paint_ms + 0.5f);
+    const int total_ms   = static_cast<int>(agg.total_ms + 0.5f);
+    std::snprintf(buf, sizeof(buf),
+                  "{\"fps\":%d,\"style\":%d,\"layout\":%d,\"render\":%d,"
+                  "\"paint\":%d,\"total\":%d,\"frame_count\":%llu,"
+                  "\"abort_count\":%llu}",
+                  fps, style_ms, layout_ms, render_ms, paint_ms, total_ms,
+                  static_cast<unsigned long long>(perf->frame_count()),
+                  static_cast<unsigned long long>(perf->abort_count()));
+  }
+  return JS_NewString(ctx, buf);
+}
+
 }  // namespace
 
 void RegisterDevtoolBindings(JSContext* ctx) {
@@ -890,6 +942,11 @@ void RegisterDevtoolBindings(JSContext* ctx) {
       ctx, global, "vx_devtool_get_dom_json",
       JS_NewCFunction(ctx, VxDevtoolGetDomJson,
                       "vx_devtool_get_dom_json", 0));
+  // B.2.2 — Performance Overlay live stats binding.
+  JS_SetPropertyStr(
+      ctx, global, "vx_view_get_perf_stats",
+      JS_NewCFunction(ctx, VxViewGetPerfStats,
+                      "vx_view_get_perf_stats", 0));
   JS_FreeValue(ctx, global);
 }
 

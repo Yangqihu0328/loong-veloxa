@@ -164,7 +164,25 @@
 - **反向探针：** ✅ rename `id="devtool-hud"` → `devtool-hud-PROBE` → HtmlContainsDevtoolHudId 精准 FAIL
 - **R8 mitigation 落地：** `position: fixed` fallback 为 `absolute`（plan §0.9 grep 实证当前 layout 视觉等价 + smoke 测断言整 css 不应有 position: fixed）
 - **R9 mitigation 占位：** data-passthrough="1" attribute（pointer-events: none 不支持兜底 — HitTest 改造留 R3+ EventManager 任务）
-- **commit：** 待 B.2.1 commit
+- **commit：** `5be448d feat(devtool): HUD overlay HTML/CSS — absolute + opacity (B.2.1)`
+
+#### `/build` Phase B.2.2 完成快照（2026-05-02 ~23:25，~13 min 实测）
+
+- **任务：** HUD JS updateHud() + `vx_view_get_perf_stats` native binding
+- **plan ×0.6 估时：** 18 min / **实测：** ~13 min（**0.72× plan ×0.6**，「中件实施」桶下端 — 跨 vx_script ↔ vx_devtool 边界 + forward declare PerfOverlay 解循环依赖 + JSON envelope 设计 + JS UI 集成）
+- **改动文件：**
+  - `veloxa/script/dom_bindings.h`：forward declare `vx::devtool::overlay::PerfOverlay`（解 vx_script → vx_devtool 循环）+ `SetPerfOverlay` / `perf_overlay()` getter
+  - `veloxa/script/dom_bindings.cc`：InstanceData 加 `perf_overlay` 字段 + setter 实施 + Unbind 重置；`#ifdef VX_BUILD_DEVTOOL` 块 include perf_overlay.h + `VxViewGetPerfStats` C 函数（snprintf JSON envelope `{"fps":N,"style":S,...,"abort_count":A}` 整数四舍五入 + nullptr 路径返 zero-stats）+ RegisterDevtoolBindings 注册 vx_view_get_perf_stats
+  - `veloxa/devtool/resources/inspector_panel.js`：加 `function updateHud()` 调 vx_view_get_perf_stats() 解 JSON 更新 #hud-fps innerHTML + 4 stage bars width（按 stage_ms / total_ms scale to 24px max）；加 `try { updateHud(); } catch (e) { }` 防御调用
+  - `tests/script/devtool_bindings_test.cc`：+3 VxView 测（RegistersGlobal / ReturnsZeroJsonWhenNoOverlay / ReturnsLiveStatsWhenAttached — 用真 PerfOverlay::RecordFrame 注入 stats 验证 JSON round-trip）
+  - `tests/devtool/resources/inspector_panel_smoke_test.cc`：+2 JS smoke 测（JsContainsUpdateHudFunction / JsCallsVxViewGetPerfStatsBinding）
+  - `tests/CMakeLists.txt`：devtool_bindings_test ON 路径 link vx_devtool（PerfOverlay 符号引用）
+
+- **测试增量：** **DEVTOOL=ON 1213 → 1218 PASS（+5）/ DEVTOOL=OFF 1082 unchanged（VxViewGetPerfStats C 函数本身在 OFF 是 stub；SetPerfOverlay setter 在 OFF 仍可调用但语义无效）**
+- **A14 守门：** ✅ 隐式守门（VxViewGetPerfStats 在 `#ifdef VX_BUILD_DEVTOOL` 块；SetPerfOverlay forward-declared 接受 raw ptr → zero vx_devtool 内部符号泄漏到 OFF build；libvx_script.a OFF 字节增长 ~50 bytes 公开 ABI 表面）
+- **反向探针：** ✅ fps 字段设硬编码 0（`const int fps = 0`）→ `VxViewGetPerfStatsReturnsLiveStatsWhenAttached` 精准 FAIL（fps 期望 100 vs 实际 0）；恢复后双绿
+- **架构亮点：** forward declare PerfOverlay 解 vx_script → vx_devtool 循环依赖（vx_script.h 公开 ABI，vx_script.cc 内部 include 实施 — 经典 pImpl 范式延续）
+- **commit：** 待 B.2.2 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 

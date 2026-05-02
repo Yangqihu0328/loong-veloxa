@@ -228,5 +228,19 @@ TEST(InspectorPanelHudSmoke, CssHudUsesOpacity) {
   EXPECT_NE(css.find("opacity"), std::string::npos);
 }
 
+// -----------------------------------------------------------------------------
+// TASK-20260502-02 B.2.2 — HUD JS updateHud + native binding call
+// -----------------------------------------------------------------------------
+
+TEST(InspectorPanelHudSmoke, JsContainsUpdateHudFunction) {
+  const std::string js = AsString(kInspectorPanelJs);
+  EXPECT_NE(js.find("updateHud"), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, JsCallsVxViewGetPerfStatsBinding) {
+  const std::string js = AsString(kInspectorPanelJs);
+  EXPECT_NE(js.find("vx_view_get_perf_stats"), std::string::npos);
+}
+
 }  // namespace
 }  // namespace vx::devtool::resources

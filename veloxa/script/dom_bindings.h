@@ -9,6 +9,11 @@
 
 struct JSContext;
 
+namespace vx::devtool::overlay {
+class PerfOverlay;  // forward declare to avoid pulling vx_devtool into vx_script
+                    // header dependency (vx_script → vx_devtool circular).
+}
+
 namespace vx::script {
 
 class DomBindings {
@@ -43,6 +48,15 @@ class DomBindings {
   // (which drives Application::set_redaction_policy → DomBindings sync).
   void SetRedactionPolicy(dom::RedactionPolicy policy);
   dom::RedactionPolicy redaction_policy() const;
+
+  // TASK-20260502-02 B.2.2 — set the PerfOverlay instance whose live
+  // FrameStats are exposed to JS via vx_view_get_perf_stats() native
+  // binding (registered by RegisterDevtoolBindings). Pointer is borrowed;
+  // ownership stays with the caller. nullptr clears (binding will return
+  // a zero-stats JSON envelope). DEVTOOL=OFF: no-op (vx_view_get_perf_stats
+  // is itself a stub then; setter still callable to keep ABI symmetric).
+  void SetPerfOverlay(vx::devtool::overlay::PerfOverlay* perf);
+  vx::devtool::overlay::PerfOverlay* perf_overlay() const;
 
   // Forward declaration is public so internal free-function callbacks
   // (in the .cc file's anonymous namespace) can name the type when

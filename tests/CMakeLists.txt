@@ -276,13 +276,17 @@ target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 vx_add_test(dom_bindings_test script/dom_bindings_test.cc)
 target_link_libraries(dom_bindings_test PRIVATE vx_script vx_core)
 
-# TASK-20260502-01 A.1.4: DevTool JS native binding test.
+# TASK-20260502-01 A.1.4 / TASK-20260502-02 B.2.2: DevTool JS native
+# binding test (vx_devtool_get_dom_json + vx_view_get_perf_stats).
 # Both ON and OFF builds compile this test; OFF path validates the
 # zero-byte stub guard via the typeof === "undefined" branch.
+# B.2.2 ON path additionally links vx_devtool (PerfOverlay symbols
+# referenced from the new VxViewGetPerfStats tests).
 vx_add_test(devtool_bindings_test script/devtool_bindings_test.cc)
 target_link_libraries(devtool_bindings_test PRIVATE vx_script vx_core)
 if(VX_BUILD_DEVTOOL)
   target_compile_definitions(devtool_bindings_test PRIVATE VX_BUILD_DEVTOOL)
+  target_link_libraries(devtool_bindings_test PRIVATE vx_devtool)
 endif()
 
 # Core: Image

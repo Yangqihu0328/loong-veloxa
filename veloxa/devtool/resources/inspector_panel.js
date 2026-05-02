@@ -82,6 +82,32 @@ function setupTabs() {
   }
 }
 
+// TASK-20260502-02 B.2.2 — Performance Overlay HUD update.
+// Reads vx_view_get_perf_stats() (registered by RegisterDevtoolBindings,
+// see veloxa/script/dom_bindings.cc) and updates #hud-fps + 4 stage bars.
+// Stage bar widths are scaled to total_ms (the worst case for that frame
+// reaches 100% width). Cheap defensive try/catch — same pattern as
+// renderDomTree above (B.2.2 must not abort A.1.x dogfood smoke contract).
+function updateHud() {
+  if (typeof vx_view_get_perf_stats !== "function") return;
+  var raw = vx_view_get_perf_stats();
+  var s = JSON.parse(raw);
+  var fps = document.getElementById("hud-fps");
+  if (fps) fps.innerHTML = String(s.fps);
+  // Scale: stage_ms / max(1, total_ms) * 24 px (bar width 28 - 4 padding).
+  var t = (s.total > 0) ? s.total : 1;
+  function setBar(id, ms) {
+    var bar = document.getElementById(id);
+    if (!bar) return;
+    var w = Math.round(ms / t * 24);
+    bar.style = "width: " + w + "px;";
+  }
+  setBar("bar-style", s.style);
+  setBar("bar-layout", s.layout);
+  setBar("bar-render", s.render);
+  setBar("bar-paint", s.paint);
+}
+
 // Both invocations are guarded so a single R2-class binding gap (e.g.
 // missing innerHTML setter inside renderDomTree) cannot abort the
 // whole script and mask the rest of the smoke contract. Errors are
@@ -89,3 +115,4 @@ function setupTabs() {
 // vx_devtool_get_dom_json round-trip directly.
 try { setupTabs(); } catch (e) { }
 try { renderDomTree(); } catch (e) { }
+try { updateHud(); } catch (e) { }
