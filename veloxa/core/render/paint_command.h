@@ -19,6 +19,11 @@ struct PaintCommand {
     kPopLayer,
     kStrokeRoundedRect,
     kDrawImage,
+    // DevTool Inspector hover highlight (TASK-20260502-01 A.0.4 + A5).
+    // 业务 Renderer 不会发出此命令；DevTool 子系统专用。
+    // T5 mitigation：每帧通过 ResetOverlayCommands() 清除，防止跨帧累积污染
+    // 或被业务 DOM/JS 通过 PaintCommand 反向构造。
+    kOverlayHighlight,
   };
 
   Type type;
@@ -70,6 +75,13 @@ struct PaintCommand {
     cmd.rect = dst;
     cmd.image_handle = img_handle;
     return cmd;
+  }
+
+  // DevTool Inspector hover highlight: stroke a rect at `r` with `c` and
+  // `stroke_width`. See Type::kOverlayHighlight comment for T5 lifecycle.
+  static PaintCommand OverlayHighlight(const gfx::Rect& r, gfx::Color c,
+                                        f32 stroke_width) {
+    return {Type::kOverlayHighlight, r, c, stroke_width, 0, {}, 0};
   }
 
   bool operator==(const PaintCommand& other) const {

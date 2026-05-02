@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线 ✅；A.0.1 commit `0e8e40c`（1064/1064 + 反向探针 + 0 漏改）；A.0.2 LayoutBox::ToJson #26 闭环 ✅ commit `4131700`（1068/1068）；A.0.3 DOM Serializer::ToJson + T3 password redaction ✅（1080/1080 + 12 新测 + 反向探针拆 redaction → #406 FAIL）；当前焦点 → A.0.4 PaintCommand::kOverlayHighlight + T5 overlay 注入污染防护。
+**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线 ✅；A.0.1 commit `0e8e40c`（1064/1064 + 反向探针 + 0 漏改）；A.0.2 LayoutBox::ToJson #26 闭环 ✅ commit `4131700`（1068/1068）；A.0.3 DOM Serializer::ToJson + T3 password redaction ✅ commit `30d54ee`（1080/1080）；A.0.4 PaintCommand::kOverlayHighlight + T5 ResetOverlayCommands ✅（1085/1085 + 5 新测 + 反向探针 no-op ResetOverlayCommands → #837 FAIL）；当前焦点 → A.0.5 inspector_data.h 内部 C++ API（DevTool 内部数据接口）。
 
 ## 当前任务
 

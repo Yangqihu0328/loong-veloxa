@@ -62,6 +62,27 @@
 - **T3 安全威胁 mitigation 落地** ✅（A1 验收准入达成）
 - **commit**：[A.0.3 实测耗时 ~15 min，vs plan 27 min ×0.6 = 0.56×；候选 plan ×0.6 第 20 数据点「窄档延续」]
 
+**Phase A.0.4 完成 ✅（2026-05-02 13:50，~15 min vs plan 18 min ×0.6 = 0.83×）：**
+
+- **关键发现 — plan 假设修正**：
+  - `gfx::Color` 是 aggregate struct（4 个 u8 字段 r/g/b/a）+ 提供 `FromRGBA(r,g,b,a)` 静态工厂；不能用函数式构造 `Color(0,100,200,128)` → 改用 `Color::FromRGBA(...)`
+  - `Replay()` switch 用 `-Werror=switch`，新增 enum value 必须加 case → 加 `kOverlayHighlight` case 用 `StrokeRoundedRect(rect, 0.0f, brush, stroke_width)` 等价 thin border
+  - `vx::Vector::erase(it)` 返回 next iterator → erase-remove 模式可行
+- **Step 1 RED**：
+  - `paint_command_test.cc` +1 测 `OverlayHighlightFactory`（验工厂）
+  - `renderer_test.cc` +4 测 `ResetOverlayCommandsTest.{RemovesAllOverlayHighlightCommands, PreservesNonOverlayCommands, NoOpOnEmptyList, NoOpOnListWithoutOverlays}`
+- **Step 2 验证 RED**：编译失败 `'kOverlayHighlight' is not a member of 'vx::render::PaintCommand::Type'` ✅
+- **Step 3 GREEN**：
+  - `paint_command.h`: 加 `kOverlayHighlight` enum value（含 T5 lifecycle doc 注释）+ 静态工厂 `OverlayHighlight(rect, color, stroke_width)`
+  - `renderer.h`: 加 `void ResetOverlayCommands(DisplayList&)` 声明（含 T5 mitigation doc 注释）
+  - `renderer.cc`: 实现 `ResetOverlayCommands`（in-place erase-remove）+ `Replay` switch +`kOverlayHighlight` case（StrokeRoundedRect with radius=0 等价 stroke rect）
+- **Step 4 验证 GREEN**：全量构建 + ctest **1085/1085 PASS**（基线 1080 + 5 新测）+ 1 Skip
+- **Step 5 反向探针**：把 `ResetOverlayCommands` 改 no-op → 测 #837 `ResetOverlayCommandsTest.RemovesAllOverlayHighlightCommands` FAIL ✅（T5 mitigation 捕获能力 verified）；恢复后 4/4 PASS
+  - **教训**：用 `sed` 改 C++ 多行函数体导致死循环 + ctest 卡住（用 `kill` + `git checkout` 清理后用 `StrReplace` 安全替换）→ 沉淀「反向探针避免 sed 多行删除」
+- **Lint clean** ✅
+- **T5 安全威胁 mitigation 落地** ✅（A5 验收准入达成）
+- **commit**：[A.0.4 实测耗时 ~15 min，vs plan 18 min ×0.6 = 0.83×；plan ×0.6 第 21 数据点候选「窄档延续」]
+
 **Phase A.0.x 进度（16 子任务总览）：**
 
 | 子任务 | 状态 | plan ×0.6 估时 | 实测 |
@@ -70,7 +91,7 @@
 | A.0.1 I1 双 Document 槽 | ✅ 完成 | 54 min | ~10 min（0.18×）|
 | A.0.2 LayoutBox::ToJson | ✅ 完成 | 18 min | ~10 min（0.56×）|
 | A.0.3 DOM Serializer::ToJson + T3 | ✅ 完成 | 27 min | ~15 min（0.56×）|
-| A.0.4 PaintCommand kOverlayHighlight + T5 | ⏳ | 18 min | — |
+| A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
 | A.0.5 inspector_data.h 内部 C++ | ⏳ | 36 min | — |
 | A.0.6 vx_view_serialize_*_json + T7 | ⏳ | 36 min | — |
 | A.1.1 InspectorOverlay hover | ⏳ | 27 min | — |

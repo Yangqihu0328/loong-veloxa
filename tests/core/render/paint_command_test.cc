@@ -60,6 +60,17 @@ TEST(PaintCommandTest, DisplayListPushAndIterate) {
   EXPECT_EQ(list[1].type, PaintCommand::Type::kDrawText);
 }
 
+// DevTool Inspector hover highlight (TASK-20260502-01 A.0.4 + A5 acceptance).
+TEST(PaintCommandTest, OverlayHighlightFactory) {
+  auto color = gfx::Color::FromRGBA(0, 100, 200, 128);
+  auto cmd = PaintCommand::OverlayHighlight({10, 20, 30, 40}, color, 2.0f);
+  EXPECT_EQ(cmd.type, PaintCommand::Type::kOverlayHighlight);
+  EXPECT_EQ(cmd.rect.x, 10);
+  EXPECT_EQ(cmd.rect.w, 30);
+  EXPECT_EQ(cmd.color, color);
+  EXPECT_EQ(cmd.param, 2.0f);  // stroke width
+}
+
 TEST(RenderUtilsTest, CssColorToGfx_Red) {
   auto c = CssColorToGfx(0xFF0000FFu);
   EXPECT_EQ(c.r, 255);
