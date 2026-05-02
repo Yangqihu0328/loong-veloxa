@@ -142,12 +142,58 @@
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
 | A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
 | A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
-| A.1.1 InspectorOverlay hover | ⏳ | 27 min | — |
-| A.1.2 DevTool UI HTML/CSS/JS | ⏳ | 54 min | — |
-| A.1.3 Style/Layout panel 数据 | ⏳ | 36 min | — |
-| A.1.4 F12 toggle + vx_view_attach_devtool | ⏳ | 27 min | — |
-| A.2.1-4 安全单测 + A14 守门 | ⏳ | 63 min | — |
-| A.3.1-2 example smoke + reflect prep | ⏳ | 45 min | — |
+| A.1.1 InspectorOverlay hover | 🟡 plan 待精化 | 27 min | — |
+| A.1.2 DevTool UI HTML/CSS/JS | 🔴 Level 4 升级 | 54 min | — |
+| A.1.3 Style/Layout panel 数据 | 🔴 依赖 A.1.2 | 36 min | — |
+| A.1.4 F12 toggle + vx_view_attach_devtool | 🔴 依赖 A.1.2 | 27 min | — |
+| A.2.1-4 安全单测 + A14 守门 | ⏳ 不依赖 dogfood | 63 min | — |
+| A.3.1-2 example smoke + reflect prep | 🟡 A.3.1 依赖 dogfood | 45 min | — |
+
+#### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
+
+**触发原因：** 用户对「轮次 3 路径选择」AskQuestion 选 **D = 返回 /plan 修正**，识别 Phase A.1 dogfood DevTool UI 实质是 Level 4 子系统级工作量。
+
+**Plan 批判审查发现（A.1.x 关键缺陷）：**
+
+| 子任务 | plan 估时 | 实际复杂度 | 关键缺陷 |
+|:--|--:|:--|:--|
+| A.1.1 InspectorOverlay 注入 | 27 min | ✅ 可行 (~30 min) | 签名 plan 写 `InjectHoverHighlight(target_doc, ...)` 但 Document 不持有 DisplayList，应改为 `InjectHoverHighlight(DisplayList&, ...)` |
+| **A.1.2 dogfood UI** | 54 min | ⚠️ **远超 (~6-8 h+ Level 4)** | (1) 需新建 `vx_devtool_get_dom_json()` JS native binding（dom_bindings.cc 扩展新 module）；(2) 需 runtime 文件 IO（`fopen/fread`）→ 触发 plan **未列威胁 T2 路径穿越**；(3) 需双 viewport 渲染（Application 当前仅 1 surface/canvas，属 creative 域）；(4) splitter dock 鼠标拖动；(5) 必须 SDL2 真窗口 dogfood |
+| A.1.3 Style/Layout panel | 36 min | 依赖 A.1.2 | — |
+| A.1.4 F12 toggle + API | 27 min | 依赖 A.1.2 | API 设计依赖 splitter dock 实现定型 |
+
+**核心判断：** plan §A.1 实质为蓝图级**概念性大件**，缺少 Level 3 可执行 step 模板；plan ×0.6 144 min vs 真实 ~6-8 h+，失配 4-5×。强行推会触发未列安全威胁（T2）+ 未列架构决策（双 viewport / native binding / 文件 IO 安全模型）。
+
+**轮次 3 决策选项 + 用户选择：**
+
+- A. 按 plan 强推 A.1.1→A.1.4，可能中途升级
+- B. 最小可用 Inspector：A.1.1 + 改 A.1.4 为 console dump
+- C. 提前 reflect：当前 A.0 已是完整里程碑
+- **D. ✅ 返回 /plan 修正（识别 A.1 为 Level 4 → plan + creative）**
+
+**Phase A.0 真实产出保留**（6 commits，1102 / 1057 ctest 双轨，#26/#40 双技术债闭环，T3/T5/T7 三安全 mitigation）：
+
+| Commit | 子任务 |
+|:--|:--|
+| `bc02ddc` | A.0.1 双 Document 槽位 |
+| `1547434` | A.0.2 LayoutBox::ToJson + #26 闭环 |
+| `8ff75d4` | A.0.3 DOM Serializer::ToJson + T3 |
+| `[A.0.4]` | PaintCommand kOverlayHighlight + T5 |
+| `3f3bd38` | A.0.5 vx_devtool 静态库 + inspector_data |
+| `c9dec00` | A.0.6 vx_view_serialize_dom_json + T7 + #40 闭环 |
+| `d9ec183` | 轮次 2 暂停标记 |
+
+**升级方案待用户用 `/plan` 决定：**
+
+- 选 A：当前 task 升 Level 4 + A.1 detailed plan + 1-2 creative
+- 选 B：拆 A.1 为独立 Level 4 task `TASK-30-04-A2`（dogfood UI），当前 task 闭环（A.2 安全单测 4 子任务都不依赖 dogfood，可在当前 task 完成；A.3.1 依赖 dogfood 拆出）
+- 选 C：当前 task 直接闭环 reflect（Phase A.0 已是完整 Level 3 里程碑），A.1/A.2/A.3 全部拆为 follow-up tasks
+
+**学习点（reflect 阶段沉淀）：**
+
+- **plan ×0.6 失配预警机制**：plan 单子任务估 ~50 min 但实际工作面 ≥ 5 个子系统时（dogfood UI 案例：JS binding + 文件 IO + 双 viewport + 鼠标交互 + 真窗口 dogfood），应在 plan 阶段标 ⚠️ 待 spike 而非直接 ×0.6 估时
+- **蓝图 vs 可执行 plan 边界**：4-30 蓝图 plan 写「dogfood UI 实施」是 Level 4 概念占位，build 阶段强行执行需触发 plan 升级（本次 escalation 验证 working）
+- **plan-creative 失配检测**：当 plan 子任务隐含「需新增架构决策」（双 viewport / native binding 设计）时是 creative 域信号，build 阶段不该消化
 
 #### `/plan` 阶段产出快照（2026-05-02 13:10）
 

@@ -2,7 +2,26 @@
 
 ## 当前阶段
 
-**构建中·轮次 2 完成（Phase A.0.1-A.0.6 of A.0.x ✅；下次进入 A.1.1）** — TASK-20260502-01 DevTool Phase A · Inspector 实施轮次 2 完成「DevTool 数据 API 整合层」自然分组；A.0.5 vx_devtool 静态库 + inspector_data.h 内部 C++ API ✅ commit `3f3bd38`；A.0.6 vx_view_serialize_dom_json 公共 C API + T7 buffer overflow 防护 ✅（DEVTOOL=ON ctest 1102/1102 + 7 新测；A14 OFF baseline 1057 ✅，stub path INVALID_STATE）；技术债 #40 闭环 ✅；下次 `/build` 续上 A.1.1 InspectorOverlay hover highlight 注入（Phase A.1 DevTool UI 实施）。
+**规划中·A.1 待精化（Phase A.0 build 已完成）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:00 触发 plan escalation：用户决策 D「返回 /plan 修正」，识别 Phase A.1 dogfood DevTool UI 实质上是 **Level 4 子系统级工作量**，原 plan 144 min plan ×0.6 严重低估真实复杂度 (~6-8 h+)。Phase A.0 build 6 commits 真实产出保留，`/build` 中止于轮次 3 入口。
+
+**Phase A.1 plan 缺陷清单（待 `/plan` 精化时处理）：**
+
+1. **A.1.2 dogfood UI** (HTML/CSS/JS) 实质需要 5 个未列子系统：
+   - JS native binding `vx_devtool_get_dom_json()` — `dom_bindings.cc` 需扩展新 module
+   - runtime 文件 IO（`fopen/fread` 加载 `inspector_panel.html` 等）— 触发 plan **未列**的威胁 **T2 路径穿越**
+   - 双 viewport 渲染 — Application 当前仅 1 surface/canvas，需架构调整（属 creative 域）
+   - splitter dock 鼠标拖动 — JS event listener + UpdateManager 协调
+   - SDL2 真窗口 dogfood — A.3.1 hello_devtool 不能 headless smoke
+2. **A.1.1 InspectorOverlay** 签名缺陷：plan 写 `InjectHoverHighlight(target_doc, ...)` 但 Document 不持有 DisplayList，应为 `InjectHoverHighlight(DisplayList&, ...)`
+3. **A.1.4 vx_view_attach_devtool API** 设计依赖 splitter dock 实现 → 等 A.1.2 架构定型后才能签名锁
+
+**升级方案（待用户用 `/plan` 决定）：**
+
+- 选 A：当前 task 升 Level 4 + 补 A.1 detailed plan + 1-2 creative（双 viewport / native binding / 文件 IO 安全模型）
+- 选 B：拆 A.1 为独立 Level 4 task `TASK-30-04-A2`（dogfood UI），当前 task 闭环（A.2/A.3 部分子任务可独立做完不依赖 dogfood — A.2.1/2.2/2.3/2.4 均不依赖 UI 真实渲染）
+- 选 C：当前 task 直接闭环 reflect（Phase A.0 已是完整 Level 3 里程碑），A.1/A.2/A.3 全部拆为 follow-up tasks
+
+**下一步：** 用户用 `/plan` 命令进入 plan escalation 阶段，决策升级方案 A/B/C。
 
 **轮次 2 commit 链：**
 - `3f3bd38` feat(devtool): vx_devtool 静态库 + Inspector 内部 C++ API（A.0.5）

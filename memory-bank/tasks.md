@@ -4,8 +4,8 @@
 
 ### TASK-20260502-01：DevTool Phase A — Inspector 实施（DOM tree / Style panel / Layout panel + 元素 hover 高亮）[安全相关]
 
-- **复杂度级别：** Level 3（中等功能；新建 `veloxa/devtool/` 子目录 + Application 双 Document 槽改造 + DOM/Layout/Render/API 跨子系统扩展；plan 蓝图已就绪 16 子任务）
-- **状态：** ✅ Plan 完成（2026-05-02 13:10）— 待用户确认进入 `/build`
+- **复杂度级别：** Level 3 → **🟡 A.1 段疑似 Level 4 升级**（Phase A.0 6 子任务 Level 3 已完成；Phase A.1 dogfood UI 段触发 plan escalation 待用户决策）
+- **状态：** 🟡 **构建中·Phase A.0 完成（轮次 3 入口触发 plan escalation）** — Phase A.0 6 子任务已落地 6 commits + ctest 1102/1057 双轨 + #26/#40 双技术债闭环 + T3/T5/T7 三安全 mitigation；轮次 3 批判审查识别 Phase A.1 dogfood UI 实质 Level 4 子系统级（plan ×0.6 144 min vs 真实 ~6-8 h+）；用户选 D「返回 /plan 修正」→ 待用户用 `/plan` 命令进入 escalation 决策（A 升级当前 task / B 拆 A.1 独立 Level 4 + 当前 task 闭环 A.2 安全单测 / C 当前 task 直接 reflect）
 - **创建日期：** 2026-05-02
 - **分支：** `feature/TASK-20260502-01-devtool-inspector`（基于 main `679304e`，已含 TASK-30-04 蓝图全部归档）
 - **设计 spec：** ✅ 复用 `docs/specs/2026-04-30-devtool-design.md` Inspector 验收段（A1-A5, A13, A14 + T3/T5/T7/T8 威胁 + I1-I8 注入点中 I1/I3/I4/I5/I6 + R1/R2/R5 风险）
@@ -145,6 +145,9 @@
 | 2026-05-02 12:25 | 用户启动 | `/van TASK-20260430-04`（已归档 ID）+ AskQuestion 选 subtask_a → 实际启动 TASK-30-04 蓝图主线子任务 A |
 | 2026-05-02 12:30 | VAN 完成 | 工作区干净 ✅；R1 callsite 量化 5-9 处 ⬇ 风险降级；分支 `feature/TASK-20260502-01-devtool-inspector` 基于 main `679304e` 创建；前置验证 6/6 全 PASS（含 ctest 1062 基线继承 + 2 项技术债 ROI 闭环）；MB 三件套同步；推荐路径 `/plan` 做 build 级精化 |
 | 2026-05-02 13:10 | Plan 完成 | brainstorming B1-B8 全部锁定（用户 1 次 AskQuestion 选 all_recommended → 与蓝图 D1-D8 协同度 8/8 ✅）；Phase 0 11 子段实测填写完成；R1 callsite 二次实证 4 处真实（远低于蓝图估 10-15）；ctest 基线漂移发现（build/ 过期需 reconfigure）；plan `docs/plans/2026-05-02-devtool-inspector.md` 落盘（~700 行）；plan ×0.6 第 18 数据点假设入库；推荐路径 `/build` 启动 Phase 0.1 reconfigure |
+| 2026-05-02 13:30 | Build 轮次 1 完成 | Phase 0.1 reconfigure ctest 1062 基线确认；A.0.1 双 Document 槽位（10 min vs plan 54 min ×0.6 = 0.18×）；A.0.2 LayoutBox::ToJson + #26 闭环（10 min vs 18 ×0.6 = 0.56×）；A.0.3 DOM Serializer::ToJson + T3 redact（15 min vs 27 ×0.6 = 0.56×）；A.0.4 PaintCommand kOverlayHighlight + T5 ResetOverlayCommands（15 min vs 18 ×0.6 = 0.83×）；ctest 1062→1085 PASS；轮次 1 暂停 commit |
+| 2026-05-02 13:55 | Build 轮次 2 完成 | A.0.5 vx_devtool 静态库 + inspector_data 内部 C++ API（25 min vs plan 36 ×0.6 = 0.69×）+ A14 OFF baseline 1054 ✅；A.0.6 vx_view_serialize_dom_json 公共 C API + T7 buffer overflow + #40 闭环（20 min vs 36 ×0.6 = 0.56×）+ A14 OFF baseline 1057 ✅；ctest DEVTOOL=ON 1085→1102 / DEVTOOL=OFF 1054→1057；轮次 2 暂停 commit `d9ec183` |
+| 2026-05-02 14:00 | Build 轮次 3 中止 → Plan escalation | 批判审查 plan A.1.x 发现 Phase A.1 dogfood UI 实质 Level 4 子系统级（plan ×0.6 144 min vs 真实 ~6-8 h+，失配 4-5×）；缺陷清单：(1) A.1.2 需新建 JS native binding + runtime 文件 IO（触发未列威胁 T2 路径穿越）+ 双 viewport 渲染（属 creative 域）+ splitter dock 鼠标拖动 + SDL2 真窗口 dogfood；(2) A.1.1 签名缺陷 `target_doc` → `DisplayList&`；(3) A.1.4 依赖 splitter 实现定型；用户决策 D「返回 /plan 修正」；Phase A.0 6 commits 真实产出保留；待用户 `/plan` 进入 escalation 决策（A 升级 / B 拆分 / C 闭环 reflect） |
 
 ---
 
