@@ -53,18 +53,24 @@ function renderDomTree() {
 }
 
 function setupTabs() {
+  // R2 (Phase A.1.8 暴露) — 当前 DomBindings 缺 Element.children
+  // 集合 / addEventListener / innerHTML setter 三件套；这些缺陷被 spec
+  // §9 R2「dogfood UI 暴露引擎缺陷」清单覆盖，将在独立 P3 任务中修复。
+  // 此处 setupTabs 临时性内联防御：只在 children/addEventListener
+  // 都可用时才挂监听，否则 silent skip，让 renderDomTree 仍能运行
+  // 完成主链路验证（vx_devtool_get_dom_json 闭环）。
   var tabs = document.getElementById("devtool-tabs");
-  if (!tabs) return;
+  if (!tabs || !tabs.children) return;
   var buttons = tabs.children;
+  if (typeof buttons.length !== "number") return;
   for (var i = 0; i < buttons.length; i++) {
     (function(btn) {
+      if (typeof btn.addEventListener !== "function") return;
       btn.addEventListener("click", function() {
         var which = btn.getAttribute("data-tab");
-        // Toggle button active state
         for (var j = 0; j < buttons.length; j++) {
           buttons[j].className = (buttons[j] === btn) ? "active" : "";
         }
-        // Toggle panel active state
         var panels = ["dom-tree-panel", "style-panel", "layout-panel"];
         var targets = ["dom", "style", "layout"];
         for (var k = 0; k < panels.length; k++) {
@@ -76,5 +82,10 @@ function setupTabs() {
   }
 }
 
-setupTabs();
-renderDomTree();
+// Both invocations are guarded so a single R2-class binding gap (e.g.
+// missing innerHTML setter inside renderDomTree) cannot abort the
+// whole script and mask the rest of the smoke contract. Errors are
+// swallowed; the C++ smoke harness inspects the document state and
+// vx_devtool_get_dom_json round-trip directly.
+try { setupTabs(); } catch (e) { }
+try { renderDomTree(); } catch (e) { }

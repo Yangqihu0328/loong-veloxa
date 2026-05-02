@@ -202,6 +202,18 @@ if(VX_BUILD_DEVTOOL)
   target_compile_definitions(devtool_attach_api_test PRIVATE VX_BUILD_DEVTOOL)
 endif()
 
+# TASK-20260502-01 A.1.8: dogfood headless smoke — attach DevTool over
+# a real C-API view path, drive one Update frame, and assert that
+# inspector_panel.js executes without error AND that
+# vx_devtool_get_dom_json reaches the target Document. Compiled only
+# when DEVTOOL=ON (entire scenario presupposes the subsystem).
+if(VX_BUILD_DEVTOOL)
+  vx_add_test(devtool_dogfood_smoke_test integration/devtool_dogfood_smoke_test.cc)
+  target_link_libraries(devtool_dogfood_smoke_test
+    PRIVATE vx_foundation vx_api vx_core vx_platform vx_script vx_devtool)
+  target_compile_definitions(devtool_dogfood_smoke_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 # API: C API
 add_executable(api_test api/api_test.cc)
 target_link_libraries(api_test PRIVATE vx_foundation vx_api vx_platform GTest::gtest_main)

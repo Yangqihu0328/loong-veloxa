@@ -11,6 +11,8 @@
 
 #ifdef VX_BUILD_DEVTOOL
 #include "veloxa/devtool/resources/inspector_resources.h"
+#include "veloxa/script/dom_bindings.h"
+#include "veloxa/script/quickjs_engine.h"
 #endif
 
 // SDLK_F12 keycode forwarded by sdl2_input_translate (A.1.7). We avoid
@@ -54,6 +56,11 @@ Application::Application(const Config& config) : config_(config) {
 }
 
 Application::~Application() {
+  // A.1.8 — tear down DevTool script bindings/engine BEFORE the DevTool
+  // Document slot so JS callbacks cannot fire on a freed Document.
+  if (devtool_dom_bindings_) devtool_dom_bindings_->Unbind();
+  devtool_dom_bindings_.reset();
+  devtool_script_engine_.reset();
   if (dom_bindings_) dom_bindings_->Unbind();
   dom_bindings_.reset();
   script_engine_.reset();
@@ -236,10 +243,50 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
   devtool_width_ = devtool_width;
 
   EnsureDevtoolUpdateManager(devtool_width);
+
+  // A.1.8 — bring up DevTool's own QuickJS engine + DOM bindings and
+  // execute the inlined inspector_panel.js. Failures land in
+  // devtool_script_status_ for callers (and integration tests) to
+  // observe; we don't surface them as a hard Load failure because
+  // R2-class engine gaps (innerHTML setter, addEventListener, etc.)
+  // can leave the panel partially-initialised but still useful for
+  // displaying basic structure. devtool_script_status() is the
+  // authoritative success signal for "JS executed".
+  devtool_script_status_ = Status::Ok();
+  if (owned_devtool_document_) {
+    devtool_script_engine_ = std::make_unique<script::QuickjsEngine>();
+    auto init = devtool_script_engine_->Init();
+    if (!init.ok()) {
+      devtool_script_status_ = init;
+    } else {
+      devtool_dom_bindings_ = std::make_unique<script::DomBindings>();
+      devtool_dom_bindings_->Bind(devtool_script_engine_->context(),
+                                   owned_devtool_document_.get(),
+                                   &event_manager_);
+      // T3 cross-Document inspection contract: DevTool JS calls
+      // vx_devtool_get_dom_json() and gets the TARGET document
+      // (with sensitive attributes redacted by SerializeDocument's
+      // default policy).
+      devtool_dom_bindings_->SetDevtoolTargetDocument(target_document_);
+      script::RegisterDevtoolBindings(devtool_script_engine_->context());
+      auto eval = devtool_script_engine_->EvalGlobal(
+          StringView(devtool::resources::kInspectorPanelJs),
+          StringView("inspector_panel.js"));
+      // StatusOr<T>::status() DCHECKs on the success path — guard.
+      devtool_script_status_ = eval.ok() ? Status::Ok() : eval.status();
+    }
+  }
+
   return owned_devtool_document_ != nullptr;
 }
 
 void Application::UnloadDevtoolDocument() {
+  // Reverse construction order: script engine → bindings → update mgr →
+  // Document slot. Bindings hold a JSContext pointer obtained from the
+  // engine; tearing them in the wrong order risks dangling JS callbacks.
+  devtool_dom_bindings_.reset();
+  devtool_script_engine_.reset();
+  devtool_script_status_ = Status::Ok();
   // Tear down UpdateManager first so it stops referencing the Document.
   devtool_update_manager_.reset();
   // Only clear the slot if WE owned the Document. External attach paths
@@ -250,6 +297,15 @@ void Application::UnloadDevtoolDocument() {
     owned_devtool_document_.reset();
   }
   devtool_width_ = 0.0f;
+}
+
+StatusOr<std::string> Application::EvalDevtoolScript(StringView source,
+                                                     StringView filename) {
+  if (!devtool_script_engine_) {
+    return Status(StatusCode::kInvalidArgument,
+                  "DevTool script engine not attached");
+  }
+  return devtool_script_engine_->EvalGlobal(source, filename);
 }
 
 void Application::EnsureDevtoolUpdateManager(f32 devtool_width) {
@@ -277,6 +333,10 @@ void Application::EnsureDevtoolUpdateManager(f32 devtool_width) {
 bool Application::LoadDevtoolDocument(f32 /*devtool_width*/) { return false; }
 void Application::UnloadDevtoolDocument() {}
 void Application::EnsureDevtoolUpdateManager(f32 /*devtool_width*/) {}
+StatusOr<std::string> Application::EvalDevtoolScript(StringView /*source*/,
+                                                     StringView /*filename*/) {
+  return Status(StatusCode::kInvalidArgument, "DevTool not built in");
+}
 
 #endif  // VX_BUILD_DEVTOOL
 

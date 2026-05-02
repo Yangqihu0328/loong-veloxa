@@ -84,6 +84,22 @@ class Application {
   void UnloadDevtoolDocument();
   bool devtool_loaded() const { return devtool_document_ != nullptr; }
 
+  // TASK-20260502-01 A.1.8 — DevTool dogfood JS execution status.
+  // Captures the StatusOr returned by the DevTool script engine when
+  // LoadDevtoolDocument evaluated inspector_panel.js. ok() means the
+  // panel script completed; otherwise the message contains the QuickJS
+  // diagnostic. Reset to Status::Ok() on Unload.
+  const Status& devtool_script_status() const { return devtool_script_status_; }
+
+  // Re-enter the DevTool QuickJS engine to evaluate `source` as a global
+  // expression and return the toString() of its result. Reserved for
+  // tests that want to inspect intermediate state set up by the panel
+  // script (e.g. asserting vx_devtool_get_dom_json() round-trips the
+  // target Document JSON envelope). Returns InvalidArgument if no
+  // DevTool is currently attached.
+  StatusOr<std::string> EvalDevtoolScript(StringView source,
+                                          StringView filename);
+
   // TASK-20260502-01 A.1.7 — F12 hotkey toggle for attach/detach.
   // When set, InjectInput intercepts KeyDown(F12) and toggles
   // LoadDevtoolDocument(devtool_default_width_) / UnloadDevtoolDocument
@@ -136,6 +152,13 @@ class Application {
   std::unique_ptr<UpdateManager> devtool_update_manager_;
   std::unique_ptr<script::QuickjsEngine> script_engine_;
   std::unique_ptr<script::DomBindings> dom_bindings_;
+  // A.1.8 — DevTool's own script engine + DOM bindings (independent
+  // QuickJS context so DevTool JS sees its own document.* without
+  // colliding with target Document bindings). Lifetime owned by
+  // Load/UnloadDevtoolDocument.
+  std::unique_ptr<script::QuickjsEngine> devtool_script_engine_;
+  std::unique_ptr<script::DomBindings> devtool_dom_bindings_;
+  Status devtool_script_status_;
   platform::EventLoop::TimerId frame_timer_id_ = 0;
 };
 
