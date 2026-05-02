@@ -43,6 +43,25 @@
 - **技术债 #26 LayoutBox.Dump 缺失** 闭环 ✅（A4 验收准入达成）
 - **commit**：[A.0.2 实测耗时 ~10 min，vs plan 18 min ×0.6 = 0.56×；候选 plan ×0.6 第 19 数据点「窄档延续」：API 校准成本 ~3 min 折抵新建文件成本]
 
+**Phase A.0.3 完成 ✅（2026-05-02 13:35，~15 min vs plan 27 min ×0.6 = 0.56×）：**
+
+- **关键发现 — plan 假设修正**：
+  - `vx::dom` 无 `InternString()` 自由函数 → 用 `InternedString::Intern("name")` 静态方法
+  - `Serializer.cc` 原本无对应单测 → 新建 `tests/core/dom/serializer_test.cc` 兼测 HTML Serialize（pin 现有行为）+ JSON ToJson
+- **Step 1 RED**：新建 `serializer_test.cc` 含 12 测（2 个 HTML pin + 10 个 JSON 含 3 个 T3 安全测）
+- **Step 2 验证 RED**：编译失败 `'ToJson' was not declared in this scope` ✅
+- **Step 3 GREEN**：
+  - `serializer.h`: 加 `RedactionPolicy` enum (`kRedactSensitive` / `kNone`) + `String ToJson(const Node*, RedactionPolicy);` 声明（带 schema doc + RFC 8259 标注）
+  - `serializer.cc`: 实现 `EscapeJsonString` (RFC 8259 §7：`"`/`\\`/`\b`/`\f`/`\n`/`\r`/`\t` + 控制字符 `\uXXXX`) + `IsSensitiveAttribute` (T3 单点决策：`tag_id() == kInput && attr_name == "value" && type == "password"`) + `ToJsonNode/Element/Document` 递归
+  - `tests/CMakeLists.txt`: 加 `dom_serializer_test`
+- **Step 4 验证 GREEN**：cmake reconfigure（CMakeLists 变）+ 全量构建 + ctest **1080/1080 PASS**（基线 1068 + 12 新测 = 1080）+ 1 Skip
+- **Step 5 反向探针**：
+  - 探针 1（拆 redaction：把 `policy == kRedactSensitive` 改 `false`）：测 #406 `T3PasswordInputValueRedacted` FAIL ✅（核心 T3 防护捕获能力 verified）
+  - 探针 2（`IsSensitiveAttribute` 的 `kInput` 检查改 `return true`）：设计失败 — 修改路径与目标测试无交集（input 元素本身就是 kInput tag），不影响测捕获能力（用探针 1 已充分验证）
+- **Lint clean** ✅
+- **T3 安全威胁 mitigation 落地** ✅（A1 验收准入达成）
+- **commit**：[A.0.3 实测耗时 ~15 min，vs plan 27 min ×0.6 = 0.56×；候选 plan ×0.6 第 20 数据点「窄档延续」]
+
 **Phase A.0.x 进度（16 子任务总览）：**
 
 | 子任务 | 状态 | plan ×0.6 估时 | 实测 |
@@ -50,7 +69,7 @@
 | Phase 0.1 reconfigure | ✅ 完成 | — | ~3 min |
 | A.0.1 I1 双 Document 槽 | ✅ 完成 | 54 min | ~10 min（0.18×）|
 | A.0.2 LayoutBox::ToJson | ✅ 完成 | 18 min | ~10 min（0.56×）|
-| A.0.3 DOM Serializer::ToJson + T3 | ⏳ | 27 min | — |
+| A.0.3 DOM Serializer::ToJson + T3 | ✅ 完成 | 27 min | ~15 min（0.56×）|
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ⏳ | 18 min | — |
 | A.0.5 inspector_data.h 内部 C++ | ⏳ | 36 min | — |
 | A.0.6 vx_view_serialize_*_json + T7 | ⏳ | 36 min | — |
