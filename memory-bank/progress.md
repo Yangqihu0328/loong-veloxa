@@ -148,7 +148,23 @@
   - budget guard：`budget_us_ == 0` 显式短路（plan-fact 校准 — sub-microsecond 硬件精度下 cb_us 可能转 0）
   - 析构 safety net 自动 Detach（避免 dangling PipelineHooks 指针）
 - **plan-fact 校准：** plan §B.1.2 budget guard `frame_total_us_ > budget_us_` 在 budget=0 + sub-µs cb_us 场景下不触发 → 改为 `budget_us_ == 0 || frame_total_us_ > budget_us_` 显式 disabled 语义；BudgetGuardDefaultIs1MsAllowsNormalFrame 测保持有效（normal frame 0us, 1000us budget → false → 不 abort）
-- **commit：** 待 B.1.2 commit
+- **commit：** `b0a87ea feat(devtool): PerfOverlay::Attach + T6 budget abort + 单 instance + 自动填 FrameStats (B.1.2)`
+
+#### `/build` Phase B.2.1 完成快照（2026-05-02 ~23:12，~7 min 实测）
+
+- **任务：** HUD overlay HTML/CSS（creative #1 决策 3 落地）
+- **plan ×0.6 估时：** 27 min / **实测：** ~7 min（**0.26× plan ×0.6**，「极窄档延续」桶 — HTML/CSS 资源类纯文本编辑）
+- **改动文件：**
+  - `veloxa/devtool/resources/inspector_panel.html`：加 `<div id="devtool-hud" data-passthrough="1">` 含 1 fps row + 4 stage bars (S/L/R/P)，#devtool-root 兄弟节点
+  - `veloxa/devtool/resources/inspector_panel.css`：加 HUD 样式块（position: absolute / opacity: 0.85 / 暗主题 #1a1a1a 背景 + #00ff00 绿字 / monospace 11px）+ .hud-row + .hud-bar + .bar-fill stage bar 视觉
+  - `tests/devtool/resources/inspector_panel_smoke_test.cc`：+7 HUD smoke 测（HtmlContainsDevtoolHudId / HtmlContainsHudFpsValueSlot / HtmlContainsAllFourStageBars / HtmlContainsDataPassthrough / CssContainsHudStyleBlock / CssHudUsesAbsoluteNotFixed / CssHudUsesOpacity）
+
+- **测试增量：** **DEVTOOL=ON 1206 → 1213 PASS（+7）/ DEVTOOL=OFF 1082 unchanged（资源 HTML/CSS 是 ON-only build）**
+- **A14 守门：** ✅ 隐式守门
+- **反向探针：** ✅ rename `id="devtool-hud"` → `devtool-hud-PROBE` → HtmlContainsDevtoolHudId 精准 FAIL
+- **R8 mitigation 落地：** `position: fixed` fallback 为 `absolute`（plan §0.9 grep 实证当前 layout 视觉等价 + smoke 测断言整 css 不应有 position: fixed）
+- **R9 mitigation 占位：** data-passthrough="1" attribute（pointer-events: none 不支持兜底 — HitTest 改造留 R3+ EventManager 任务）
+- **commit：** 待 B.2.1 commit
 - **下一步：** `/plan` 进入 build 级精化（Phase 0.1 reconfigure ctest baseline 二次验证 + Phase 0 grep callsite + B1-B8 决策表 + 10 子任务 5-步 TDD 模板 + plan ×0.6 第 38 数据点假设入库 + R2-verified CSS `position: fixed` / `opacity` grep 验证）
 - **实测耗时：** ~10 min（环境检测 + grep 实证 F1-F9 + 蓝图 plan §Phase B 阅读 + creative #1 决策 3/5 复用确认 + MB 同步 + 分支创建）
 

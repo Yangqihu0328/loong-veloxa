@@ -177,5 +177,56 @@ TEST(InspectorPanelJsSmoke, ContainsTabSwitchHandler) {
   EXPECT_NE(js.find("data-tab"), std::string::npos);
 }
 
+// -----------------------------------------------------------------------------
+// TASK-20260502-02 B.2.1 — HUD overlay HTML/CSS smoke
+// -----------------------------------------------------------------------------
+
+TEST(InspectorPanelHudSmoke, HtmlContainsDevtoolHudId) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("id=\"devtool-hud\""), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, HtmlContainsHudFpsValueSlot) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("id=\"hud-fps\""), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, HtmlContainsAllFourStageBars) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  for (const char* bar :
+       {"id=\"bar-style\"", "id=\"bar-layout\"", "id=\"bar-render\"",
+        "id=\"bar-paint\""}) {
+    EXPECT_NE(html.find(bar), std::string::npos)
+        << "missing HUD stage bar slot: " << bar;
+  }
+}
+
+TEST(InspectorPanelHudSmoke, HtmlContainsDataPassthroughAttribute) {
+  // creative #1 决策 3 — `pointer-events: none` 不支持 → data-passthrough
+  // attribute fallback (HitTest 待 R3+ EventManager 改造识别)。
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("data-passthrough=\"1\""), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, CssContainsHudStyleBlock) {
+  const std::string css = StripCssComments(AsString(kInspectorPanelCss));
+  EXPECT_NE(css.find("#devtool-hud"), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, CssHudUsesAbsoluteNotFixed) {
+  // R2 + plan §0.9 grep 实证：position: fixed 在当前 layout 等价 absolute
+  // → HUD 用 absolute 视觉等价，避免引擎不一致。
+  const std::string css = StripCssComments(AsString(kInspectorPanelCss));
+  // 必须含 absolute 用法（HUD 块）
+  EXPECT_NE(css.find("position: absolute"), std::string::npos);
+  // 不应在 HUD 块用 fixed（这一断言保留宽松：整个 css 不应有 position: fixed）
+  EXPECT_EQ(css.find("position: fixed"), std::string::npos);
+}
+
+TEST(InspectorPanelHudSmoke, CssHudUsesOpacity) {
+  const std::string css = StripCssComments(AsString(kInspectorPanelCss));
+  EXPECT_NE(css.find("opacity"), std::string::npos);
+}
+
 }  // namespace
 }  // namespace vx::devtool::resources

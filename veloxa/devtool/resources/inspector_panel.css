@@ -68,3 +68,44 @@
 #layout-panel.active {
   background-color: #1e1e1e;
 }
+
+/*
+  TASK-20260502-02 B.2.1: Performance Overlay HUD (creative #1 决策 3 +
+  plan §B.2.1 + plan §0.9 CSS 子集 grep 实证). HUD 是 DevTool Document
+  内 #devtool-root 兄弟节点 absolute positioned，CSS opacity 实现半透明.
+  position: fixed 在当前 layout 等价 absolute → 视觉一致用 absolute.
+  pointer-events: none 不支持 → data-passthrough attribute fallback
+  (HitTest 待 R3+ EventManager 改造识别).
+*/
+
+#devtool-hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 180px;
+  background-color: #1a1a1a;
+  color: #00ff00;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.hud-row {
+  display: flex;
+  flex-direction: row;
+  margin: 0 0 4px 0;
+}
+
+.hud-bar {
+  display: flex;
+  flex-direction: row;
+  margin-right: 6px;
+  width: 28px;
+}
+
+.hud-bar .bar-fill {
+  height: 8px;
+  background-color: #00aa00;
+}

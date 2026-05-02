@@ -4,17 +4,18 @@
 
 **构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:35）：
 
-**已完成 4/10 子任务：**
-- B.0.1 PipelineHooks 五钩子 ✅（**#35 阶段 1 闭环**；~25 min = **0.46× plan ×0.6**）
-- B.0.2 dirty_rects_ Vector 累积扩展 ✅（~7 min = **0.19× plan ×0.6**）
-- B.1.1 PerfOverlay FrameStats ring buffer ✅（~8 min = **0.22× plan ×0.6**）
-- B.1.2 PerfOverlay::Attach + T6 budget abort + 单 instance ✅（~15 min = **0.56× plan ×0.6**，「中件实施」桶下端）
+**已完成 5/10 子任务：**
+- B.0.1 PipelineHooks 五钩子 ✅（**#35 阶段 1 闭环**；~25 min = **0.46×**）
+- B.0.2 dirty_rects_ Vector 累积 ✅（~7 min = **0.19×**）
+- B.1.1 PerfOverlay ring buffer ✅（~8 min = **0.22×**）
+- B.1.2 PerfOverlay::Attach + T6 budget ✅（~15 min = **0.56×**）
+- B.2.1 HUD HTML/CSS（absolute + opacity 0.85）✅（~7 min = **0.26×**）
 
-**测试基线：** DEVTOOL=ON 1206 / DEVTOOL=OFF 1082 双绿；A14 ctest smoke PASS
+**测试基线：** DEVTOOL=ON 1213 / DEVTOOL=OFF 1082 双绿
 
-**累计 plan ×0.6 比值：** 实测 55 min vs plan ×0.6 计 153 min = **0.36×**（4 子任务平均 — Phase 0 grep + Phase A 范式 ROI 持续高）
+**累计 plan ×0.6 比值：** 实测 62 min vs plan ×0.6 180 min = **0.34×**（5 子任务平均）
 
-**当前：** 准备 B.2.1 HUD HTML/CSS（plan 45 min ×0.6 = 27 min，inspector_panel.html/css 加 #devtool-hud + 4 stage bars + 3 smoke 测）
+**当前：** 准备 B.2.2 HUD JS + vx_view_get_perf_stats binding（plan 30 min ×0.6 = 18 min；JS 端 updateHud + DomBindings 端 VxViewGetPerfStats C 函数 + Application 注入 PerfOverlay 到 DomBindings）
 
 ---
 

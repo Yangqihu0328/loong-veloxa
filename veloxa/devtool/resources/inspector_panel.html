@@ -29,6 +29,26 @@
       <div id="layout-panel"></div>
     </div>
   </div>
+  <!--
+    TASK-20260502-02 B.2.1: Performance Overlay HUD (creative #1 决策 3 +
+    plan §B.2.1). #devtool-hud 是 #devtool-root 的兄弟节点，absolute
+    positioned 在 DevTool Document 视口内。data-passthrough="1" 占位以等
+    R3+ EventManager HitTest 改造识别（pointer-events: none 不支持兜底）。
+    HUD JS 每帧从 vx_view_get_perf_stats 读 stats 更新 #hud-fps innerHTML
+    + 4 stage bars width（B.2.2 实施）。
+  -->
+  <div id="devtool-hud" data-passthrough="1">
+    <div class="hud-row hud-fps">
+      <span class="hud-label">FPS:</span>
+      <span class="hud-value" id="hud-fps">--</span>
+    </div>
+    <div class="hud-row hud-stages">
+      <div class="hud-bar"><span>S</span><div class="bar-fill" id="bar-style"></div></div>
+      <div class="hud-bar"><span>L</span><div class="bar-fill" id="bar-layout"></div></div>
+      <div class="hud-bar"><span>R</span><div class="bar-fill" id="bar-render"></div></div>
+      <div class="hud-bar"><span>P</span><div class="bar-fill" id="bar-paint"></div></div>
+    </div>
+  </div>
   <script>__INLINE_JS__</script>
 </body>
 </html>
