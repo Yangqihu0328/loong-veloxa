@@ -4,8 +4,8 @@
 
 ### TASK-20260502-01：DevTool Phase A — Inspector 实施（DOM tree / Style panel / Layout panel + 元素 hover 高亮）[安全相关]
 
-- **复杂度级别：** Level 3 → **🟡 A.1 段疑似 Level 4 升级**（Phase A.0 6 子任务 Level 3 已完成；Phase A.1 dogfood UI 段触发 plan escalation 待用户决策）
-- **状态：** 🟡 **构建中·Phase A.0 完成（轮次 3 入口触发 plan escalation）** — Phase A.0 6 子任务已落地 6 commits + ctest 1102/1057 双轨 + #26/#40 双技术债闭环 + T3/T5/T7 三安全 mitigation；轮次 3 批判审查识别 Phase A.1 dogfood UI 实质 Level 4 子系统级（plan ×0.6 144 min vs 真实 ~6-8 h+）；用户选 D「返回 /plan 修正」→ 待用户用 `/plan` 命令进入 escalation 决策（A 升级当前 task / B 拆 A.1 独立 Level 4 + 当前 task 闭环 A.2 安全单测 / C 当前 task 直接 reflect）
+- **复杂度级别：** ~~Level 3~~ → **Level 4**（2026-05-02 14:15 用户选 escalation A 升级；Phase A.1 dogfood UI 实质子系统级 + 8 子任务；Phase A 总 20 子任务跨 5 子系统；与 spec §10 ≥30 systemPatterns 自我对照 + V1-V8 决策矩阵 + Phase A.0/A.1/A.2/A.3 多 Phase 结构对齐 Level 4 判定）
+- **状态：** ✅ **Plan escalation 完成（2026-05-02 14:30）** — Phase A.0 6 子任务 build 已完成（保留 6 commits + ctest 1102/1057 双轨 + #26/#40 双技术债闭环 + T3/T5/T7 三安全 mitigation）；Phase A.1 plan escalation 完成 — brainstorming 锁定 B-A1.1=b 编译期嵌入（推翻 B4=B → B4=A，T2 威胁面消除）+ B-A1.2=a full viewport 渲染覆盖 + 架构修正 M1（Application 双 UpdateManager）/ M2（InjectHoverHighlight 签名改 DisplayList&）/ M3（B-A1.1=b 嵌入路径）；新 A.1 detailed plan 8 子任务 5-步 TDD 模板落盘（plan 文档 +384 行，A.1 段从粗概念替换为 executable 段）；下一步 `/build` 续上 A.1.1（不需 creative — 所有架构决策已锁定）
 - **创建日期：** 2026-05-02
 - **分支：** `feature/TASK-20260502-01-devtool-inspector`（基于 main `679304e`，已含 TASK-30-04 蓝图全部归档）
 - **设计 spec：** ✅ 复用 `docs/specs/2026-04-30-devtool-design.md` Inspector 验收段（A1-A5, A13, A14 + T3/T5/T7/T8 威胁 + I1-I8 注入点中 I1/I3/I4/I5/I6 + R1/R2/R5 风险）
@@ -69,17 +69,21 @@
 | A.0.4 | I3 PaintCommand kOverlayHighlight + ResetOverlayCommands | 18 min |
 | A.0.5 | C API 内部 C++ 层 `inspector_data.h` | 36 min |
 | A.0.6 | C API 公开 thin wrapper `vx_view_serialize_*` | 36 min |
-| A.1.1 | InspectorOverlay hover highlight 注入 | 27 min |
-| A.1.2 | DevTool UI HTML/CSS/JS 资源（splitter dock + DOM tree view） | 54 min |
-| A.1.3 | Style panel + Layout panel 数据展示 | 36 min |
-| A.1.4 | F12 toggle DevTool splitter（`vx_view_attach_devtool` 入口） | 27 min |
+| A.1.1 | InspectorOverlay::InjectHoverHighlight (DisplayList&)（M2 修正签名） | 18 min |
+| A.1.2 | DevTool resource 编译期嵌入（B-A1.1=b CMake `file(READ)`，T2 消除）| 27 min |
+| A.1.3 | inspector_panel.html/css/js 编写 | 54 min |
+| A.1.4 | JS native binding 扩展（vx_devtool_get_dom_json 等全局函数） | 36 min |
+| A.1.5 | InputDispatchSplitter（hit-area 路由 + drag capture，新增） | 27 min |
+| A.1.6 | Application 双 UpdateManager + LoadDevtoolDocument（M1 + M3，新增）| 36 min |
+| A.1.7 | vx_view_attach_devtool/detach C API + F12 hotkey | 27 min |
+| A.1.8 | dogfood headless smoke 集成测（新增） | 45 min |
 | A.2.1 | T3 redaction policy 单测 + API | 18 min |
 | A.2.2 | T5 overlay 隔离 + 每帧复位单测 | 18 min |
 | A.2.3 | T7 buffer overflow 守卫单测（双调用模式 + max_size） | 18 min |
 | A.2.4 | A14 binary size diff 验证（DevTool OFF 编译） | 9 min |
 | A.3.1 | examples/hello_devtool.cc — Inspector smoke | 27 min |
 | A.3.2 | Phase A reflect + commit + integration test | 18 min |
-| **合计** | **16 子任务** | **441 min（7.35 h）** |
+| **合计** | **20 子任务**（A.1 escalation +4 子任务） | **473 min（7.88 h）** |
 
 #### 前置验证清单（VAN 阶段产出）
 
@@ -148,6 +152,7 @@
 | 2026-05-02 13:30 | Build 轮次 1 完成 | Phase 0.1 reconfigure ctest 1062 基线确认；A.0.1 双 Document 槽位（10 min vs plan 54 min ×0.6 = 0.18×）；A.0.2 LayoutBox::ToJson + #26 闭环（10 min vs 18 ×0.6 = 0.56×）；A.0.3 DOM Serializer::ToJson + T3 redact（15 min vs 27 ×0.6 = 0.56×）；A.0.4 PaintCommand kOverlayHighlight + T5 ResetOverlayCommands（15 min vs 18 ×0.6 = 0.83×）；ctest 1062→1085 PASS；轮次 1 暂停 commit |
 | 2026-05-02 13:55 | Build 轮次 2 完成 | A.0.5 vx_devtool 静态库 + inspector_data 内部 C++ API（25 min vs plan 36 ×0.6 = 0.69×）+ A14 OFF baseline 1054 ✅；A.0.6 vx_view_serialize_dom_json 公共 C API + T7 buffer overflow + #40 闭环（20 min vs 36 ×0.6 = 0.56×）+ A14 OFF baseline 1057 ✅；ctest DEVTOOL=ON 1085→1102 / DEVTOOL=OFF 1054→1057；轮次 2 暂停 commit `d9ec183` |
 | 2026-05-02 14:00 | Build 轮次 3 中止 → Plan escalation | 批判审查 plan A.1.x 发现 Phase A.1 dogfood UI 实质 Level 4 子系统级（plan ×0.6 144 min vs 真实 ~6-8 h+，失配 4-5×）；缺陷清单：(1) A.1.2 需新建 JS native binding + runtime 文件 IO（触发未列威胁 T2 路径穿越）+ 双 viewport 渲染（属 creative 域）+ splitter dock 鼠标拖动 + SDL2 真窗口 dogfood；(2) A.1.1 签名缺陷 `target_doc` → `DisplayList&`；(3) A.1.4 依赖 splitter 实现定型；用户决策 D「返回 /plan 修正」；Phase A.0 6 commits 真实产出保留；待用户 `/plan` 进入 escalation 决策（A 升级 / B 拆分 / C 闭环 reflect） |
+| 2026-05-02 14:30 | Plan escalation 完成 | 用户选 escalation A 升级当前 task 为 Level 4；brainstorming 锁定 2 决策：B-A1.1=b 编译期嵌入（推翻 B4=B → B4=A，T2 威胁完全消除 + 减 1 篇 creative + 加快交付 ~3-5h）+ B-A1.2=a full viewport + 渲染覆盖（splitter 拖拽零额外开销）；架构 grep 验证发现 3 项修正 M1 (Application 双 UpdateManager，原假设 `Renderer::Render(target,devtool)` 不成立，实际 `render::*` 是 free fn + UpdateManager 是 single-Doc) / M2 (InjectHoverHighlight 签名 `Document*` → `DisplayList&`) / M3 (B-A1.1=b 嵌入路径替代 inspector_panel_loader)；plan 文档扩 +384 行（A.1 段从粗概念替换为 8 子任务 detailed 5-步 TDD 模板，每子任务含完整代码片段 + RED/GREEN/反向探针/A14 守门 + commit msg）；Phase A 总子任务 16 → 20；总估时 7.35 → 7.88 h plan ×0.6（+32 min，可控）；**0 篇新 creative 需要**；推荐路径 `/build` 续上 A.1.1 |
 
 ---
 

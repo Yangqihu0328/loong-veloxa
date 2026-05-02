@@ -142,12 +142,16 @@
 | A.0.4 PaintCommand kOverlayHighlight + T5 | ✅ 完成 | 18 min | ~15 min（0.83×）|
 | A.0.5 inspector_data.h 内部 C++ | ✅ 完成 | 36 min | ~25 min（0.69×）|
 | A.0.6 vx_view_serialize_*_json + T7 | ✅ 完成 | 36 min | ~20 min（0.56×）|
-| A.1.1 InspectorOverlay hover | 🟡 plan 待精化 | 27 min | — |
-| A.1.2 DevTool UI HTML/CSS/JS | 🔴 Level 4 升级 | 54 min | — |
-| A.1.3 Style/Layout panel 数据 | 🔴 依赖 A.1.2 | 36 min | — |
-| A.1.4 F12 toggle + vx_view_attach_devtool | 🔴 依赖 A.1.2 | 27 min | — |
-| A.2.1-4 安全单测 + A14 守门 | ⏳ 不依赖 dogfood | 63 min | — |
-| A.3.1-2 example smoke + reflect prep | 🟡 A.3.1 依赖 dogfood | 45 min | — |
+| A.1.1 InspectorOverlay::InjectHoverHighlight (DisplayList&) | ⏳ plan ✅ | 18 min | — |
+| A.1.2 DevTool resource 编译期嵌入（B-A1.1=b）| ⏳ plan ✅ | 27 min | — |
+| A.1.3 inspector_panel.html/css/js 编写 | ⏳ plan ✅ | 54 min | — |
+| A.1.4 JS native binding 扩展 | ⏳ plan ✅ | 36 min | — |
+| A.1.5 InputDispatchSplitter（新增）| ⏳ plan ✅ | 27 min | — |
+| A.1.6 Application 双 UpdateManager（M1）| ⏳ plan ✅ | 36 min | — |
+| A.1.7 vx_view_attach_devtool C API + F12 | ⏳ plan ✅ | 27 min | — |
+| A.1.8 dogfood headless smoke（新增）| ⏳ plan ✅ | 45 min | — |
+| A.2.1-4 安全单测 + A14 守门 | ⏳ | 63 min | — |
+| A.3.1-2 example smoke + reflect prep | ⏳ | 45 min | — |
 
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
@@ -194,6 +198,64 @@
 - **plan ×0.6 失配预警机制**：plan 单子任务估 ~50 min 但实际工作面 ≥ 5 个子系统时（dogfood UI 案例：JS binding + 文件 IO + 双 viewport + 鼠标交互 + 真窗口 dogfood），应在 plan 阶段标 ⚠️ 待 spike 而非直接 ×0.6 估时
 - **蓝图 vs 可执行 plan 边界**：4-30 蓝图 plan 写「dogfood UI 实施」是 Level 4 概念占位，build 阶段强行执行需触发 plan 升级（本次 escalation 验证 working）
 - **plan-creative 失配检测**：当 plan 子任务隐含「需新增架构决策」（双 viewport / native binding 设计）时是 creative 域信号，build 阶段不该消化
+
+#### `/plan` escalation 阶段完成快照（2026-05-02 14:30）
+
+**用户决策路径：** escalation A 升级当前 task 为 Level 4（vs B 拆分新 task / C 直接闭环 reflect）
+
+**Brainstorming 锁定（2 决策，逐一 AskQuestion 用户全选推荐）：**
+
+| # | 决策 | 锁定值 | 推翻 / 沿用 | 影响 |
+|:-:|---|---|---|---|
+| **B-A1.1** | DevTool resource 加载 | **b 编译期嵌入** | **推翻 B4=B → B4=A** | T2 路径穿越威胁面**完全消除** + 减 1 篇 creative + 加快交付 ~3-5h |
+| **B-A1.2** | target Document layout viewport | **a full viewport + 渲染覆盖** | 新增决策 | splitter 拖拽零额外开销；与 Chrome DevTools 早期行为一致 |
+
+**关键 grep 验证发现 — 架构 3 项修正（plan escalation 必须反映）：**
+
+| # | 原假设 | 实际架构（grep 验证）| 修正 |
+|:-:|---|---|---|
+| **M1** | `Renderer::Render(target_doc, devtool_doc, canvas)` class method（creative #1 决策 4）| `render::Record/Replay/Paint` 是 free functions（`renderer.h` line 14-25）；`UpdateManager` 是 single-Document 设计（`update_manager.cc` line 17 `if (!dirty_ \|\| !config_.document) return`）| Application 持有**双 UpdateManager**，共享 canvas + image_cache，序列 Update 自动叠加；不修改 Renderer / UpdateManager |
+| **M2** | `InjectHoverHighlight(dom::Document*, ...)`（plan §A.1.1）| Document 不持有 DisplayList | 改签名 `InjectHoverHighlight(render::DisplayList&, const layout::LayoutBox*, ...)` |
+| **M3** | runtime 文件读取 `inspector_panel_loader.cc`（B4=B）| B-A1.1=b 嵌入路径 | 替换为 `veloxa/devtool/resources/CMakeLists.txt` + Python codegen 生成 `inspector_resources.cc` |
+
+**plan 文档扩展：** A.1 段从原 4 子任务粗概念 → 8 子任务 detailed 5-步 TDD 模板，文档 +384 行（每子任务含完整代码片段 + RED/GREEN/反向探针/A14 守门 + commit msg）
+
+**子任务 16 → 20（A.1 +4）：**
+
+| # | 子任务 | plan ×0.6 | 关键 |
+|:-:|---|--:|:-:|
+| A.1.1 | InspectorOverlay::InjectHoverHighlight (DisplayList&) | 18 min | M2 修正 |
+| A.1.2 | DevTool resource 编译期嵌入 | 27 min | T2 消除 |
+| A.1.3 | inspector_panel.html/css/js 编写 | 54 min | dogfood R2 mitigation |
+| A.1.4 | JS native binding 扩展 | 36 min | DomBindings extension |
+| A.1.5 | InputDispatchSplitter（新增）| 27 min | drag capture 状态机 |
+| A.1.6 | Application 双 UpdateManager（新增）| 36 min | M1 + M3 |
+| A.1.7 | vx_view_attach_devtool C API + F12 | 27 min | API 简化（移除 resources_dir）|
+| A.1.8 | dogfood headless smoke（新增）| 45 min | 集成 + JS execution 验证 |
+
+**总估时矩阵：**
+
+| Phase | 任务数 | plan 估时 | plan ×0.6 |
+|:-:|:-:|---:|---:|
+| A.0 ✅ 实测 | 6 | 189 min plan | ~95 min（实测，0.50× plan ×0.6）|
+| A.1 ⏳ Level 4 升级 | 8（+4）| 450 min | **270 min（4.5 h）** |
+| A.2 ⏳ | 4 | 105 min | 63 min |
+| A.3 ⏳ | 2 | 75 min | 45 min |
+| **合计** | **20** | **819 min（13.65 h）** | **473 min（7.88 h）** |
+
+较原 plan **7.35 h → 7.88 h**（+32 min plan ×0.6 = +0.53 h），可控。
+
+**0 篇新 creative 需要：** creative #1 (splitter dock + HUD overlay 5 决策) 已覆盖大部分 UI 架构决策；剩余 2 决策（B-A1.1 + B-A1.2）通过 brainstorming 直接锁定入 plan，未触发新 creative。
+
+**MB 同步：** activeContext.md（阶段 → 规划中·A.1 detailed plan 已落盘）/ tasks.md（Level 3→4 + 子任务 16→20 + escalation 历史 +1 行 + brainstorming B-A1.x 决策入决策矩阵）/ progress.md（本快照）
+
+**实测耗时（plan escalation 阶段）：** ~30 min（critical review + brainstorming AskQuestion 5 min + 读 spec/creative/grep 验证 5 min + 写 plan +384 行 15 min + MB 同步 5 min）
+
+**新增 escalation 学习点：**
+
+- **escalation 决策成本预警：** Level 3 → Level 4 升级在 build 入口暴露时，escalation 实际开销 ~30 min（远低于硬推 dogfood 阶段的 ~6-8 h failure cost）— 验证「批判性审查 plan」step 的 ROI 极高
+- **架构 grep 验证必须前置：** creative #1 的 `Renderer::Render(target, devtool, canvas)` 假设隐藏了 single-Document 限制；M1/M2/M3 修正在 plan 阶段 grep 30 min 完成，避免 build 阶段返工
+- **「creative 数量 = 架构决策数」预算法则：** 真实需要 creative 决策 = 「未在原 spec / creative 锁定 + 不能简单从模式扩展（如 DomBindings）派生 + 触发跨子系统改动」的决策；本次实证 2 个候选 → 通过简化（B-A1.1=b 嵌入 + B-A1.2=a 渲染覆盖）归零
 
 #### `/plan` 阶段产出快照（2026-05-02 13:10）
 

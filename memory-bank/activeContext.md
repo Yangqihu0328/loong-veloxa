@@ -2,26 +2,40 @@
 
 ## 当前阶段
 
-**规划中·A.1 待精化（Phase A.0 build 已完成）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:00 触发 plan escalation：用户决策 D「返回 /plan 修正」，识别 Phase A.1 dogfood DevTool UI 实质上是 **Level 4 子系统级工作量**，原 plan 144 min plan ×0.6 严重低估真实复杂度 (~6-8 h+)。Phase A.0 build 6 commits 真实产出保留，`/build` 中止于轮次 3 入口。
+**规划中·A.1 detailed plan 已落盘（Phase A.0 build 已完成 / Level 4 升级）** — TASK-20260502-01 DevTool Phase A · Inspector 于 2026-05-02 14:30 完成 plan escalation：用户选 escalation A 升级 + brainstorming 锁定 B-A1.1=b 编译期嵌入 + B-A1.2=a full viewport；Phase A.1 plan 从粗 4 子任务概念 → 8 子任务 detailed 5-步 TDD 模板（plan 文档 +384 行）；Phase A 总子任务 16 → 20；**0 篇新 creative**（架构决策全锁定）；下一步直接 `/build` 续上 A.1.1。
 
-**Phase A.1 plan 缺陷清单（待 `/plan` 精化时处理）：**
+**Brainstorming 锁定决策（B-A1.x 系列）：**
 
-1. **A.1.2 dogfood UI** (HTML/CSS/JS) 实质需要 5 个未列子系统：
-   - JS native binding `vx_devtool_get_dom_json()` — `dom_bindings.cc` 需扩展新 module
-   - runtime 文件 IO（`fopen/fread` 加载 `inspector_panel.html` 等）— 触发 plan **未列**的威胁 **T2 路径穿越**
-   - 双 viewport 渲染 — Application 当前仅 1 surface/canvas，需架构调整（属 creative 域）
-   - splitter dock 鼠标拖动 — JS event listener + UpdateManager 协调
-   - SDL2 真窗口 dogfood — A.3.1 hello_devtool 不能 headless smoke
-2. **A.1.1 InspectorOverlay** 签名缺陷：plan 写 `InjectHoverHighlight(target_doc, ...)` 但 Document 不持有 DisplayList，应为 `InjectHoverHighlight(DisplayList&, ...)`
-3. **A.1.4 vx_view_attach_devtool API** 设计依赖 splitter dock 实现 → 等 A.1.2 架构定型后才能签名锁
+| # | 决策 | 锁定值 | 影响 |
+|:-:|---|---|---|
+| **B-A1.1** | DevTool resource 加载 | **b 编译期嵌入**（推翻 B4=B → B4=A，CMake `file(READ)` + Python codegen `inspector_resources.cc`）| T2 路径穿越威胁面**完全消除** + 减 1 篇 creative + 加快交付 ~3-5h |
+| **B-A1.2** | target Document layout viewport | **a full viewport + 渲染覆盖**（target Document layout viewport = window 全尺寸；DevTool 自渲染时覆盖右侧 270px）| splitter 拖拽零额外开销；与 Chrome DevTools 早期行为一致 |
 
-**升级方案（待用户用 `/plan` 决定）：**
+**架构 grep 验证后 3 项修正（plan 必须反映）：**
 
-- 选 A：当前 task 升 Level 4 + 补 A.1 detailed plan + 1-2 creative（双 viewport / native binding / 文件 IO 安全模型）
-- 选 B：拆 A.1 为独立 Level 4 task `TASK-30-04-A2`（dogfood UI），当前 task 闭环（A.2/A.3 部分子任务可独立做完不依赖 dogfood — A.2.1/2.2/2.3/2.4 均不依赖 UI 真实渲染）
-- 选 C：当前 task 直接闭环 reflect（Phase A.0 已是完整 Level 3 里程碑），A.1/A.2/A.3 全部拆为 follow-up tasks
+| # | 原 plan / spec / creative #1 假设 | 实际架构 | 修正 |
+|:-:|---|---|---|
+| **M1** | `Renderer::Render(target_doc, devtool_doc, canvas)` class method（creative #1 决策 4）| `render::Record/Replay/Paint` 是 free functions；`UpdateManager` 是 single-Document 设计（cfg.document 单引用）| Application 持有**双 UpdateManager**（target_update_manager_ + devtool_update_manager_），共享 canvas + image_cache，序列 Update 自动叠加；不修改 Renderer / UpdateManager |
+| **M2** | `InjectHoverHighlight(dom::Document*, ...)`（plan §A.1.1）| Document 不持有 DisplayList | 改签名 `InjectHoverHighlight(render::DisplayList&, const layout::LayoutBox*, ...)` |
+| **M3** | runtime 文件读取 `inspector_panel_loader.cc`（B4=B）| B-A1.1=b 嵌入路径 | 替换为 `veloxa/devtool/resources/CMakeLists.txt` + Python codegen 生成 `inspector_resources.cc` |
 
-**下一步：** 用户用 `/plan` 命令进入 plan escalation 阶段，决策升级方案 A/B/C。
+**A.1 8 子任务（detailed plan 已落盘）：**
+
+| # | 子任务 | plan ×0.6 | 关键 |
+|:-:|---|--:|:-:|
+| A.1.1 | `InspectorOverlay::InjectHoverHighlight(DisplayList&, ...)` | 18 min | M2 修正签名 |
+| A.1.2 | DevTool resource 编译期嵌入（B-A1.1=b）| 27 min | T2 消除 |
+| A.1.3 | `inspector_panel.html/css/js` 编写 | 54 min | dogfood R2 mitigation |
+| A.1.4 | JS native binding 扩展 | 36 min | DomBindings pattern extension |
+| A.1.5 | InputDispatchSplitter（hit-area + drag capture） | 27 min | 新增 |
+| A.1.6 | Application 双 UpdateManager + LoadDevtoolDocument | 36 min | M1 + M3 |
+| A.1.7 | `vx_view_attach_devtool` C API + F12 hotkey | 27 min | API 简化（移除 resources_dir）|
+| A.1.8 | dogfood headless smoke 集成测 | 45 min | 新增 |
+| **合计** | — | **270 min** | — |
+
+**Phase A 累计修正后估时：** 473 min（7.88 h）plan ×0.6（A.0 已完成 ~95 min + A.1 270 min + A.2 63 min + A.3 45 min）— 较原 plan +32 min，可控。
+
+**下一步：** `/build` 启动轮次 3（实际推进 A.1.1）。
 
 **轮次 2 commit 链：**
 - `3f3bd38` feat(devtool): vx_devtool 静态库 + Inspector 内部 C++ API（A.0.5）
