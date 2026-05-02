@@ -27,6 +27,11 @@ struct DomBindings::InstanceData {
   // / DomBindings::SetDevtoolTargetDocument). nullptr is the unset state
   // (VxDevtoolGetDomJson returns the JSON string "null").
   dom::Document* devtool_target_doc = nullptr;
+  // A.2.1 T3 mitigation: redaction policy applied by VxDevtoolGetDomJson
+  // when serializing the target Document. Defaults to the safe value;
+  // synced from Application::redaction_policy() via SetRedactionPolicy.
+  dom::RedactionPolicy redaction_policy =
+      dom::RedactionPolicy::kRedactSensitive;
   event::EventManager* em = nullptr;
   // Token returned by em->AddDestructionObserver in Bind. Used in two places:
   //   - Unbind (when em is still alive) calls em->RemoveDestructionObserver
@@ -764,6 +769,12 @@ void DomBindings::SetDevtoolTargetDocument(dom::Document* target) {
 dom::Document* DomBindings::devtool_target_document() const {
   return data_->devtool_target_doc;
 }
+void DomBindings::SetRedactionPolicy(dom::RedactionPolicy policy) {
+  data_->redaction_policy = policy;
+}
+dom::RedactionPolicy DomBindings::redaction_policy() const {
+  return data_->redaction_policy;
+}
 
 void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
                        event::EventManager* em) {
@@ -864,8 +875,10 @@ JSValue VxDevtoolGetDomJson(JSContext* ctx, JSValueConst /*this_val*/,
     static constexpr char kNullJson[] = "null";
     return JS_NewStringLen(ctx, kNullJson, sizeof(kNullJson) - 1);
   }
+  /* A.2.1: pull policy from DomBindings (synced via Application by
+   * vx_inspector_set_redaction_policy). Defaults to kRedactSensitive. */
   vx::String json = vx::devtool::SerializeDocument(
-      target, dom::RedactionPolicy::kRedactSensitive);
+      target, bindings->redaction_policy());
   return JS_NewStringLen(ctx, json.data(), json.size());
 }
 

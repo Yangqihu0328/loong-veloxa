@@ -190,6 +190,30 @@ VxResult vx_view_detach_devtool(VxView* view);
 /* Returns: 1 if DevTool currently attached, 0 if not, -1 if view is NULL. */
 int vx_view_devtool_loaded(VxView* view);
 
+/* ── DevTool Redaction Policy C API (TASK-20260502-01 A.2.1, T3) ──
+ *
+ * T3 mitigation policy switch for DevTool DOM serialization. Affects
+ * BOTH vx_view_serialize_dom_json (C-API path) and the DevTool JS
+ * binding's vx_devtool_get_dom_json on subsequent calls. Default
+ * policy is VX_REDACTION_REDACT_SENSITIVE — embedders may opt out
+ * with VX_REDACTION_NONE under their own threat model.
+ *
+ * Returns:
+ *   VX_OK on success
+ *   VX_ERROR_NULL_PARAM when view is NULL
+ *   VX_ERROR_INVALID_STATE when policy is not a recognised enum value,
+ *                          OR when built with VX_BUILD_DEVTOOL=OFF.
+ */
+typedef enum {
+  /* Default: input[type=password] etc. → "[REDACTED]" */
+  VX_REDACTION_REDACT_SENSITIVE = 0,
+  /* Escape hatch for embedder-controlled deep inspection */
+  VX_REDACTION_NONE = 1,
+} VxRedactionPolicy;
+
+VxResult vx_inspector_set_redaction_policy(VxView* view,
+                                           VxRedactionPolicy policy);
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void);

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "veloxa/core/dom/document.h"
+#include "veloxa/core/dom/serializer.h"
 #include "veloxa/core/event/event_manager.h"
 
 struct JSContext;
@@ -35,6 +36,13 @@ class DomBindings {
   // RegisterDevtoolBindings is a stub).
   void SetDevtoolTargetDocument(dom::Document* target);
   dom::Document* devtool_target_document() const;
+
+  // TASK-20260502-01 A.2.1 — T3 redaction policy used by
+  // RegisterDevtoolBindings's vx_devtool_get_dom_json. Default is
+  // kRedactSensitive; embedders flip via vx_inspector_set_redaction_policy
+  // (which drives Application::set_redaction_policy → DomBindings sync).
+  void SetRedactionPolicy(dom::RedactionPolicy policy);
+  dom::RedactionPolicy redaction_policy() const;
 
   // Forward declaration is public so internal free-function callbacks
   // (in the .cc file's anonymous namespace) can name the type when

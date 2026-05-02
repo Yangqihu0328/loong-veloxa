@@ -202,6 +202,34 @@ if(VX_BUILD_DEVTOOL)
   target_compile_definitions(devtool_attach_api_test PRIVATE VX_BUILD_DEVTOOL)
 endif()
 
+# TASK-20260502-01 A.2.1 [SECURITY]: vx_inspector_set_redaction_policy
+# T3 mitigation policy switch unit tests. ON path covers default-redact /
+# NONE-emits / round-trip / invalid-enum; OFF path covers stub guard.
+vx_add_test(devtool_redaction_policy_test api/devtool_redaction_policy_test.cc)
+target_link_libraries(devtool_redaction_policy_test
+  PRIVATE vx_foundation vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(devtool_redaction_policy_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
+# TASK-20260502-01 A.2.4 [A14]: link-closure smoke for the DevTool
+# subsystem. Runs nm against libvx_api.a + libvx_core.a and asserts
+# OFF builds contain ZERO DevTool internal symbols (RegisterDevtoolBindings,
+# kInspectorPanel*, InspectorOverlay, InjectHoverHighlight, InputDispatchSplitter,
+# SerializeDocument). ON builds verify the public C ABI stub is present.
+# Pure CMake script test — no compiled artifact, runs every ctest.
+if(VX_BUILD_DEVTOOL)
+  set(_devtool_a14_flag "ON")
+else()
+  set(_devtool_a14_flag "OFF")
+endif()
+add_test(NAME devtool_a14_link_closure_smoke
+  COMMAND ${CMAKE_COMMAND}
+    -DLIB=$<TARGET_FILE:vx_api>
+    -DCORELIB=$<TARGET_FILE:vx_core>
+    -DDEVTOOL_ON=${_devtool_a14_flag}
+    -P ${CMAKE_SOURCE_DIR}/tests/smoke/devtool_a14_link_closure.cmake)
+
 # TASK-20260502-01 A.1.8: dogfood headless smoke — attach DevTool over
 # a real C-API view path, drive one Update frame, and assert that
 # inspector_panel.js executes without error AND that
@@ -315,4 +343,18 @@ if(VX_PLATFORM_SDL2)
     ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_SDL2_AUTOQUIT_MS=200"
     TIMEOUT 10
   )
+
+  # TASK-20260502-01 A.3.1: end-to-end smoke for hello_devtool example.
+  # Requires VX_BUILD_DEVTOOL=ON (the example only compiles then). Same
+  # SDL2 dummy-driver + auto-quit pattern as hello_sdl2_smoke.
+  if(VX_BUILD_DEVTOOL)
+    add_test(
+      NAME hello_devtool_smoke
+      COMMAND $<TARGET_FILE:hello_devtool>
+    )
+    set_tests_properties(hello_devtool_smoke PROPERTIES
+      ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=200"
+      TIMEOUT 10
+    )
+  endif()
 endif()

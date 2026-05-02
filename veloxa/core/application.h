@@ -5,6 +5,7 @@
 
 #include "veloxa/core/css/parser.h"
 #include "veloxa/core/dom/document.h"
+#include "veloxa/core/dom/serializer.h"
 #include "veloxa/core/event/event_manager.h"
 #include "veloxa/core/image/image_cache.h"
 #include "veloxa/core/layout/text_shaper.h"
@@ -84,6 +85,14 @@ class Application {
   void UnloadDevtoolDocument();
   bool devtool_loaded() const { return devtool_document_ != nullptr; }
 
+  // TASK-20260502-01 A.2.1 — T3 mitigation policy applied by all
+  // DevTool serialization paths (vx_view_serialize_dom_json C API and
+  // RegisterDevtoolBindings's vx_devtool_get_dom_json). Default is
+  // kRedactSensitive (passwords → "[REDACTED]"). Embedders set via
+  // vx_inspector_set_redaction_policy.
+  dom::RedactionPolicy redaction_policy() const { return redaction_policy_; }
+  void set_redaction_policy(dom::RedactionPolicy p);
+
   // TASK-20260502-01 A.1.8 — DevTool dogfood JS execution status.
   // Captures the StatusOr returned by the DevTool script engine when
   // LoadDevtoolDocument evaluated inspector_panel.js. ok() means the
@@ -136,6 +145,11 @@ class Application {
   // into LoadDevtoolDocument when the hotkey re-attaches.
   bool devtool_hotkey_enabled_ = false;
   f32 devtool_default_width_ = 270.0f;
+  // A.2.1 — T3 redaction policy (default = redact). Applied by both
+  // C-API serialize_dom_json and the DevTool JS binding's
+  // vx_devtool_get_dom_json on each call (so embedder may flip live).
+  dom::RedactionPolicy redaction_policy_ =
+      dom::RedactionPolicy::kRedactSensitive;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;

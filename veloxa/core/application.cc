@@ -265,9 +265,12 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
                                    &event_manager_);
       // T3 cross-Document inspection contract: DevTool JS calls
       // vx_devtool_get_dom_json() and gets the TARGET document
-      // (with sensitive attributes redacted by SerializeDocument's
-      // default policy).
+      // (with sensitive attributes redacted by SerializeDocument).
       devtool_dom_bindings_->SetDevtoolTargetDocument(target_document_);
+      // A.2.1: keep JS binding in sync with the per-view T3 policy so
+      // a flip via vx_inspector_set_redaction_policy that occurred
+      // BEFORE attach is honoured by the very first JS call.
+      devtool_dom_bindings_->SetRedactionPolicy(redaction_policy_);
       script::RegisterDevtoolBindings(devtool_script_engine_->context());
       auto eval = devtool_script_engine_->EvalGlobal(
           StringView(devtool::resources::kInspectorPanelJs),
@@ -328,6 +331,16 @@ void Application::EnsureDevtoolUpdateManager(f32 devtool_width) {
   devtool_update_manager_ = std::make_unique<UpdateManager>(cfg);
 }
 
+void Application::set_redaction_policy(dom::RedactionPolicy p) {
+  redaction_policy_ = p;
+  // Live-sync to an attached DevTool JS binding so a flip mid-session
+  // applies on the next vx_devtool_get_dom_json() call. Safe when
+  // unattached.
+  if (devtool_dom_bindings_) {
+    devtool_dom_bindings_->SetRedactionPolicy(p);
+  }
+}
+
 #else  // VX_BUILD_DEVTOOL OFF — A14 zero-byte stub guards
 
 bool Application::LoadDevtoolDocument(f32 /*devtool_width*/) { return false; }
@@ -336,6 +349,13 @@ void Application::EnsureDevtoolUpdateManager(f32 /*devtool_width*/) {}
 StatusOr<std::string> Application::EvalDevtoolScript(StringView /*source*/,
                                                      StringView /*filename*/) {
   return Status(StatusCode::kInvalidArgument, "DevTool not built in");
+}
+void Application::set_redaction_policy(dom::RedactionPolicy p) {
+  // No DevTool subsystem to sync — just store. set is reachable when
+  // DEVTOOL=OFF because the C-API stub returns INVALID_STATE before
+  // calling here, but we keep the field assignable for embedder code
+  // that builds with DEVTOOL=ON in some configs and OFF in others.
+  redaction_policy_ = p;
 }
 
 #endif  // VX_BUILD_DEVTOOL

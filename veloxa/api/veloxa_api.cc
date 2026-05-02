@@ -244,12 +244,14 @@ VxResult vx_view_serialize_dom_json(VxView* view, char* out_buf,
     return VX_OK;
   }
 
-  vx::String json = vx::devtool::SerializeDocument(
-      doc, vx::dom::RedactionPolicy::kRedactSensitive);
+  /* A.2.1: policy comes from per-view state (default kRedactSensitive,
+   * embedder may flip via vx_inspector_set_redaction_policy). */
+  vx::String json =
+      vx::devtool::SerializeDocument(doc, app->redaction_policy());
   const uint32_t needed = static_cast<uint32_t>(json.size());
 
   /* T7: max_size is the platform-policy hard cap. Refuse before any caller
-   * allocation can happen. */
+   * allocation can happen. Boundary inclusive: needed == max_size accepts. */
   if (needed > max_size) {
     return VX_ERROR_OUT_OF_MEMORY;
   }
@@ -328,6 +330,34 @@ int vx_view_devtool_loaded(VxView* view) {
 #else
   auto* app = reinterpret_cast<vx::Application*>(view);
   return app->devtool_loaded() ? 1 : 0;
+#endif
+}
+
+/* ── DevTool Redaction Policy (TASK-20260502-01 A.2.1, T3) ──────── */
+
+VxResult vx_inspector_set_redaction_policy(VxView* view,
+                                           VxRedactionPolicy policy) {
+  if (!view) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  (void)policy;
+  return VX_ERROR_INVALID_STATE;
+#else
+  vx::dom::RedactionPolicy mapped;
+  switch (policy) {
+    case VX_REDACTION_REDACT_SENSITIVE:
+      mapped = vx::dom::RedactionPolicy::kRedactSensitive;
+      break;
+    case VX_REDACTION_NONE:
+      mapped = vx::dom::RedactionPolicy::kNone;
+      break;
+    default:
+      /* Reject unknown enum values so a zero-init memory bug or future
+       * enum extension cannot silently disable redaction. */
+      return VX_ERROR_INVALID_STATE;
+  }
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  app->set_redaction_policy(mapped);
+  return VX_OK;
 #endif
 }
 
