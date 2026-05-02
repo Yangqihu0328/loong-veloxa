@@ -2,24 +2,31 @@
 
 ## 当前阶段
 
-**构建中（Build 进行）** — TASK-20260502-02 Phase B 实施 build 进行（2026-05-02 ~22:50）：
+**构建中·已完成（Build 收尾）** — TASK-20260502-02 Phase B 实施 build **10/10 全部完成**（2026-05-02 ~23:55）：
 
-**已完成 9/10 子任务：**
-- B.0.1 PipelineHooks 五钩子 ✅（~25 min = **0.46×**）
-- B.0.2 dirty_rects_ Vector 累积 ✅（~7 min = **0.19×**）
-- B.1.1 PerfOverlay ring buffer ✅（~8 min = **0.22×**）
-- B.1.2 PerfOverlay::Attach + T6 budget ✅（~15 min = **0.56×**）
-- B.2.1 HUD HTML/CSS ✅（~7 min = **0.26×**）
-- B.2.2 HUD JS + binding ✅（~13 min = **0.72×**）
-- B.2.3 OverlayDirtyRect + InjectDirtyRectHighlights ✅（~7 min = **0.39×**）
-- B.3.1 F11 toggle HUD（事件层 + flag）✅（~10 min = **1.11×**）
+**已完成 10/10 子任务（按 commit 时间倒序）：**
+- B.3.3 Phase B finalize + A14 smoke 黑名单 +PerfOverlay/InjectDirtyRectHighlights ✅（~5 min = **0.28×**）
 - B.3.2 hello_devtool perf smoke（C API ABI 端到端）✅（~7 min = **0.39×**）
+- B.3.1 F11 toggle HUD（事件层 + flag）✅（~10 min = **1.11×**）
+- B.2.3 OverlayDirtyRect + InjectDirtyRectHighlights ✅（~7 min = **0.39×**）
+- B.2.2 HUD JS + binding ✅（~13 min = **0.72×**）
+- B.2.1 HUD HTML/CSS ✅（~7 min = **0.26×**）
+- B.1.2 PerfOverlay::Attach + T6 budget ✅（~15 min = **0.56×**）
+- B.1.1 PerfOverlay ring buffer ✅（~8 min = **0.22×**）
+- B.0.2 dirty_rects_ Vector 累积 ✅（~7 min = **0.19×**）
+- B.0.1 PipelineHooks 五钩子 ✅（~25 min = **0.46×**）— **#35 阶段 1 闭环 ✅**
 
-**测试基线：** DEVTOOL=ON 1228 (+1 hello_devtool_perf_smoke) / DEVTOOL=OFF 1082 双绿
+**最终测试基线：** DEVTOOL=ON 1228/1228 PASS（+59 测 vs Phase B 起点 1169；+1 hello_devtool_perf_smoke + 8 perf_overlay + 12 perf_overlay_attach + 11 perf_hooks_api + 6 dirty_rects + 9 HUD smoke + 5 F11/HUD + 3 perf_stats binding + 4 InjectDirtyRectHighlights） / DEVTOOL=OFF 1082/1082 PASS（+17 测 vs 1065；含 perf_hooks_api 4 测 + dirty_rects 6 测）双绿 ✅
 
-**累计 plan ×0.6 比值：** 实测 99 min vs plan ×0.6 243 min = **0.41×**（9 子任务平均）
+**累计 plan ×0.6 比值：** 实测 ~104 min vs plan ×0.6 261 min = **0.40×**（10 子任务平均，落「极窄档延续」桶高效区）
 
-**当前：** 准备 B.3.3 Phase B finalize + A14 smoke 黑名单更新（plan 30 min ×0.6 = 18 min；最终一轮 ON+OFF 校验 + Phase B 总结 + A14 baseline 更新到 1228）
+**A14 守门：** ✅ 黑名单 +2 项（PerfOverlay / InjectDirtyRectHighlights）；ON 1151 + OFF 1082 a14 smoke 双绿
+
+**T5/T6 mitigation：** ✅ 全到位（T5 = 复用 ResetOverlayCommands 协议 / T6 = 单 instance Attach + budget=0 显式短路 + 1ms/frame budget guard 累加 abort）
+
+**所有 commits（10 个 + finalize）：** 待补充列表（见 git log）
+
+**下一步：** `/reflect` 回顾（plan ×0.6 第 38 数据点入库 + R3/R7/R8/R9 风险闭环验证 + 5 大可复用架构范式实证更新 + #35 阶段 2 P3 候选记录）
 
 ---
 

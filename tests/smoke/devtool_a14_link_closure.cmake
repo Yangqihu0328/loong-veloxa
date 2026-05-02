@@ -45,6 +45,22 @@ message(STATUS "A14 smoke: libvx_core.a  = ${core_size} bytes")
 # DevTool subsystem internal symbols that must NEVER appear in OFF builds
 # (each one is a positive proof that vx_devtool / vx_devtool_resources
 # code somehow leaked into the public-API or core link path).
+#
+# Phase A symbols (TASK-20260502-01): RegisterDevtoolBindings .. SerializeDocument
+# Phase B symbols (TASK-20260502-02 B.3.3): PerfOverlay + InjectDirtyRectHighlights
+#   - PerfOverlay covers all PerfOverlay class members + 5 trampolines
+#     (vx::devtool::overlay::PerfOverlay)
+#   - InjectDirtyRectHighlights = vx::devtool::InspectorOverlay's static
+#     dirty-rect injection (B.2.3, separate from existing InspectorOverlay
+#     entry that already covers InjectHoverHighlight)
+#
+# NOT in blacklist (intentional):
+#   - vx_view_set_pipeline_hooks / vx_view_get_perf_stats / vx_view_is_hud_visible:
+#     public C ABI; OFF builds expose them as stubs (returning INVALID_STATE / 0)
+#   - VxViewGetPerfStats: anonymous-namespace local symbol in libvx_script.a;
+#     a14 smoke only inspects libvx_api.a + libvx_core.a, so leakage check is
+#     enforced by spec §6 A14 link-closure (vx_script never references vx_devtool
+#     code paths under #ifdef when DevTool is OFF, only stub native bindings)
 set(devtool_internal_syms
     "RegisterDevtoolBindings"
     "kInspectorPanelHtml"
@@ -53,7 +69,9 @@ set(devtool_internal_syms
     "InspectorOverlay"
     "InjectHoverHighlight"
     "InputDispatchSplitter"
-    "SerializeDocument")
+    "SerializeDocument"
+    "PerfOverlay"
+    "InjectDirtyRectHighlights")
 
 if(DEVTOOL_ON STREQUAL "ON")
   # Sanity: when ON, the public C-API stub vx_view_attach_devtool must

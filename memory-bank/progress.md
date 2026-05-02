@@ -200,6 +200,61 @@
 - **T5 mitigation 协议复用：** ResetOverlayCommands 同时清 hover + dirty rect overlays（同 type kOverlayHighlight）— 不扩增 reset 路径
 - **commit：** `55a8c68 feat(devtool): OverlayDirtyRect 工厂 + InjectDirtyRectHighlights (B.2.3)`
 
+#### `/build` Phase B 10/10 全部完成总览（2026-05-02 ~23:55）
+
+| 子任务 | plan | 实测 | 比值 | 桶 | 关键产物 |
+|:---|---:|---:|:---:|:---:|:---|
+| B.0.1 PipelineHooks 五钩子 + C API | 54 min | 25 min | **0.46×** | 极窄档 | `PipelineHooks` struct 五钩子 + lazy-attach + `vx_view_set_pipeline_hooks` 公开 C ABI；**#35 阶段 1 闭环 ✅** |
+| B.0.2 dirty_rects_ Vector 累积 | 36 min | 7 min | **0.19×** | 极窄档 | `Vector<gfx::Rect> dirty_rects_` + `ClearDirtyRects()` API + 6 测验证 hover change 累积模型 |
+| B.1.1 PerfOverlay ring buffer | 36 min | 8 min | **0.22×** | 极窄档 | 新子系统 `vx::devtool::overlay::PerfOverlay`（FrameStats 5 字段 + 60 帧 ring buffer + 滑动均值 + FPS 守卫）+ 8 测纯算法 |
+| B.1.2 PerfOverlay::Attach + T6 budget | 27 min | 15 min | **0.56×** | 中件实施 | `Attach`/`Detach` + 5 trampolines + T6 budget guard（`budget_us == 0` 显式短路）+ 12 集成测；T6 mitigation 落地 |
+| B.2.1 HUD HTML/CSS | 27 min | 7 min | **0.26×** | 极窄档 | `#devtool-hud` + 4 stage bars + R8 fallback `position: absolute` + R9 占位 `data-passthrough="1"` + 7 smoke 测 |
+| B.2.2 HUD JS + binding | 18 min | 13 min | **0.72×** | 中件实施 | `updateHud()` JS + `vx_view_get_perf_stats` JSON 返回 + DomBindings forward decl 解循环 + 5 binding/smoke 测 |
+| B.2.3 OverlayDirtyRect + InjectDirtyRectHighlights | 18 min | 7 min | **0.39×** | 极窄档 | `PaintCommand::OverlayDirtyRect` 工厂复用 `kOverlayHighlight` + `InspectorOverlay::InjectDirtyRectHighlights` + 4 测；T5 mitigation 复用协议 |
+| B.3.1 F11 toggle HUD | 9 min | 10 min | **1.11×** | 中件实施 | `VX_KEY_F11` + SDLK_F11 映射 + Application::hud_visible_ + F12 范式精确扩展 + `vx_view_is_hud_visible` C API + 5 测 |
+| B.3.2 hello_devtool perf smoke | 18 min | 7 min | **0.39×** | 极窄档 | examples/hello_devtool 加 PerfHooks 安装段 + lazy-attach 实证（rc=-2 → frames=1）+ ctest PASS_REGULAR_EXPRESSION smoke |
+| B.3.3 Phase B finalize + A14 smoke | 18 min | 5 min | **0.28×** | 极窄档 | A14 黑名单 +PerfOverlay/InjectDirtyRectHighlights + Phase A/B 区分注释 + NOT in blacklist 说明 |
+| **合计** | **261 min** | **~104 min** | **0.40×** | | **Phase B 整体落「极窄档延续」桶高效区** |
+
+**最终 ctest 终态：** DEVTOOL=ON 1228 PASS（+59 测 vs 1169）/ DEVTOOL=OFF 1082 PASS（+17 测 vs 1065）双绿 ✅
+
+**关键产物：**
+- 5 hook PipelineHooks 中央调度协议（#35 阶段 1 闭环；阶段 2 拆 LayoutEngine 留 P3）
+- vx::devtool::overlay::PerfOverlay 新子系统（FrameStats 60 帧 ring buffer + T6 budget guard）
+- 4 个公开 C API（vx_view_set_pipeline_hooks / vx_view_get_perf_stats / vx_view_is_hud_visible + VX_KEY_F11 宏）+ 1 个 JS native binding（vx_view_get_perf_stats() 返 JSON）
+- HUD overlay UI（#devtool-hud absolute + 4 stage bars + R8/R9 mitigation）
+- dirty rect 边框可视化（OverlayDirtyRect 复用 kOverlayHighlight）
+- F11 toggle HUD（DevTool 范式扩展，UnloadDevtoolDocument reset 防泄漏）
+- hello_devtool perf smoke（examples 端到端 ctest PASS_REGULAR_EXPRESSION）
+- A14 守门 +2 黑名单符号（PerfOverlay / InjectDirtyRectHighlights）
+
+**3 大主要 commits 演进时间线（B.3.1-B.3.3 收尾）：** `03ec274` (B.3.1) → `9dc0a50` (B.3.2) → 待 B.3.3 commit
+
+**安全威胁 mitigation 全到位（spec §6 T5+T6）：**
+- T5（DisplayList overlay 跨帧累积）：B.2.3 OverlayDirtyRect 复用 ResetOverlayCommands 协议（同 hover 共用清理路径，零新 reset 路径）
+- T6（UpdateManager callback 任意代码执行）：B.1.2 单 instance Attach + budget=0 显式短路 + 1ms/frame budget guard 累加 abort + abort_count + last_abort_reason
+
+**plan ×0.6 第 38 数据点假设验证：** 蓝图 4.35 h → archive 校准 ~3.5-5 h → VAN F2 发现 ~3-4 h → 最终预测 ~3-4 h plan ×0.6 / 实测 ~1.7 h **比预测更低 ~50%**（落「极窄档延续」桶 而非「大件实现」桶）— 主因 Phase 0 11 子段实测填写 + 5 大可复用架构范式（中央调度协议 / 函数指针 nullptr 优化 / 双层 API / #ifdef + CMake 双层 conditional / dogfood 路径）的高 ROI 复用，验证「Phase 0 投入越深 / build phase 越快」的工作流定律
+
+**风险闭环（reflect 阶段验证 R3/R7/R8/R9）：**
+- R3 五钩子重构性能：✅ NullHooksUpdateRemainsLossless 测过；nullptr branch predictor 设计落地
+- R7 dirty_rects 无 cap：✅ 实测 hover change 累积 1-2 矩形（非 unbounded）+ PerfOverlay::OnFrameStart ClearDirtyRects 自动清
+- R8 HUD `position: fixed` fallback：✅ `position: absolute` 视觉等价；smoke 测 PASS
+- R9 `pointer-events: none` 不支持：✅ data-passthrough="1" 占位；EventManager HitTest 改造留 R3+ P3
+
+**与既有 systemPatterns 协同度（plan §6 自我对照实证）：**
+- ✅✅ 中央调度协议（PipelineHooks 是该模式自然扩展）
+- ✅✅ 函数指针 + nullptr 分支预测优化（5 个 hook 默认 nullptr）
+- ✅✅ 双层 API（C++ PerfOverlay 内部 + 公开 vx_view_* C API）
+- ✅✅ #ifdef + CMake 双层 conditional（OFF stub + 链接闭包零）
+- ✅✅ dogfood 路径 = 探测性 acceptance test（HUD CSS 用 R2-verified 子集）
+- ✅✅ 子系统关闭守门 ctest smoke（A14 黑名单 +2 项闭环）
+- ✅ 反向探针有效性（每子任务 1+ 反向探针精准捕获，9 个子任务实证 1 plan-fact reconcile）
+
+**下一步：** `/reflect` 进入回顾（plan ×0.6 第 38 数据点入库 + 5 大可复用架构范式实证更新 + #35 阶段 2 / R9 EventManager HitTest / R2 P3 候选记录到 systemPatterns）
+
+---
+
 #### `/build` Phase B.3.2 完成快照（2026-05-02 ~23:50，~7 min 实测）
 
 - **任务：** hello_devtool perf smoke — 通过 examples/hello_devtool 端到端验证 vx_view_set_pipeline_hooks C ABI + lazy-attach 行为 + vx_view_is_hud_visible C API
