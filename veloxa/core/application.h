@@ -49,7 +49,14 @@ class Application {
   void Quit();
   void Update();
 
-  dom::Document* document() const { return document_; }
+  // Dual Document slot (DevTool 三件套 I1 改造，TASK-20260502-01 A.0.1)：
+  // - target_document_：业务页面 DOM（重命名 from document_）
+  // - devtool_document_：DevTool UI DOM（nullable；attach DevTool 时设置；
+  //   生命周期由 DevTool 子系统拥有，不在 Application 析构中释放）
+  // 移除原 document() getter 强制 callsite 显式选 target/devtool 槽（R1
+  // mitigation：漏改在编译期暴露）。
+  dom::Document* target_document() const { return target_document_; }
+  dom::Document* devtool_document() const { return devtool_document_; }
   event::EventManager& event_manager() { return event_manager_; }
   const UpdateManager* update_manager() const { return update_manager_.get(); }
   platform::EventLoop* event_loop() const { return config_.event_loop; }
@@ -59,7 +66,8 @@ class Application {
   void EnsureUpdateManager();
 
   Config config_;
-  dom::Document* document_ = nullptr;
+  dom::Document* target_document_ = nullptr;
+  dom::Document* devtool_document_ = nullptr;
   Vector<css::Stylesheet> stylesheets_;
   event::EventManager event_manager_;
   std::unique_ptr<layout::TextShaper> text_shaper_;

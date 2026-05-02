@@ -4,6 +4,43 @@
 
 ### TASK-20260502-01：DevTool Phase A — Inspector 实施（DOM tree / Style / Layout panel + hover 高亮）[安全相关]
 
+#### `/build` 阶段进度（2026-05-02 13:00 启动）
+
+**Phase 0.1 完成 ✅（2026-05-02 13:00，~3 min）：** cmake reconfigure（build/ 过期 mtime 2026-04-26）→ 全量构建 → ctest **1062/1062 PASS**（含 R2.5 新增 #1002 `DecodeFromFileRejectsOversizedFile`）+ 1 Skip（Wpt001 沿用 TASK-26-01 沉淀）。基线与 plan §0.1 预期完全一致。
+
+**Phase A.0.1 完成 ✅（2026-05-02 13:15，~10 min vs plan ~54 min ×0.6 = 0.18× plan ×0.6 → 极窄档延续）：**
+
+- **Step 1 RED**：tests/core/application_test.cc 末尾 +2 测（`DevtoolDocumentSlotDefaultsToNull` + `TargetDocumentRetainsContentAfterLoadHTML`）
+- **Step 2 验证 RED**：编译失败 `'class vx::Application' has no member named 'target_document'` ✅（与 plan 预期一致）
+- **Step 3 GREEN**：
+  - `application.h`: 重命名 `document_` → `target_document_` + 加 `devtool_document_ = nullptr` 槽 + 移除 `document()` getter + 加 `target_document() / devtool_document()` getters（保 const & inline 风格一致）
+  - `application.cc`: 7 处内部 `document_` → `target_document_`（析构 / LoadHTML 2 处 / LoadScript 2 处 / EnsureUpdateManager 2 处）；析构注释 `devtool_document_` ownership 由 DevTool 子系统拥有
+  - `application_test.cc`: 4 处 callsite 改名（line 53/60/72/208，与 plan §0.7 实证一致）
+- **Step 4 验证 GREEN**：全量构建 + ctest **1064/1064 PASS**（基线 1062 + 2 新测 = 1064）+ 1 Skip
+- **Step 5 收尾验证脚本**：`rg "->document\(\)" veloxa/ examples/` = 0 命中 ✅；`rg "\.document\(\)" tests/` 仅 `dom_bindings_test.cc:508 bindings.document()`（DomBindings 自有 method，按 plan 不应改）✅ → **0 漏改**
+- **Step 6 反向探针** ✅：临时把 `devtool_document_` 默认值改为 `reinterpret_cast<dom::Document*>(0xdeadbeef)` → 测 #935 FAIL（捕获能力 verified）；恢复后 PASS
+- **Lint clean** ✅
+- **R1 风险结案**：实证 callsite 4 处 → A.0.1 实施零漏改（远低于 spec §9 估 10-15 处），R1 🟡→🟢 结案
+- **commit**：[A.0.1 实测耗时 ~10 min，远低于蓝图估 54 min plan ×0.6 = 0.18×；候选 plan ×0.6 第 18 数据点「极窄档延续」]
+
+**Phase A.0.x 进度（16 子任务总览）：**
+
+| 子任务 | 状态 | plan ×0.6 估时 | 实测 |
+|:-:|:-:|---:|---:|
+| Phase 0.1 reconfigure | ✅ 完成 | — | ~3 min |
+| A.0.1 I1 双 Document 槽 | ✅ 完成 | 54 min | ~10 min（0.18×）|
+| A.0.2 LayoutBox::ToJson | ⏳ 进行中 | 18 min | — |
+| A.0.3 DOM Serializer::ToJson + T3 | ⏳ | 27 min | — |
+| A.0.4 PaintCommand kOverlayHighlight + T5 | ⏳ | 18 min | — |
+| A.0.5 inspector_data.h 内部 C++ | ⏳ | 36 min | — |
+| A.0.6 vx_view_serialize_*_json + T7 | ⏳ | 36 min | — |
+| A.1.1 InspectorOverlay hover | ⏳ | 27 min | — |
+| A.1.2 DevTool UI HTML/CSS/JS | ⏳ | 54 min | — |
+| A.1.3 Style/Layout panel 数据 | ⏳ | 36 min | — |
+| A.1.4 F12 toggle + vx_view_attach_devtool | ⏳ | 27 min | — |
+| A.2.1-4 安全单测 + A14 守门 | ⏳ | 63 min | — |
+| A.3.1-2 example smoke + reflect prep | ⏳ | 45 min | — |
+
 #### `/plan` 阶段产出快照（2026-05-02 13:10）
 
 - **plan 文档：** `docs/plans/2026-05-02-devtool-inspector.md`（~700 行）— B1-B8 决策表 + 16 子任务 5-步 TDD 模板（RED → GREEN → 反向探针 → A14 守门 → commit）+ Phase 0 11 子段实测填写 + 完整代码片段

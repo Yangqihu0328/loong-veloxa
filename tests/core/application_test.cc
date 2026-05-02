@@ -50,14 +50,14 @@ class ApplicationTest : public ::testing::Test {
 
 TEST_F(ApplicationTest, ConstructWithSurface) {
   Application app(MakeConfig());
-  EXPECT_EQ(app.document(), nullptr);
+  EXPECT_EQ(app.target_document(), nullptr);
   EXPECT_EQ(app.update_manager(), nullptr);
 }
 
 TEST_F(ApplicationTest, LoadHTMLCreatesDocument) {
   Application app(MakeConfig());
   app.LoadHTML("<div>hello</div>");
-  EXPECT_NE(app.document(), nullptr);
+  EXPECT_NE(app.target_document(), nullptr);
 }
 
 TEST_F(ApplicationTest, LoadHTMLReplacesDocument) {
@@ -69,7 +69,7 @@ TEST_F(ApplicationTest, LoadHTMLReplacesDocument) {
   EXPECT_FALSE(app.update_manager()->display_list().empty());
 
   app.LoadHTML("<p id='second'></p>");
-  EXPECT_NE(app.document(), nullptr);
+  EXPECT_NE(app.target_document(), nullptr);
   EXPECT_EQ(app.update_manager(), nullptr);
   app.Update();
   ASSERT_NE(app.update_manager(), nullptr);
@@ -205,7 +205,7 @@ TEST_F(ApplicationTest, LoadScriptModifiesDOM) {
       "document.getElementById('msg').textContent = 'After'");
   ASSERT_TRUE(status.ok());
 
-  auto* node = app.document()->first_child();
+  auto* node = app.target_document()->first_child();
   ASSERT_NE(node, nullptr);
   ASSERT_TRUE(node->is_element());
   auto* el = static_cast<dom::Element*>(node);
@@ -233,6 +233,24 @@ TEST_F(ApplicationTest, LoadScriptInvalidSyntaxFails) {
 
   auto status = app.LoadScript("function {{{");
   EXPECT_FALSE(status.ok());
+}
+
+// I1 Application 双 Document 槽改造（TASK-20260502-01 A.0.1）：
+// - target_document_：业务页面 DOM（重命名 from document_）
+// - devtool_document_：DevTool UI DOM（nullable，默认 nullptr；attach DevTool 时设置）
+// 移除 document() getter 让所有 callsite 显式选 target/devtool 槽（R1 mitigation：
+// 漏改在编译期暴露）。
+TEST_F(ApplicationTest, DevtoolDocumentSlotDefaultsToNull) {
+  Application app(MakeConfig());
+  EXPECT_EQ(app.target_document(), nullptr);
+  EXPECT_EQ(app.devtool_document(), nullptr);
+}
+
+TEST_F(ApplicationTest, TargetDocumentRetainsContentAfterLoadHTML) {
+  Application app(MakeConfig());
+  app.LoadHTML("<div id='root'></div>");
+  EXPECT_NE(app.target_document(), nullptr);
+  EXPECT_EQ(app.devtool_document(), nullptr);
 }
 
 }  // namespace

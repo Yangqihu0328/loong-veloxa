@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中（Plan 完成）** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:10 完成 plan 步骤；plan 文档 `docs/plans/2026-05-02-devtool-inspector.md` 落盘（~700 行 / 16 子任务 5-步 TDD 模板 / Phase 0 11 子段实测）；B1-B8 决策与蓝图 D1-D8 协同度 8/8 ✅；推荐下一步 `/build` 启动 Phase 0.1 ctest reconfigure（关键前置 — build/ 过期 mtime 2026-04-26）+ A.0.1 I1 改造。
+**构建中** — TASK-20260502-01 DevTool Phase A · Inspector 实施于 2026-05-02 13:00 进入 build 阶段；plan + VAN 已 commit `e43a5be`；Phase 0.1 ctest 1062 基线确认 ✅；A.0.1 I1 双 Document 槽改造完成 ✅（ctest 1064/1064 + 反向探针 verified + 0 漏改）；当前焦点 → A.0.2 LayoutBox::ToJson() 闭环技术债 #26。
 
 ## 当前任务
 

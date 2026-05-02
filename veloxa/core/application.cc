@@ -28,13 +28,14 @@ Application::~Application() {
   if (config_.surface && surface_pixels_) {
     config_.surface->Unlock();
   }
-  delete document_;
+  delete target_document_;
+  // devtool_document_ ownership belongs to DevTool subsystem; do not delete here.
   font_manager_.Shutdown();
 }
 
 void Application::LoadHTML(StringView html) {
-  delete document_;
-  document_ = html::Parser::Parse(html);
+  delete target_document_;
+  target_document_ = html::Parser::Parse(html);
   update_manager_.reset();
 }
 
@@ -53,7 +54,7 @@ Status Application::LoadFont(StringView path, StringView family) {
 }
 
 Status Application::LoadScript(StringView source) {
-  if (!document_) {
+  if (!target_document_) {
     return Status(StatusCode::kInvalidArgument, "No document loaded");
   }
   if (!script_engine_) {
@@ -63,7 +64,8 @@ Status Application::LoadScript(StringView source) {
   }
   if (!dom_bindings_) {
     dom_bindings_ = std::make_unique<script::DomBindings>();
-    dom_bindings_->Bind(script_engine_->context(), document_, &event_manager_);
+    dom_bindings_->Bind(script_engine_->context(), target_document_,
+                        &event_manager_);
   }
   auto result = script_engine_->EvalGlobal(source, StringView("script"));
   if (!result.ok()) return result.status();
@@ -113,9 +115,9 @@ void Application::Update() {
 void Application::OnFrame() { Update(); }
 
 void Application::EnsureUpdateManager() {
-  if (update_manager_ || !document_ || !canvas_) return;
+  if (update_manager_ || !target_document_ || !canvas_) return;
   UpdateManager::Config cfg;
-  cfg.document = document_;
+  cfg.document = target_document_;
   cfg.stylesheets = &stylesheets_;
   cfg.layout_context.text_shaper = text_shaper_.get();
   cfg.layout_context.viewport_width =
