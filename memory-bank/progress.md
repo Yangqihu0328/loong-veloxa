@@ -380,6 +380,75 @@
   2. **JS 资源「panel-side R2 防御」vs 「engine 修复」选择启发**：当 dogfood 遇到 R2 引擎缺陷，可选 (a) 修引擎让 panel JS 工作 (b) 在 panel JS 加防御性 try/catch + binding 可用性 check 让主链路绕过；本任务选 (b) 因 (a) 是独立 P3 范围；下次 dogfood 类任务先用 (b) 把主链路验证打通 + 缺陷清单沉淀给 P3，不卡在引擎修复
   3. **StatusOr<T>::status() DCHECK 陷阱**：StatusOr 在 has_value=true 时 status() abort 而非返回 OK Status；下次涉及 StatusOr 错误转换时统一用 `r.ok() ? Status::Ok() : r.status()` 三元守卫，不裸用 `.status()`
 
+**Phase A.2 + A.3 完成 ✅（2026-05-02 16:42（轮次 8 起点）→ 17:25，~43 min vs plan 108 min ×0.6 = 0.40×）— Phase A 16/16 全部完成 🎉🎉：**
+
+轮次 8 一气呵成完成 6 子任务 = Phase A 收尾全部子系统。各子任务摘要：
+
+- **A.2.1（~13 min vs 18 = 0.72×）— T3 redaction policy C API + 5 单测：**
+  - `VxRedactionPolicy { REDACT_SENSITIVE / NONE }` enum + `vx_inspector_set_redaction_policy(view, policy)` C API
+  - Application 加 `redaction_policy_` 字段 + `redaction_policy()/set_redaction_policy()` 接口；`set_redaction_policy` live-sync 到 attached `devtool_dom_bindings_`（hot policy flip 立即生效）
+  - DomBindings 加 `SetRedactionPolicy()/redaction_policy()` + `data_->redaction_policy` 字段；`VxDevtoolGetDomJson` 改为读 binding policy 而非 hardcode（C API 路径与 JS binding 路径**统一安全策略**，消除 plan 隐含的 "JS 路径绕过 redaction" 死角）
+  - 5 测：default redact / NONE 暴露 / 切回 redact / 无效 enum 拒绝（zero-init memory 防御）/ NULL view NULL_PARAM
+  - 反向探针：`set_redaction_policy` noop → 2 测精准 FAIL（NONE + roundtrip）；其他 3 测仍 PASS（不依赖切换）
+  - 踩坑：C++ 严格 `int → enum` 隐式转换 → 测试用 `static_cast<VxRedactionPolicy>(0xFFu)`
+
+- **A.2.2（~6 min vs 18 = 0.33×）— T5 多帧 overlay 隔离 集成测：**
+  - `inspector_overlay_test.cc` +2 测：`MultiFrameInjectStaysIsolatedAfterReset`（3 帧 reset+inject 不同 hover_box，每帧 overlay count 恒定 = 1）+ `RepeatedInjectWithoutResetAccumulatesByDesign`（负控制 documenting failure mode；保护未来 refactor 不悄悄把 Reset 内化到 Inject）
+  - 复用现有 `ResetOverlayCommands` + `InspectorOverlay::InjectHoverHighlight` —— 无新生产代码，纯契约组合验证
+  - 反向探针：`ResetOverlayCommands` noop → `MultiFrameInjectStaysIsolatedAfterReset` 精准 FAIL；负控制测 PASS（accumulation 反而成立）
+
+- **A.2.3（~7 min vs 18 = 0.39×）— T7 buffer overflow 边界 4 个新测：**
+  - `devtool_api_test.cc` +4 边界测：`ZeroMaxSizeRejects` / `MaxUint32SizeAllowed` / `MaxSizeAtExactNeededAccepts`（boundary inclusive）/ `MaxSizeOneBelowNeededRejects`（fence 另一侧）
+  - 关键发现：原 plan §A.2.3 说 "4 GB max_size 上限拒绝" 是错的 —— `UINT32_MAX` 是合理上限不应拒绝；测试改为 "MaxUint32SizeAllowed" 反向契约（拒绝是 bug）
+  - 反向探针：`if (needed > max_size)` → `>=` off-by-one → `MaxSizeAtExactNeededAccepts` 精准 1 测 FAIL（boundary fence 工作）
+  - 11 测全 PASS（7 原有 + 4 新边界）
+
+- **A.2.4（~8 min vs 9 = 0.89×，唯一近 1× 数据点）— A14 链接闭包 ctest smoke 自动化：**
+  - 新建 `tests/smoke/devtool_a14_link_closure.cmake`（pure CMake script + `nm` 调用，无 C++ 编译产物）
+  - ctest add_test `devtool_a14_link_closure_smoke` 在 ON+OFF build 都跑：
+    - ON 路径：sanity check `vx_view_attach_devtool` 符号存在 ✓
+    - OFF 路径：grep 8 个 DevTool 内部符号黑名单（`RegisterDevtoolBindings` / `kInspectorPanel*` ×3 / `InspectorOverlay` / `InjectHoverHighlight` / `InputDispatchSplitter` / `SerializeDocument`），任一命中即 FATAL
+    - 同时 echo libvx_api.a + libvx_core.a bytes 到 ctest log（人工对照）
+  - 反向探针：临时把 `vx_view_load_html`（一定存在符号）加到黑名单 → smoke 精准 FAIL（验证检测能力）；恢复后 PASS
+  - 价值：A14 「链接闭合 + size diff = 0」spec §6 措辞的**精确**自动化执行 —— 之前每轮手动 `nm` 验证现在每次 ctest 自动跑
+
+- **A.3.1（~7 min vs 27 = 0.26×）— hello_devtool example + headless smoke：**
+  - 新建 `examples/hello_devtool.cc`（基于 hello_sdl2.cc 加 `vx_view_attach_devtool` + `VX_HELLO_DEVTOOL_AUTOQUIT_MS` env hook）
+  - 含 sensitive `<input type=password value=do-not-leak>` 子树 + 运行时调 `vx_view_serialize_dom_json` 验证 T3 redaction（example 输出可见 `T3 redaction OK: password value masked in DOM JSON.`）
+  - examples/CMakeLists.txt 加 `if(VX_PLATFORM_SDL2 AND VX_BUILD_DEVTOOL)` 条件块
+  - tests/CMakeLists.txt 加 `hello_devtool_smoke` ctest（`SDL_VIDEODRIVER=dummy` + `VX_HELLO_DEVTOOL_AUTOQUIT_MS=200` + 10s timeout）
+  - 踩坑：`<string_view>` 缺 include — 加上即过；同时这个 example 也成为 user-facing「F12 to toggle」交互验证的范本
+  - 实测 ~2 sec smoke run，包含 SDL2 真窗口 dummy + DevTool attach + load + run + detach + destroy 完整生命周期
+
+- **A.3.2（~2 min vs 18 = 0.11×）— Phase A integration verify + reflect prep：**
+  - 全 Phase A 16/16 ctest 验证：DEVTOOL=ON **1169/1169 PASS**（轮次 8 +13 测）+ DEVTOOL=OFF **1065/1065 PASS**（+3 stub/smoke）
+  - libvx_api.a OFF 12844 bytes / libvx_core.a OFF 1775582 bytes — 轮次 8 内部 4 子任务**零额外字节增长**（A.2.1 后即维持）
+  - progress.md 更新「Phase A 完成快照」段（即本段）+ activeContext.md 切换为「构建中·已完成」状态等待 `/reflect`
+  - 实测 ~2 min（plan 18 min 严重高估，因为大部分 verify 工作已在每轮 build 中分散完成）
+
+**Phase A 总览（16/16 完成）：**
+
+| Phase | 子任务数 | 实测耗时 | plan ×0.6 估时 | 比值 |
+|:--|:--:|--:|--:|:--:|
+| A.0 | 6 | ~95 min | 189 min | **0.50×** |
+| A.1 | 8 | ~143 min | 144 min | **0.99×**（含 plan escalation 后 8 子任务的 plan ×0.6） |
+| A.2 + A.3 | 6 | ~43 min | 108 min | **0.40×** |
+| **合计** | **16** | **~281 min（4.7 h）** | **441 min（7.35 h）** | **0.64×** |
+
+注 A.1 实测接近 1× 是因 A.1 的 plan ×0.6 估时本身是 plan escalation 后的「重新计算」（A.1 从 4 → 8 子任务），escalation 后 plan 估时已比初始更准。
+
+**Phase A 总测数变化：**
+- 初始 main: ctest 1062 ON / 1062 OFF baseline
+- Phase A 完成: ctest **1169 ON (+107)** / **1065 OFF (+3)**
+- A14 链接闭包零字节严格满足（自动化 smoke 守门 + 8 符号黑名单 + nm 验证零命中）
+
+**Phase A 总教训沉淀（4 大类，全跨子任务复用）：**
+
+1. **plan-fact reconcile 是 Level 4 大件任务的常态**（共 11 处修正）—— M1/M2/M3 架构修正（A.0.x）+ B-A1.1/B-A1.2 brainstorming 决策（plan escalation）+ R2 引擎缺陷暴露（A.1.8）+ T7 边界 plan 描述错误（A.2.3）等；plan 完美率不可期待，build phase 持续 grep + 实证才是质量保证
+2. **多层 A14 zero-byte guard 范式锁定**（共 5 子任务复用）—— `.cc 文件 #ifdef block + CMake if(VX_BUILD_DEVTOOL) 条件 link` 双层保护 + ctest cmake script 自动化 nm 验证 = 完整 A14 守护链路；下次涉及 conditional 子系统直接复用
+3. **C ABI stub 公开表面 vs DevTool 闭包精确区分**（共 3 处出现）—— A14 spec 「链接闭合零」严格条件是「子目录不参与 link」（用 nm 验证），不是「字节零增长」；C ABI 公开 stub 即使 #else 只 return INVALID_STATE 也占字节，属公开表面不算 DevTool 链接
+4. **dogfood = R2 缺陷暴露清单产出**（A.1.8 集中产出 3 个 P3 候选）—— DomBindings 缺 `Element.children` / `addEventListener` / `innerHTML setter` 三件套；处理策略 = panel-side defensive try/catch 让主链路验证通过 + 缺陷沉淀给独立 P3 任务，不卡在引擎修复
+
 #### `/build` 阶段轮次 3 中止快照（2026-05-02 14:00，触发 plan escalation）
 
 **触发原因：** 用户对「轮次 3 路径选择」AskQuestion 选 **D = 返回 /plan 修正**，识别 Phase A.1 dogfood DevTool UI 实质是 Level 4 子系统级工作量。
