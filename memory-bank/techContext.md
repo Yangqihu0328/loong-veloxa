@@ -617,7 +617,7 @@ cmake --build build -j
 41. ~~HashMap 缺少 const_iterator / cbegin / cend，const 方法无法遍历~~ ✅ 已实现（TASK-20260413-02）；`TransitionManager::HasActive` 已改为扫描
 42. transition shorthand 仅支持单条声明，不支持逗号分隔多条（如 `transition: bg 300ms, opacity 200ms`）
 43. LayoutBox.style 是 const 指针，动画覆盖需 const_cast，应考虑引入可写样式覆盖层或改为 non-const
-44. `vx_script`：`JS_SetInterruptHandler` / 执行预算未实现（见 `creative-quickjs-host.md` Phase 2）；`JSMallocFunctions` 与 Foundation 分配器未对齐
+44. ~~`vx_script`：`JS_SetInterruptHandler` / 执行预算未实现~~ ✅ **已实现（TASK-20260503-05 — creative §组件 1 方案 C Phase 2 完整落地）**：`QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册（Init 始终注册 / budget=0 短路 / budget>0 atomic 计数 + return != 0 中止）+ `WasInterrupted()` getter + `StatusCode::kAborted` 新增；默认值 `kDefaultInterruptBudgetCheckpoints = 10000`（handler 调用次数 = bytecode/10000，与 QuickJS `JS_INTERRUPT_COUNTER_INIT = 10000` 对齐 / 实证「死循环 100ms 内中止」单测耗时 0.08s）；5 新测覆盖 4 维度（kAborted + budget=0 关闭 + 默认不误杀 + 重置 + WasInterrupted 语义）。`JS_SetMemoryLimit` 32 MiB 已落地（creative 组件 3 方案 B 一期闭环）。**`JSMallocFunctions` 与 Foundation 分配器未对齐仍记技术债**（creative 组件 3 方案 C / 留独立 TASK 后续）
 45. ~~dom_bindings.cc 使用全局变量（g_bound_doc、g_element_class_id、g_tracked_callbacks）~~ ✅ 已迁移到 `DomBindings::InstanceData`（pimpl，`JS_SetContextOpaque` 桥接）；JSClassID 保留为文件级 `s_` 静态 + `JS_IsRegisteredClass` 幂等注册（TASK-20260418-01）
 46. ~~StyleGetProp getter 始终返回空字符串~~ ✅ 已实现 length/color/auto/number/inherit/initial 序列化，遍历 `inline_declarations()`（TASK-20260418-01）；Enum（display 等）读路径仍返回 `""`，留作后续
 47. removeEventListener 简化为移除元素所有监听器，未实现按 type+handler 精确移除
