@@ -2,7 +2,9 @@
 
 ## 当前阶段
 
-**构建完成 — 待 reflect** — TASK-20260503-02 工作流/规则类技术债批量清理 / Level 2 / **6/6 子任务完成 + CP1+CP2 全 ✅ + ctest 1247/1247 PASS 不退化（与 plan §3.1 期望一致）+ 6 docs commits 严格 1 commit/子任务**
+**回顾中** — TASK-20260503-02 工作流/规则类技术债批量清理 / Level 2 / **回顾文档落盘 2026-05-03 19:35 → 待 /archive**
+
+**回顾核心成果**：6 项 P1 全部清零 + 实测 0.21× 总比值（远超极窄档加速衰减区下沿）+ 0/7 反复模式命中（创纪录第三次连续零反复）+ 4 项改进建议（P0 0 / P1 1 / P2 3 / 全部 archive 阶段直接落实）+ 4 大新协议首次实证（reflection 沉淀回流 / 反复模式渐进式抑制 / Phase 0 audit 预跑 / 纯文档极速区 0.15-0.25×）
 
 **当前子任务：** 全部完成 → 进入 /reflect 阶段
 
@@ -275,22 +277,31 @@
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
 
-### P1 来自 TASK-20260503-01 reflection §7（reflect 阶段迁移 — 待 archive 阶段最终落实）
+### P1/P2 来自 TASK-20260503-02 reflection §6（reflect 阶段迁移 — archive 阶段直接落实）
 
-> 4 项 P1 建议来自 Phase C 反思，archive 阶段须沉淀到对应规则/文档。
+> 4 项建议来自工作流元任务反思，全部 archive 阶段直接落实（P0 0 / P1 1 / P2 3）。
 
-- **P1 #1（C-#1）新公开 C API testability 接口前置识别** — C.4.2 dogfood smoke 需要 `vx_view_hot_reload_tracked_count` 才能验证「count=1」，plan 阶段未识别；建议 plan template「§API 设计」段加「testability 子段：smoke / dogfood / observability 接口需求」清单。**预估**：~10-15 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc`）；下次涉及 C ABI 设计 + dogfood smoke 时合并执行。
-- **P1 #2（C-#2）plan ctest 数量预期标注 config 假设** — plan §C.5.2 写「期望 1260+」未明确「DEVTOOL=ON + SDL2=ON + Benchmarks=ON 矩阵」假设，实测 1247 是配置差额；建议 plan template「§验收要点」段加 config 矩阵明示。**预估**：~10 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc`）；**反复模式部分命中 — 与 TASK-20260502-02 P1 #2 同类反复**，优先级升至 P1。
-- **P1 #3（C-#3）「baseline 阻塞 hotfix 分离协议」沉淀** — binutils 2.46+ 事件首次实证 hotfix 分支 → fast-forward main → feature rebase 链路；建议在 `systemPatterns.md` 「Git 工作流」段加新子段：(a) 触发条件 / (b) 决策树（继续 vs hotfix 分离）/ (c) hotfix 分支 → fast-forward main → feature rebase 链路 / (d) commit 信息分类。**预估**：~15-20 min `systemPatterns.md` 新子段；archive 阶段直接落实。
-- **P1 #4（C-#4）R12「工具链版本激进升级」风险登记** — plan §0.10 工具链与子系统关闭守门段应加「toolchain 版本激进升级 → 行为变化检查」子段（如 `ld --version` / `gcc --version` 输出对比 + 已知行为差异 grep）。**预估**：~10 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc` Phase 0 模板段）；下次 plan 阶段 §0.10 子段直接生效。
+- **P1 #1 新效率区子档「纯文档/规则极速区 0.15-0.25×」入库 plan ×0.6 矩阵** — 6 数据点群组实测落 0.15-0.50× 区间，总比值 0.21× 远超极窄档加速衰减区下沿；建议 systemPatterns.md plan ×0.6 矩阵段加新子档。**预估**：~10 min；archive 阶段直接落实。
+- **P2 #2「reflection 沉淀回流模式」沉淀为新 systemPattern** — 本任务首次实证「累积 ≥ 4-6 项跨任务 P1 待处理事项 + 项之间无强依赖」时可批量清零，避免进入「3 次反复 = P0」轨道；建议 systemPatterns.md 加新段「reflection 沉淀回流模式」+「工作流元任务」分类（vs 实施类 + 蓝图类）。**预估**：~15 min；archive 阶段直接落实。
+- **P2 #3 GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 短路评估易错模式 P3** — A-P1#6 audit CP2 扩展发现 tests/ 中 8 处该模式，依赖 GoogleTest 短路评估；独立语句 `auto err = x.status();` 在 OK 时 abort；建议 codebase guideline「测试中也用三元守卫显式化」（如 `tests/script/quickjs_engine_test.cc:18` 范本）。**预估**：~30 min audit + ~1 h codebase 修正（如选 enforce）；下次 codebase 卫生类任务合并执行。
+- **P2 #4 plan §文档段落 LOC 预估系数 ×1.5-2× 修正** — plan §1.1 LOC 预估各文件偏低 ~50%（writing-plans 80→123 / git-workflow 35→56 / spec 40→62 / techContext 15→51），因未充分考虑「完整段落 + 实证 + 反例 + 交叉引用」累积长度；建议 writing-plans skill 加估时附录或 plan 模板说明。**预估**：~10 min 长期沉淀（不强制 archive 落实）。
 
-### P1 来自 TASK-20260502-01 reflection §6（archive 阶段迁移）
+### P1 来自 TASK-20260503-01 reflection §7 — ✅ 全部已落实（TASK-20260503-02 闭环）
 
-> 已沉淀到 systemPatterns/techContext 的项目不重复列；下方仅列**需要后续 audit / skill 文件调整 / 新独立任务**才能完成的项。
+> 4 项 P1 建议来自 Phase C 反思，已全部由 TASK-20260503-02 工作流元任务清零。
 
-- **P1 #4 git-workflow 多子任务连续完成时分 commit 前 `git add -p` 选择性 stage** — 来源：A.2.1/A.2.4/A.3.1 三个子任务在 `tests/CMakeLists.txt` 同一文件累积变更，因 `git add tests/CMakeLists.txt` 而非 `git add -p` 导致 A.2.1 commit 隐含包含 A.2.4 + A.3.1 部分变更（功能正确，语义不洁）；建议在 `.cursor/rules/skills/git-workflow.mdc` 「Multi-subtask commit 拆分」段补充 `git add -p` 推荐范式 + checklist。**预估**：~10-15 min skill 文档调整；下次涉及多子任务连续 commit 时由 build-phase 触发。
-- **P1 #6 StatusOr<T>::status() 使用规范统一为三元守卫（codebase audit）** — 来源：A.1.8 踩 `devtool_script_status_ = eval.status()` DCHECK abort 坑，已修复并沉淀到 `techContext.md` 「Status / StatusOr 使用规范」段；audit 行动项：`rg "StatusOr.*\.status\(\)"` 全 codebase 验证无误用 + 必要时改为 `r.ok() ? Status::Ok() : r.status()` 三元守卫；考虑加 clang-tidy custom check 强制规范。**预估**：~30-60 min audit + ~1-2 h clang-tidy check 编写（如选 enforce 路径）；下次 codebase 卫生 / quality 类任务（如 TASK-30-03-style review round）时合并执行。
-- **P1 #8 spec template「A14 解读」附录段（C ABI stub 公开表面 vs DevTool 闭包精确区分）** — 来源：A.1.7/A.1.8 累计 +4196 bytes 在 OFF binary 中（490 + 3706）但**链接闭包零严格满足**，spec §6 「A14 链接闭合 + size diff = 0」措辞需明确两层语义；建议在 `docs/specs/2026-04-30-devtool-design.md` §6 加 「附录 A: A14 解读」段（也可在未来类似 conditional 子系统 spec template 中复用）。**预估**：~15-20 min spec 文档调整；下次涉及 A14 类 spec 撰写或 audit 时执行。
+- ✅ **P1 #1（C-#1）新公开 C API testability 接口前置识别** — TASK-20260503-02 任务 1 落实（commit `51bf9d4`）→ writing-plans.mdc 新增「公开 API testability 检查清单」段
+- ✅ **P1 #2（C-#2）plan ctest 数量预期标注 config 假设** — TASK-20260503-02 任务 2 落实（commit `71b830c`）→ writing-plans.mdc 新增「ctest 数量预期 config 矩阵」段（**第二次反复抑制成功**）
+- ✅ **P1 #3（C-#3）「baseline 阻塞 hotfix 分离协议」沉淀** — TASK-20260503-01 reflect 阶段直接落实到 systemPatterns.md（commit `44875e8`）
+- ✅ **P1 #4（C-#4）R12「工具链版本激进升级」风险登记** — TASK-20260503-02 任务 3 落实（commit `31b237f`）→ writing-plans.mdc 新增「toolchain 版本激进升级行为变化检查」段
+
+### P1 来自 TASK-20260502-01 reflection §6 — ✅ 全部已落实（TASK-20260503-02 闭环）
+
+> 3 项 P1 建议来自 Phase A 反思，已全部由 TASK-20260503-02 工作流元任务清零。
+
+- ✅ **P1 #4 git-workflow 多子任务 `git add -p` 范式** — TASK-20260503-02 任务 4 落实（commit `b8365ec`）→ git-workflow.mdc 新增「Multi-subtask commit 拆分」段
+- ✅ **P1 #6 StatusOr<T>::status() codebase audit** — TASK-20260503-02 任务 5 落实（commit `02250f0`）→ techContext.md 新增 audit 段（14/14 ✅ 零误用 / 0 fix 必要 / clang-tidy enforce 留 P3）
+- ✅ **P1 #8 spec template「A14 解读」附录段** — TASK-20260503-02 任务 6 落实（commit `af7be2b`）→ spec 新增「附录 A: A14 解读」段（L1 链接闭合 Hard + L2 size diff Soft 双层语义）
 
 ### P2 来自 TASK-20260502-01 reflection §6（archive 阶段迁移）
 

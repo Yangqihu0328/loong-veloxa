@@ -4,7 +4,7 @@
 
 ### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
 
-**当前阶段**：🟢 **构建完成 — 待 reflect**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+**当前阶段**：🟢 **回顾完成 — 待归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
 
 **里程碑**：
 
@@ -48,12 +48,24 @@
 
 **Phase 0 §0.2 audit 预跑结论**：详见 `tasks.md` 同任务段（6/6 ✅ 零误用 / 0 fix 必要 / clang-tidy enforce 留 P3）
 
-**预期外发现入库（待 reflection 沉淀）**：
+**预期外发现入库（已 reflection 沉淀）**：
 
-1. 新 P3 候选：tests/ 中 `ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式 — 可考虑 codebase guideline P3
+1. 新 P3 候选：tests/ 中 `ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式 — 已迁移到 activeContext 待处理事项 P3
 2. A-P1#6 audit 范围超 plan：plan §0.2 仅 veloxa/(6) → CP2 扩展到 tests/(8) + examples/(0) + benchmarks/(0) = 总 14 处 ✅
 3. C-#4 toolchain 段层级决策：plan 写 `##` 一级但实际选 `####` 子段（紧邻 toolchain 检查族），实施时调整使语义更合理
 4. commit 消息范式自我应用：6 docs commits 全部含「Source: TASK-XXXXXXXX-XX reflection §X」前置溯源
+
+**Reflect 阶段沉淀（2026-05-03 19:35）**：
+
+- 回顾文档落盘 `memory-bank/reflection/reflection-TASK-20260503-02.md`（~310 行 Level 2 详细）
+- 实测 0.21× 总比值 → 新效率区候选「**纯文档/规则极速区 0.15-0.25×**」识别（plan ×0.6 第 56-61 数据点群组）
+- 0/7 反复模式命中（Phase A → B → C → 本任务第三次连续零反复）
+- 4 大新协议首次实证：
+  1. 「reflection 沉淀回流」模式（4 from C + 3 from A 项 P1 跨任务批量清零）
+  2. 「反复模式渐进式抑制」实证（C-#2 第二次反复在 P1 阶段抑制成功，未进入 P0 轨道）
+  3. 「Phase 0 audit 预跑」模式扩展（systemPatterns Phase 0 定律第 4 次实证 → quad-evidence 升级）
+  4. 「纯文档/规则极速区 0.15-0.25×」新效率区候选
+- 4 项改进建议：P0 0 / P1 1（新效率区子档入库 — archive 阶段直接落实）/ P2 3（reflection 沉淀回流 systemPattern + GoogleTest 易错模式 P3 + plan LOC 预估系数修正 — archive 阶段直接落实）
 
 ---
 

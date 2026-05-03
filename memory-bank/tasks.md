@@ -5,7 +5,8 @@
 ### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
 
 - **复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / 5 项规则文档调整 + 1 项 codebase audit / 无新代码逻辑变更）
-- **状态：** 🟢 **构建完成 — 待 reflect**（VAN ✅ + Plan ✅ + Build ✅ 6/6 子任务 + CP1+CP2 + ctest 1247 不退化 → 待 `/reflect` 阶段）
+- **状态：** 🟢 **回顾完成 — 待归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive` 阶段）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-02.md`（Level 2 详细回顾 ~310 行 / 实测 0.21× 总比值 / 6 数据点群组入库新效率区候选 / 4 大新协议首次实证 / 0/7 反复模式命中第三次连续零反复 / 4 改进建议 P0 0 / P1 1 / P2 3 全部 archive 阶段直接落实）
 - **创建日期：** 2026-05-03
 - **分支：** `feature/TASK-20260503-02-techdebt-workflow-cleanup`（基于 main `55dea8f` ✅ 已创建并切换）
 - **设计 spec：** ❌ 不需（纯文档 / 规则调整任务，直接以 plan 替代 spec）
