@@ -356,10 +356,16 @@ if(VX_PLATFORM_SDL2)
     TIMEOUT 10
   )
 
-  # TASK-20260502-01 A.3.1: end-to-end smoke for hello_devtool example.
-  # Requires VX_BUILD_DEVTOOL=ON (the example only compiles then). Same
-  # SDL2 dummy-driver + auto-quit pattern as hello_sdl2_smoke.
+  # ---- DevTool 三件套 dogfood smoke ctest 集 ----
+  # Phase A Inspector       (TASK-20260502-01) — hello_devtool_smoke
+  # Phase B Perf Overlay    (TASK-20260502-02) — hello_devtool_perf_smoke
+  # Phase C Hot Reload      (TASK-20260503-01) — hello_devtool_hot_reload_smoke
+  # Three-piece DevTool main line; finalize装裱 by TASK-20260503-03 P2.
   if(VX_BUILD_DEVTOOL)
+    # Phase A — Inspector smoke (DevTool attach + dogfood UI baseline;
+    # TASK-20260502-01 A.3.1). Requires VX_BUILD_DEVTOOL=ON (the example
+    # only compiles then). Same SDL2 dummy-driver + auto-quit pattern
+    # as hello_sdl2_smoke.
     add_test(
       NAME hello_devtool_smoke
       COMMAND $<TARGET_FILE:hello_devtool>
@@ -369,10 +375,17 @@ if(VX_PLATFORM_SDL2)
       TIMEOUT 10
     )
 
-    # TASK-20260502-02 B.3.2: Performance Overlay smoke variant — re-runs
-    # the same hello_devtool with a longer auto-quit so the perf pipeline
-    # hooks have time to fire several frames. PASS_REGULAR_EXPRESSION asserts
-    # the stable "PERF SMOKE: frames=N" output line (N >= 1).
+    # Phase B — Performance Overlay smoke (PipelineHooks 5 hooks +
+    # vx_view_set_pipeline_hooks ABI smoke; TASK-20260502-02 B.3.2).
+    # PASS_REGULAR_EXPRESSION asserts the stable "PERF SMOKE: frames=N"
+    # output line. Note: in dummy SDL + static CSS the
+    # UpdateManager::Update() dirty_ guard short-circuits after the
+    # first frame (transition_mgr_.HasActive() is the only rearm
+    # source), so frames=1 is the natural steady state — it validates
+    # the ABI surface end-to-end, not the multi-frame ring-buffer
+    # aggregation. Multi-frame validation tracked as a P3 candidate
+    # (TASK-20260503-03 build-阶段实测; needs vx_view_invalidate API
+    # or a CSS animation in hello_devtool).
     add_test(
       NAME hello_devtool_perf_smoke
       COMMAND $<TARGET_FILE:hello_devtool>
@@ -383,13 +396,14 @@ if(VX_PLATFORM_SDL2)
       TIMEOUT 10
     )
 
-    # TASK-20260503-01 C.4.2: Hot Reload end-to-end smoke. Drives
-    # hello_devtool with VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1 so the
-    # binary mkdtemps a watch dir, attaches DevTool with hot_reload_dir,
-    # rewrites the watched style.css at +100ms, and then prints the
-    # stable "HOT RELOAD: triggered count=N" line on exit.
-    # Auto-quit is generous (800 ms) so on slow CI the inotify worker
-    # has time to: fire IN_CLOSE_WRITE → debounce 50ms → main-thread
+    # Phase C — Hot Reload smoke (inotify + LoadCSS triggered;
+    # TASK-20260503-01 C.4.2). Drives hello_devtool with
+    # VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1 so the binary mkdtemps a
+    # watch dir, attaches DevTool with hot_reload_dir, rewrites the
+    # watched style.css at +100ms, and then prints the stable
+    # "HOT RELOAD: triggered count=N" line on exit. Auto-quit is
+    # generous (800 ms) so on slow CI the inotify worker has time
+    # to: fire IN_CLOSE_WRITE → debounce 50ms → main-thread
     # DrainEvents → LoadCSS → tracked_count++. PASS_REGULAR_EXPRESSION
     # demands at least one tracked invocation.
     add_test(

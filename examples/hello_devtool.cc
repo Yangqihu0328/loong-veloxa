@@ -1,14 +1,24 @@
 /*
- * Veloxa — Hello DevTool Example (TASK-20260502-01 A.3.1 +
- *                                  TASK-20260502-02 B.3.2 perf smoke)
+ * Veloxa — Hello DevTool Example (DevTool 三件套主线收官)
+ *
+ * Single user-facing example exercising the full DevTool trio:
+ *   - Phase A Inspector     (TASK-20260502-01 A.3.1):
+ *       vx_view_attach_devtool + JS-binding cross-document DOM JSON
+ *       via vx_devtool_get_dom_json
+ *   - Phase B Perf Overlay  (TASK-20260502-02 B.3.2):
+ *       VxPipelineHooks + vx_view_set_pipeline_hooks ABI smoke +
+ *       F11 HUD toggle (vx_view_is_hud_visible — B.3.1)
+ *   - Phase C Hot Reload    (TASK-20260503-01 C.4.2):
+ *       VxDevtoolOptions.hot_reload_dir +
+ *       vx_view_hot_reload_tracked_count (env: VX_HELLO_DEVTOOL_HOT_RELOAD_TEST)
  *
  * Same scene as hello_sdl2.cc but with the DevTool Inspector dogfood UI
  * attached on the right-hand splitter dock. Demonstrates:
  *   - vx_view_attach_devtool() with explicit options
- *   - VxDevtoolOptions { devtool_width, enable_f12_hotkey } configuration
+ *   - VxDevtoolOptions { devtool_width, enable_f12_hotkey, hot_reload_dir }
  *   - F12 hotkey toggle (live attach/detach without reload)
- *   - F11 hotkey toggle HUD (B.3.1 — vx_view_is_hud_visible C API)
- *   - vx_view_set_pipeline_hooks() Performance Overlay smoke (B.3.2)
+ *   - F11 hotkey toggle HUD
+ *   - vx_view_set_pipeline_hooks() Performance Overlay ABI smoke
  *   - vx_inspector_set_redaction_policy() T3 policy switch
  *   - SDL2 input forwarding to BOTH target Document and DevTool Document
  *     via Application::InjectInput's hotkey interceptor (A.1.7)
@@ -17,6 +27,12 @@
  *         cmake --build build --target hello_devtool
  * Run:    ./build/examples/hello_devtool
  *         (Press F11 to toggle HUD; F12 to toggle DevTool.)
+ *
+ * See also:
+ *   - docs/specs/2026-04-30-devtool-design.md (Design spec + threat model)
+ *   - memory-bank/archive/archive-TASK-20260502-01.md (Phase A archive)
+ *   - memory-bank/archive/archive-TASK-20260502-02.md (Phase B archive)
+ *   - memory-bank/archive/archive-TASK-20260503-01.md (Phase C archive)
  */
 
 #include "veloxa/api/veloxa_api.h"
