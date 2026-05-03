@@ -1,6 +1,7 @@
 add_subdirectory(inspector)
 add_subdirectory(overlay)
 add_subdirectory(resources)
+add_subdirectory(hot_reload)
 
 # TASK-20260502-01 A.1.5: InputDispatchSplitter pure state-machine tests.
 include(GoogleTest)
