@@ -2,7 +2,167 @@
 
 ## 当前任务
 
-### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）
+> **空闲** — 等待新任务（`/van` 启动 / 详细见 `activeContext.md`）。最近归档：TASK-20260503-05 ✅（详见下方「上次任务（已归档闭环）」段）。
+
+### TASK-20260503-04：DevTool Phase D — Console JS REPL（已搁置）
+
+**当前阶段**：🟡 **已搁置 2026-05-03 21:52**
+
+**里程碑**：
+
+- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动 / VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别
+- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，等待 TASK-20260503-05 完成后恢复 / 已锁定决策 V1=B（完整 Console Panel）保留以备恢复无需重问
+
+**恢复前置：** TASK-20260503-05 完成归档后，用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
+
+---
+
+## 任务历史（最近完成）
+
+<!-- TASK-20260503-03 详细执行里程碑（11 entries 含 P1 失败发现 + 回退 + 用户决策 + 调整 + 5 commits 链路）已迁移到 archive 文档（见 archive-TASK-20260503-03.md §3.2 commit 历史 + §4 P1 实施失败链路）
+
+### TASK-20260503-03：DevTool 三件套主线收官 — 4 项 P3 候选批量清零
+
+**当前阶段**：✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+
+**里程碑**：
+
+- 2026-05-03 20:06 — `/van DevTool 三件套主线收官` 启动 / AskQuestion 选 B（P3 候选清零）→ items=P6（4 项全选）/ 任务 ID `TASK-20260503-03` 生成 / Level 2 锁定 / feature 分支 `feature/TASK-20260503-03-devtool-trio-finalize` 创建（基于 main `5667c8c`）
+- 2026-05-03 20:08 — VAN Phase audit 预跑：GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 5 命中 / 仅 2 处实际反模式 / 1 处三元守卫范本（`tests/script/quickjs_engine_test.cc:18`）→ 缩减 75% 工作量
+- 2026-05-03 20:15 — `/plan` 启动 / 4 项 P3 设计概要展示 / B1-B9 决策表抛出
+- 2026-05-03 20:18 — 用户选 all_recommended → B1-B9 9/9 锁定
+- 2026-05-03 20:19 — Phase 0 工具链快照（gcc 15.2.0 / binutils ld 2.46 / cmake 4.2.3 / ninja 1.13.2 — 与上次任务一致 ✅）+ smoke 工具检查（jq/awk/python3 ✅；rg MISS → Grep 兜底）+ ctest baseline 1247 ✅
+- 2026-05-03 20:20 — plan 文档落盘 `docs/plans/2026-05-03-devtool-trio-finalize.md`（~370 行 / 6 子任务 / Phase 0 极简 1 子段 / B1-B9 9/9 / CP1+CP2 / 9 systemPatterns 协同度自我对照 / §3.1 ctest config 矩阵 / §3.3 plan ×0.6 第 62-67 数据点假设）
+- 2026-05-03 20:20 — Memory Bank 三件套（tasks / activeContext / progress）更新 + 规划阶段闭环
+- 2026-05-03 20:24 — `/build` 启动 / activeContext 阶段 规划中 → 构建中 / TodoWrite 8 子任务追踪
+- 2026-05-03 20:25 — 子任务 1（P3.1）StrReplace + cmake build + ctest DevtoolDogfoodSmokeTest 4/4 PASS / commit `ebe5fab`
+- 2026-05-03 20:26 — 子任务 2（P3.2）StrReplace + cmake build + ctest InotifyFileWatcherT2Test 12/12 PASS / commit `95a43e7`
+- 2026-05-03 20:27 — 🛑 **CP1 自审 ✅ PASS**（grep 验证 audit 表 2/4 行修正 + 1247/1247 ctest baseline 不退化 + 2 commits Source 溯源前缀）
+- 2026-05-03 20:30 — 子任务 3（P1）开始：cmake build-sdl2/ 配置 SDL2=ON（FetchContent 已预置 75s reconfigure）+ build hello_devtool（33s）
+- 2026-05-03 20:33 — 🔴 **P1 实施失败发现**：`hello_devtool_perf_smoke` 即使 autoquit=600ms / 1500ms 仍 frames=1；根因定位 `UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 是 frame hooks 触发的硬约束；`dirty_` 在每帧末尾 reset，仅当 `transition_mgr_.HasActive()` 才 rearm；hello_devtool 静态 CSS → 第 1 帧后 dirty_=false 永久阻断 hooks；**反复模式 #1 命中**（VAN/plan 阶段未深读 update_manager dirty_ 机制）
+- 2026-05-03 20:35 — P1 改动完整回退（`tests/CMakeLists.txt` + `examples/hello_devtool.cc` 恢复 main 5667c8c 原文）；用户 AskQuestion p1_fix 选 **A**（回退 P1 + 拆细化为 P3 候选）
+- 2026-05-03 20:36 — plan 文档 + activeContext.md 调整：标 P1 为 build 阶段取消 + 新增「P3 候选 #0 Performance Overlay 持续 invalidate 机制」（2 candidate 路径：(a) 新 vx_view_invalidate API / (b) hello_devtool 注入 CSS animation）
+- 2026-05-03 20:38 — 子任务 4（P2）StrReplace tests/CMakeLists.txt 三段注释装裱 + hello_devtool.cc 文件头三件套 docstring + cross-links；cmake build 通过 / DEVTOOL=ON 1247/1247 PASS / SDL2=ON 3/3 hello_devtool_*_smoke PASS / commit `3a8ccb2`
+- 2026-05-03 20:39 — 🛑 CP2 自审 — **跳过**（P1 取消后 CP2 仅 P2 验证不退化，已合并到 P2 末步 ctest verify）
+- 2026-05-03 20:40 — 子任务 5（P4）Write README.md（72 行 / DevTool 三件套段 + 核心能力表 + 构建段 + 7 处交叉链接）/ python3 验证脚本通过 / commit `af3b34e`
+- 2026-05-03 20:41 — Memory Bank 三件套 finalize 更新（tasks/activeContext/progress）+ P3 候选 #3 旧条目标 ⬆️ 升级到新条目 + 子任务 6 finalize commit `d8755c0`
+- 2026-05-03 21:14 — `/reflect` 启动 / activeContext 阶段 构建中 → 回顾中
+- 2026-05-03 21:18 — `memory-bank/reflection/reflection-TASK-20260503-03.md` 落盘（11 段 / Level 2 基础回顾深度 + 反复模式 #1 第 9 次命中专项沉淀 / 5 做得好 + 3 挑战 + 4 教训 + 4 改进建议含 1 P0 / quint-evidence Phase 0 投入定律 + double-evidence commit Source 模式 + 1 新数据点入 plan ×0.6 矩阵 0.42×）
+
+**6 子任务计划耗时分布**（plan ×0.6 假设 ~54 min / 实测期待 ~22-35 min）：
+
+| # | 子任务 | 测试模式 | plan ×0.6 | 实测期待 | 文件 |
+|:-:|---|---|:-:|:-:|---|
+| 1 | P3.1 三元守卫 fix dogfood_smoke | [覆盖补充] | ~3 min | ~2-3 min | `devtool_dogfood_smoke_test.cc:106` |
+| 2 | P3.2 三元守卫 fix file_watcher | [覆盖补充] | ~3 min | ~2-3 min | `file_watcher_test.cc:314` |
+| — | 🛑 CP1 自审（P3 fix 完成 → DEVTOOL=ON 1247 不退化） | — | — | — | — |
+| 3 | P1 hello_devtool_perf_smoke 多帧 | [覆盖补充] | ~18 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
+| 4 | P2 三件套 dogfood 装裱 | [文档调整模式] | ~15 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
+| — | 🛑 CP2 自审（P1+P2 完成 → hello_devtool_perf_smoke 通过新 regex） | — | — | — | — |
+| 5 | P4 README 章节补强 | [文档调整模式] | ~12 min | ~6-10 min | `README.md` |
+| 6 | finalize（activeContext 4 项 P3 标 ✅）| — | ~3 min | ~2-3 min | `memory-bank/activeContext.md` + `memory-bank/progress.md` |
+
+**预期实测比值**：~0.30-0.45×（落「极窄档延续高效区 0.30-0.45×」候选续延 / 介于 TASK-20260503-02 「纯文档/规则极速区 0.21×」与 TASK-20260503-01 「极窄档加速衰减区下沿 0.31×」之间，因本任务 P1 P3 是 [覆盖补充] 含 ctest 等待 + rebuild + 1 处 regex 验证）
+
+**预期反复模式**：0/7 命中（连续第 4 次零反复 — Phase A → B → C → 02 → 本任务）
+
+**实测反复模式**：1/7 命中（反复模式 #1「前置依赖/环境/API 能力未验证」第 9 次命中 — 适用范围扩展到「现有实现 runtime 行为假设未实证」子维度；P1 多帧验证 build 阶段取消拆细化为 P3 候选）
+
+-->
+
+---
+
+<!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段）
+
+### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
+
+**当前阶段**：🟢 **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+
+**里程碑**：
+
+- 2026-05-03 17:30 — `/van 清理技术债` 启动 / AskQuestion 选 A 工作流类批量清理 / 任务 ID `TASK-20260503-02` 生成 / Level 2 锁定 / feature 分支创建
+- 2026-05-03 18:00 — `/plan` 启动 / 6 P1 设计概要展示 / B1-B8 决策表抛出
+- 2026-05-03 18:10 — 用户选 all_recommended → B1-B8 8/8 锁定
+- 2026-05-03 18:20 — Phase 0 §0.2 audit 预跑（全 codebase `.status()` 6 处 6/6 ✅ 零误用）+ §0.3 工具可用性矩阵
+- 2026-05-03 18:50 — plan 文档落盘 `docs/plans/2026-05-03-techdebt-workflow-cleanup.md`（~480 行 / 6 子任务 [文档调整模式] / CP1+CP2 / 9 systemPatterns 协同度自我对照）
+- 2026-05-03 18:55 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 规划阶段闭环
+- 2026-05-03 18:55 — `/build` 启动 / activeContext 阶段 规划中 → 构建中
+- 2026-05-03 19:00 — 任务 1 C-#1 commit `51bf9d4` writing-plans testability 段（+33 行）
+- 2026-05-03 19:02 — 任务 2 C-#2 commit `71b830c` writing-plans ctest config 矩阵段（+41 行）⚠️ 第二次反复抑制成功
+- 2026-05-03 19:04 — 任务 3 C-#4 commit `31b237f` writing-plans toolchain 升级检查段（+49 行）
+- 2026-05-03 19:05 — 🛑 CP1 自审 ✅ PASS（标题层级 / 5 段结构 / 过度工程 / 交叉引用 / 总长 943 行 / 3 commits 独立）
+- 2026-05-03 19:07 — 任务 4 A-P1#4 commit `b8365ec` git-workflow `git add -p` 段（+56 行）
+- 2026-05-03 19:10 — 任务 5 A-P1#6 commit `02250f0` StatusOr audit 文档化（+51 行 / 14/14 ✅ 含 tests/ 扩展）
+- 2026-05-03 19:11 — 🛑 CP2 自审 ✅ PASS（audit 范围扩展 + 1 新 P3 候选发现）
+- 2026-05-03 19:13 — 任务 6 A-P1#8 commit `af7be2b` spec A14 解读附录段（+62 行）
+- 2026-05-03 19:14 — 完成验证 ✅：ctest 1247/1247 PASS（plan §3.1 期望一致 — C-#2 自我吃狗粮）+ lint 0 错误 + 4 文件 +292 行
+- 2026-05-03 19:15 — Memory Bank 三件套（tasks/activeContext/progress）finalize 更新 + 进入 /reflect
+
+**6 子任务实测耗时**（plan 阶段假设 ~85-100 min plan ×0.6 / ~40-65 min 实测期待）：
+
+| # | 子任务 | plan ×0.6 | 实测 | 比值 | 备注 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1 | C-#1 testability | 10-15 min | ~5 min | 0.33-0.50× | StrReplace 一次成功 |
+| 2 | C-#2 ctest config | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
+| 3 | C-#4 toolchain | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
+| 4 | A-P1#4 git add -p | 10-15 min | ~3 min | 0.20-0.30× | 单次 StrReplace |
+| 5 | A-P1#6 audit 文档化 | 15-20 min | ~3 min | 0.15-0.20× | Phase 0 预跑 + CP2 扩展 ~2 min |
+| 6 | A-P1#8 spec A14 | 15-20 min | ~3 min | 0.15-0.20× | 单次 StrReplace |
+| **合计** | - | **70-100 min** | **~18 min** | **~0.18-0.26×** | **远超「极窄档加速衰减区」下沿** |
+
+**关键效率发现**：实测 ~18 min vs plan ×0.6 ~85 min = **0.21× 比值**，比 Phase C 0.31× 进一步加速 → 触发新效率区候选「**纯文档/规则类极速区 ~0.15-0.25×**」（plan ×0.6 第 56+ 数据点群组延伸）。原因分析：
+- 零代码逻辑 → 无 RED→GREEN cycle / 无 ctest 等待 / 无 link 风险
+- Phase 0 §0.2 audit 预跑 → 任务 5 CP2 扩展仅 ~2 min（vs plan 假设需独立 audit）
+- writing-plans 3 项同文件 batch → 任务 2/3 收益（mental model 持续性）
+- 6/6 子任务零返工（CP1 + CP2 自审一次通过）
+
+**B1-B8 决策（all_recommended 8/8）**：详见 `tasks.md` 同任务段
+
+**Phase 0 §0.2 audit 预跑结论**：详见 `tasks.md` 同任务段（6/6 ✅ 零误用 / 0 fix 必要 / clang-tidy enforce 留 P3）
+
+**预期外发现入库（已 reflection 沉淀）**：
+
+1. 新 P3 候选：tests/ 中 `ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式 — 已迁移到 activeContext 待处理事项 P3
+2. A-P1#6 audit 范围超 plan：plan §0.2 仅 veloxa/(6) → CP2 扩展到 tests/(8) + examples/(0) + benchmarks/(0) = 总 14 处 ✅
+3. C-#4 toolchain 段层级决策：plan 写 `##` 一级但实际选 `####` 子段（紧邻 toolchain 检查族），实施时调整使语义更合理
+4. commit 消息范式自我应用：6 docs commits 全部含「Source: TASK-XXXXXXXX-XX reflection §X」前置溯源
+
+**Reflect 阶段沉淀（2026-05-03 19:35）**：
+
+- 回顾文档落盘 `memory-bank/reflection/reflection-TASK-20260503-02.md`（~310 行 Level 2 详细）
+- 实测 0.21× 总比值 → 新效率区候选「**纯文档/规则极速区 0.15-0.25×**」识别（plan ×0.6 第 56-61 数据点群组）
+- 0/7 反复模式命中（Phase A → B → C → 本任务第三次连续零反复）
+- 4 大新协议首次实证：
+  1. 「reflection 沉淀回流」模式（4 from C + 3 from A 项 P1 跨任务批量清零）
+  2. 「反复模式渐进式抑制」实证（C-#2 第二次反复在 P1 阶段抑制成功，未进入 P0 轨道）
+  3. 「Phase 0 audit 预跑」模式扩展（systemPatterns Phase 0 定律第 4 次实证 → quad-evidence 升级）
+  4. 「纯文档/规则极速区 0.15-0.25×」新效率区候选
+- 4 项改进建议：P0 0 / P1 1（新效率区子档入库 — archive 阶段直接落实）/ P2 3（reflection 沉淀回流 systemPattern + GoogleTest 易错模式 P3 + plan LOC 预估系数修正 — archive 阶段直接落实）
+
+-->
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API [安全相关] — ✅ 已归档（2026-05-03 ~23:55）
+
+**核心成果速查：**
+- 9 commits（VAN 67c8c81 + plan 3c71334 + E1 f1dfe86 + E2 c371e2f + E3 7d9732f + E4 58e3688 + E5 12d3522 + reflect 1923073 + archive 63a0bab）+ fast-forward merge to main `63a0bab` + feature 分支已删除
+- 5 文件变更 +179/-3 行 / DEVTOOL=ON 1247→1252 + DEVTOOL=OFF 1082→1087 + QuickjsEngine 9/9 全 PASS
+- T1 mitigation 5 维度完整性 ✅ + 技术债 #44 组件 1 Phase 2 闭环 ✅（JSMallocFunctions 仍记技术债）
+- 反复模式 0/7 第 5 次零反复 ✅（Phase 0 §0.3 三 grep + D2 Status.h audit + D8b push-back 三层抑制）
+- Phase 0 投入定律 sext-evidence 升级（5.2-16× ROI 平均 8.1× / 16× ROI 创历史新高）
+- plan ×0.6 实测 0.16× 触发新效率区子档「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」第 67-72 数据点入库
+- 主动 push-back 模式（D8b）首次实证 + DEVTOOL=OFF baseline 验证 SOP（FETCHCONTENT_BASE_DIR 复用范式）首次实证
+- commit body Source 溯源 triple-evidence（19 commits 累计）
+- 改进建议落实率 100%：P0 1/1 ✅（systemPatterns plan ×0.6 矩阵 + sext-evidence）+ P1 2/2 ✅ 已迁移待处理事项 + P2 1/1 ✅（systemPatterns DEVTOOL=OFF SOP）
+- 解锁 TASK-20260503-04 Console JS REPL（搁置）
+- 详见 `memory-bank/archive/archive-TASK-20260503-05.md`（Level 2+ 12 段 ~352 行）+ `memory-bank/reflection/reflection-TASK-20260503-05.md`（Level 2+ 12 段 ~280 行）
+
+<!-- TASK-20260503-05 详细执行里程碑（折叠保留供历史检索 / 已迁移到 archive §3.2 + §4 + §5 + §6）
+
+
 
 **当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待用户 `/archive` 启动归档）**
 
@@ -156,146 +316,8 @@
 
 ---
 
-### TASK-20260503-04：DevTool Phase D — Console JS REPL（已搁置）
-
-**当前阶段**：🟡 **已搁置 2026-05-03 21:52**
-
-**里程碑**：
-
-- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动 / VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别
-- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，等待 TASK-20260503-05 完成后恢复 / 已锁定决策 V1=B（完整 Console Panel）保留以备恢复无需重问
-
-**恢复前置：** TASK-20260503-05 完成归档后，用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
-
----
-
-## 任务历史（最近完成）
-
-<!-- TASK-20260503-03 详细执行里程碑（11 entries 含 P1 失败发现 + 回退 + 用户决策 + 调整 + 5 commits 链路）已迁移到 archive 文档（见 archive-TASK-20260503-03.md §3.2 commit 历史 + §4 P1 实施失败链路）
-
-### TASK-20260503-03：DevTool 三件套主线收官 — 4 项 P3 候选批量清零
-
-**当前阶段**：✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
-
-**里程碑**：
-
-- 2026-05-03 20:06 — `/van DevTool 三件套主线收官` 启动 / AskQuestion 选 B（P3 候选清零）→ items=P6（4 项全选）/ 任务 ID `TASK-20260503-03` 生成 / Level 2 锁定 / feature 分支 `feature/TASK-20260503-03-devtool-trio-finalize` 创建（基于 main `5667c8c`）
-- 2026-05-03 20:08 — VAN Phase audit 预跑：GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 5 命中 / 仅 2 处实际反模式 / 1 处三元守卫范本（`tests/script/quickjs_engine_test.cc:18`）→ 缩减 75% 工作量
-- 2026-05-03 20:15 — `/plan` 启动 / 4 项 P3 设计概要展示 / B1-B9 决策表抛出
-- 2026-05-03 20:18 — 用户选 all_recommended → B1-B9 9/9 锁定
-- 2026-05-03 20:19 — Phase 0 工具链快照（gcc 15.2.0 / binutils ld 2.46 / cmake 4.2.3 / ninja 1.13.2 — 与上次任务一致 ✅）+ smoke 工具检查（jq/awk/python3 ✅；rg MISS → Grep 兜底）+ ctest baseline 1247 ✅
-- 2026-05-03 20:20 — plan 文档落盘 `docs/plans/2026-05-03-devtool-trio-finalize.md`（~370 行 / 6 子任务 / Phase 0 极简 1 子段 / B1-B9 9/9 / CP1+CP2 / 9 systemPatterns 协同度自我对照 / §3.1 ctest config 矩阵 / §3.3 plan ×0.6 第 62-67 数据点假设）
-- 2026-05-03 20:20 — Memory Bank 三件套（tasks / activeContext / progress）更新 + 规划阶段闭环
-- 2026-05-03 20:24 — `/build` 启动 / activeContext 阶段 规划中 → 构建中 / TodoWrite 8 子任务追踪
-- 2026-05-03 20:25 — 子任务 1（P3.1）StrReplace + cmake build + ctest DevtoolDogfoodSmokeTest 4/4 PASS / commit `ebe5fab`
-- 2026-05-03 20:26 — 子任务 2（P3.2）StrReplace + cmake build + ctest InotifyFileWatcherT2Test 12/12 PASS / commit `95a43e7`
-- 2026-05-03 20:27 — 🛑 **CP1 自审 ✅ PASS**（grep 验证 audit 表 2/4 行修正 + 1247/1247 ctest baseline 不退化 + 2 commits Source 溯源前缀）
-- 2026-05-03 20:30 — 子任务 3（P1）开始：cmake build-sdl2/ 配置 SDL2=ON（FetchContent 已预置 75s reconfigure）+ build hello_devtool（33s）
-- 2026-05-03 20:33 — 🔴 **P1 实施失败发现**：`hello_devtool_perf_smoke` 即使 autoquit=600ms / 1500ms 仍 frames=1；根因定位 `UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 是 frame hooks 触发的硬约束；`dirty_` 在每帧末尾 reset，仅当 `transition_mgr_.HasActive()` 才 rearm；hello_devtool 静态 CSS → 第 1 帧后 dirty_=false 永久阻断 hooks；**反复模式 #1 命中**（VAN/plan 阶段未深读 update_manager dirty_ 机制）
-- 2026-05-03 20:35 — P1 改动完整回退（`tests/CMakeLists.txt` + `examples/hello_devtool.cc` 恢复 main 5667c8c 原文）；用户 AskQuestion p1_fix 选 **A**（回退 P1 + 拆细化为 P3 候选）
-- 2026-05-03 20:36 — plan 文档 + activeContext.md 调整：标 P1 为 build 阶段取消 + 新增「P3 候选 #0 Performance Overlay 持续 invalidate 机制」（2 candidate 路径：(a) 新 vx_view_invalidate API / (b) hello_devtool 注入 CSS animation）
-- 2026-05-03 20:38 — 子任务 4（P2）StrReplace tests/CMakeLists.txt 三段注释装裱 + hello_devtool.cc 文件头三件套 docstring + cross-links；cmake build 通过 / DEVTOOL=ON 1247/1247 PASS / SDL2=ON 3/3 hello_devtool_*_smoke PASS / commit `3a8ccb2`
-- 2026-05-03 20:39 — 🛑 CP2 自审 — **跳过**（P1 取消后 CP2 仅 P2 验证不退化，已合并到 P2 末步 ctest verify）
-- 2026-05-03 20:40 — 子任务 5（P4）Write README.md（72 行 / DevTool 三件套段 + 核心能力表 + 构建段 + 7 处交叉链接）/ python3 验证脚本通过 / commit `af3b34e`
-- 2026-05-03 20:41 — Memory Bank 三件套 finalize 更新（tasks/activeContext/progress）+ P3 候选 #3 旧条目标 ⬆️ 升级到新条目 + 子任务 6 finalize commit `d8755c0`
-- 2026-05-03 21:14 — `/reflect` 启动 / activeContext 阶段 构建中 → 回顾中
-- 2026-05-03 21:18 — `memory-bank/reflection/reflection-TASK-20260503-03.md` 落盘（11 段 / Level 2 基础回顾深度 + 反复模式 #1 第 9 次命中专项沉淀 / 5 做得好 + 3 挑战 + 4 教训 + 4 改进建议含 1 P0 / quint-evidence Phase 0 投入定律 + double-evidence commit Source 模式 + 1 新数据点入 plan ×0.6 矩阵 0.42×）
-
-**6 子任务计划耗时分布**（plan ×0.6 假设 ~54 min / 实测期待 ~22-35 min）：
-
-| # | 子任务 | 测试模式 | plan ×0.6 | 实测期待 | 文件 |
-|:-:|---|---|:-:|:-:|---|
-| 1 | P3.1 三元守卫 fix dogfood_smoke | [覆盖补充] | ~3 min | ~2-3 min | `devtool_dogfood_smoke_test.cc:106` |
-| 2 | P3.2 三元守卫 fix file_watcher | [覆盖补充] | ~3 min | ~2-3 min | `file_watcher_test.cc:314` |
-| — | 🛑 CP1 自审（P3 fix 完成 → DEVTOOL=ON 1247 不退化） | — | — | — | — |
-| 3 | P1 hello_devtool_perf_smoke 多帧 | [覆盖补充] | ~18 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
-| 4 | P2 三件套 dogfood 装裱 | [文档调整模式] | ~15 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
-| — | 🛑 CP2 自审（P1+P2 完成 → hello_devtool_perf_smoke 通过新 regex） | — | — | — | — |
-| 5 | P4 README 章节补强 | [文档调整模式] | ~12 min | ~6-10 min | `README.md` |
-| 6 | finalize（activeContext 4 项 P3 标 ✅）| — | ~3 min | ~2-3 min | `memory-bank/activeContext.md` + `memory-bank/progress.md` |
-
-**预期实测比值**：~0.30-0.45×（落「极窄档延续高效区 0.30-0.45×」候选续延 / 介于 TASK-20260503-02 「纯文档/规则极速区 0.21×」与 TASK-20260503-01 「极窄档加速衰减区下沿 0.31×」之间，因本任务 P1 P3 是 [覆盖补充] 含 ctest 等待 + rebuild + 1 处 regex 验证）
-
-**预期反复模式**：0/7 命中（连续第 4 次零反复 — Phase A → B → C → 02 → 本任务）
-
-**实测反复模式**：1/7 命中（反复模式 #1「前置依赖/环境/API 能力未验证」第 9 次命中 — 适用范围扩展到「现有实现 runtime 行为假设未实证」子维度；P1 多帧验证 build 阶段取消拆细化为 P3 候选）
-
 -->
 
----
-
-<!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段）
-
-### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
-
-**当前阶段**：🟢 **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
-
-**里程碑**：
-
-- 2026-05-03 17:30 — `/van 清理技术债` 启动 / AskQuestion 选 A 工作流类批量清理 / 任务 ID `TASK-20260503-02` 生成 / Level 2 锁定 / feature 分支创建
-- 2026-05-03 18:00 — `/plan` 启动 / 6 P1 设计概要展示 / B1-B8 决策表抛出
-- 2026-05-03 18:10 — 用户选 all_recommended → B1-B8 8/8 锁定
-- 2026-05-03 18:20 — Phase 0 §0.2 audit 预跑（全 codebase `.status()` 6 处 6/6 ✅ 零误用）+ §0.3 工具可用性矩阵
-- 2026-05-03 18:50 — plan 文档落盘 `docs/plans/2026-05-03-techdebt-workflow-cleanup.md`（~480 行 / 6 子任务 [文档调整模式] / CP1+CP2 / 9 systemPatterns 协同度自我对照）
-- 2026-05-03 18:55 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 规划阶段闭环
-- 2026-05-03 18:55 — `/build` 启动 / activeContext 阶段 规划中 → 构建中
-- 2026-05-03 19:00 — 任务 1 C-#1 commit `51bf9d4` writing-plans testability 段（+33 行）
-- 2026-05-03 19:02 — 任务 2 C-#2 commit `71b830c` writing-plans ctest config 矩阵段（+41 行）⚠️ 第二次反复抑制成功
-- 2026-05-03 19:04 — 任务 3 C-#4 commit `31b237f` writing-plans toolchain 升级检查段（+49 行）
-- 2026-05-03 19:05 — 🛑 CP1 自审 ✅ PASS（标题层级 / 5 段结构 / 过度工程 / 交叉引用 / 总长 943 行 / 3 commits 独立）
-- 2026-05-03 19:07 — 任务 4 A-P1#4 commit `b8365ec` git-workflow `git add -p` 段（+56 行）
-- 2026-05-03 19:10 — 任务 5 A-P1#6 commit `02250f0` StatusOr audit 文档化（+51 行 / 14/14 ✅ 含 tests/ 扩展）
-- 2026-05-03 19:11 — 🛑 CP2 自审 ✅ PASS（audit 范围扩展 + 1 新 P3 候选发现）
-- 2026-05-03 19:13 — 任务 6 A-P1#8 commit `af7be2b` spec A14 解读附录段（+62 行）
-- 2026-05-03 19:14 — 完成验证 ✅：ctest 1247/1247 PASS（plan §3.1 期望一致 — C-#2 自我吃狗粮）+ lint 0 错误 + 4 文件 +292 行
-- 2026-05-03 19:15 — Memory Bank 三件套（tasks/activeContext/progress）finalize 更新 + 进入 /reflect
-
-**6 子任务实测耗时**（plan 阶段假设 ~85-100 min plan ×0.6 / ~40-65 min 实测期待）：
-
-| # | 子任务 | plan ×0.6 | 实测 | 比值 | 备注 |
-|:-:|---|:-:|:-:|:-:|---|
-| 1 | C-#1 testability | 10-15 min | ~5 min | 0.33-0.50× | StrReplace 一次成功 |
-| 2 | C-#2 ctest config | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
-| 3 | C-#4 toolchain | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
-| 4 | A-P1#4 git add -p | 10-15 min | ~3 min | 0.20-0.30× | 单次 StrReplace |
-| 5 | A-P1#6 audit 文档化 | 15-20 min | ~3 min | 0.15-0.20× | Phase 0 预跑 + CP2 扩展 ~2 min |
-| 6 | A-P1#8 spec A14 | 15-20 min | ~3 min | 0.15-0.20× | 单次 StrReplace |
-| **合计** | - | **70-100 min** | **~18 min** | **~0.18-0.26×** | **远超「极窄档加速衰减区」下沿** |
-
-**关键效率发现**：实测 ~18 min vs plan ×0.6 ~85 min = **0.21× 比值**，比 Phase C 0.31× 进一步加速 → 触发新效率区候选「**纯文档/规则类极速区 ~0.15-0.25×**」（plan ×0.6 第 56+ 数据点群组延伸）。原因分析：
-- 零代码逻辑 → 无 RED→GREEN cycle / 无 ctest 等待 / 无 link 风险
-- Phase 0 §0.2 audit 预跑 → 任务 5 CP2 扩展仅 ~2 min（vs plan 假设需独立 audit）
-- writing-plans 3 项同文件 batch → 任务 2/3 收益（mental model 持续性）
-- 6/6 子任务零返工（CP1 + CP2 自审一次通过）
-
-**B1-B8 决策（all_recommended 8/8）**：详见 `tasks.md` 同任务段
-
-**Phase 0 §0.2 audit 预跑结论**：详见 `tasks.md` 同任务段（6/6 ✅ 零误用 / 0 fix 必要 / clang-tidy enforce 留 P3）
-
-**预期外发现入库（已 reflection 沉淀）**：
-
-1. 新 P3 候选：tests/ 中 `ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式 — 已迁移到 activeContext 待处理事项 P3
-2. A-P1#6 audit 范围超 plan：plan §0.2 仅 veloxa/(6) → CP2 扩展到 tests/(8) + examples/(0) + benchmarks/(0) = 总 14 处 ✅
-3. C-#4 toolchain 段层级决策：plan 写 `##` 一级但实际选 `####` 子段（紧邻 toolchain 检查族），实施时调整使语义更合理
-4. commit 消息范式自我应用：6 docs commits 全部含「Source: TASK-XXXXXXXX-XX reflection §X」前置溯源
-
-**Reflect 阶段沉淀（2026-05-03 19:35）**：
-
-- 回顾文档落盘 `memory-bank/reflection/reflection-TASK-20260503-02.md`（~310 行 Level 2 详细）
-- 实测 0.21× 总比值 → 新效率区候选「**纯文档/规则极速区 0.15-0.25×**」识别（plan ×0.6 第 56-61 数据点群组）
-- 0/7 反复模式命中（Phase A → B → C → 本任务第三次连续零反复）
-- 4 大新协议首次实证：
-  1. 「reflection 沉淀回流」模式（4 from C + 3 from A 项 P1 跨任务批量清零）
-  2. 「反复模式渐进式抑制」实证（C-#2 第二次反复在 P1 阶段抑制成功，未进入 P0 轨道）
-  3. 「Phase 0 audit 预跑」模式扩展（systemPatterns Phase 0 定律第 4 次实证 → quad-evidence 升级）
-  4. 「纯文档/规则极速区 0.15-0.25×」新效率区候选
-- 4 项改进建议：P0 0 / P1 1（新效率区子档入库 — archive 阶段直接落实）/ P2 3（reflection 沉淀回流 systemPattern + GoogleTest 易错模式 P3 + plan LOC 预估系数修正 — archive 阶段直接落实）
-
--->
-
----
-
-## 上次任务（已归档闭环）
 
 ### TASK-20260503-02：工作流/规则类技术债批量清理 — ✅ 已归档（2026-05-03 ~19:55）
 
