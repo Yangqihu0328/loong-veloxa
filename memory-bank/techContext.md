@@ -847,6 +847,57 @@ auto value = std::move(result).value();
 - TASK-20260502-01 A.1.8 GREEN 期间踩坑：`devtool_script_status_ = eval.status()` 当 `eval.ok() == true` 时 abort
 - 修正：`devtool_script_status_ = eval.ok() ? Status::Ok() : eval.status()`
 
+### TASK-20260503-02 StatusOr<T>::status() codebase audit 结果（2026-05-03）
+
+**Audit 命令**（Grep tool 替代 `rg`，POSIX `grep` 兜底亦可）：
+
+```bash
+# 等价 rg "\.status\(\)" 双重 sweep（veloxa/ + tests/ + examples/ + benchmarks/）
+grep -rn "\.status()" veloxa/ tests/ examples/ benchmarks/ \
+  --include="*.cc" --include="*.h"
+```
+
+**结果**（14/14 ✅ 全部正确，零误用）：
+
+| 范围 | 命中 | 评估 |
+|---|:-:|:-:|
+| `veloxa/` | 6 处（5 文件） | 6/6 ✅ |
+| `tests/` | 8 处（5 文件） | 8/8 ✅ |
+| `examples/` | 0 处 | — |
+| `benchmarks/` | 0 处 | — |
+
+**veloxa/ 详表**：
+
+| # | 文件:行 | 守卫模式 | 评估 |
+|:-:|---|---|:-:|
+| 1 | `veloxa/core/application.cc:113` | `if (!result.ok()) return result.status();` | ✅ |
+| 2 | `veloxa/core/application.cc:135` | 同上 | ✅ |
+| 3 | `veloxa/core/application.cc:348` | `eval.ok() ? Status::Ok() : eval.status();` | ✅ 三元守卫范本 |
+| 4 | `veloxa/core/image/image_cache.cc:16` | `if (!result.ok()) { return result.status(); }` | ✅ 多行守卫 |
+| 5 | `veloxa/devtool/hot_reload/file_watcher_inotify.cc:239` | `if (!resolved.ok()) { ... .status().code() ... }` | ✅ 守卫块内合法 |
+| 6 | `veloxa/devtool/hot_reload/file_watcher_inotify.cc:242` | 同 #5 块内 `.status().message()` | ✅ |
+
+**tests/ 详表**：
+
+| # | 文件:行 | 守卫模式 | 评估 |
+|:-:|---|---|:-:|
+| 7 | `tests/devtool/hot_reload/file_watcher_test.cc:314` | `ASSERT_TRUE(resolved.ok()) << ... resolved.status().message();` | ✅ GoogleTest 短路评估（cond=true 时 stream 不 evaluate） |
+| 8 | `tests/devtool/hot_reload/file_watcher_test.cc:350` | `EXPECT_EQ(resolved.status().code(), kInvalidArgument);` | ✅ 测试上下文已知 error |
+| 9 | `tests/script/quickjs_engine_test.cc:18` | `ASSERT_TRUE(r.ok()) << (!r.ok() ? r.status().message() : "");` | ✅ 显式三元守卫（冗余但 100% 安全） |
+| 10 | `tests/script/quickjs_engine_test.cc:27/35/46` | `EXPECT_FALSE/NE/EQ(r.status().*)` | ✅ 测试期望 error |
+| 11 | `tests/integration/devtool_dogfood_smoke_test.cc:106` | `ASSERT_TRUE(json.ok()) << ... json.status().message().data();` | ✅ GoogleTest 短路评估 |
+| 12 | `tests/foundation/base/status_test.cc:47` | `EXPECT_EQ(result.status().code(), kNotFound);` | ✅ 测试期望 error |
+| 13 | `tests/core/image/image_decoder_test.cc:75` | `EXPECT_EQ(result.status().code(), kOutOfMemory);` | ✅ 测试期望 error |
+
+**结论**：
+
+- 0 fix 必要 — A.1.8 修复后的三元守卫范本（#3）+ 既有 `if (!ok())` 前置守卫（#1/#2/#4）+ 守卫块内合法引用（#5/#6）+ tests/ GoogleTest 短路评估模式（#7/#11）+ tests/ 期望 error 模式（#8-#10/#12/#13）已覆盖 codebase 全部 `.status()` 用例
+- 无新引入误用风险点
+- **P3 候选保留**：clang-tidy custom check enforce（编译时强制守卫规范）— 估时 ~1-2 h，待 codebase 整体 clang-tidy 化任务时合并执行（与 TASK-30-03-style review round 类型任务合流）
+- **P3 候选 (新)**：`ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式（独立语句 `auto err = x.status();` 在 OK 时 abort）— 可考虑 codebase guideline「测试中也用三元守卫显式化」（如 #9 范本）
+
+**audit 范式可复用**：本任务首次实证「plan Phase 0 §0.2 阶段预跑 audit」模式 — audit 在 plan 阶段完成而非 build 阶段，避免「audit 发现需 fix → plan 不准 → 重新 plan」的低效循环。Build 阶段 CP2 自审进一步扩展到 tests/ + examples/ + benchmarks/ 完整范围，零新增 fix 候选。
+
 ---
 
 ## 安全测设计 — 边界场景显式语义状态优于数值阈值（TASK-20260502-02 B.1.2 教训）
