@@ -108,7 +108,30 @@ function updateHud() {
   setBar("bar-paint", s.paint);
 }
 
-// Both invocations are guarded so a single R2-class binding gap (e.g.
+// TASK-20260503-01 C.3.1 — Hot Reload status indicator update.
+// Reads vx_devtool_get_hot_reload_status() (registered by
+// RegisterDevtoolBindings, see veloxa/script/dom_bindings.cc) and
+// flips the #hot-reload-status badge between green (.status-watching
+// with the live tracked count) and red (.status-error with "ERR")
+// based on the JSON envelope's last_error field. Same defensive
+// try/catch pattern as updateHud / renderDomTree — the engine smoke
+// contract must keep running even if a single binding gap surfaces.
+function updateHotReloadStatus() {
+  if (typeof vx_devtool_get_hot_reload_status !== "function") return;
+  var raw = vx_devtool_get_hot_reload_status();
+  var s = JSON.parse(raw);
+  var node = document.getElementById("hot-reload-status");
+  if (!node) return;
+  if (s.last_error && s.last_error.length > 0) {
+    node.className = "hud-value status-error";
+    node.innerHTML = "ERR";
+  } else {
+    node.className = "hud-value status-watching";
+    node.innerHTML = String(s.tracked);
+  }
+}
+
+// All invocations are guarded so a single R2-class binding gap (e.g.
 // missing innerHTML setter inside renderDomTree) cannot abort the
 // whole script and mask the rest of the smoke contract. Errors are
 // swallowed; the C++ smoke harness inspects the document state and
@@ -116,3 +139,4 @@ function updateHud() {
 try { setupTabs(); } catch (e) { }
 try { renderDomTree(); } catch (e) { }
 try { updateHud(); } catch (e) { }
+try { updateHotReloadStatus(); } catch (e) { }

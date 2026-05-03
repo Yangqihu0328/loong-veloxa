@@ -48,6 +48,18 @@
       <div class="hud-bar"><span>R</span><div class="bar-fill" id="bar-render"></div></div>
       <div class="hud-bar"><span>P</span><div class="bar-fill" id="bar-paint"></div></div>
     </div>
+    <!--
+      TASK-20260503-01 C.3.1 — Hot Reload status indicator.
+      Reuses HUD container (one extra .hud-row) so absolute positioning
+      and pointer-passthrough already apply for free. updateHotReloadStatus
+      flips the class between status-watching (green tracked count) and
+      status-error (red ERR badge) based on
+      vx_devtool_get_hot_reload_status's last_error field.
+    -->
+    <div class="hud-row hud-hr">
+      <span class="hud-label">HR:</span>
+      <span class="hud-value status-watching" id="hot-reload-status">--</span>
+    </div>
   </div>
   <script>__INLINE_JS__</script>
 </body>

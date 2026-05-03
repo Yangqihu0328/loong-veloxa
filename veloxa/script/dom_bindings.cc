@@ -30,6 +30,10 @@ struct DomBindings::InstanceData {
   // B.2.2 — PerfOverlay live FrameStats source (borrowed; nullptr when not
   // attached). vx_view_get_perf_stats binding reads aggregated() + fps().
   vx::devtool::overlay::PerfOverlay* perf_overlay = nullptr;
+  // C.3.1 — HotReloadManager status source (borrowed; nullptr when not
+  // attached). vx_devtool_get_hot_reload_status binding reads
+  // tracked_count() + last_error().
+  vx::devtool::hot_reload::HotReloadManager* hot_reload_manager = nullptr;
   // A.2.1 T3 mitigation: redaction policy applied by VxDevtoolGetDomJson
   // when serializing the target Document. Defaults to the safe value;
   // synced from Application::redaction_policy() via SetRedactionPolicy.
@@ -778,6 +782,14 @@ void DomBindings::SetPerfOverlay(vx::devtool::overlay::PerfOverlay* perf) {
 vx::devtool::overlay::PerfOverlay* DomBindings::perf_overlay() const {
   return data_->perf_overlay;
 }
+void DomBindings::SetHotReloadManager(
+    vx::devtool::hot_reload::HotReloadManager* mgr) {
+  data_->hot_reload_manager = mgr;
+}
+vx::devtool::hot_reload::HotReloadManager*
+DomBindings::hot_reload_manager() const {
+  return data_->hot_reload_manager;
+}
 void DomBindings::SetRedactionPolicy(dom::RedactionPolicy policy) {
   data_->redaction_policy = policy;
 }
@@ -848,6 +860,7 @@ void DomBindings::Unbind() {
   data_->em = nullptr;
   data_->devtool_target_doc = nullptr;
   data_->perf_overlay = nullptr;
+  data_->hot_reload_manager = nullptr;
 }
 
 // =============================================================================
@@ -872,6 +885,7 @@ void DomBindings::Unbind() {
 
 #include <cstdio>
 
+#include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/inspector/inspector_data.h"
 #include "veloxa/devtool/overlay/perf_overlay.h"
 
@@ -934,6 +948,59 @@ JSValue VxViewGetPerfStats(JSContext* ctx, JSValueConst /*this_val*/,
   return JS_NewString(ctx, buf);
 }
 
+// TASK-20260503-01 C.3.1 — vx_devtool_get_hot_reload_status() native binding.
+// Returns a JSON envelope:
+//   {"tracked":N,"last_error":"..."}
+// The HUD JS uses this to render a watching/error indicator (see
+// inspector_panel.js updateHotReloadStatus). When no HotReloadManager
+// is attached returns the safe zero envelope so the UI parse never throws.
+//
+// last_error is JSON-escaped with the minimal set of CSS path characters
+// likely to appear: backslash, double-quote, and control bytes < 0x20.
+// HotReloadManager only ever sets last_error to a fixed prefix + filesystem
+// path (see HotReloadManager::DrainEvents), so we don't need full UTF-8
+// escape coverage — but we still defensively encode anything <0x20 as \u00XX.
+JSValue VxDevtoolGetHotReloadStatus(JSContext* ctx, JSValueConst /*this_val*/,
+                                    int /*argc*/, JSValueConst* /*argv*/) {
+  auto* bindings = static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+  vx::devtool::hot_reload::HotReloadManager* mgr =
+      bindings ? bindings->hot_reload_manager() : nullptr;
+
+  unsigned long long tracked = 0;
+  std::string err;
+  if (mgr != nullptr) {
+    tracked = static_cast<unsigned long long>(mgr->tracked_count());
+    err = mgr->last_error();
+  }
+
+  std::string escaped;
+  escaped.reserve(err.size() + 8);
+  for (unsigned char c : err) {
+    if (c == '"' || c == '\\') {
+      escaped.push_back('\\');
+      escaped.push_back(static_cast<char>(c));
+    } else if (c < 0x20) {
+      char hex[8];
+      std::snprintf(hex, sizeof(hex), "\\u%04x", c);
+      escaped.append(hex);
+    } else {
+      escaped.push_back(static_cast<char>(c));
+    }
+  }
+
+  std::string out;
+  out.reserve(escaped.size() + 48);
+  out.append("{\"tracked\":");
+  char num_buf[32];
+  std::snprintf(num_buf, sizeof(num_buf), "%llu", tracked);
+  out.append(num_buf);
+  out.append(",\"last_error\":\"");
+  out.append(escaped);
+  out.append("\"}");
+
+  return JS_NewStringLen(ctx, out.data(), out.size());
+}
+
 }  // namespace
 
 void RegisterDevtoolBindings(JSContext* ctx) {
@@ -947,6 +1014,11 @@ void RegisterDevtoolBindings(JSContext* ctx) {
       ctx, global, "vx_view_get_perf_stats",
       JS_NewCFunction(ctx, VxViewGetPerfStats,
                       "vx_view_get_perf_stats", 0));
+  // C.3.1 — Hot Reload status binding (DevTool UI status indicator).
+  JS_SetPropertyStr(
+      ctx, global, "vx_devtool_get_hot_reload_status",
+      JS_NewCFunction(ctx, VxDevtoolGetHotReloadStatus,
+                      "vx_devtool_get_hot_reload_status", 0));
   JS_FreeValue(ctx, global);
 }
 

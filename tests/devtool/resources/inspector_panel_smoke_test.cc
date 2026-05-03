@@ -242,5 +242,31 @@ TEST(InspectorPanelHudSmoke, JsCallsVxViewGetPerfStatsBinding) {
   EXPECT_NE(js.find("vx_view_get_perf_stats"), std::string::npos);
 }
 
+// -----------------------------------------------------------------------------
+// TASK-20260503-01 C.3.1 — Hot Reload status indicator HTML/CSS/JS smoke
+//
+// 三件套契约（与 HUD 子模式对齐）：
+//   HTML: 含 <div id="hot-reload-status"> 槽位（位于 #devtool-hud 兄弟节点）
+//   CSS:  含 #hot-reload-status 块 + .status-watching / .status-error 样式类
+//   JS:   含 updateHotReloadStatus() 函数 + 调 vx_devtool_get_hot_reload_status
+// -----------------------------------------------------------------------------
+
+TEST(InspectorPanelHotReloadSmoke, HtmlContainsHotReloadStatusSlot) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("id=\"hot-reload-status\""), std::string::npos);
+}
+
+TEST(InspectorPanelHotReloadSmoke, CssContainsStatusWatchingAndErrorClasses) {
+  const std::string css = StripCssComments(AsString(kInspectorPanelCss));
+  EXPECT_NE(css.find(".status-watching"), std::string::npos);
+  EXPECT_NE(css.find(".status-error"), std::string::npos);
+}
+
+TEST(InspectorPanelHotReloadSmoke, JsContainsUpdateHotReloadStatusBinding) {
+  const std::string js = AsString(kInspectorPanelJs);
+  EXPECT_NE(js.find("updateHotReloadStatus"), std::string::npos);
+  EXPECT_NE(js.find("vx_devtool_get_hot_reload_status"), std::string::npos);
+}
+
 }  // namespace
 }  // namespace vx::devtool::resources

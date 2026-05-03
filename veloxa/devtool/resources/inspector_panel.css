@@ -109,3 +109,25 @@
   height: 8px;
   background-color: #00aa00;
 }
+
+/*
+  TASK-20260503-01 C.3.1: Hot Reload status indicator.
+  Two visual states surfaced via inspector_panel.js updateHotReloadStatus:
+    .status-watching → green text (HotReloadManager attached, no error)
+    .status-error    → red text   (HotReloadManager.last_error non-empty,
+                                    e.g. CSS parse failure / open failed)
+  The label/value layout reuses the existing .hud-row / .hud-value classes
+  so no extra layout primitives are needed (R2 grep-allowed shorthand only).
+*/
+
+#hot-reload-status {
+  margin-left: 4px;
+}
+
+.status-watching {
+  color: #00ff00;
+}
+
+.status-error {
+  color: #ff5555;
+}

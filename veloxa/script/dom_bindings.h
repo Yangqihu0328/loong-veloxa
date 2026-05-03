@@ -14,6 +14,11 @@ class PerfOverlay;  // forward declare to avoid pulling vx_devtool into vx_scrip
                     // header dependency (vx_script → vx_devtool circular).
 }
 
+namespace vx::devtool::hot_reload {
+class HotReloadManager;  // forward declare for same reason as PerfOverlay
+                         // (TASK-20260503-01 C.3.1).
+}
+
 namespace vx::script {
 
 class DomBindings {
@@ -57,6 +62,16 @@ class DomBindings {
   // is itself a stub then; setter still callable to keep ABI symmetric).
   void SetPerfOverlay(vx::devtool::overlay::PerfOverlay* perf);
   vx::devtool::overlay::PerfOverlay* perf_overlay() const;
+
+  // TASK-20260503-01 C.3.1 — set the HotReloadManager whose tracked_count
+  // and last_error are exposed to JS via vx_devtool_get_hot_reload_status()
+  // (registered by RegisterDevtoolBindings). Pointer is borrowed; ownership
+  // stays with the caller. nullptr clears (binding will return the safe
+  // zero envelope {"tracked":0,"last_error":""}). DEVTOOL=OFF: no-op
+  // (vx_devtool_get_hot_reload_status is itself a stub then; setter still
+  // callable to keep ABI symmetric with PerfOverlay).
+  void SetHotReloadManager(vx::devtool::hot_reload::HotReloadManager* mgr);
+  vx::devtool::hot_reload::HotReloadManager* hot_reload_manager() const;
 
   // Forward declaration is public so internal free-function callbacks
   // (in the .cc file's anonymous namespace) can name the type when

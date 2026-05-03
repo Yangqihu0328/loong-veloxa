@@ -8,6 +8,7 @@
 #include "veloxa/script/quickjs_engine.h"
 
 #ifdef VX_BUILD_DEVTOOL
+#include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/overlay/perf_overlay.h"
 #endif
 
@@ -133,6 +134,62 @@ TEST_F(DevtoolBindingsTest, VxViewGetPerfStatsReturnsZeroJsonWhenNoOverlay) {
       "JSON.parse(vx_view_get_perf_stats()).fps", "test.js");
   ASSERT_TRUE(fps.ok());
   EXPECT_EQ(fps.value(), "0");
+}
+
+// =============================================================================
+// TASK-20260503-01 C.3.1 — vx_devtool_get_hot_reload_status native binding
+//
+// JSON envelope contract:
+//   {"tracked":N,"last_error":"..."}
+//   N           = HotReloadManager::tracked_count (LoadCSS invocation count)
+//   last_error  = HotReloadManager::last_error (empty string when healthy)
+//
+// When no HotReloadManager is bound the binding still exists and returns
+// the safe zero envelope {"tracked":0,"last_error":""} so the UI can
+// always parse the JSON without a try/catch dance.
+// =============================================================================
+
+TEST_F(DevtoolBindingsTest, VxDevtoolGetHotReloadStatusRegistersGlobal) {
+  RegisterDevtoolBindings(engine_.context());
+  auto result = engine_.EvalGlobal(
+      "typeof vx_devtool_get_hot_reload_status", "test.js");
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(result.value(), "function");
+}
+
+TEST_F(DevtoolBindingsTest,
+       VxDevtoolGetHotReloadStatusReturnsZeroEnvelopeWhenUnattached) {
+  RegisterDevtoolBindings(engine_.context());
+  auto tracked = engine_.EvalGlobal(
+      "JSON.parse(vx_devtool_get_hot_reload_status()).tracked", "test.js");
+  ASSERT_TRUE(tracked.ok());
+  EXPECT_EQ(tracked.value(), "0");
+
+  auto last_error = engine_.EvalGlobal(
+      "JSON.parse(vx_devtool_get_hot_reload_status()).last_error", "test.js");
+  ASSERT_TRUE(last_error.ok());
+  EXPECT_EQ(last_error.value(), "");
+}
+
+TEST_F(DevtoolBindingsTest,
+       VxDevtoolGetHotReloadStatusReflectsAttachedManager) {
+  // Construct a HotReloadManager bound to no Application (nullptr is
+  // safe — Attach/DrainEvents are not invoked here, so the Application
+  // pointer is never dereferenced). The binding must surface the
+  // manager's defaults via the JSON envelope.
+  vx::devtool::hot_reload::HotReloadManager mgr(/*app=*/nullptr);
+  bindings_.SetHotReloadManager(&mgr);
+  RegisterDevtoolBindings(engine_.context());
+
+  auto tracked = engine_.EvalGlobal(
+      "JSON.parse(vx_devtool_get_hot_reload_status()).tracked", "test.js");
+  ASSERT_TRUE(tracked.ok());
+  EXPECT_EQ(tracked.value(), "0");
+
+  auto last_error = engine_.EvalGlobal(
+      "JSON.parse(vx_devtool_get_hot_reload_status()).last_error", "test.js");
+  ASSERT_TRUE(last_error.ok());
+  EXPECT_EQ(last_error.value(), "");
 }
 
 TEST_F(DevtoolBindingsTest, VxViewGetPerfStatsReturnsLiveStatsWhenAttached) {
