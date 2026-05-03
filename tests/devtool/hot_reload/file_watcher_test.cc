@@ -311,7 +311,8 @@ TEST(InotifyFileWatcherT2Test, CanonicalizesSymlink) {
   ASSERT_TRUE(watcher.Start(std::move(opts)).ok());
 
   auto resolved = watcher.ResolveAndValidate("real.css");
-  ASSERT_TRUE(resolved.ok()) << "resolve failed: " << resolved.status().message();
+  ASSERT_TRUE(resolved.ok()) << "resolve failed: "
+                             << (!resolved.ok() ? resolved.status().message() : "");
   EXPECT_NE(resolved.value().find(target.path()), std::string::npos)
       << "canonical path should reference target real path, got: " << resolved.value();
   EXPECT_EQ(resolved.value().find(link_path), std::string::npos)
