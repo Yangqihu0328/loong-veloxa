@@ -1,6 +1,5 @@
 build/
 build-*/
-build_coverage/
 cmake-build-*/
 .cache/
 compile_commands.json
