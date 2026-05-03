@@ -116,3 +116,14 @@
   - **DevTool 三件套主线收官** — Inspector + Performance Overlay + Hot Reload 完整闭环 ✅
   - **下一步路线图**：DevTool 三件套已完整收官；后续候选见 activeContext 待处理事项 §「Phase C 完成后 P3 候选」段：#35 阶段 2 拆 LayoutEngine + R9 EventManager HitTest 改造 + DomBindings R2 三连补全 + R3+ #1 image_decoder 安全三件套 + Phase D/E/F/G 扩展段（Console JS REPL / JS Debugger / CDP 远程 port / 完整 UI Editor）按需独立立项
 
+- ✅ **QuickJS Interrupt Handler + 执行预算 API 落地（TASK-20260503-05 — 技术债 #44 组件 1 Phase 2 闭环 / T1 mitigation 基础设施）** 🛡️
+  - **公开 C++ API 3 项新增**：`QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` opt-in 启用预算 + `QuickjsEngine::WasInterrupted() const` 状态查询 getter + `static constexpr usize kDefaultInterruptBudgetCheckpoints = 10000` 推荐默认值常量
+  - **新错误码** `StatusCode::kAborted = 6`（u8 backwards-compatible 扩展，覆盖「脚本被 interrupt 中止」语义；错误消息「`script aborted (interrupt budget exhausted)`」无敏感信息泄露）
+  - **T1 mitigation 5 维度完整性**：(1) **默认安全** budget=0 默认值 / handler return 0 cheap short-circuit / (2) **opt-in 启用** 调用方显式 SetEvalInterruptBudget(N>0) / (3) **不可被脚本绕过** QuickJS 内部 JS_SetUncatchableError 设计意图 / (4) **单线程 atomic 防御** std::atomic<int64_t> + relaxed memory order / (5) **状态可查** WasInterrupted() getter 让宿主区分 timeout vs normal exception
+  - **默认值 10000 设计**：handler 调用次数 = bytecode/10000（与 QuickJS 内部 `JS_INTERRUPT_COUNTER_INIT = 10000` 对齐 / 实证「死循环 100ms 内中止」单测耗时 0.08s）— Phase 0 grep 实证后**主动 push-back** 重校准 creative 文档「10⁷ 检查点」字面值（避免 10¹¹ 字节码 ≈ 100-1000s 死循环灾难性默认值）
+  - **5 单测覆盖 4 维度**：(1) AbortsLongLoopWhenBudgetExhausted（小 budget 准死循环中止 + kAborted 验证）/ (2) BudgetZeroDisablesInterrupt（默认 0 不影响既有行为）/ (3) DefaultBudgetDoesNotAbortLegitScripts（10000 不误杀正常脚本）/ (4) RepeatedEvalResetsBudget（每次 EvalGlobal 入口重置 counter）/ (5) WasInterruptedTracksLastEval（flag 仅追踪最后一次）— 总耗时 0.25s 远低于 ctest TIMEOUT
+  - **实施效率指标**：~15 min 主线（vs plan ×0.6 ~85-105 min = **0.16×** 「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」新子档首个数据点）— Phase 0 投入定律 **sext-evidence 升级**（5.2-16× ROI / 平均 8.1× / 16× ROI 创历史新高）；连续第 5 次零反复 0/7 达成；新协议「Phase 0 grep 实证驱动的主动 push-back 模式」首次实证（D8b）
+  - **解锁能力**：TASK-20260503-04 DevTool Phase D · Console JS REPL（搁置）— 硬前置依赖 #44 已闭环，T1 mitigation 基础设施完整可用（用户决策是否立即恢复 04）
+  - **保留技术债**：`JSMallocFunctions` 与 Foundation 分配器未对齐仍记技术债（creative 组件 3 方案 C / 留独立 TASK 后续）
+  - **下一步路线图**：TASK-20260503-04 Console JS REPL 恢复（V1=B + V3=A 决策已锁定 / 无需重问）+ DevTool Phase E/F/G 扩展段（JS Debugger / CDP 远程 port / 完整 UI Editor）按需独立立项
+
