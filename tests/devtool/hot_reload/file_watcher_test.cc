@@ -1,5 +1,5 @@
-// TASK-20260503-01 C.0.1 + C.1.1: FileWatcher abstract base + Platform
-// factory + InotifyFileWatcher (Linux) basic implementation tests.
+// TASK-20260503-01 C.0.1 + C.1.1 + C.1.2: FileWatcher abstract base +
+// Platform factory + InotifyFileWatcher (Linux) backend tests.
 //
 // C.0.1 covers the cross-platform interface contract: CreatePlatform()
 // returns a usable instance on Linux and a nullptr on unsupported
@@ -7,10 +7,18 @@
 //
 // C.1.1 covers the bare InotifyFileWatcher lifecycle (Start/Stop/restart,
 // inotify_add_watch failure mapping, callback invocation on file modify).
-// T2 8-step path traversal guards (canonicalize, boundary check, max_size,
-// extension filter, debounce, ...) are implemented + tested in C.1.2.
+//
+// C.1.2 covers the eight T2 path-traversal guards mapped 1:1 to the
+// spec §3.3 table (absolute root + locked mask + realpath canonicalize +
+// boundary check + max_file_size + extension filter + WARN log + 50 ms
+// debounce). The full security_test.cc with 16 entries (8 guards + 8
+// reverse probes) lands in C.5.1.
 
 #include "veloxa/devtool/hot_reload/file_watcher.h"
+
+#if defined(__linux__)
+#include "veloxa/devtool/hot_reload/file_watcher_inotify.h"
+#endif
 
 #include <gtest/gtest.h>
 
@@ -20,8 +28,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
+
+#include "veloxa/foundation/log/log_sink.h"
 
 #if defined(__linux__)
 #include <sys/stat.h>
@@ -91,6 +104,48 @@ bool WaitUntil(Pred pred, int timeout_ms = 500) {
   }
   return pred();
 }
+
+// Thread-safe LogSink for capturing VX_LOG_WARN emitted by the watcher
+// thread during T2 guard tests. Only retains the level + message text.
+class CaptureSink : public ::vx::LogSink {
+ public:
+  void Write(::vx::LogLevel level, const char* /*file*/, int /*line*/,
+             const char* msg) override {
+    std::lock_guard<std::mutex> lk(mu_);
+    entries_.push_back({level, std::string(msg)});
+  }
+
+  size_t CountAtOrAbove(::vx::LogLevel min_level) {
+    std::lock_guard<std::mutex> lk(mu_);
+    size_t n = 0;
+    for (const auto& e : entries_) {
+      if (static_cast<int>(e.first) >= static_cast<int>(min_level)) ++n;
+    }
+    return n;
+  }
+
+  bool MessageContains(const std::string& needle) {
+    std::lock_guard<std::mutex> lk(mu_);
+    for (const auto& e : entries_) {
+      if (e.second.find(needle) != std::string::npos) return true;
+    }
+    return false;
+  }
+
+ private:
+  std::mutex mu_;
+  std::vector<std::pair<::vx::LogLevel, std::string>> entries_;
+};
+
+class CaptureSinkScope {
+ public:
+  CaptureSinkScope() { ::vx::SetLogSink(&sink_); }
+  ~CaptureSinkScope() { ::vx::SetLogSink(nullptr); }
+  CaptureSink& sink() { return sink_; }
+
+ private:
+  CaptureSink sink_;
+};
 
 #endif  // defined(__linux__)
 
@@ -186,6 +241,240 @@ TEST(InotifyFileWatcherTest, StartReturnsErrorOnInvalidRoot) {
   EXPECT_FALSE(s.ok());
   EXPECT_EQ(s.code(), StatusCode::kNotFound);
   EXPECT_FALSE(watcher->IsRunning());
+}
+
+// ============================================================================
+// C.1.2 — T2 path-traversal 8-step guards (spec §3.3 1:1)
+// ============================================================================
+
+// Step 1: watcher root must be an absolute path (allowlist).
+TEST(InotifyFileWatcherT2Test, RelativeRootRejected) {
+  auto watcher = FileWatcher::CreatePlatform();
+  ASSERT_NE(watcher.get(), nullptr);
+
+  WatchOptions opts;
+  opts.root_dir = String("relative/path");
+  opts.callback = [](const FileChangeEvent&) {};
+  Status s = watcher->Start(std::move(opts));
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(s.code(), StatusCode::kInvalidArgument);
+  EXPECT_FALSE(watcher->IsRunning());
+}
+
+// Step 2: locked inotify mask (IN_MODIFY | IN_CLOSE_WRITE | IN_MOVED_TO).
+// Indirect coverage: mkdir under root triggers IN_CREATE which is NOT in
+// the mask, so the callback must remain idle. Acts as a regression guard
+// against accidentally widening the mask.
+TEST(InotifyFileWatcherT2Test, OnlyExpectedMaskRegistered) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&count](const FileChangeEvent&) {
+    count.fetch_add(1, std::memory_order_relaxed);
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  std::string subdir = tmp.path() + "/newdir";
+  ASSERT_EQ(0, mkdir(subdir.c_str(), 0755));
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  EXPECT_EQ(count.load(), 0);
+
+  rmdir(subdir.c_str());
+  watcher->Stop();
+}
+
+// Step 3: realpath() canonicalizes the watcher root so a symlinked root
+// dir resolves to its target before any boundary check runs. Verified via
+// the public ResolveAndValidate() helper to avoid fragile inotify-event
+// timing on symlink targets (event delivery is inode-based and does not
+// follow symlinks across watch points).
+TEST(InotifyFileWatcherT2Test, CanonicalizesSymlink) {
+  TempDir target;
+  ASSERT_TRUE(target.valid());
+  target.WriteFile("real.css", "body{}");
+
+  std::string link_path =
+      "/tmp/vx_hot_reload_symlink_" + std::to_string(::getpid());
+  ::unlink(link_path.c_str());
+  ASSERT_EQ(0, ::symlink(target.path().c_str(), link_path.c_str()));
+
+  InotifyFileWatcher watcher;
+  WatchOptions opts;
+  opts.root_dir = String(link_path.c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [](const FileChangeEvent&) {};
+  ASSERT_TRUE(watcher.Start(std::move(opts)).ok());
+
+  auto resolved = watcher.ResolveAndValidate("real.css");
+  ASSERT_TRUE(resolved.ok()) << "resolve failed: " << resolved.status().message();
+  EXPECT_NE(resolved.value().find(target.path()), std::string::npos)
+      << "canonical path should reference target real path, got: " << resolved.value();
+  EXPECT_EQ(resolved.value().find(link_path), std::string::npos)
+      << "canonical path should NOT contain the symlink path, got: " << resolved.value();
+
+  watcher.Stop();
+  ::unlink(link_path.c_str());
+}
+
+// Step 4: boundary check rejects canonical paths that escape the root.
+// Setup: place a symlink inside root that points to an external file;
+// ResolveAndValidate() should fail because realpath resolves outside the
+// watch root. Avoids relying on inotify events for the symlink target
+// (which the kernel does not deliver into the root's watch).
+TEST(InotifyFileWatcherT2Test, SymlinkEscapeRejected) {
+  TempDir root;
+  TempDir outside;
+  ASSERT_TRUE(root.valid() && outside.valid());
+  outside.WriteFile("target.css", "body{}");
+
+  std::string link_path = root.path() + "/escape.css";
+  ASSERT_EQ(0, ::symlink((outside.path() + "/target.css").c_str(),
+                         link_path.c_str()));
+
+  InotifyFileWatcher watcher;
+  WatchOptions opts;
+  opts.root_dir = String(root.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [](const FileChangeEvent&) {};
+  ASSERT_TRUE(watcher.Start(std::move(opts)).ok());
+
+  auto resolved = watcher.ResolveAndValidate("escape.css");
+  EXPECT_FALSE(resolved.ok())
+      << "should reject path that resolves outside root, got: "
+      << (resolved.ok() ? resolved.value() : std::string());
+  EXPECT_EQ(resolved.status().code(), StatusCode::kInvalidArgument);
+
+  watcher.Stop();
+  ::unlink(link_path.c_str());
+}
+
+// Step 5: max_file_size guard rejects oversize files.
+TEST(InotifyFileWatcherT2Test, MaxFileSizeExceededRejected) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.max_file_size = 1024;  // 1 KiB cap to keep the test fast
+  opts.callback = [&count](const FileChangeEvent&) {
+    count.fetch_add(1, std::memory_order_relaxed);
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  std::ofstream f(tmp.path() + "/big.css");
+  f << std::string(5 * 1024, 'x');  // 5 KiB > 1 KiB
+  f.close();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  EXPECT_EQ(count.load(), 0);
+
+  watcher->Stop();
+}
+
+// Step 6: extension filter rejects non-matching extensions.
+TEST(InotifyFileWatcherT2Test, NonCssExtensionFiltered) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> css_count{0};
+  std::atomic<int> other_count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&css_count, &other_count](const FileChangeEvent& evt) {
+    StringView path = evt.path;
+    bool is_css =
+        path.size() >= 4 &&
+        ::memcmp(path.data() + path.size() - 4, ".css", 4) == 0;
+    if (is_css) {
+      css_count.fetch_add(1, std::memory_order_relaxed);
+    } else {
+      other_count.fetch_add(1, std::memory_order_relaxed);
+    }
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  tmp.WriteFile("doc.html", "<html></html>");
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  EXPECT_EQ(other_count.load(), 0);
+
+  tmp.WriteFile("style.css", "body{}");
+  EXPECT_TRUE(WaitUntil([&]() { return css_count.load() > 0; }));
+  EXPECT_GE(css_count.load(), 1);
+  EXPECT_EQ(other_count.load(), 0);
+
+  watcher->Stop();
+}
+
+// Step 7: rejection emits VX_LOG_WARN. Captured via a thread-safe LogSink
+// since the rejection happens on the watcher worker thread.
+TEST(InotifyFileWatcherT2Test, RejectionLoggedAtWarn) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  CaptureSinkScope log_scope;
+
+  auto watcher = FileWatcher::CreatePlatform();
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.max_file_size = 256;  // tiny cap to provoke rejection
+  opts.callback = [](const FileChangeEvent&) {};
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  std::ofstream f(tmp.path() + "/big.css");
+  f << std::string(2048, 'x');  // 2 KiB > 256 B
+  f.close();
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  watcher->Stop();
+
+  EXPECT_GE(log_scope.sink().CountAtOrAbove(::vx::LogLevel::kWarn), 1u);
+  EXPECT_TRUE(log_scope.sink().MessageContains("Hot Reload"));
+}
+
+// Step 8: 50 ms debounce coalesces a rapid burst of writes into a single
+// callback (matches creative #2 last_event_ms_ design).
+TEST(InotifyFileWatcherT2Test, DebounceCoalescesRapidEvents) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&count](const FileChangeEvent&) {
+    count.fetch_add(1, std::memory_order_relaxed);
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  for (int i = 0; i < 5; ++i) {
+    std::ofstream f(tmp.path() + "/style.css");
+    f << "body{ /* " << i << " */ }";
+    f.close();
+    std::this_thread::sleep_for(std::chrono::milliseconds(5));
+  }
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  int actual = count.load();
+  EXPECT_GE(actual, 1);
+  // 5 writes inside ~25 ms should collapse to 1 callback. Allow a small
+  // upper bound (≤ 2) to absorb inotify timestamp jitter when the burst
+  // straddles the 50 ms debounce boundary.
+  EXPECT_LE(actual, 2)
+      << "Debounce should coalesce a burst of 5 writes; got " << actual;
+
+  watcher->Stop();
 }
 
 #endif  // defined(__linux__)
