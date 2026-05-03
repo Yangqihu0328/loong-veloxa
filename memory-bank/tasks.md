@@ -2,6 +2,100 @@
 
 ## 当前任务
 
+### TASK-20260503-03：DevTool 三件套主线收官 — 4 项 P3 候选批量清零
+
+- **复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / 4 项小型清理 / 无新组件 / 无设计决策）
+- **状态：** 🟢 **构建完成** — VAN ✅ + Plan ✅ + Build ✅（3/4 P3 完成 + 1 P1 取消拆细化为 P3 候选）→ 等待 `/reflect`
+- **创建日期：** 2026-05-03
+- **分支：** `feature/TASK-20260503-03-devtool-trio-finalize`（基于 main `5667c8c` / +5 commits：P3.1 `ebe5fab` + P3.2 `95a43e7` + P2 `3a8ccb2` + P4 `af3b34e` + finalize 待 commit）
+- **Build 阶段调整事件**：P1 实施触发反复模式 #1 命中（VAN/plan 阶段未深读 `update_manager.cc:17` `if (!dirty_) return;` 硬约束 / dirty_ 仅 transition_mgr_.HasActive() 才 rearm / 静态 CSS → 第 1 帧后永久 frames=1）→ 用户 AskQuestion p1_fix=A 回退 P1 + 拆细化为「P3 候选 #0 Performance Overlay 持续 invalidate 机制」入 activeContext 待处理事项段
+- **设计 spec：** ❌ 不需（4 项 P3 全部为既有功能小补强，无新组件 / 无 API 设计 / 无安全边界变更 — 直接以 plan 替代 spec）
+- **实现 plan：** ✅ `docs/plans/2026-05-03-devtool-trio-finalize.md`（~370 行 / 6 子任务 [覆盖补充] ×2 + [文档调整模式] ×2 + [覆盖补充] + finalize / Phase 0 极简 1 子段含 audit 预跑结论 / B1-B9 9/9 锁定 / CP1+CP2 / 9 systemPatterns 协同度自我对照 / §3.1 ctest config 矩阵 / §3.3 plan ×0.6 第 62-67 数据点假设入库）
+- **创意文档：** ❌ 否（无设计空白）
+- **需要创意阶段：** ❌ 否
+- **来源：** 用户 2026-05-03 通过 `/van DevTool 三件套主线收官` 启动 → AskQuestion intent=B（P3 候选批量清零）→ AskQuestion items=P6（P1+P2+P3+P4 全选）；4 项全部来自 `activeContext.md` 待处理事项段（3 项来自 TASK-20260502-02 reflection §5 + 1 项来自 TASK-20260503-02 reflection §6 P2 #3）
+- **安全相关：** ❌ 否（无新外部输入处理 / 无认证 / 无数据存储 / 无部署；P3 #3 GoogleTest 三元守卫属代码 robustness 改进，非安全边界）
+
+#### 任务范围（V1-V5 默认锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 子任务范围 | **4 子任务**（P1 / P2 / P3 / P4） | 用户 AskQuestion items 选 P6 锁定 4 项全清理 |
+| V2 | 实施模式 | **b 完整实施**（含 plan / build / verify / commit / reflect / archive） | 与 Level 2 标准路径一致 |
+| V3 | 复杂度 | **Level 2** | 5 文件修改 / 需求清晰 / 无新组件 / 无设计决策 |
+| V4 | 创意需求 | **❌ 否** | 4 项 P3 全部既有功能补强 |
+| V5 | 安全标注 | **❌ 否** | 4 项 P3 与安全边界无关 |
+
+#### 4 项 P3 清单（详细子任务定义）
+
+| # | ID | 标题 | 文件位置 | 估时 plan ×0.6 | 闭环来源 |
+|:-:|---|---|---|:-:|---|
+| 1 | P1 | hello_devtool_perf_smoke 多帧验证（autoquit ms 调整 + PASS regex 增强 N≥3）| `tests/CMakeLists.txt` | ~30-60 min | TASK-20260502-02 P3 #3 |
+| 2 | P2 | 三件套 dogfood 路径装裱（注释一致化 + 示例块标准化）| `tests/CMakeLists.txt` + `examples/hello_devtool.cc` | ~15-30 min | DevTool 三件套主线收官语义需求 |
+| 3 | P3 | GoogleTest 三元守卫 audit + fix（**audit 已预跑 5 命中 / 仅 2 处实际反模式**）| `tests/integration/devtool_dogfood_smoke_test.cc:106` + `tests/devtool/hot_reload/file_watcher_test.cc:314` | ~10 audit + ~20-30 fix | TASK-20260503-02 reflection §6 P2 #3 |
+| 4 | P4 | DevTool README 章节补强（root README 当前 2 行，需 +5-10 行 DevTool 引入 + 交叉链接）| `README.md` | ~15-20 min | DevTool 三件套主线收官语义需求 |
+
+**总估时**：~70-110 min plan ×0.6（落「极窄档延续高效区 0.30-0.45×」候选 / 因 audit 预跑减负预期可达 0.30× 左右）
+
+#### 验收要点
+
+- 5 项文件 git diff 可见 + 内容符合各 P3 描述
+- DEVTOOL=ON ctest 1247 baseline **不退化**（P1 修改 PASS regex 后必须 verify hello_devtool_perf_smoke 多帧实测 PASS）
+- DEVTOOL=OFF ctest 1082 baseline **不退化**（README + GoogleTest fix 不影响 OFF 路径）
+- P3 反模式 fix 后既有相关测试继续 PASS（dogfood smoke + file_watcher_test）
+- README 增加段落 markdown 渲染正确（手验链接有效）
+- `activeContext.md` 待处理事项段中 4 项 P3 标 ✅ 并迁移到「长期沉淀」段
+
+#### 前置验证（4/4 PASS）
+
+| 维度 | 检查内容 | 结果 |
+|---|---|:-:|
+| 依赖可获取性 | 无新依赖 / `build/_deps` 已预置 | ✅ |
+| 环境就绪 | main `5667c8c` 干净 / cmake 4.2.3 + gcc 15.2.0 + ninja + ctest / Grep 工具兜底 rg | ✅ |
+| 已有 artifact | 5 文件全部已存在并已读取上下文 | ✅ |
+| 待处理事项 | 直接清理 4 项 P3 — 闭环 TASK-20260502-02 §P3 + TASK-20260503-02 §P2 #3 | ✅ 极强 |
+
+#### P3 task #3 audit 预跑结论（VAN 阶段已固化）
+
+GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 模式 audit 5 命中：
+
+| # | 文件:行 | 模式 | 评估 |
+|:-:|---|---|:-:|
+| 1 | `tests/platform/memory_surface_test.cc:96` | `ASSERT_TRUE(status.ok()) << status.message();` | ✅ 安全（status 已先取出）|
+| 2 | `tests/integration/devtool_dogfood_smoke_test.cc:106` | `ASSERT_TRUE(json.ok()) << "...: " << json.status().message().data();` | ⚠️ **反模式 — 需 fix** |
+| 3 | `tests/graphics/drawtext_shape_cache_test.cc:39,41` | `ASSERT_TRUE(...) << "string literal";` | ✅ 字面量安全 |
+| 4 | `tests/devtool/hot_reload/file_watcher_test.cc:314` | `ASSERT_TRUE(resolved.ok()) << "...: " << resolved.status().message();` | ⚠️ **反模式 — 需 fix** |
+| 5 | `tests/script/quickjs_engine_test.cc:18` | `ASSERT_TRUE(r.ok()) << (!r.ok() ? r.status().message() : "");` | ✅ **三元守卫范本** |
+
+结论：实际 fix 范围 **2 处**（远低于 activeContext 假设的 8 处，audit 缩减 ~75% 工作量）；fix 范本 = `tests/script/quickjs_engine_test.cc:18` 三元守卫模式直接复制。
+
+#### Plan 阶段决策表（B1-B9 — 用户 1 次 AskQuestion 选 `all_recommended` → 9/9 按推荐锁定）
+
+| # | 维度 | 锁定 |
+|:-:|---|---|
+| B1 | 子任务执行顺序 | P3 反模式 fix → P1 ctest 配置 → P2 注释装裱 → P4 README → finalize |
+| B2 | 测试模式 | P1 [覆盖补充] / P2 [文档调整模式] / P3 [覆盖补充] / P4 [文档调整模式] |
+| B3 | P1 PASS regex | N≥3（`frames=([3-9]\|[1-9][0-9]+)`）+ autoquit 600ms |
+| B4 | P2 装裱范围 | 仅 ctest 三段注释 + `hello_devtool.cc` 文件头 docstring |
+| B5 | P4 README 篇幅 | ~50-80 行（项目简述 + 核心功能表 + 三件套段 + Build & Run + 交叉链接）|
+| B6 | Phase 0 检查 | 极简 1 子段（工具链快照 + smoke 工具 + audit 预跑结论引用）|
+| B7 | Checkpoint | CP1（P3 fix 完成）+ CP2（P1+P2 完成）|
+| B8 | commit 粒度 | 4+1+1 = 6 commits（4 P3 + 1 finalize + 1 reflect）|
+| B9 | 估时 | plan ×0.6 ~54 min → 实测 ~22-35 min（落「极窄档延续高效区 0.30-0.45×」候选续延）|
+
+#### 推荐工作流
+
+`/plan` ✅ → `/build`（CP1 = P3 fix 完成 + CP2 = P1+P2 完成）→ `/reflect` → `/archive`
+
+#### 关键约束
+
+- 4 项 P3 零功能变更（无新 API / 无新子系统 / 无新威胁面 mitigation）
+- 子任务 1 commit/项保持语义清洁（应用 git-workflow.mdc 「Multi-subtask commit 拆分」推荐范式 — 来自 TASK-20260503-02 任务 4 落实）
+- DEVTOOL=ON 1247 + DEVTOOL=OFF 1082 双 config baseline 不退化（P1 触发 PASS regex 增强后必须 hello_devtool_perf_smoke 多帧实测 ≥3）
+- README 增加内容须聚焦 DevTool 三件套（不扩散到非主线模块）
+
+---
+
 ### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
 
 - **复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / 5 项规则文档调整 + 1 项 codebase audit / 无新代码逻辑变更）

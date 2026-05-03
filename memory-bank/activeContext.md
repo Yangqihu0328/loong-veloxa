@@ -2,7 +2,74 @@
 
 ## 当前阶段
 
-**空闲** — 等待新任务
+**构建中** — `/van` ✅ + `/plan` ✅ + `/build` ✅（**5 commits**：3 P3 + 1 finalize）→ 等待 `/reflect`
+
+**当前任务 ID：** `TASK-20260503-03`
+**任务焦点：** DevTool 三件套主线收官 — 4 项 P3 候选批量清零 → **build 阶段调整为 3 项完成 + 1 项升级 P3**（P3.1+P3.2 三元守卫 fix ✅ / P2 三件套 dogfood 装裱 ✅ / P4 DevTool README ✅ / ~~P1 多帧验证~~ ❌ 拆细化为 P3 候选 — 反复模式 #1 命中 dirty_ 机制硬约束）
+**复杂度级别：** Level 2（多文件修改 / 需求清晰 / 4 项小型清理 / 无新组件 / 无设计决策）
+**安全相关：** ❌ 否（无新外部输入处理 / 无认证 / 无数据存储 / P3 #3 三元守卫属代码 robustness 改进，非安全边界）
+**分支：** `feature/TASK-20260503-03-devtool-trio-finalize`（基于 main `5667c8c`）
+
+**任务范围（4 项 P3 — 用户 AskQuestion 选 P6 = P1+P2+P3+P4 锁定）：**
+
+| # | 子项 | 文件位置 | 估时 plan ×0.6 |
+|:-:|---|---|:-:|
+| ~~P1~~ | ~~hello_devtool_perf_smoke 多帧验证~~ | ~~`tests/CMakeLists.txt`~~ | ❌ **build 阶段取消（拆细化为 P3 候选）— 详见下方「P1 实施失败说明」段** |
+| P2 | 三件套 dogfood 路径装裱（注释一致化 + 示例块标准化）| `tests/CMakeLists.txt` + `examples/hello_devtool.cc` | 🟡 待执行 ~15-30 min |
+| P3 | GoogleTest 三元守卫 audit + fix（**audit 已预跑：5 命中 / 仅 2 处实际反模式**）| `tests/integration/devtool_dogfood_smoke_test.cc:106` ✅ + `tests/devtool/hot_reload/file_watcher_test.cc:314` ✅ | ✅ **完成（2 commits ebe5fab + 95a43e7）** |
+| P4 | DevTool README 章节补强 | `README.md` | 🟡 待执行 ~15-20 min |
+
+**P1 实施失败说明（build 阶段调整 — 反复模式 #1 命中）：**
+
+- VAN/plan 阶段假设「调 autoquit ms 即可获得多帧」错误。`UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 是 frame hooks 触发的硬约束 — `dirty_` 在每帧末尾 reset，仅当 `transition_mgr_.HasActive()` 才 rearm。`hello_devtool` CSS 静态（无 transition / animation）→ 第 1 帧后 `dirty_=false` 永久阻断 hooks。实测 autoquit 600ms / 1500ms 均 frames=1。
+- **根因归类**：反复模式 #1「前置依赖/环境/API 能力未验证」 — VAN/plan 阶段未深读 `update_manager.cc:17` 的 dirty_ 短路语义。本任务是 TASK-20260503-02 之后**首次反复模式命中**，破坏「连续第 4 次零反复」纪录（实际：1/7 部分命中）。
+- **调整后**：P1 改动已回退（`tests/CMakeLists.txt` + `examples/hello_devtool.cc` 恢复 main 5667c8c 原文）；本任务实际完成 3/4 P3（P3.1/P3.2/P2/P4），P1 升级为新 P3 候选「Performance Overlay 持续 invalidate 机制 — 需新 `vx_view_invalidate` C ABI 或 hello_devtool 注入 CSS animation」（详见下方「待处理事项」段）。
+- **沉淀**：reflect 阶段必须沉淀「frame hooks 多帧验证 = update_manager.dirty_ 机制依赖」到 systemPatterns / techContext，避免下次再踩同坑。
+
+**总估时（调整后 3/4 项）：** ~50-80 min plan ×0.6（P1 取消减负 ~30 min）
+
+**前置验证（4/4 PASS）：**
+- 依赖可获取性 ✅（无新依赖 / `build/_deps` 已预置 FetchContent 已落盘 / `http.proxy` 未设置但本任务不需重新拉 deps）
+- 环境就绪 ✅（main `5667c8c` 干净 / cmake 4.2.3 + gcc 15.2.0 + ninja + ctest 全可用 / `rg` 不可用 → Grep 工具兜底）
+- 已有 artifact ✅（5 文件全部已存在并已读取上下文：`README.md` / `tests/CMakeLists.txt` / `examples/hello_devtool.cc` / 2 测试文件）
+- 待处理事项 ✅ 极强（4 项全部直接清理 activeContext.md 中 P3 候选段，闭环 TASK-20260502-02 §P3 候选段 + TASK-20260503-02 §P2 #3）
+
+**P3 task #3 audit 预跑结论（VAN 阶段已固化）：**
+
+| # | 文件:行 | 模式 | 评估 |
+|:-:|---|---|:-:|
+| 1 | `tests/platform/memory_surface_test.cc:96` | `ASSERT_TRUE(status.ok()) << status.message();` | ✅ status 已先取出，message() 在 OK 时返回空 string_view，安全 |
+| 2 | `tests/integration/devtool_dogfood_smoke_test.cc:106` | `ASSERT_TRUE(json.ok()) << "...: " << json.status().message().data();` | ⚠️ **反模式** — 需 fix（依赖 GoogleTest 短路评估）|
+| 3 | `tests/graphics/drawtext_shape_cache_test.cc:39,41` | `ASSERT_TRUE(...) << "string literal";` | ✅ 字面量安全 |
+| 4 | `tests/devtool/hot_reload/file_watcher_test.cc:314` | `ASSERT_TRUE(resolved.ok()) << "...: " << resolved.status().message();` | ⚠️ **反模式** — 需 fix |
+| 5 | `tests/script/quickjs_engine_test.cc:18` | `ASSERT_TRUE(r.ok()) << (!r.ok() ? r.status().message() : "");` | ✅ **三元守卫范本** |
+
+→ 实际 fix 范围 **2 处**，远低于 activeContext 假设的 8 处（audit 直接缩减工作量 ~75%）。
+
+**推荐工作流：** `/plan` ✅ → `/build`（含 CP1 P3 fix 后自审 + CP2 P1+P2 后自审）→ `/reflect` → `/archive`
+**Plan 文档：** `docs/plans/2026-05-03-devtool-trio-finalize.md`（~370 行 / 6 子任务 [覆盖补充] ×2 + [文档调整模式] ×2 + [覆盖补充] + finalize / Phase 0 极简 1 子段含 audit 预跑结论 / B1-B9 9/9 锁定 / CP1+CP2 / 9 systemPatterns 协同度自我对照）
+
+**Plan 阶段 B1-B9 决策（用户 1 次 AskQuestion 选 `all_recommended` → 9/9 按推荐锁定）：**
+- B1 子任务执行顺序 A：P3 反模式 fix → P1 ctest 配置 → P2 注释装裱 → P4 README → finalize
+- B2 测试模式 A：P1 [覆盖补充] / P2 [文档调整模式] / P3 [覆盖补充] / P4 [文档调整模式]
+- B3 P1 PASS regex A：N≥3（`frames=([3-9]|[1-9][0-9]+)`）+ autoquit 600ms
+- B4 P2 装裱范围 A：仅 ctest 三段注释 + hello_devtool.cc 文件头 docstring
+- B5 P4 README 篇幅 A：~50-80 行（项目简述 + 核心功能表 + 三件套段 + Build & Run + 交叉链接）
+- B6 Phase 0 检查 A：极简 1 子段
+- B7 Checkpoint A：CP1（P3 fix 完成）+ CP2（P1+P2 完成）
+- B8 commit 粒度 A：4+1+1 = 6 commits（4 P3 + 1 finalize + 1 reflect）
+- B9 估时 A：plan ×0.6 ~54 min → 实测 ~22-35 min 期望（落「极窄档延续高效区 0.30-0.45×」候选续延 / 介于纯文档极速区 0.21× 与极窄档加速衰减区下沿 0.31× 之间）
+
+**关键约束：**
+- 5 文件全部已锁定，零新建
+- DEVTOOL=ON 1247 baseline 不退化（CP1 + CP2 + 子任务 5 后三次 verify）
+- `hello_devtool_perf_smoke` 必须实测多帧（≥3）
+- 6 commits 全部含 `Source: TASK-XXXXXXXX-XX reflection §X` 溯源前缀（TASK-20260503-02 沉淀的 commit convention）
+- 反复模式预期 0/7 命中（连续第 4 次零反复 — Phase A → B → C → 02 → 本任务）
+
+**下一步：** 用户调用 `/build` 启动子任务串行（P3.1 → P3.2 → CP1 → P1 → P2 → CP2 → P4 → finalize）
+
+---
 
 <!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段简述）
 
@@ -309,6 +376,14 @@
 
 - **P2 #10 DomBindings R2 三连缺陷独立立项（dogfood 暴露的 R2 引擎缺陷）** — 见下方 §「R2 P3 候选 — 来自 TASK-20260502-01 dogfood 暴露」段。
 
+### P3 候选 — 来自 TASK-20260503-03 build 阶段 P1 实施失败拆细化（2026-05-03）
+
+> 1 项新 P3 候选 — TASK-20260503-03 P1 实施时遭遇 `UpdateManager::Update()` dirty_ 硬约束（详见上方「P1 实施失败说明」段），原 P3 候选 #3「hello_devtool_perf_smoke 多帧验证」已升级为深度方案。
+
+| # | 候选 | 文件位置 / 范围 | 估时 plan ×0.6 | 复杂度 | 优先级 |
+|:-:|---|---|:-:|:-:|:-:|
+| 0 | **Performance Overlay 持续 invalidate 机制** — frame hooks 多帧验证需要持续 invalidate 源；2 candidate 路径：(a) 新增公开 `vx_view_invalidate()` C ABI 让 dogfood smoke 在 on_frame_end 中主动 force rearm dirty_；(b) `hello_devtool` 注入 CSS animation（如 `@keyframes pulse { ... }` + `animation: pulse 1s infinite`）通过 `transition_mgr_.HasActive()` rearm dirty_；前者更通用（embedder 都能用），后者更轻量（仅 dogfood 范例）；建议先做 (b) 验证机制 + 留 (a) 给真实 embedder 需求驱动 | `examples/hello_devtool.cc` 注入 animation **或** `veloxa/api/veloxa_api.{h,cc}` + `veloxa/core/application.{h,cc}` 暴露 Invalidate | (b) ~30-60 min Level 1-2 / (a) ~1-2 h Level 2-3 含 testability + A14 黑名单更新 | Level 1-3 | P3 |
+
 ### P3 候选 — 来自 TASK-20260502-02 reflection §5（archive 阶段迁移）
 
 3 项 P3 候选独立立项（按用户优先级排期）：
@@ -317,7 +392,7 @@
 |:-:|---|---|:-:|:-:|:-:|
 | 1 | **#35 阶段 2 拆 LayoutEngine 内 style/layout 子阶段**（OnAfterStyle 与 OnAfterLayout 真实分离时间差，当前同点触发是妥协）| `veloxa/core/layout_engine.cc` + `veloxa/core/update_manager.cc` 注入点拆分 | ~2-3 h | Level 3 | P3 |
 | 2 | **R9 EventManager HitTest 改造 — HUD pointer-events 真支持**（当前 data-passthrough="1" 占位）| `veloxa/core/event_manager.cc` HitTest 跳过 data-passthrough 元素 | ~1.5-2 h | Level 2-3 | P3 |
-| 3 | **hello_devtool_perf_smoke 多帧验证**（当前 frames=1 验证 ABI 工作；多帧验证需调 SDL2 dummy 帧率或减少 EnsureUpdateManager 拖延）| `examples/hello_devtool.cc` + `tests/CMakeLists.txt` autoquit ms 调整 | ~30-60 min | Level 1-2 | P3 |
+| 3 | ~~**hello_devtool_perf_smoke 多帧验证**~~（旧假设：「调 autoquit ms 即可」错误）— ⬆️ **已升级到上方「P3 候选 — 来自 TASK-20260503-03 build 阶段 P1 实施失败拆细化」段 #0「Performance Overlay 持续 invalidate 机制」**（TASK-20260503-03 build 阶段实测发现 dirty_ 机制硬约束）| ⬆️ 见上方 | ⬆️ 见上方 | ⬆️ 见上方 | ⬆️ 见上方 |
 
 ### R2 P3 候选 — 来自 TASK-20260502-01 dogfood 暴露（3 项 — 候选独立立项）
 

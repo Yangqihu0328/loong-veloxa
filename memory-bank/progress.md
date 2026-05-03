@@ -2,7 +2,50 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务（上次任务 TASK-20260503-02 已归档闭环 / 详见 `memory-bank/archive/archive-TASK-20260503-02.md`）
+### TASK-20260503-03：DevTool 三件套主线收官 — 4 项 P3 候选批量清零
+
+**当前阶段**：🟢 **构建完成** — VAN ✅ + Plan ✅ + Build ✅（3/4 P3 完成 + 1 P1 取消拆细化为 P3 候选）→ 等待 `/reflect`
+
+**里程碑**：
+
+- 2026-05-03 20:06 — `/van DevTool 三件套主线收官` 启动 / AskQuestion 选 B（P3 候选清零）→ items=P6（4 项全选）/ 任务 ID `TASK-20260503-03` 生成 / Level 2 锁定 / feature 分支 `feature/TASK-20260503-03-devtool-trio-finalize` 创建（基于 main `5667c8c`）
+- 2026-05-03 20:08 — VAN Phase audit 预跑：GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 5 命中 / 仅 2 处实际反模式 / 1 处三元守卫范本（`tests/script/quickjs_engine_test.cc:18`）→ 缩减 75% 工作量
+- 2026-05-03 20:15 — `/plan` 启动 / 4 项 P3 设计概要展示 / B1-B9 决策表抛出
+- 2026-05-03 20:18 — 用户选 all_recommended → B1-B9 9/9 锁定
+- 2026-05-03 20:19 — Phase 0 工具链快照（gcc 15.2.0 / binutils ld 2.46 / cmake 4.2.3 / ninja 1.13.2 — 与上次任务一致 ✅）+ smoke 工具检查（jq/awk/python3 ✅；rg MISS → Grep 兜底）+ ctest baseline 1247 ✅
+- 2026-05-03 20:20 — plan 文档落盘 `docs/plans/2026-05-03-devtool-trio-finalize.md`（~370 行 / 6 子任务 / Phase 0 极简 1 子段 / B1-B9 9/9 / CP1+CP2 / 9 systemPatterns 协同度自我对照 / §3.1 ctest config 矩阵 / §3.3 plan ×0.6 第 62-67 数据点假设）
+- 2026-05-03 20:20 — Memory Bank 三件套（tasks / activeContext / progress）更新 + 规划阶段闭环
+- 2026-05-03 20:24 — `/build` 启动 / activeContext 阶段 规划中 → 构建中 / TodoWrite 8 子任务追踪
+- 2026-05-03 20:25 — 子任务 1（P3.1）StrReplace + cmake build + ctest DevtoolDogfoodSmokeTest 4/4 PASS / commit `ebe5fab`
+- 2026-05-03 20:26 — 子任务 2（P3.2）StrReplace + cmake build + ctest InotifyFileWatcherT2Test 12/12 PASS / commit `95a43e7`
+- 2026-05-03 20:27 — 🛑 **CP1 自审 ✅ PASS**（grep 验证 audit 表 2/4 行修正 + 1247/1247 ctest baseline 不退化 + 2 commits Source 溯源前缀）
+- 2026-05-03 20:30 — 子任务 3（P1）开始：cmake build-sdl2/ 配置 SDL2=ON（FetchContent 已预置 75s reconfigure）+ build hello_devtool（33s）
+- 2026-05-03 20:33 — 🔴 **P1 实施失败发现**：`hello_devtool_perf_smoke` 即使 autoquit=600ms / 1500ms 仍 frames=1；根因定位 `UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 是 frame hooks 触发的硬约束；`dirty_` 在每帧末尾 reset，仅当 `transition_mgr_.HasActive()` 才 rearm；hello_devtool 静态 CSS → 第 1 帧后 dirty_=false 永久阻断 hooks；**反复模式 #1 命中**（VAN/plan 阶段未深读 update_manager dirty_ 机制）
+- 2026-05-03 20:35 — P1 改动完整回退（`tests/CMakeLists.txt` + `examples/hello_devtool.cc` 恢复 main 5667c8c 原文）；用户 AskQuestion p1_fix 选 **A**（回退 P1 + 拆细化为 P3 候选）
+- 2026-05-03 20:36 — plan 文档 + activeContext.md 调整：标 P1 为 build 阶段取消 + 新增「P3 候选 #0 Performance Overlay 持续 invalidate 机制」（2 candidate 路径：(a) 新 vx_view_invalidate API / (b) hello_devtool 注入 CSS animation）
+- 2026-05-03 20:38 — 子任务 4（P2）StrReplace tests/CMakeLists.txt 三段注释装裱 + hello_devtool.cc 文件头三件套 docstring + cross-links；cmake build 通过 / DEVTOOL=ON 1247/1247 PASS / SDL2=ON 3/3 hello_devtool_*_smoke PASS / commit `3a8ccb2`
+- 2026-05-03 20:39 — 🛑 CP2 自审 — **跳过**（P1 取消后 CP2 仅 P2 验证不退化，已合并到 P2 末步 ctest verify）
+- 2026-05-03 20:40 — 子任务 5（P4）Write README.md（72 行 / DevTool 三件套段 + 核心能力表 + 构建段 + 7 处交叉链接）/ python3 验证脚本通过 / commit `af3b34e`
+- 2026-05-03 20:41 — Memory Bank 三件套 finalize 更新（tasks/activeContext/progress）+ P3 候选 #3 旧条目标 ⬆️ 升级到新条目 + 子任务 6 finalize commit pending
+
+**6 子任务计划耗时分布**（plan ×0.6 假设 ~54 min / 实测期待 ~22-35 min）：
+
+| # | 子任务 | 测试模式 | plan ×0.6 | 实测期待 | 文件 |
+|:-:|---|---|:-:|:-:|---|
+| 1 | P3.1 三元守卫 fix dogfood_smoke | [覆盖补充] | ~3 min | ~2-3 min | `devtool_dogfood_smoke_test.cc:106` |
+| 2 | P3.2 三元守卫 fix file_watcher | [覆盖补充] | ~3 min | ~2-3 min | `file_watcher_test.cc:314` |
+| — | 🛑 CP1 自审（P3 fix 完成 → DEVTOOL=ON 1247 不退化） | — | — | — | — |
+| 3 | P1 hello_devtool_perf_smoke 多帧 | [覆盖补充] | ~18 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
+| 4 | P2 三件套 dogfood 装裱 | [文档调整模式] | ~15 min | ~5-8 min | `tests/CMakeLists.txt` + `examples/hello_devtool.cc` |
+| — | 🛑 CP2 自审（P1+P2 完成 → hello_devtool_perf_smoke 通过新 regex） | — | — | — | — |
+| 5 | P4 README 章节补强 | [文档调整模式] | ~12 min | ~6-10 min | `README.md` |
+| 6 | finalize（activeContext 4 项 P3 标 ✅）| — | ~3 min | ~2-3 min | `memory-bank/activeContext.md` + `memory-bank/progress.md` |
+
+**预期实测比值**：~0.30-0.45×（落「极窄档延续高效区 0.30-0.45×」候选续延 / 介于 TASK-20260503-02 「纯文档/规则极速区 0.21×」与 TASK-20260503-01 「极窄档加速衰减区下沿 0.31×」之间，因本任务 P1 P3 是 [覆盖补充] 含 ctest 等待 + rebuild + 1 处 regex 验证）
+
+**预期反复模式**：0/7 命中（连续第 4 次零反复 — Phase A → B → C → 02 → 本任务）
+
+---
 
 <!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段）
 
