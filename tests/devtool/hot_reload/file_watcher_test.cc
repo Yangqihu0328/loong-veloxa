@@ -477,6 +477,130 @@ TEST(InotifyFileWatcherT2Test, DebounceCoalescesRapidEvents) {
   watcher->Stop();
 }
 
+// ============================================================================
+// C.1.3 — Lifecycle + edge case coverage (4 additional tests)
+// ============================================================================
+
+// vim / VS Code atomic write pattern: mkstemp -> write -> rename to the
+// final name. The .swp file does not match the .css extension filter, so
+// only the IN_MOVED_TO for "style.css" reaches the callback. Debounce
+// keeps the count to a single callback even if inotify delivers
+// IN_MOVED_TO + IN_CLOSE_WRITE back-to-back for the moved-into entry.
+TEST(InotifyFileWatcherT2Test, AtomicWriteCoalesced) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&count](const FileChangeEvent&) {
+    count.fetch_add(1, std::memory_order_relaxed);
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  std::string swp_path = tmp.path() + "/.style.css.swp";
+  std::string final_path = tmp.path() + "/style.css";
+  {
+    std::ofstream f(swp_path);
+    f << "body{ color: red; }";
+  }
+  ASSERT_EQ(0, ::rename(swp_path.c_str(), final_path.c_str()));
+
+  EXPECT_TRUE(WaitUntil([&]() { return count.load() > 0; }));
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
+  EXPECT_LE(count.load(), 2)
+      << "Atomic write should yield <= 2 callbacks (debounce); got "
+      << count.load();
+
+  watcher->Stop();
+}
+
+// Empty options (zero-length root_dir) hit the size==0 branch of Step 1.
+// Distinct from RelativeRootRejected, which exercises the
+// "non-absolute non-empty" branch.
+TEST(InotifyFileWatcherT2Test, KInvalidArgumentOnEmptyOptions) {
+  auto watcher = FileWatcher::CreatePlatform();
+  ASSERT_NE(watcher.get(), nullptr);
+
+  WatchOptions opts;  // root_dir default-constructed = empty
+  opts.callback = [](const FileChangeEvent&) {};
+  Status s = watcher->Start(std::move(opts));
+  EXPECT_FALSE(s.ok());
+  EXPECT_EQ(s.code(), StatusCode::kInvalidArgument);
+  EXPECT_FALSE(watcher->IsRunning());
+}
+
+// Two distinct files under the same root must each emit their own
+// callback. The debounce map is keyed by canonical path so independent
+// files never collide regardless of how close their writes land in time.
+TEST(InotifyFileWatcherT2Test, MultipleFilesIndependentEvents) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::mutex paths_mu;
+  std::vector<std::string> seen_paths;
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&paths_mu, &seen_paths](const FileChangeEvent& evt) {
+    std::lock_guard<std::mutex> lk(paths_mu);
+    seen_paths.emplace_back(evt.path.data(), evt.path.size());
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+
+  tmp.WriteFile("a.css", "body{}");
+  tmp.WriteFile("b.css", "p{}");
+
+  EXPECT_TRUE(WaitUntil([&]() {
+    std::lock_guard<std::mutex> lk(paths_mu);
+    return seen_paths.size() >= 2;
+  }));
+
+  watcher->Stop();
+
+  std::lock_guard<std::mutex> lk(paths_mu);
+  bool saw_a = false, saw_b = false;
+  for (const auto& p : seen_paths) {
+    if (p.find("/a.css") != std::string::npos) saw_a = true;
+    if (p.find("/b.css") != std::string::npos) saw_b = true;
+  }
+  EXPECT_TRUE(saw_a) << "expected a callback for /a.css";
+  EXPECT_TRUE(saw_b) << "expected a callback for /b.css";
+}
+
+// Non-blocking inotify fd returns EAGAIN whenever no events are queued.
+// WatchLoop must sleep ~50 ms and continue rather than busy-spin or
+// exit. Verified indirectly: idle the watcher for 200 ms with no
+// callback fires, no IsRunning() flip, and no thread crash on Stop.
+TEST(InotifyFileWatcherT2Test, ReadEAGAINSleepFallback) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+
+  auto watcher = FileWatcher::CreatePlatform();
+  std::atomic<int> count{0};
+  WatchOptions opts;
+  opts.root_dir = String(tmp.path().c_str());
+  opts.extensions.push_back(String(".css"));
+  opts.callback = [&count](const FileChangeEvent&) {
+    count.fetch_add(1, std::memory_order_relaxed);
+  };
+  ASSERT_TRUE(watcher->Start(std::move(opts)).ok());
+  EXPECT_TRUE(watcher->IsRunning());
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+  EXPECT_TRUE(watcher->IsRunning())
+      << "watcher thread should survive an idle period (EAGAIN sleep path)";
+  EXPECT_EQ(count.load(), 0)
+      << "no events should fire when no files were touched";
+
+  watcher->Stop();
+  EXPECT_FALSE(watcher->IsRunning());
+}
+
 #endif  // defined(__linux__)
 
 }  // namespace
