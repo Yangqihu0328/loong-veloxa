@@ -28,6 +28,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
     "$<$<COMPILE_LANGUAGE:CXX>:-Wno-type-limits>")
 endif()
 
+# binutils 2.46+ enforces single-pass static archive scanning, breaking the
+# vx_core ↔ vx_script ↔ vx_devtool circular dependency. Wrap LINK_LIBRARIES in
+# --start-group / --end-group so GNU ld rescans archives until all undefined
+# symbols resolve. Linux + GNU/Clang only — other platforms keep the default.
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux"
+    AND CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+  set(CMAKE_CXX_LINK_EXECUTABLE
+    "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> -Wl,--start-group <LINK_LIBRARIES> -Wl,--end-group")
+endif()
+
 add_subdirectory(veloxa/foundation)
 add_subdirectory(veloxa/platform)
 if(VX_PLATFORM_SDL2)
