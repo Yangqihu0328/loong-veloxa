@@ -2,9 +2,13 @@
 
 ## 当前任务
 
+**空闲** — 等待新任务（上次任务 TASK-20260503-02 已归档闭环 / 详见 `memory-bank/archive/archive-TASK-20260503-02.md`）
+
+<!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段）
+
 ### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
 
-**当前阶段**：🟢 **回顾完成 — 待归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
+**当前阶段**：🟢 **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
 
 **里程碑**：
 
@@ -67,11 +71,30 @@
   4. 「纯文档/规则极速区 0.15-0.25×」新效率区候选
 - 4 项改进建议：P0 0 / P1 1（新效率区子档入库 — archive 阶段直接落实）/ P2 3（reflection 沉淀回流 systemPattern + GoogleTest 易错模式 P3 + plan LOC 预估系数修正 — archive 阶段直接落实）
 
----
+-->
 
 ---
 
 ## 上次任务（已归档闭环）
+
+### TASK-20260503-02：工作流/规则类技术债批量清理 — ✅ 已归档（2026-05-03 ~19:55）
+
+- **复杂度：** Level 2（**工作流元任务首次实施** — vs 实施类 + 蓝图类）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260503-02.md`
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-02.md`
+- **任务时长：** ~30 min（VAN ~3 min + Plan ~5 min + Build ~18 min + Reflect ~10 min + Archive ~5 min）
+- **最终 ctest：** DEVTOOL=ON + SDL2=ON + Benchmarks=ON 1247/1247 PASS（全配置不退化 / C-#2 自我吃狗粮）
+- **核心成果：** 6/6 子任务 + 8 commits（6 docs + 1 chore + 1 reflect）+ 4 文件 +292 行（writing-plans.mdc +123 / git-workflow.mdc +56 / spec +62 / techContext.md +51）+ 7 项跨任务上游 P1 全部清零（4 from C reflection §7 + 3 from A reflection §6）+ 0 新代码逻辑变更（A-P1#6 audit 14/14 ✅ 0 fix）
+- **效率指标：** ~18 min 主线 vs plan ×0.6 ~85 min = **0.21× 总比值创历史新低**（Phase C 0.31× → 本任务 0.21× 进一步加速 32%）；6 数据点群组（plan ×0.6 第 56-61）入库新效率区子档「**纯文档/规则极速区 0.15-0.25×**」；**0/7 反复模式命中**（创纪录第三次连续零反复）
+- **方法论沉淀（4 大新协议首次实证 → 全部 archive 阶段直接落实到 systemPatterns）：**
+  1. **「reflection 沉淀回流」模式** — 累积 ≥ 4-6 项跨任务 P1 + 项之间无强依赖时批量清零，避免「3 次反复 = P0」轨道触发
+  2. **「反复模式渐进式抑制」** — C-#2 第二次同类反复在 plan + commit 消息 + 自我吃狗粮三层抑制阻断进入 P0 轨道
+  3. **「Phase 0 audit 预跑」子模式** — Phase 0 投入定律 quad-evidence 升级（A 5.3× / B 5.2× / C 7.6× / **本任务 6.7× ROI / 平均 6.2×**）
+  4. **「纯文档/规则极速区 0.15-0.25×」** — plan ×0.6 矩阵新子档识别
+- **改进建议落实状态：** P0 0/0 + P1 1/1（新效率区子档入库 — reflect 阶段已落实）+ P2 3/3（reflection 沉淀回流 systemPattern + GoogleTest 易错模式 P3 迁移 + plan LOC 预估系数修正 — 全部 archive 阶段直接落实）
+- **闭环上游 P1（7 项 100%）：**
+  - C-#1 (commit `51bf9d4`) / C-#2 (commit `71b830c` 第二次反复抑制) / C-#3 (commit `44875e8` reflect 阶段) / C-#4 (commit `31b237f`)
+  - A-P1#4 (commit `b8365ec`) / A-P1#6 (commit `02250f0` 14/14 audit 0 fix) / A-P1#8 (commit `af7be2b`)
 
 ### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关] — ✅ 已归档（2026-05-03 ~17:05）
 

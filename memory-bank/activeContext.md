@@ -2,11 +2,9 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260503-02 工作流/规则类技术债批量清理 / Level 2 / **回顾文档落盘 2026-05-03 19:35 → 待 /archive**
+**空闲** — 等待新任务
 
-**回顾核心成果**：6 项 P1 全部清零 + 实测 0.21× 总比值（远超极窄档加速衰减区下沿）+ 0/7 反复模式命中（创纪录第三次连续零反复）+ 4 项改进建议（P0 0 / P1 1 / P2 3 / 全部 archive 阶段直接落实）+ 4 大新协议首次实证（reflection 沉淀回流 / 反复模式渐进式抑制 / Phase 0 audit 预跑 / 纯文档极速区 0.15-0.25×）
-
-**当前子任务：** 全部完成 → 进入 /reflect 阶段
+<!-- TASK-20260503-02 详细执行记录已迁移到 archive 文档（见下方「上次任务」段简述）
 
 **已完成子任务（6/6 + 2 CP）：**
 - 任务 1 C-#1 writing-plans testability 段（commit `51bf9d4`）
@@ -81,22 +79,26 @@
 - C-#2 反复模式标注「第二次同类反复 → 必须本次落实，否则进入 3 次反复 = P0 升级轨道」
 
 **估时假设（plan 阶段最终）：** 蓝图 ~85-130 min plan / plan ×0.6 ~50-80 min → **最终预测 ~40-65 min 实测耗时**（极窄档延续高效区第 7 数据点群组延续 / 0.40-0.50× 比值假设入库 plan ×0.6 第 56+ 数据点）
+-->
 
 ---
 
 ## 上次任务（已归档闭环）
 
-**TASK-20260503-01 DevTool Phase C Hot Reload ✅ 已归档（2026-05-03 ~17:05）** — main `6deb5a6` fast-forward merge 完成 + feature 分支已删除 + **DevTool 三件套主线收官（Inspector + Performance Overlay + Hot Reload 完整闭环）**。
+**TASK-20260503-02 工作流/规则类技术债批量清理 ✅ 已归档（2026-05-03 ~19:55）** — feature 分支 fast-forward merge 到 main + feature 分支已删除 + **「工作流元任务」首次实施成型 + 7 项跨任务上游 P1 全部清零 + 4 大新协议首次实证沉淀到 systemPatterns**。
 
+**核心成果速查：**
+- 6/6 子任务（4 from C reflection §7 + 3 from A reflection §6 闭环）+ 2 CP（CP1+CP2）全 ✅
+- ctest 1247/1247 PASS（DEVTOOL=ON + SDL2=ON + Benchmarks=ON 全配置不退化 / C-#2 自我吃狗粮范本验证）
+- 8 commits（6 docs + 1 chore + 1 reflect）
+- 实测 ~18 min build vs plan ×0.6 ~85 min = **0.21× 总比值创历史新低**（plan ×0.6 第 56-61 数据点群组入库新效率区子档「**纯文档/规则极速区 0.15-0.25×**」）
+- **0/7 反复模式命中**（创纪录第三次连续零反复 — Phase A → B → C → 本任务）
+- **C-#2 反复模式渐进式抑制首次实证**（plan + commit + 自我吃狗粮三层抑制阻断进入 P0 轨道）
+- **4 大新协议首次实证沉淀到 systemPatterns**：(1) reflection 沉淀回流模式（工作流元任务分类）+ (2) 反复模式渐进式抑制 + (3) Phase 0 audit 预跑子模式（Phase 0 定律 quad-evidence 升级 6.7× ROI）+ (4) 纯文档/规则极速区
+- 改进建议 P0 0/0 + P1 1/1 + P2 3/3 全部 archive 阶段直接落实
+- 详见 `memory-bank/archive/archive-TASK-20260503-02.md`
 
-
-**环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
-
-**§0.1 ctest baseline 二次验证 ✅ 完成（hotfix 分支验证 + main fast-forward 合入）：**
-- 实测 baseline：**1195/1195 PASS, 0 FAIL, 1 SKIPPED**（13.3 sec）— 注：plan 中写的「1228 PASS」是 spec 旧值，本次实测 1195 是 SDL2/Benchmarks OFF 的活跃测试集（DEVTOOL=ON），属正常配置差额，不影响契约
-- 进入 build 阶段第一步即触发**意外 baseline 阻塞**：GNU ld 2.46 单次扫描静态归档严格化，破坏既有 vx_core ↔ vx_script ↔ vx_devtool 循环依赖（CMake「重复列出 .a」hack 失效）→ 271 link target 中 ~6 个测试 link FAILED（undefined: `EnumValueToCssString` / `dom::ToJson` / `LayoutBox::ToJson`）
-- **决策方案 B（用户选择）**：开 `hotfix/binutils-2.46-link-group` 单独分支修复 → 根 CMakeLists.txt 加 GNU ld + Linux 条件 `-Wl,--start-group <LINK_LIBRARIES> -Wl,--end-group` → 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge 到 main `ddc1e3c`（1 commit / 10 行 / Phase C 范围外的环境适配）→ feature 分支 rebase 上 main → stash pop WIP 文档
-- **预期外发现入库**：plan 阶段未识别此 binutils 严格化风险（plan §0.1 假设 baseline 直接通过）→ archive 阶段已沉淀 R12「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern（详见 `memory-bank/archive/archive-TASK-20260503-01.md` §3.3）
+**TASK-20260503-01 DevTool Phase C Hot Reload ✅ 已归档（2026-05-03 ~17:05）** — main `6deb5a6` fast-forward merge 完成 + feature 分支已删除 + **DevTool 三件套主线收官（Inspector + Performance Overlay + Hot Reload 完整闭环）+ binutils 2.46+ baseline 阻塞 hotfix `--start-group/--end-group` 已沉淀到 systemPatterns**。
 
 <!-- TASK-20260503-01 详细 build 阶段记录已迁移到 archive 文档 — 节选见上方「上次任务」段
 **当前子任务：** C.5.2 finalize ✅ → **11/11 全部完成 + CP3 自审通过 + 双绿 verify ✅** → 进入 /reflect 阶段
