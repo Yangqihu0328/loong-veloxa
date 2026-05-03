@@ -421,6 +421,55 @@ rg "PaintCommand::FillRect|emit.*FillRect|background_color" veloxa/core/render/r
 - **Plan 阶段 Phase 0「基线核验」步骤**：一次性 batch grep 本 plan 所需全部工具，输出命中/缺失矩阵写入 `progress.md`
 - **Build 阶段 Phase N 执行脚本前**：若 plan Phase 0 标记该工具 MISS，直接使用兜底方案，**严禁**临时切换技术栈后再补 plan
 
+#### Toolchain 版本激进升级行为变化检查（VAN/Plan Phase 0 §0.10 子段**必做**）
+
+> 反复出现升级 P1 + R12 风险登记（TASK-20260503-01 §0.1 实证）：binutils 2.46（2026 升级）单次扫描静态归档严格化，破坏既有 `vx_core ↔ vx_script ↔ vx_devtool` 双重循环依赖 → 271 link target 中 ~6 测试 link FAILED → baseline 阻塞 hotfix 分离协议触发（feature 分支外 hotfix 分支独立修复 fast-forward main）。
+
+**触发条件**：每次 VAN/Plan Phase 0 **必做** — 不论任务大小（成本 30 秒，收益避免 baseline 阻塞）。
+
+**强制产出工具链版本快照表**：
+
+```bash
+gcc --version | head -1
+ld --version | head -1                # 重点关注 binutils 版本（2.40+ 是激进期）
+cmake --version | head -1
+ninja --version
+```
+
+输出对比 `memory-bank/techContext.md`「环境就绪」段记录的上次任务版本。
+
+**已知行为差异速查表**（每发现 1 项激进变化 → 增 1 行）：
+
+| 工具 | 版本起 | 行为变化 | 影响 | 兜底 |
+|---|---|---|---|---|
+| binutils ld | 2.46 (2026) | 单次扫描静态归档严格化 | 破坏循环依赖 link | `--start-group ... --end-group` 包围循环组 |
+| gcc | 14+ | (待登记) | - | - |
+| cmake | 4.0+ | (待登记) | - | - |
+
+**判读规则**：
+
+- 版本与上次任务一致 → ✅ 跳过差异检查，记 1 行 progress
+- 版本主版本号变化（如 2.45 → 2.46） → 🟡 必须 grep 已知差异表 + 跑 baseline ctest 验证
+- 已知差异速查表未覆盖 + baseline FAIL → 🔴 触发「baseline 阻塞 hotfix 分离协议」（systemPatterns 段）
+
+**反模式**：
+
+- ❌ Phase 0 跳过工具链版本核对 → build 阶段第一步 ctest 阻塞才发现
+- ❌ 工具链升级后默认「行为不变」— 激进版本（major bump 或 binutils 跨年版本）必须 grep 行为差异
+- ❌ 工具链 baseline FAIL 在 feature 分支内修复 → 污染 feature 分支语义；正确做法是 hotfix 分支分离协议
+
+**TASK-20260503-01 实证**：
+
+- VAN §0.1 baseline 写「期望 1228 PASS」未做工具链版本核对 → build 阶段 binutils 2.46 严格化导致 ~6 测试 link FAIL
+- 修复路径：`hotfix/binutils-2.46-link-group` 分支独立修复（10 行 CMake 加 `--start-group/--end-group`）→ fast-forward merge `ddc1e3c` → feature 分支 rebase
+- 如 Phase 0 §0.10 子段先行 → 提前发现 binutils 2.46 与 2.45 的差异 → 直接在 plan 阶段加 hotfix 子任务，无 build 中断
+
+**交叉引用**：
+
+- `memory-bank/systemPatterns.md`「baseline 阻塞 hotfix 分离协议」段（hotfix 分支 → fast-forward main → feature rebase 链路）
+- `memory-bank/systemPatterns.md`「R12 工具链版本激进升级风险」段
+- `memory-bank/systemPatterns.md`「CMake 静态库循环依赖处理 — binutils 2.46+ 双循环依赖叠加场景覆盖性」段
+
 #### 测试文件 include 卫生 grep（new test files / 引入新第三方 C header 时**必做**）
 
 > 反复出现（TASK-20260425-01 P5 实证）：`#include <SDL2/SDL.h>` 不慎写进 `tests/api/api_test.cc` 的 anonymous namespace，间接拉入 `<math.h>` 时把 `std::abs` 解析到 `{anonymous}::std`，编译错误 `'abs' has not been declared in '{anonymous}::std'`，~5 min 排查（错误信息隐晦）。
