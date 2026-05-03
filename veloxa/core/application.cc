@@ -69,6 +69,7 @@ Application::Application(const Config& config) : config_(config) {
 }
 
 Application::~Application() {
+#ifdef VX_BUILD_DEVTOOL
   // C.4.1 — release HotReloadManager BEFORE bindings/Document slots so
   // its dtor (which Detach()s and joins the watcher thread) cannot race
   // with another thread's pending DrainEvents touching `this`. The watch
@@ -77,6 +78,7 @@ Application::~Application() {
   // simple: by the time we touch any other field, no FileWatcher thread
   // is alive.
   hot_reload_manager_.reset();
+#endif
   // A.1.8 — tear down DevTool script bindings/engine BEFORE the DevTool
   // Document slot so JS callbacks cannot fire on a freed Document.
   if (devtool_dom_bindings_) devtool_dom_bindings_->Unbind();

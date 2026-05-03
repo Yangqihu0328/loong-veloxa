@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / §0.1 baseline ✅ 完成 2026-05-03 14:40
+**构建完成 — 待 reflect** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **11/11 子任务全部完成 + CP1/CP2/CP3 三大自审通过 + 双绿 verify 完成 2026-05-03**
 
 **环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
 
@@ -12,13 +12,41 @@
 - **决策方案 B（用户选择）**：开 `hotfix/binutils-2.46-link-group` 单独分支修复 → 根 CMakeLists.txt 加 GNU ld + Linux 条件 `-Wl,--start-group <LINK_LIBRARIES> -Wl,--end-group` → 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge 到 main `ddc1e3c`（1 commit / 10 行 / Phase C 范围外的环境适配）→ feature 分支 rebase 上 main → stash pop WIP 文档
 - **预期外发现入库**：plan 阶段未识别此 binutils 严格化风险（plan §0.1 假设 baseline 直接通过）→ archive 阶段须沉淀 R12 「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern 候选
 
-**当前子任务：** C.0.1 FileWatcher 抽象基类（最小子任务 plan 30 min ×0.6 = **18 min** 实测目标）
+**当前子任务：** C.5.2 finalize ✅ → **11/11 全部完成 + CP3 自审通过 + 双绿 verify ✅** → 进入 /reflect 阶段
+
+**已完成子任务（11/11）：**
+- C.0.1 FileWatcher 抽象基类（commit `b044d8f`）
+- C.1.1 InotifyFileWatcher Linux 实现（commit `e432f44`）
+- C.1.2 T2 路径穿越 8 步守卫（commit `256585d`） [安全相关]
+- C.1.3 InotifyFileWatcher 完整边缘单测（commit `7d1e9b5`）
+- **CP1 自审通过 ✅**
+- C.2.1 HotReloadManager 基础 + R9 F-025 不踩契约反向探针（commit `53fe1ab`）
+- C.2.3 CSS 解析失败错误恢复（brace imbalance 启发式）（commit `651530e`）
+- C.3.1 DevTool UI 状态指示器 + vx_devtool_get_hot_reload_status binding（commit `81772bb`）
+- C.4.1 vx_view_attach_devtool + hot_reload_dir + lazy-attach（commit `b48c57f`） [安全相关]
+- **CP2 自审通过 ✅**
+- C.4.2 hello_devtool Hot Reload smoke + dogfood（commit `c5d7a1d`）
+- C.5.1 T2 完整安全单测 8 步守卫 + 反向探针（commit `b424d32`） [安全相关]
+- **CP3 自审通过 ✅**
+- C.5.2 Phase C finalize + A14 黑名单更新（待 finalize commit）
+
+**双绿 verify 终局结果：**
+- DEVTOOL=ON: **1247/1247 PASS** （baseline 1231 + 16 SecurityT2 = 1247）
+- DEVTOOL=OFF: **1082/1082 PASS** + **A14 link-closure 零 DevTool 符号** 验证（含 Phase C 三新组件 FileWatcher / InotifyFileWatcher / HotReloadManager 全黑名单覆盖）
+- SDL2=ON 含 example smoke: **1265/1265 PASS** （含 hello_devtool_hot_reload_smoke 端到端 0.87s 验证 `HOT RELOAD: triggered count=1`）
+
+**预期外发现入库（待 reflection 阶段沉淀）：**
+1. **`VX_ERROR_UNSUPPORTED` vs `VX_ERROR_INVALID_STATE`**：plan §C.4.1 字面写新错误码 `VX_ERROR_UNSUPPORTED` for OFF 路径，但实施沿用既有 `VX_ERROR_INVALID_STATE`（与 A.1.7 / B.0.1 一致），避免冗余错误码扩张 — 决策符合 codebase 一致性
+2. **CSS 解析失败检测**：plan §C.2.3 写 `CssParser::Parse(content).rules.IsEmpty()` 启发式，实测 CssParser 过宽容（缺花括号也能解析出 0 declarations 的 rule），改用 brace imbalance count 启发式（更可靠）— 决策由实测驱动
+3. **`unique_ptr<HotReloadManager>` OFF 路径修复**：finalize 阶段双绿 verify 发现 application.h 缺 #ifdef 包围字段导致 OFF 编译失败（unique_ptr dtor 需完整类型）— 修复为 #ifdef 字段 + getter 双向条件编译 — 蓝图阶段未识别该工程细节
+4. **`vx_core ↔ vx_devtool` 新循环依赖**：C.4.1 引入 vx_core PRIVATE link vx_devtool，与既有 vx_core ↔ vx_script 循环叠加 — binutils 2.46+ hotfix `--start-group/--end-group` 已解决，零额外 CMake 改动 — 实证 hotfix 设计正确性
+5. **plan vs 实施测试数量偏差**：plan §C.5.2 写 "DEVTOOL=ON 1228 + ~30+" 期望 ~1260+；实测 1247（plan 假设包含 SDL2 套件，实测 baseline 是 SDL2=OFF 配置）— 配置差额，非回归
 
 **当前任务 ID：** `TASK-20260503-01`
 **任务焦点：** Linux inotify file watcher（自实现 ~150-200 LOC）+ HotReloadManager CSS-only 增量重载（严格不踩 F-025 use-after-free）+ T2 路径穿越 8 步守卫 + DevTool 三件套主线收官（Phase A → B → C 完整闭环）
-**分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后）
+**分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后 / 即将 +12 commits 与原始基线 main）
 **Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务 / 5 R 风险 / 3 Checkpoint / 12 条 systemPatterns 协同度自我对照）
-**下一步：** C.0.1 RED 阶段 — 创建 `tests/devtool/hot_reload/file_watcher_test.cc` + `tests/devtool/hot_reload/CMakeLists.txt` + 根 `tests/CMakeLists.txt` `add_subdirectory(devtool/hot_reload)` 接入
+**下一步：** 用户调用 `/reflect` 启动反思阶段 — 创建 `memory-bank/reflection/reflection-TASK-20260503-01.md`
 
 **Plan 阶段 B1-B8 决策（用户选 all_recommended 8/8 锁定）：**
 - B1=A 独立 plan / B2=A 严格串行 / B3=A 新建 tests/devtool/hot_reload/ / B4=A POSIX realpath + unique_ptr RAII / B5=A 合并 C.2.2（YAGNI 节省 27 min — §0.7 grep 实证 hover/focus/scroll 当前不持久化）/ B6=A 每子任务 1 commit / B7=A ~2-3 h plan ×0.6 / B8=A 复用 spec+creative

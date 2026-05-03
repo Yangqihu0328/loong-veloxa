@@ -154,7 +154,11 @@ class Application {
   // this manager when the option is set; Update() drains queued events
   // before forwarding to update_manager_->Update().
   vx::devtool::hot_reload::HotReloadManager* hot_reload_manager() const {
+#ifdef VX_BUILD_DEVTOOL
     return hot_reload_manager_.get();
+#else
+    return nullptr;
+#endif
   }
 
  private:
@@ -217,12 +221,18 @@ class Application {
   std::unique_ptr<script::QuickjsEngine> devtool_script_engine_;
   std::unique_ptr<script::DomBindings> devtool_dom_bindings_;
   Status devtool_script_status_;
+#ifdef VX_BUILD_DEVTOOL
   // TASK-20260503-01 C.4.1 — Hot Reload manager (DEVTOOL=ON only;
-  // remains nullptr in OFF builds). Constructed in the Application
-  // ctor passing `this` so HotReloadManager::DrainEvents can invoke
-  // LoadCSS on the main thread. Detach() runs in dtor; the watcher
-  // thread is joined synchronously before our fields disappear.
+  // entirely absent from OFF builds — A14 zero-byte stub guard).
+  // Constructed in the Application ctor passing `this` so
+  // HotReloadManager::DrainEvents can invoke LoadCSS on the main thread.
+  // Detach() runs in dtor; the watcher thread is joined synchronously
+  // before our fields disappear. The unique_ptr requires the complete
+  // HotReloadManager type at instantiation/destruction, so the field
+  // must be guarded by the same #ifdef as application.cc's include of
+  // hot_reload_manager.h.
   std::unique_ptr<vx::devtool::hot_reload::HotReloadManager> hot_reload_manager_;
+#endif
   platform::EventLoop::TimerId frame_timer_id_ = 0;
 };
 

@@ -53,14 +53,29 @@ message(STATUS "A14 smoke: libvx_core.a  = ${core_size} bytes")
 #   - InjectDirtyRectHighlights = vx::devtool::InspectorOverlay's static
 #     dirty-rect injection (B.2.3, separate from existing InspectorOverlay
 #     entry that already covers InjectHoverHighlight)
+# Phase C symbols (TASK-20260503-01 C.5.2):
+#   - FileWatcher: cross-platform abstract base + Platform factory
+#     (vx::devtool::hot_reload::FileWatcher)
+#   - InotifyFileWatcher: Linux inotify backend with T2 8-step guards
+#     (vx::devtool::hot_reload::InotifyFileWatcher)
+#   - HotReloadManager: bridge between FileWatcher worker thread and
+#     Application::LoadCSS main thread, owns CSS-only contract
+#     (vx::devtool::hot_reload::HotReloadManager)
 #
 # NOT in blacklist (intentional):
 #   - vx_view_set_pipeline_hooks / vx_view_get_perf_stats / vx_view_is_hud_visible:
 #     public C ABI; OFF builds expose them as stubs (returning INVALID_STATE / 0)
-#   - VxViewGetPerfStats: anonymous-namespace local symbol in libvx_script.a;
-#     a14 smoke only inspects libvx_api.a + libvx_core.a, so leakage check is
-#     enforced by spec §6 A14 link-closure (vx_script never references vx_devtool
-#     code paths under #ifdef when DevTool is OFF, only stub native bindings)
+#   - vx_view_attach_devtool / vx_view_detach_devtool / vx_view_devtool_loaded /
+#     vx_view_hot_reload_tracked_count: same — public C ABI, OFF stubs return
+#     VX_ERROR_INVALID_STATE / 0 / -1. The hot_reload_dir field on
+#     VxDevtoolOptions is part of the always-compiled struct layout; OFF
+#     builds simply ignore it because the whole attach returns
+#     VX_ERROR_INVALID_STATE before reading the field. (TASK-20260503-01 C.4.1)
+#   - VxViewGetPerfStats / VxDevtoolGetHotReloadStatus: anonymous-namespace
+#     local symbols in libvx_script.a; a14 smoke only inspects libvx_api.a +
+#     libvx_core.a, so leakage check is enforced by spec §6 A14 link-closure
+#     (vx_script never references vx_devtool code paths under #ifdef when
+#     DevTool is OFF, only stub native bindings).
 set(devtool_internal_syms
     "RegisterDevtoolBindings"
     "kInspectorPanelHtml"
@@ -71,7 +86,10 @@ set(devtool_internal_syms
     "InputDispatchSplitter"
     "SerializeDocument"
     "PerfOverlay"
-    "InjectDirtyRectHighlights")
+    "InjectDirtyRectHighlights"
+    "FileWatcher"
+    "InotifyFileWatcher"
+    "HotReloadManager")
 
 if(DEVTOOL_ON STREQUAL "ON")
   # Sanity: when ON, the public C-API stub vx_view_attach_devtool must
