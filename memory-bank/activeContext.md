@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **回顾文档落盘 2026-05-03 16:35 → 待 /archive**
+**归档中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **归档文档落盘 2026-05-03 17:00 → 待用户决策合并方式**
 
 **环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
 
