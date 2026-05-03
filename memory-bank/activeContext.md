@@ -2,7 +2,79 @@
 
 ## 当前阶段
 
-**空闲** — 等待新任务（使用 `/van` 启动）
+**初始化** — TASK-20260503-05 QuickJS Interrupt Handler + SetEvalInterruptBudget API（creative-quickjs-host.md §组件 1 方案 C Phase 2 完整落地）
+
+**当前任务 ID：** `TASK-20260503-05`
+**任务焦点：** 技术债 #44 组件 1 Phase 2 闭环 — 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + 死循环中止单测。作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
+**复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / creative-quickjs-host.md §组件 1 方案 C Phase 2 已预决策 / 无新设计决策 / 无新组件）
+**安全相关：** ✅ **是**（T1 mitigation 基础设施 — JS eval CPU DoS 缓解 / 不可信脚本执行预算保护 / 解锁 TASK-04 Console 的 T1 完整 mitigation）
+**分支基线：** `main` `72f011e`（working tree clean）→ **feature 分支待用户确认后创建** `feature/TASK-20260503-05-quickjs-interrupt-handler`
+
+**任务范围（3 源码文件 + 2 MB 文件 / 预估 +150-200 行）：**
+
+| 子项 | 文件 | 估时 plan ×0.6 |
+|---|---|:-:|
+| E1 — API 扩展声明 | `veloxa/script/quickjs_engine.h`(+SetEvalInterruptBudget / +WasInterrupted API)| ~10 min |
+| E2 — Init 注册 InterruptHandler + EvalGlobal 重置预算 + 静态 InterruptCallback | `veloxa/script/quickjs_engine.cc`(+~50 行 / 回调仅 atomic 递减 + return != 0 中止 / 不调 EventLoop)| ~30-40 min |
+| E3 — 单测：死循环被中止 + 预算 0=关闭 + 合法脚本 PASS + ResetForNextEval | `tests/script/quickjs_engine_test.cc`(+~80 行 / 5 新测)| ~30-40 min |
+| E4 — techContext.md #44 条文更新 | `memory-bank/techContext.md`(#44 条：JS_SetMemoryLimit 已落地 + interrupt handler 本任务闭环 + JSMallocFunctions 仍记技术债)| ~5 min |
+| E5 — finalize + MB 三件套同步 | `memory-bank/tasks.md` + `activeContext.md` + `progress.md` | ~10 min |
+| **合计** | **~1-2 h plan ×0.6**（Level 2 锁定） | — |
+
+**前置验证（4/4 PASS）：**
+
+| 维度 | 状态 | 详情 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | QuickJS-ng 已在 `veloxa/script/quickjs_engine.{h,cc}` + `_deps/quickjsng-*` 3 处离线预置 / 零新依赖 / F9 ⊘ 跳过 |
+| 环境就绪 | ✅ | cmake 4.2.3 + gcc 15.2.0 + ninja + ctest 全就绪 / `build/` DEVTOOL=ON ctest 1247 baseline + `build-sdl2/` 配置可用 |
+| 已有 artifact | ✅ | `veloxa/script/quickjs_engine.{h,cc}` 已存在极简结构待扩展 / `tests/script/quickjs_engine_test.cc` 已存在（三元守卫范本 TASK-20260503-02 标定）/ creative-quickjs-host.md §组件 1 方案 C Phase 2 决策已就位 |
+| 待处理事项关联 | ✅ 极强 | 闭环 techContext.md #44 + creative-quickjs-host.md §组件 1 Phase 2 占位 + 解锁 TASK-20260503-04 Console JS REPL（搁置） |
+
+**关键实证（VAN 阶段已落地 — 修正 techContext 部分过时描述）：**
+
+- `quickjs_engine.cc:46` — `JS_SetMemoryLimit(rt_, 32 MiB)` **已落地**（creative §组件 3 方案 B 一期闭环 — techContext.md:620 #44 描述中 `JS_SetMemoryLimit` 已不开放）
+- `quickjs_engine.{h,cc}` — `JS_SetInterruptHandler` / `SetEvalInterruptBudget` / `WasInterrupted` **零命中** → 本任务新增范围明确
+- creative-quickjs-host.md §组件 1 方案 C Phase 2 — 默认关闭 + 显式 API 开启 + 不耦合 EventLoop 决策已批准（2026-04-13）
+- 默认 budget 值 creative 建议 **10⁷ 级检查点**（具体数值在实现时用常量 + 单测校准）
+- 回调内**仅** atomic 递减 + return != 0 中止，**不**调 EventLoop / 不分配复杂 C++ 对象
+
+**不在本任务范围（留后续 TASK）：**
+
+- 组件 3 `JSMallocFunctions → vx::MallocAllocator` 分配器对齐（creative 明示「记入技术债 / 独立 TASK」— 新 P3 候选）
+- Phase 3 宿主 `Application` 集成（creative §组件 1 Phase 3 留未来 — 与 TASK-04 Console / TASK-30-04-E JS Debugger 耦合时再做）
+
+**关键约束：**
+
+- `quickjs_engine.h` ABI 扩展（新增公开方法，不改既有方法签名）
+- ctest 1247 baseline DEVTOOL=ON + 1082 DEVTOOL=OFF 双配置不退化
+- 预期新增 ~5 测（quickjs_engine_test 扩展 — 死循环中止 / 预算 0 关闭 / 合法脚本 PASS / 预算耗尽重置 / interrupt 回调语义）
+- 5 commits 期望：E1 + E2 + E3 + E4 + finalize
+- Source 溯源前缀延续 TASK-20260503-02/03 沉淀 convention：`Source: TASK-20260503-05 creative-quickjs-host.md §组件 1 方案 C Phase 2`
+- 反复模式预期 0/7 命中（连续第 5 次零反复目标 — TASK-20260503-02 → -03（1/7 命中）→ 本任务）
+
+**推荐工作流（Level 2 锁定）：** `/van` 收尾 → `/plan`（5 子任务 [覆盖补充] ×3 + [文档调整] + finalize / Phase 0 极简 1 子段 / B1-Bn 决策表 / 9 systemPatterns 协同度自我对照）→ `/build`（串行 5 子任务 + CP1 E3 单测通过）→ `/reflect` → `/archive` → 用户决策是否立即恢复 TASK-20260503-04 Console
+
+**下一步：** 用户已答 `go_plan` → AskQuestion 确认 feature 分支创建 → 创建分支 → 进入 `/plan` 阶段
+
+---
+
+## 搁置任务（等待恢复）
+
+### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟡 已搁置 2026-05-03 21:52
+
+**搁置原因：** spec §11.1 明示依赖技术债 #44 QuickJS Interrupt Handler（T1 eval mitigation 硬前置）— 用户 V3=A 决策独立立项 #44（TASK-20260503-05，本文件上方活跃段）作为前置任务。TASK-05 完成后重启 04。
+
+**已锁定决策（恢复时复用，无需重问）：**
+
+- V1=B：完整 Console Panel（DevTool 第 4 件套 UI — `console_panel.html/css/js` 复用 inspector_panel 双层 API 范式 + F12 第 4 tab 切换 + REPL input + 滚动 output）+ console.log 桥接 + C API 完整
+- V3=A：严格按 spec — 05 做 #44 独立前置，04 在 05 完成后以 Level 3 原范围重启
+- 估时假设：~3-5 h plan ×0.6（V1=B）
+- 预期复用：Phase A/B/C 5 大范式 100% + 第 4 件套 UI 一致性
+
+**恢复前置条件：** TASK-20260503-05 完成归档后，用户显式调用 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
+
+**搁置时 VAN 产出不清理：** 本任务 VAN 阶段无 docs/plans 或 creative 文件产出，仅 MB 三件套中初始化信息，全部保留在本段以备恢复
+
 
 <!-- TASK-20260503-03 详细执行记录已迁移到 archive 文档（见下方「上次任务」段简述）
 

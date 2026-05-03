@@ -2,7 +2,28 @@
 
 ## 当前任务
 
-**无活跃任务** — 准备接受新任务（使用 `/van` 启动）
+### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）[安全相关]
+
+- **当前阶段：** 初始化（VAN — 待 feature 分支 AskQuestion 确认后进入 `/plan`）
+- **复杂度级别：** Level 2（多文件修改 / 需求清晰 / creative 已预决策方案 C Phase 2 / 无新设计决策 / 无新组件）
+- **焦点：** 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + 死循环中止单测；作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
+- **分支基线：** `main` `72f011e`（feature 分支 `feature/TASK-20260503-05-quickjs-interrupt-handler` 待创建）
+- **依赖：** `memory-bank/creative/creative-quickjs-host.md` §组件 1 方案 C Phase 2（已批准 2026-04-13）
+- **触及威胁：** T1 基础设施（JS eval CPU DoS mitigation — 解锁 TASK-04 Console 完整 T1 mitigation）
+- **触及技术债：** #44 QuickJS Interrupt Handler（本任务闭环组件 1 Phase 2，组件 3 JSMallocFunctions 留后续 TASK）
+- **估时：** ~1-2 h plan ×0.6（E1 API ~10m + E2 实现 ~30-40m + E3 单测 ~30-40m + E4 techContext ~5m + E5 finalize ~10m）
+- **预期反复模式：** 0/7 命中（连续第 5 次零反复目标 — TASK-20260503-02/03 基线延续）
+
+### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟡 已搁置 2026-05-03 21:52
+
+- **当前阶段：** 已搁置（VAN 阶段识别硬前置依赖技术债 #44 → 用户 V3=A 决策独立立项 TASK-20260503-05 作为前置任务；05 完成后恢复）
+- **复杂度级别：** Level 3（恢复时以原范围重启）
+- **焦点：** `veloxa/devtool/console/` + `console_panel.html/css/js`（第 4 件套 UI）+ isolated JSRuntime + capability allowlist + JS_SetInterruptHandler 集成 + console.log 桥接
+- **分支基线（恢复时）：** TASK-20260503-05 完成合并 main 后基于新 main 创建 `feature/TASK-20260503-04-devtool-console-repl`
+- **已锁定决策（恢复时复用，无需重问）：** V1=B 完整 Console Panel + V3=A 严格按 spec（05 做 #44 独立前置）
+- **估时假设：** ~3-5 h plan ×0.6
+- **预期复用：** Phase A/B/C 5 大范式 100% + 第 4 件套 UI 一致性
+- **恢复前置条件：** TASK-20260503-05 完成归档 + 用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
 
 ## 任务历史（最近完成）
 

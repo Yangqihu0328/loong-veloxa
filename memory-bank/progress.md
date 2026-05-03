@@ -2,7 +2,53 @@
 
 ## 当前任务
 
-**无活跃任务** — 准备接受新任务（使用 `/van` 启动）
+### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）
+
+**当前阶段**：🟡 **初始化（VAN — 待 feature 分支 AskQuestion 确认后进入 `/plan`）**
+
+**里程碑**：
+
+- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动 / 环境检测（Linux / main `72f011e` clean / ahead origin 33 / `_deps/quickjsng-*` 3 处离线预置 ✅ / FetchContent F9 ⊘ 跳过）
+- 2026-05-03 21:50 — spec §11.1 读取 / 关键 push-back 识别：TASK-30-04-D 硬依赖技术债 #44（spec §11.1 原文明示）/ `quickjs_engine.cc:46` 实证 `JS_SetMemoryLimit` **已落地**（creative 组件 3 方案 B 一期闭环）/ `JS_SetInterruptHandler` 仍完整开放（creative 组件 1 Phase 2 占位未落地）
+- 2026-05-03 21:52 — AskQuestion 3 问抛决策 / 用户答：**V3=A + V1=B + go_plan**
+- 2026-05-03 21:52 — 流程决策：搁置 TASK-20260503-04（保留 V1=B 决策以备恢复）+ 独立立项 TASK-20260503-05 #44 组件 1 Phase 2 完整落地（Level 2 / ~1-2 h plan ×0.6 / creative 方案 C Phase 2 已预决策）
+
+**5 子任务计划（plan ×0.6 假设 ~1-2 h）**：
+
+| # | 子任务 | 文件 | plan ×0.6 | 测试模式 |
+|:-:|---|---|:-:|---|
+| E1 | API 扩展声明 | `veloxa/script/quickjs_engine.h` | ~10 min | [覆盖补充] |
+| E2 | Init 注册 InterruptHandler + EvalGlobal 重置预算 + 静态 InterruptCallback | `veloxa/script/quickjs_engine.cc` | ~30-40 min | [覆盖补充] |
+| E3 | 单测：死循环被中止 + 预算 0=关闭 + 合法脚本 PASS + ResetForNextEval + 回调语义 | `tests/script/quickjs_engine_test.cc`（+~80 行 / 5 新测） | ~30-40 min | [覆盖补充] |
+| — | 🛑 CP1 自审（E3 完成 → DEVTOOL=ON 1247 + 5 新测 通过 / DEVTOOL=OFF 1082 不退化）| — | — | — |
+| E4 | techContext.md #44 条文更新（JS_SetMemoryLimit 已落地 + interrupt handler 本任务闭环 + JSMallocFunctions 仍记技术债） | `memory-bank/techContext.md` | ~5 min | [文档调整模式] |
+| E5 | finalize（MB 三件套 / 分支合并 ff） | `memory-bank/tasks.md` + `activeContext.md` + `progress.md` | ~10 min | — |
+| — | 🛑 CP2 自审（全 5 子任务完成 / 5 commits Source 溯源完整 / 反复模式 0/7 验证）| — | — | — |
+
+**预期实测比值**：~0.20-0.35×（落「纯文档/规则极速区 0.15-0.25×」或「极窄档加速衰减区 0.20-0.30×」—— 本任务代码量低 + TDD cycle 简单 + Phase 0 预跑完整，期望落 TASK-20260503-02 0.21× 同档）
+
+**触发 Phase 0 关键检查清单（plan 阶段将实证）**：
+
+- §0.1 ctest baseline 二次验证 DEVTOOL=ON 1247 + DEVTOOL=OFF 1082 维持
+- §0.2 quickjsng src 中 `JS_SetInterruptHandler` / `JSInterruptHandler` 签名实证（已知 `int (*)(JSRuntime *rt, void *opaque)` / return != 0 中止）
+- §0.3 既有 quickjs_engine_test 文件结构 / 单测范式熟悉（三元守卫 / Status-StatusOr 用法）
+- §0.4 默认 budget 值常量选择（creative 建议 10⁷ / 具体在实现时用单测「死循环 100ms 内被中止」校准）
+- §0.5 InterruptCallback 静态函数线程安全实现（std::atomic<int64_t> 预算计数器 / opaque ptr → QuickjsEngine 实例）
+
+---
+
+### TASK-20260503-04：DevTool Phase D — Console JS REPL（已搁置）
+
+**当前阶段**：🟡 **已搁置 2026-05-03 21:52**
+
+**里程碑**：
+
+- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动 / VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别
+- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，等待 TASK-20260503-05 完成后恢复 / 已锁定决策 V1=B（完整 Console Panel）保留以备恢复无需重问
+
+**恢复前置：** TASK-20260503-05 完成归档后，用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
+
+---
 
 ## 任务历史（最近完成）
 
