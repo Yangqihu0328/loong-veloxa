@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**归档中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **归档文档落盘 2026-05-03 17:00 → 待用户决策合并方式**
+**空闲** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 ✅ 已归档闭环（2026-05-03 17:05）— main `6deb5a6` fast-forward merge 完成 + feature 分支已删除 + DevTool 三件套主线收官（A → B → C 完整闭环）。
 
 **环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
 
@@ -70,19 +70,23 @@
 
 ## 上次任务（已归档闭环）
 
-**TASK-20260502-02 Phase B Performance Overlay ✅ 已归档（2026-05-03 ~00:30）** — main `bf6626a` fast-forward merge 完成 → main `c0c4cbd`（含远程 merge）。
+**TASK-20260503-01 Phase C Hot Reload ✅ 已归档（2026-05-03 ~17:05）** — main `6deb5a6` fast-forward merge 完成 + feature 分支已删除 + **DevTool 三件套主线收官（Inspector + Performance Overlay + Hot Reload 完整闭环）**。
 
 **最近完成任务速查（已归档闭环）：**
+- ✅ **TASK-20260503-01 DevTool Phase C Hot Reload**（Level 3 / ~104 min plan ×0.6 = **0.31× 落「极窄档加速衰减区」候选新子档下沿** / Phase 0 投入定律 triple-evidence 升级 7.6× ROI / 5 大可复用范式 100% 命中第三次连续生效 / lazy-attach C ABI 模式 warning 语义层扩展 / T2 dual-probe 16 测全覆盖 / DevTool 三件套主线收官）
 - ✅ TASK-20260502-02 DevTool Phase B Performance Overlay（Level 3 / ~104 min plan ×0.6 = 0.40× 落「极窄档延续高效区」新子档）
 - ✅ TASK-20260502-01 DevTool Phase A Inspector（Level 4 / ~281 min plan ×0.6 = 0.64×）
 - ✅ TASK-20260430-04 DevTool 三件套蓝图设计（Level 4 V2=a 蓝图）
 
-**Phase C 完成后 DevTool 三件套主线收官** — 后续 P3 候选（按用户优先级排期）：
-- **#35 阶段 2 拆 LayoutEngine**（plan ×0.6 ~2-3 h Level 3）
-- **R9 EventManager HitTest 改造**（plan ×0.6 ~1.5-2 h Level 2-3）
-- **DomBindings R2 三连补全**（plan ×0.6 ~3-5 h — Phase A dogfood 暴露）
-- **R3+ #1 image_decoder 安全三件套**（4-6 h Level 3 P1 安全）
-- **TASK-30-04-D/E/F/G 扩展段**（Console JS REPL / JS Debugger / CDP 远程 port / 完整 UI Editor — 按需独立立项）
+**DevTool 三件套主线收官 — 后续 P3 候选（按用户优先级排期 / Phase C archive §11 估时校准）：**
+- **#35 阶段 2 拆 LayoutEngine**（plan ×0.6 ~2-3 h Level 3 — 持平）
+- **R9 EventManager HitTest 改造**（plan ×0.6 ~1.5-2 h Level 2-3 — 持平）
+- **DomBindings R2 三连补全**（plan ×0.6 ~2-4 h Level 3 / **-30% 校准 — 受益于 Phase A/B/C dom_bindings.cc 三次扩展经验 + JS native binding 范式成熟**）
+- **R3+ #1 image_decoder 安全三件套**（plan ×0.6 ~3-4 h Level 3 / **-30% 校准 — 受益于 T2 8 步守卫 + max_size 模式 + dual-probe 反向探针 16 测范式直接复用**）
+- **TASK-30-04-D Console JS REPL**（plan ×0.6 ~3-5 h Level 3 / V1=B 扩展段 — T1 任意 eval mitigation）
+- **TASK-30-04-E JS Debugger backend**（plan ×0.6 ~6-10 h Level 4 — QuickJS Debug API + #44 + T6 callback budget）
+- **TASK-30-04-F CDP 远程调试 port**（plan ×0.6 ~4-8 h Level 3-4 — T4 HMAC token + nonce + loopback only + default off mitigation）
+- **TASK-30-04-G 完整 UI 编辑器**（plan ×0.6 ~10-20 h Level 4 多 Phase — dogfood 完整闭环 / spec §11 长期愿景）
 
 ---
 

@@ -2,10 +2,67 @@
 
 ## 当前任务
 
-### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关]
+**空闲** — 等待新任务立项（用户调用 `/van` 启动）。
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关] — ✅ 已归档（2026-05-03 ~17:05）
+
+- **复杂度：** Level 3（蓝图 plan §Phase C 锁定，无 dogfood UI 子系统级 → 不 escalate；vs Phase A escalate L4 / **零 escalation**）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260503-01.md`（Level 3 详细 12 段 ~440 行）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-01.md`（Level 3 详细 11 段 ~720 行）
+- **任务时长：** ~134 min（VAN ~5 min + Plan ~8 min + Build ~104 min + Reflect ~7 min + Archive ~10 min）
+- **最终 ctest：** DEVTOOL=ON 1231 → **1247 PASS（+16 测）** / DEVTOOL=OFF 1082 PASS / SDL2=ON 1265 PASS（含 hello_devtool_hot_reload_smoke 0.87s ✅）
+- **A14 链接闭包黑名单 +3 项**：FileWatcher / InotifyFileWatcher / HotReloadManager（Phase A/B/C 区分注释 + NOT in blacklist intentional 排除项扩展）
+- **核心成果：** 11/11 子任务 + 13 commits 严格 1 commit/子任务 + 1 plan + 1 reflect + 1 archive + 1 安全威胁 mitigation 全到位（T2 8 步守卫 dual-probe 16 测）+ 5 大可复用范式 100% 命中且加深 + lazy-attach C ABI 模式扩展（新增 VX_WARNING_HOT_RELOAD_FAILED 警告语义层）+ 2 公开 C API 新增（vx_view_attach_devtool 加 hot_reload_dir + vx_view_hot_reload_tracked_count）+ 1 新子系统（vx::devtool::hot_reload::{FileWatcher, InotifyFileWatcher, HotReloadManager}）+ **DevTool 三件套主线收官（Phase A → B → C 完整闭环）**
+- **额外事件**：build §0.1 baseline 二次验证遭遇 binutils 2.46+ ld 单次扫描静态归档严格化阻塞 → `hotfix/binutils-2.46-link-group` 单分支修复（根 CMakeLists.txt +10 行 `--start-group/--end-group`）→ fast-forward to main `ddc1e3c` → feature 分支 rebase 上 main → 进入 C.0.1 RED；**「baseline 阻塞 hotfix 分离协议」首次实证 + R12「工具链版本激进升级」风险登记**
+- **效率指标：** ~104 min 主线 vs plan ×0.6 333 min = **0.31× 极窄档加速衰减区下沿候选新子档**（Phase A 0.64× → Phase B 0.40× → Phase C 0.31× 三连递降）；**Phase 0 投入定律 triple-evidence 升级**（A 5.3× / B 5.2× / **C 7.6× ROI**）；反复模式 1/7 部分命中（前置组件能力假设未实测 — 已识别因子 + P1 改进建议闭环）
+- **改进建议落实状态：** P0 0/0（创纪录第二次连续）+ P1 4/4（C-#3/C-#4 reflect 阶段已直接落实到 systemPatterns / C-#1/C-#2 待下次任务前由 build-phase 触发）+ P2 4/4 ✅（reflect 阶段已 100% 落实）
+- **方法论沉淀：** 5 大可复用架构范式 100% 命中第三次连续生效 + lazy-attach C ABI 容错模式 warning 语义层新沉淀 + baseline 阻塞 hotfix 分离协议首次实证 + R12 工具链激进升级风险登记 + #ifdef + CMake conditional 范式 unique_ptr 子模式扩展 + CMake 静态库循环依赖处理双循环依赖叠加场景覆盖性实证
+
+#### Phase C 总览（11 子任务）
+
+| Phase | 子任务数 | 实测耗时 | plan ×0.6 估时 | 比值 |
+|:--|:--:|--:|--:|:--:|
+| C.0 抽象（FileWatcher base + Platform factory）| 1 | ~8 min | 18 min | **0.44×** |
+| C.1 InotifyFileWatcher（Linux + T2 + 测试）| 3 | ~28 min | 153 min | **0.18×** |
+| C.2 HotReloadManager（基础 + R9 反向探针 + CSS 错误恢复）| 2 | ~17 min | 54 min | **0.31×** |
+| C.3 DevTool UI 状态指示器 + JS binding | 1 | ~8 min | 18 min | **0.44×** |
+| C.4 C ABI 扩展 + dogfood smoke | 2 | ~23 min | 45 min | **0.51×** |
+| C.5 T2 完整安全单测 + finalize | 2 | ~19 min | 45 min | **0.42×** |
+| **合计** | **11** | **~104 min（1.7 h）** | **333 min（5.55 h）** | **0.31×（plan ×0.6）/ 0.19×（plan）** |
+
+#### 13 commits 演进时间线
+
+```
+e9c07da (plan + §0.1) → b044d8f (C.0.1) → e432f44 (C.1.1) → 256585d (C.1.2) →
+7d1e9b5 (C.1.3) [CP1] → 53fe1ab (C.2.1) → 651530e (C.2.3) → 81772bb (C.3.1) →
+b48c57f (C.4.1) [CP2] → c5d7a1d (C.4.2) → b424d32 (C.5.1) [CP3] →
+6247626 (C.5.2 finalize) → 44875e8 (reflect) → 6deb5a6 (archive)
+```
+
+#### 长期知识库反馈（已生效）
+
+- `memory-bank/systemPatterns.md`: plan ×0.6 矩阵新增「极窄档加速衰减区 0.20-0.30×」候选新子档 + 第 48-58 数据点群组 / Phase 0 投入定律段升级为 triple-evidence + ROI 公式 / lazy-attach C ABI 容错模式段新增 warning 语义层子模式 / 新增「baseline 阻塞 hotfix 分离协议」段 / 新增 R12「工具链版本激进升级」风险登记 / 新增「#ifdef + CMake conditional 范式 — unique_ptr 子模式」段 / 新增「CMake 静态库循环依赖处理 — 双循环依赖叠加场景覆盖性」实证
+- `memory-bank/techContext.md`: 新增 TASK-20260503-01 Phase C 实施摘要段
+- `memory-bank/productContext.md`: 新增「最近能力更新（2026-05-03）」段 — DevTool Phase C 主线 user-facing 能力清单（2 公开 C API + 1 新子系统 + T2 8 步守卫 + DevTool UI 状态指示器 + hello_devtool 第三次扩展 + DevTool 三件套主线收官）
+
+#### Phase C 关键教训沉淀（5 大核心，详细见 archive §5 + reflection §4 + §6）
+
+1. **「Phase 0 投入定律 triple-evidence 升级」入库**（A 5.3× / B 5.2× / **C 7.6× ROI**）— 30 min Phase 0 投入 → 节省 ~229 min build phase
+2. **5 大可复用架构范式 100% 命中第三次连续生效** = 设计资产化复利效应（实测使用率 3/5 命中 + 2/5 N/A）
+3. **lazy-attach C ABI 容错模式扩展**（新增 VX_WARNING_HOT_RELOAD_FAILED warning 语义层 — 从「错误返 INVALID_STATE + cache hooks」演进到「警告返 WARNING + 主路径继续」语义分层）
+4. **「极窄档延续高效区下沿挤压」触发新数据点群组**（Phase A 0.64× → Phase B 0.40× → Phase C 0.31× 三连递降；候选新子档「极窄档加速衰减区 0.20-0.30×」）
+5. **反向探针 dual-probe 16 测范式扩展**（Phase A 4 测 → Phase C 16 测全覆盖 — T2 8 步守卫 forward × 8 + reverse × 8）
+
+---
+
+### TASK-20260503-01（旧详细记录 — 已迁移到 archive 文档）
 
 - **复杂度：** Level 3（蓝图 plan §Phase C 锁定，无 dogfood UI 子系统级 → 不 escalate；vs Phase A escalate L4）
-- **状态：** 🟢 **回顾完成 — 待归档**（11/11 子任务 + CP1/CP2/CP3 + 双绿 verify ✅ 2026-05-03 16:28；reflect 文档 ✅ 2026-05-03 16:35）
+- **状态：** ✅ 已归档（2026-05-03 ~17:05）
 - **分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后 / +12 commits）
 - **Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务）
 - **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-01.md`（11 段 Level 3 详细）
@@ -56,9 +113,11 @@ b48c57f (C.4.1) [CP2] → c5d7a1d (C.4.2) → b424d32 (C.5.1) [CP3] → 6247626 
 - **前置依赖/环境/API 能力未验证**（2 项 — CssParser 严格性假设 / 工具链 binutils 2.46+ 行为变化）— 已沉淀为 P1 #2 + P1 #4 改进建议
 - 对比历史：Phase A 0/7 / Phase B 0/7 / Phase C 1/7（小幅回升 — 触发因子：binutils 激进升级 + 既有组件能力假设未实测）
 
+#### Plan / VAN 阶段详细记录（已迁移到 archive 文档 §2-§3）
 
-#### Plan 阶段产出（2026-05-03 13:35）
+详细 plan 阶段产出（Phase 0 13 子段实测填写 + B1-B8 决策表 + 11 子任务清单 + 5 R 风险登记 + 3 Checkpoint 等）+ VAN 阶段产出（F1-F8 grep 实证 + 6 项 push-back 决策 + 触及技术债映射 + 估时假设 + 验收要点 A10-A12 + A13 + A14）已迁移到归档文档 `memory-bank/archive/archive-TASK-20260503-01.md` §2 技术方案 + §3 实现摘要 + §4 测试覆盖 + §11 后续任务依赖估时调整段。
 
+<!-- 以下旧详细记录已迁移到 archive 文档，删除以保持 progress.md 简洁
 - **Phase 0 13 子段实测填写**（核心发现 3 项）：
   - §0.7 LoadCSS 路径 100% 安全 — `Application::LoadCSS` 仅 `stylesheets_.push_back` + `update_manager_.reset()` 不动 dom_bindings_/target_document_ → CSS-only 严格契约自然成立 → R9 F-025 不踩契约由代码路径自然守门
   - §0.12 std::thread 全代码库零既有用例 — 本任务首次引入多线程 + 跨线程消息传递；设计 thread-safe queue（mutex + condition_variable + atomic running_）+ inotify 线程仅 push + main 线程仅 drain
@@ -108,10 +167,9 @@ b48c57f (C.4.1) [CP2] → c5d7a1d (C.4.2) → b424d32 (C.5.1) [CP3] → 6247626 
 - A12 4 MiB CSS 文件大小上限 + 超限拒绝
 - A13 现有 ctest 全绿（DEVTOOL=ON 1228 / DEVTOOL=OFF 1082 baseline 维持）
 - A14 DevTool OFF 时构建产物零变化（A14 黑名单加 FileWatcher / InotifyFileWatcher / HotReloadManager 3 项）
+-->
 
 ---
-
-## 上次任务（已归档闭环）
 
 ### TASK-20260502-02：DevTool Phase B — Performance Overlay 实施 [安全相关] — ✅ 已归档（2026-05-03 ~00:30）
 
