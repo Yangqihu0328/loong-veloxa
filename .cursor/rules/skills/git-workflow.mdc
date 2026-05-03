@@ -98,6 +98,62 @@ alwaysApply: false
 
 **提交流程：** TDD 循环（可多次）→ 代码审查 → 测试全部通过 → 提交
 
+## Multi-subtask commit 拆分 — `git add -p` 推荐范式（多子任务连续完成时**必做**）
+
+> 反复出现 P1（TASK-20260502-01 A.2.1/A.2.4/A.3.1 实证）：3 个连续子任务在同一文件 `tests/CMakeLists.txt` 累积变更，因 `git add tests/CMakeLists.txt` 而非 `git add -p` 导致 A.2.1 commit 隐含包含 A.2.4 + A.3.1 部分变更（功能正确，语义不洁）→ git bisect 定位回归时无法精确到子任务级。
+
+**触发条件**：以下任一**必做**：
+
+- 同一 plan 内 ≥ 2 个子任务修改同一文件（如 `CMakeLists.txt` / `Cargo.toml` / `package.json`）
+- 子任务连续完成但中间未 commit（累积 working tree 含多任务变更）
+- 大型重构 + 跨任务的同文件 hunk
+
+**强制操作模板**：
+
+```bash
+# Step 1: working tree 状态自检
+git status --short                            # 期望：仅本子任务相关文件
+git diff <file>                                # 视觉确认 hunks
+
+# Step 2: 选择性 stage（关键 — 拒绝整文件 git add）
+git add -p <file>                              # 交互式选择 hunks
+# 或直接路径过滤：git add path/to/specific/sub/file.cc
+
+# Step 3: 验证 staged 内容
+git diff --cached                              # 期望：仅含本子任务变更
+git diff                                       # 期望：剩余 hunks 留给下一子任务
+
+# Step 4: commit + 验证
+git commit -m "..."                            # 含子任务 ID
+git status --short                             # 期望：剩余 hunks 仍 unstaged
+
+# Step 5: 下一子任务继续
+# 重复 Step 2-4
+```
+
+**checklist（每次 commit 前必查）**：
+
+- [ ] `git diff --cached` 仅含本子任务相关 hunks（无其他子任务的 stray hunk）
+- [ ] commit 消息明确标注子任务 ID（`feat(scope): xxx (#N/M)` 或 `(C-#N)` 等）
+- [ ] commit 后 `git status` 显示剩余 hunks unstaged 等待下一子任务
+- [ ] 如必须把多子任务 hunk 合并到一个 commit → commit 消息明确说明范围（"includes A.2.1 + A.2.4 due to circular CMake dep"）
+
+**反模式**：
+
+- ❌ `git add <file>` 整文件 stage — 隐含累积所有子任务变更
+- ❌ commit 消息只写最后一个子任务 ID — 实际 hunk 跨多任务
+- ❌ 用 `git stash push --keep-index` 隔离再 commit — 引入额外操作易出错（`git add -p` 是首选）
+
+**实证**：
+
+- TASK-20260502-01 A.2.1 commit `feat(devtool): add inspector_panel CMake target` 实际隐含 A.2.4 + A.3.1 部分 `tests/CMakeLists.txt` 变更 → reflect 阶段 §6 P1 #4 标 P1 改进
+- 反例：TASK-20260503-01 11 个子任务 11 commits 均严格 1 commit/子任务 — 因子任务文件无重叠，未触发本场景
+
+**交叉引用**：
+
+- `memory-bank/systemPatterns.md`「commit 颗粒度」段
+- `.cursor/rules/skills/git-workflow.mdc` 本文件「Level 适配」段（Level 4 强制按子系统提交，本规则是 Level 2-4 通用前置）
+
 ## Commit 前防御断言（multi-session safety）
 
 **适用场景**：
