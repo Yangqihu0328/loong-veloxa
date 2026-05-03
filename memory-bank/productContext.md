@@ -98,3 +98,21 @@
   - **效率指标**：~104 min 主线（vs plan ×0.6 261 min = **0.40×** 极窄档延续高效区候选新子档）— Phase 0 投入越深 / build phase 越快定律 dual-evidence 第二次实证（ROI 5.2× 接近 Phase A 5.3×）；连续两次任务 0/7 反复模式命中
   - **下一步路线图**：TASK-30-04-C Hot Reload（估时进一步下调 ~20% 至 ~2-3 h plan ×0.6 — 受益于 Phase A + Phase B 5 大范式 + 5 大 ROI 复用）+ DomBindings R2 P3 修复（~3-5 h plan ×0.6）+ #35 阶段 2 拆 LayoutEngine（~2-3 h plan ×0.6）
 
+## 最近能力更新（2026-05-03）
+
+- ✅ **DevTool Phase C · Hot Reload 主线落地（TASK-20260503-01）— DevTool 三件套主线收官 🎉🎉🎉**
+  - **公开 C API 2 个新增 / 扩展**：`vx_view_attach_devtool` 加 `hot_reload_dir` 参数（hot reload 启用入口）+ `vx_view_hot_reload_tracked_count`（hot reload 计数 read 接口，dogfood smoke 验证用）
+  - **新错误码 / 警告码**：`VX_WARNING_HOT_RELOAD_FAILED = 1`（warning 语义层 — hot reload attach 失败但 DevTool 主功能继续工作的非阻塞警告，lazy-attach C ABI 模式扩展）
+  - **新子系统** `vx::devtool::hot_reload::{FileWatcher, InotifyFileWatcher, HotReloadManager}`：
+    - **FileWatcher 抽象基类** — 跨平台抽象层 + Platform factory `#if defined(__linux__)` + 非 Linux 平台 nullptr 退化（macOS kqueue / Windows ReadDirectoryChangesW 留 P3 候选）
+    - **InotifyFileWatcher Linux 实现** — ~268 LOC inotify_init1(IN_CLOEXEC | IN_NONBLOCK) + IN_MODIFY/IN_CLOSE_WRITE only（不监听 IN_CREATE 防 atomic+symlink 穿越）+ std::thread watch loop + thread-safe queue（mutex + condition_variable + atomic running_）+ sleep_for(50ms) 兜底 read EAGAIN 路径 + 50ms 事件 debouncing
+    - **HotReloadManager** — CSS-only 增量重载 + brace imbalance 启发式 CSS 解析失败检测 + Application::LoadCSS 触发 restyle + R9 F-025 不踩契约（仅识别 .css 文件 + 仅调 LoadCSS / 不调 LoadHTML / 反向探针单测验证）
+  - **T2 路径穿越 8 步守卫完整实施**（高威胁面 dual-probe 16 测全覆盖）：absolute root allowlist + locked inotify mask（IN_MODIFY/IN_CLOSE_WRITE only）+ realpath canonicalization + canonical path boundary check + max_file_size 4 MiB 上限 + .css extension filter + WARN-level logging + 50ms event debouncing
+  - **DevTool UI 状态指示器** — inspector_panel.html `#hot-reload-status` div + inspector_panel.css `.status-watching`（绿）/`.status-error`（红）+ inspector_panel.js `updateHotReloadStatus()` 函数 + `vx_devtool_get_hot_reload_status` JS native binding（返 `{tracked_count, last_error}` JSON）
+  - **`examples/hello_devtool.cc` 第三次扩展** — 新增 hot reload smoke（`VX_HELLO_DEVTOOL_HOT_RELOAD_TEST` env var 触发 mkdtemp temp dir → 初始 `body { background-color: red; }` write → SDL timer 100ms 触发 modify 为 blue → 读 `vx_view_hot_reload_tracked_count` print `HOT RELOAD: triggered count=N` → cleanup）+ `hello_devtool_hot_reload_smoke` ctest 端到端 0.87s 验证（PASS_REGULAR_EXPRESSION `count=1`）
+  - **A14 链接闭包黑名单 +3 项**（FileWatcher / InotifyFileWatcher / HotReloadManager 内部符号）+ Phase A/B/C 区分注释 + 公开 C ABI（vx_view_hot_reload_tracked_count）+ anonymous namespace local symbols（VxDevtoolGetHotReloadStatus）排除注释
+  - **效率指标**：~104 min 主线（vs plan ×0.6 333 min = **0.31×** 极窄档加速衰减区下沿候选新子档）— Phase 0 投入越深 / build phase 越快定律 **triple-evidence 升级**（A 5.3× / B 5.2× / **C 7.6× ROI**）；三任务连续递降趋势：A 0.64× → B 0.40× → C 0.31×；5 大可复用范式 100% 命中第三次连续生效；lazy-attach C ABI 模式扩展（warning 语义层新沉淀）；反复模式 1/7 部分命中（前置组件能力假设未实测 — 已识别因子 + P1 改进建议闭环）
+  - **额外事件**：build §0.1 baseline 二次验证遭遇 binutils 2.46+ ld 单次扫描静态归档严格化阻塞 → `hotfix/binutils-2.46-link-group` 单独分支修复（根 CMakeLists.txt +10 行 `--start-group/--end-group` 包围 LINK_LIBRARIES）→ fast-forward to main `ddc1e3c` → feature 分支 rebase 上 main → 进入 C.0.1 RED 阶段；「baseline 阻塞 hotfix 分离协议」首次实证 + R12「工具链版本激进升级」风险登记
+  - **DevTool 三件套主线收官** — Inspector + Performance Overlay + Hot Reload 完整闭环 ✅
+  - **下一步路线图**：DevTool 三件套已完整收官；后续候选见 activeContext 待处理事项 §「Phase C 完成后 P3 候选」段：#35 阶段 2 拆 LayoutEngine + R9 EventManager HitTest 改造 + DomBindings R2 三连补全 + R3+ #1 image_decoder 安全三件套 + Phase D/E/F/G 扩展段（Console JS REPL / JS Debugger / CDP 远程 port / 完整 UI Editor）按需独立立项
+

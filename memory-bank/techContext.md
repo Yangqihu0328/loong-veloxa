@@ -887,3 +887,48 @@ T6 / 性能 / 边界场景测时，如设计意图含「特殊值 = 特殊语义
 
 - 全 codebase grep `StatusOr.*\.status\(\)` audit 现有用法
 - 考虑加 clang-tidy custom check 强制规范
+
+---
+
+## TASK-20260503-01 DevTool Phase C · Hot Reload 实施摘要
+
+**完成时间**：2026-05-03 16:28（build commit `6247626`）/ 16:35（reflect 文档落盘）
+
+**核心交付**：
+- 新子系统 `vx::devtool::hot_reload::{FileWatcher, InotifyFileWatcher, HotReloadManager}` — Linux inotify 自实现 + CSS-only 增量重载（严格不踩 F-025 LoadHTML use-after-free）
+- 2 公开 C API 新增：`vx_view_attach_devtool` 加 `hot_reload_dir` 参数 + `vx_view_hot_reload_tracked_count`
+- 1 ABI 扩展：`VxDevtoolOptions.hot_reload_dir` 字段 + `VxResult` 新增 `VX_WARNING_HOT_RELOAD_FAILED = 1`（warning 语义层）
+- 1 example 第三次扩展：hello_devtool.cc + hello_devtool_hot_reload_smoke ctest 端到端 0.87s 验证
+- 1 DevTool UI 状态指示器：inspector_panel.html/css/js + `vx_devtool_get_hot_reload_status` JS native binding
+- T2 路径穿越 8 步守卫 dual-probe 16 测全覆盖（forward × 8 + reverse × 8）— absolute root / locked inotify mask / realpath canonicalization / canonical path boundary / max_file_size / .css extension / WARN logging / 50ms debounce
+- A14 链接闭包黑名单 +3 项（FileWatcher / InotifyFileWatcher / HotReloadManager）
+
+**关键技术决策（5 项实测驱动）**：
+1. 错误码沿用 `VX_ERROR_INVALID_STATE` 而非 plan 字面 `VX_ERROR_UNSUPPORTED`（codebase 一致性，与 A.1.7 / B.0.1 一致）
+2. CSS 解析失败检测改用 brace imbalance 启发式（实测发现 CssParser 过宽容 — 缺 `}` 仍能解析出 0 declarations 的 rule）
+3. application.h `unique_ptr<HotReloadManager>` 字段 + getter + ~Application reset 三处 #ifdef 包围（OFF 路径 incomplete type 修复）
+4. C.4.1 引入 vx_core PRIVATE link vx_devtool 形成第二循环依赖叠加 — binutils 2.46+ hotfix `--start-group/--end-group` 包围方案无需任何额外 CMake 改动即解决（实证 hotfix 设计的「叠加场景覆盖性」）
+5. C.4.2 dogfood smoke 需新增 `vx_view_hot_reload_tracked_count` testability 接口（plan 阶段未识别 — P1 反馈到 writing-plans skill）
+
+**实测耗时与比值**：
+- 11 子任务 + CP1/CP2/CP3 + 双绿 verify finalize = ~104 min build
+- plan ×0.6 333 min → 比值 **0.31×** — 触发「极窄档延续高效区下沿挤压」新数据点群组（候选新子档「极窄档加速衰减区 0.20-0.30×」）
+- 三任务连续递降趋势：A 0.64× → B 0.40× → **C 0.31×**
+
+**Phase 0 投入定律 triple-evidence 升级**：
+- A 5.3× / B 5.2× / **C 7.6× ROI**（30 min Phase 0 投入 → 节省 ~229 min build phase）
+- ROI 公式入库：`ROI = (plan ×0.6 总分钟数 - 实测 build 分钟数) / Phase 0 投入分钟数`
+
+**额外事件（已 fast-forward main 零业务范围污染）**：
+- build §0.1 baseline 二次验证遭遇 binutils 2.46+ ld 单次扫描静态归档严格化阻塞 → `hotfix/binutils-2.46-link-group` 单独分支修复 → 根 `CMakeLists.txt` +10 行 `-Wl,--start-group <LINK_LIBRARIES> -Wl,--end-group`（仅 GNU/Clang + Linux 生效）→ 271/271 link OK + 1195/1195 ctest PASS → fast-forward to main `ddc1e3c` → feature 分支 rebase 上 main
+- 「baseline 阻塞 hotfix 分离协议」首次实证 + R12「工具链版本激进升级」风险登记（已沉淀到 systemPatterns.md）
+
+**ctest 双绿 verify 终局（三路径）**：
+- DEVTOOL=ON：1247 PASS（baseline 1231 + 16 SecurityT2）
+- DEVTOOL=OFF：1082 PASS + A14 link-closure 零 DevTool 符号 ✅
+- SDL2=ON：1265 PASS（含 hello_devtool_hot_reload_smoke 0.87s 端到端 ✅ 验证 `HOT RELOAD: triggered count=1`）
+
+**反复模式：1/7 部分命中**（前置依赖/环境/API 能力未验证 — CssParser 严格性假设 + 工具链 binutils 2.46+ 行为变化 2 项）— 比 Phase A/B 0/7 小幅回升；P1 #2 + P1 #4 改进建议已迁移 activeContext 待处理事项段闭环。
+
+**DevTool 三件套主线收官** — Inspector + Performance Overlay + Hot Reload 完整闭环 ✅；后续候选见 activeContext.md 待处理事项 §「Phase C 完成后 P3 候选」段。
+

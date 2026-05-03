@@ -5,18 +5,57 @@
 ### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关]
 
 - **复杂度：** Level 3（蓝图 plan §Phase C 锁定，无 dogfood UI 子系统级 → 不 escalate；vs Phase A escalate L4）
-- **状态：** 🟡 **构建中**（§0.1 baseline ✅ 完成 2026-05-03 14:40）
-- **分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后）
+- **状态：** 🟢 **回顾完成 — 待归档**（11/11 子任务 + CP1/CP2/CP3 + 双绿 verify ✅ 2026-05-03 16:28；reflect 文档 ✅ 2026-05-03 16:35）
+- **分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后 / +12 commits）
 - **Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务）
-- **下一步：** C.0.1 RED — 创建 `tests/devtool/hot_reload/file_watcher_test.cc` + `CMakeLists.txt` + 接入根 tests
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-01.md`（11 段 Level 3 详细）
+- **任务时长：** 约 ~104 min build（VAN ~5 min + Plan ~8 min + Build ~104 min + Reflect ~7 min；不含 archive）
+- **最终 ctest：** DEVTOOL=ON 1231 → **1247 PASS（+16 测）** / DEVTOOL=OFF 1082 PASS / SDL2=ON 1265 PASS（含 hello_devtool_hot_reload_smoke 0.87s ✅）
+- **A14 链接闭包黑名单 +3 项**：FileWatcher / InotifyFileWatcher / HotReloadManager（Phase A/B/C 区分注释 + NOT in blacklist intentional 排除项扩展）
+- **核心成果：** 11/11 子任务 + 12 commits 严格 1 commit/子任务 + 1 安全威胁 mitigation 全到位 (T2 8 步守卫 dual-probe 16 测) + 5 大可复用范式 100% 命中且加深 + lazy-attach C ABI 模式扩展 (新增 VX_WARNING_HOT_RELOAD_FAILED) + 2 公开 C API 新增 (vx_view_attach_devtool 加 hot_reload_dir + vx_view_hot_reload_tracked_count) + 1 新子系统 (vx::devtool::hot_reload::{FileWatcher, InotifyFileWatcher, HotReloadManager}) + DevTool 三件套主线收官（Phase A → B → C 完整闭环）
+- **下一步：** 用户调用 `/archive` 启动归档阶段 — 创建 `memory-bank/archive/archive-TASK-20260503-01.md`
 
-#### Build 阶段进度（实测）
+#### Phase C 总览（11 子任务）
 
-- **§0.1 ctest baseline 二次验证 ✅**（**意外发现 + hotfix 修复**）
-  - 1195/1195 PASS / 0 FAIL / 1 SKIPPED（13.3 sec），DEVTOOL=ON 配置 + SDL2/Benchmarks OFF（实际数低于 plan 假设的 1228，因 SDL2 OFF 关闭 ~33 个 SDL2 依赖测试，是配置差额非回归）
-  - **意外阻塞**：GNU ld 2.46（2026 Binutils）单次扫描静态归档严格化 → vx_core ↔ vx_script ↔ vx_devtool 循环依赖失效 → 6 测试 link FAILED
-  - **mitigation hotfix**：开 `hotfix/binutils-2.46-link-group` 单分支 → 根 CMakeLists.txt +10 行（`-Wl,--start-group/--end-group` 包围 LINK_LIBRARIES，仅 GNU/Clang + Linux 生效）→ 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge to main `ddc1e3c` → feature 分支 rebase 上 main → stash pop WIP
-  - **预期外发现入库**：plan 阶段未识别此 binutils 严格化风险 → archive 阶段须沉淀 R12 「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern 候选
+| Phase | 子任务数 | 实测耗时 | plan ×0.6 估时 | 比值 |
+|:--|:--:|--:|--:|:--:|
+| C.0 抽象（FileWatcher base + Platform factory）| 1 | ~8 min | 18 min | **0.44×** |
+| C.1 InotifyFileWatcher（Linux + T2 + 测试）| 3 | ~28 min | 153 min | **0.18×** |
+| C.2 HotReloadManager（基础 + R9 反向探针 + CSS 错误恢复）| 2 | ~17 min | 54 min | **0.31×** |
+| C.3 DevTool UI 状态指示器 + JS binding | 1 | ~8 min | 18 min | **0.44×** |
+| C.4 C ABI 扩展 + dogfood smoke | 2 | ~23 min | 45 min | **0.51×** |
+| C.5 T2 完整安全单测 + finalize | 2 | ~19 min | 45 min | **0.42×** |
+| **合计** | **11** | **~104 min（1.7 h）** | **333 min（5.55 h）** | **0.31×（plan ×0.6）/ 0.19×（plan）** |
+
+#### 12 commits 演进时间线
+
+```
+e9c07da (plan + §0.1) → b044d8f (C.0.1) → e432f44 (C.1.1) → 256585d (C.1.2) →
+7d1e9b5 (C.1.3) [CP1] → 53fe1ab (C.2.1) → 651530e (C.2.3) → 81772bb (C.3.1) →
+b48c57f (C.4.1) [CP2] → c5d7a1d (C.4.2) → b424d32 (C.5.1) [CP3] → 6247626 (C.5.2 finalize)
+```
+
+**额外事件**：build 阶段 §0.1 baseline 二次验证遭遇 binutils 2.46+ ld 静态归档单次扫描严格化阻塞 → 用户决策方案 B `hotfix/binutils-2.46-link-group` 单分支修复 → 根 CMakeLists.txt +10 行 `-Wl,--start-group/--end-group` 包围 LINK_LIBRARIES → 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge to main `ddc1e3c` → feature 分支 rebase 上 main → 进入 C.0.1 RED 阶段。**实证 hotfix 设计正确性**：C.4.1 引入第二循环依赖（vx_core ↔ vx_devtool）叠加既有 vx_core ↔ vx_script 双循环，hotfix 群组式包围方案无需任何额外 CMake 改动即解决。
+
+#### Phase C 总教训沉淀（5 大核心，跨子任务复用 — 详细见 reflection §4 + §6）
+
+1. **「Phase 0 投入定律 triple-evidence 升级」入库**（Phase A 5.3× ROI + Phase B 5.2× ROI + Phase C **7.6× ROI**）— 30 min Phase 0 投入 → 节省 ~229 min build phase（plan ×0.6 333 min → 实测 104 min）
+2. **5 大可复用架构范式 100% 命中第三次连续生效** = 设计资产化复利效应（实测使用率 3/5 命中 + 2/5 N/A）
+3. **lazy-attach C ABI 容错模式扩展**（新增 VX_WARNING_HOT_RELOAD_FAILED warning 语义层 — 从「错误返 INVALID_STATE + cache hooks」演进到「警告返 WARNING + 主路径继续」语义分层）
+4. **「极窄档延续高效区下沿挤压」触发新数据点群组**（Phase A 0.64× → Phase B 0.40× → Phase C 0.31× 三连递降；候选新子档「极窄档加速衰减区 0.20-0.30×」）
+5. **反向探针 dual-probe 16 测范式扩展**（Phase A 4 测 → Phase C 16 测全覆盖 — T2 8 步守卫 forward × 8 + reverse × 8）
+
+#### 改进建议落实状态（reflect 阶段产出 — archive 阶段须落实）
+
+- **P0：0 项**（创纪录 — 第二次连续 0 P0，build 全按 plan 执行无重大偏差）
+- **P1：4 项**（已迁移到 activeContext.md 待处理事项段，archive 阶段须落实到对应规则/文档）
+- **P2：4 项**（archive 阶段直接落实到 systemPatterns.md / techContext.md）
+
+#### 反复模式：1/7 部分命中
+
+- **前置依赖/环境/API 能力未验证**（2 项 — CssParser 严格性假设 / 工具链 binutils 2.46+ 行为变化）— 已沉淀为 P1 #2 + P1 #4 改进建议
+- 对比历史：Phase A 0/7 / Phase B 0/7 / Phase C 1/7（小幅回升 — 触发因子：binutils 激进升级 + 既有组件能力假设未实测）
+
 
 #### Plan 阶段产出（2026-05-03 13:35）
 

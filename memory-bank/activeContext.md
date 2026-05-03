@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成 — 待 reflect** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **11/11 子任务全部完成 + CP1/CP2/CP3 三大自审通过 + 双绿 verify 完成 2026-05-03**
+**回顾中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / **回顾文档落盘 2026-05-03 16:35 → 待 /archive**
 
 **环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
 
@@ -44,9 +44,10 @@
 
 **当前任务 ID：** `TASK-20260503-01`
 **任务焦点：** Linux inotify file watcher（自实现 ~150-200 LOC）+ HotReloadManager CSS-only 增量重载（严格不踩 F-025 use-after-free）+ T2 路径穿越 8 步守卫 + DevTool 三件套主线收官（Phase A → B → C 完整闭环）
-**分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后 / 即将 +12 commits 与原始基线 main）
+**分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后 / +12 commits 与原始基线 main / reflect commit 待添加）
 **Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务 / 5 R 风险 / 3 Checkpoint / 12 条 systemPatterns 协同度自我对照）
-**下一步：** 用户调用 `/reflect` 启动反思阶段 — 创建 `memory-bank/reflection/reflection-TASK-20260503-01.md`
+**回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-01.md`（11 段 Level 3 详细回顾 / 实测 ~104 min build = 0.31× plan ×0.6 触发「极窄档延续高效区下沿挤压」新数据点群组 / Phase 0 投入定律 triple-evidence 升级 / 5 大可复用范式 100% 命中 + lazy-attach C ABI 模式扩展 / 8 项改进建议 P0 0 / P1 4 / P2 4 / 反复模式 1/7 部分命中）
+**下一步：** 用户调用 `/archive` 启动归档阶段 — 创建 `memory-bank/archive/archive-TASK-20260503-01.md`
 
 **Plan 阶段 B1-B8 决策（用户选 all_recommended 8/8 锁定）：**
 - B1=A 独立 plan / B2=A 严格串行 / B3=A 新建 tests/devtool/hot_reload/ / B4=A POSIX realpath + unique_ptr RAII / B5=A 合并 C.2.2（YAGNI 节省 27 min — §0.7 grep 实证 hover/focus/scroll 当前不持久化）/ B6=A 每子任务 1 commit / B7=A ~2-3 h plan ×0.6 / B8=A 复用 spec+creative
@@ -187,6 +188,15 @@
 ---
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
+
+### P1 来自 TASK-20260503-01 reflection §7（reflect 阶段迁移 — 待 archive 阶段最终落实）
+
+> 4 项 P1 建议来自 Phase C 反思，archive 阶段须沉淀到对应规则/文档。
+
+- **P1 #1（C-#1）新公开 C API testability 接口前置识别** — C.4.2 dogfood smoke 需要 `vx_view_hot_reload_tracked_count` 才能验证「count=1」，plan 阶段未识别；建议 plan template「§API 设计」段加「testability 子段：smoke / dogfood / observability 接口需求」清单。**预估**：~10-15 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc`）；下次涉及 C ABI 设计 + dogfood smoke 时合并执行。
+- **P1 #2（C-#2）plan ctest 数量预期标注 config 假设** — plan §C.5.2 写「期望 1260+」未明确「DEVTOOL=ON + SDL2=ON + Benchmarks=ON 矩阵」假设，实测 1247 是配置差额；建议 plan template「§验收要点」段加 config 矩阵明示。**预估**：~10 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc`）；**反复模式部分命中 — 与 TASK-20260502-02 P1 #2 同类反复**，优先级升至 P1。
+- **P1 #3（C-#3）「baseline 阻塞 hotfix 分离协议」沉淀** — binutils 2.46+ 事件首次实证 hotfix 分支 → fast-forward main → feature rebase 链路；建议在 `systemPatterns.md` 「Git 工作流」段加新子段：(a) 触发条件 / (b) 决策树（继续 vs hotfix 分离）/ (c) hotfix 分支 → fast-forward main → feature rebase 链路 / (d) commit 信息分类。**预估**：~15-20 min `systemPatterns.md` 新子段；archive 阶段直接落实。
+- **P1 #4（C-#4）R12「工具链版本激进升级」风险登记** — plan §0.10 工具链与子系统关闭守门段应加「toolchain 版本激进升级 → 行为变化检查」子段（如 `ld --version` / `gcc --version` 输出对比 + 已知行为差异 grep）。**预估**：~10 min skill 文档调整（`.cursor/rules/skills/writing-plans.mdc` Phase 0 模板段）；下次 plan 阶段 §0.10 子段直接生效。
 
 ### P1 来自 TASK-20260502-01 reflection §6（archive 阶段迁移）
 
