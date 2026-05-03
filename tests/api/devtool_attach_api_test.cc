@@ -2,6 +2,12 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <filesystem>
+#include <string>
+
 namespace {
 
 // =============================================================================
@@ -214,6 +220,85 @@ TEST_F(DevtoolAttachApiTest, F11DoesNotToggleDevtoolAttach) {
   f11.key_code = VX_KEY_F11;
   vx_view_inject_input(view_, &f11);
   EXPECT_EQ(vx_view_devtool_loaded(view_), 1);  // unchanged
+}
+
+// =============================================================================
+// TASK-20260503-01 C.4.1 — vx_view_attach_devtool's hot_reload_dir parameter
+//
+// Lazy-attach C ABI contract (Phase B B.0.1 範式 reuse):
+//   - hot_reload_dir = NULL or ""    → no Hot Reload attach attempted;
+//                                       Inspector/Overlay attach returns VX_OK.
+//   - hot_reload_dir = abs valid     → mgr.Attach() succeeds; VX_OK.
+//   - hot_reload_dir = relative/bad  → mgr.Attach() fails; returns
+//                                       VX_WARNING_HOT_RELOAD_FAILED. Inspector
+//                                       + Overlay attach is NOT rolled back
+//                                       (devtool_loaded() == 1 after the call).
+// =============================================================================
+
+class DevtoolAttachHotReloadTest : public DevtoolAttachApiTest {
+ protected:
+  void SetUp() override {
+    DevtoolAttachApiTest::SetUp();
+    // Per-test mkdtemp keeps inotify watches independent + auto-cleanup.
+    char tmpl[] = "/tmp/vx_attach_hr_XXXXXX";
+    char* dir = ::mkdtemp(tmpl);
+    ASSERT_NE(dir, nullptr) << "mkdtemp failed";
+    tmp_dir_ = dir;
+  }
+  void TearDown() override {
+    if (!tmp_dir_.empty()) {
+      std::error_code ec;
+      std::filesystem::remove_all(tmp_dir_, ec);
+    }
+    DevtoolAttachApiTest::TearDown();
+  }
+  std::string tmp_dir_;
+};
+
+TEST_F(DevtoolAttachHotReloadTest, NullHotReloadDirSucceedsWithoutWatcher) {
+  // Backward compat: callers that don't set hot_reload_dir must still get
+  // VX_OK and a fully attached DevTool (Inspector + Overlay).
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 1;
+  opts.hot_reload_dir = nullptr;
+  EXPECT_EQ(vx_view_attach_devtool(view_, &opts), VX_OK);
+  EXPECT_EQ(vx_view_devtool_loaded(view_), 1);
+}
+
+TEST_F(DevtoolAttachHotReloadTest, EmptyHotReloadDirSucceedsWithoutWatcher) {
+  // Treating "" as "no hot reload" lets embedders unconditionally pass a
+  // (possibly empty) cmdline arg without branching at the call site.
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 1;
+  opts.hot_reload_dir = "";
+  EXPECT_EQ(vx_view_attach_devtool(view_, &opts), VX_OK);
+  EXPECT_EQ(vx_view_devtool_loaded(view_), 1);
+}
+
+TEST_F(DevtoolAttachHotReloadTest, ValidAbsoluteHotReloadDirAttachesSucceeds) {
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 1;
+  opts.hot_reload_dir = tmp_dir_.c_str();
+  EXPECT_EQ(vx_view_attach_devtool(view_, &opts), VX_OK);
+  EXPECT_EQ(vx_view_devtool_loaded(view_), 1);
+}
+
+TEST_F(DevtoolAttachHotReloadTest,
+       RelativeHotReloadDirReturnsWarningButDevtoolStillAttached) {
+  // T2 STEP 1 of the FileWatcher guard: relative paths are rejected.
+  // The C ABI must surface this as VX_WARNING_HOT_RELOAD_FAILED while
+  // keeping Inspector + Overlay attach intact (best-effort hot reload).
+  VxDevtoolOptions opts{};
+  opts.devtool_width = 270;
+  opts.enable_f12_hotkey = 1;
+  opts.hot_reload_dir = "relative/dir/here";
+  EXPECT_EQ(vx_view_attach_devtool(view_, &opts),
+            VX_WARNING_HOT_RELOAD_FAILED);
+  // Critical contract: warning does NOT roll back inspector/overlay attach.
+  EXPECT_EQ(vx_view_devtool_loaded(view_), 1);
 }
 
 #else  // VX_BUILD_DEVTOOL OFF — A14 zero-byte stub guard

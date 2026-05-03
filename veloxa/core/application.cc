@@ -10,6 +10,7 @@
 #include "veloxa/text/freetype_shaper.h"
 
 #ifdef VX_BUILD_DEVTOOL
+#include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/resources/inspector_resources.h"
 #include "veloxa/script/dom_bindings.h"
 #include "veloxa/script/quickjs_engine.h"
@@ -54,9 +55,28 @@ Application::Application(const Config& config) : config_(config) {
     canvas_->Begin();
     canvas_->Clear(config_.background_color);
   }
+#ifdef VX_BUILD_DEVTOOL
+  // TASK-20260503-01 C.4.1 — Hot Reload manager is per-Application and
+  // lives for the view's whole lifetime. Construction is cheap (no
+  // syscalls, no thread); the worker thread + inotify fd are deferred
+  // to Attach(). Passing `this` is safe — HotReloadManager only stores
+  // the pointer; it never dereferences it before Attach() spawns the
+  // watcher and DrainEvents() is invoked from Update() on the main
+  // thread.
+  hot_reload_manager_ =
+      std::make_unique<vx::devtool::hot_reload::HotReloadManager>(this);
+#endif
 }
 
 Application::~Application() {
+  // C.4.1 — release HotReloadManager BEFORE bindings/Document slots so
+  // its dtor (which Detach()s and joins the watcher thread) cannot race
+  // with another thread's pending DrainEvents touching `this`. The watch
+  // thread itself never touches Application directly; OnFileChanged
+  // only enqueues. Still, ordering it first keeps the teardown invariant
+  // simple: by the time we touch any other field, no FileWatcher thread
+  // is alive.
+  hot_reload_manager_.reset();
   // A.1.8 — tear down DevTool script bindings/engine BEFORE the DevTool
   // Document slot so JS callbacks cannot fire on a freed Document.
   if (devtool_dom_bindings_) devtool_dom_bindings_->Unbind();
@@ -179,6 +199,17 @@ void Application::Quit() {
 }
 
 void Application::Update() {
+#ifdef VX_BUILD_DEVTOOL
+  // C.4.1 — drain queued FileWatcher events on the main thread BEFORE
+  // running the per-frame UpdateManager. DrainEvents calls LoadCSS for
+  // every surviving event, which resets update_manager_ via the existing
+  // LoadCSS path — so EnsureUpdateManager below picks up the new
+  // stylesheets cleanly within the same frame. No-op when nothing is
+  // attached (cheap mutex-protected queue check).
+  if (hot_reload_manager_) {
+    hot_reload_manager_->DrainEvents();
+  }
+#endif
   EnsureUpdateManager();
   if (update_manager_) {
     update_manager_->Update();
@@ -303,6 +334,10 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
       // a flip via vx_inspector_set_redaction_policy that occurred
       // BEFORE attach is honoured by the very first JS call.
       devtool_dom_bindings_->SetRedactionPolicy(redaction_policy_);
+      // C.4.1: wire HotReloadManager into the DevTool DomBindings so
+      // the inspector_panel.js status indicator (C.3.1) can read
+      // tracked_count + last_error via vx_devtool_get_hot_reload_status.
+      devtool_dom_bindings_->SetHotReloadManager(hot_reload_manager_.get());
       script::RegisterDevtoolBindings(devtool_script_engine_->context());
       auto eval = devtool_script_engine_->EvalGlobal(
           StringView(devtool::resources::kInspectorPanelJs),

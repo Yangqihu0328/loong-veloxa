@@ -20,6 +20,7 @@
 
 #ifdef VX_BUILD_DEVTOOL
 #include "veloxa/core/dom/serializer.h"
+#include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/inspector/inspector_data.h"
 #endif
 
@@ -289,9 +290,11 @@ VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts) {
   /* Defaults when caller passes NULL opts (matches A.1.7 plan contract). */
   uint32_t width = 270;
   uint8_t hotkey = 1;
+  const char* hot_reload_dir = nullptr;
   if (opts) {
     width = opts->devtool_width != 0 ? opts->devtool_width : 270;
     hotkey = opts->enable_f12_hotkey;
+    hot_reload_dir = opts->hot_reload_dir;
   }
 
   /* Clamp to documented range [200, 400] silently. */
@@ -304,6 +307,21 @@ VxResult vx_view_attach_devtool(VxView* view, const VxDevtoolOptions* opts) {
   if (!app->LoadDevtoolDocument(static_cast<vx::f32>(width))) {
     /* canvas-missing or other failure path */
     return VX_ERROR_INVALID_STATE;
+  }
+
+  /* C.4.1 — best-effort Hot Reload attach (lazy-attach C ABI 容错 pattern,
+   * Phase B B.0.1 範式 reuse). Inspector + Overlay are already published
+   * above; failure here returns VX_WARNING_HOT_RELOAD_FAILED but does
+   * NOT roll back the devtool_loaded() == 1 state. NULL or "" disables
+   * the watcher entirely (informational, no error). */
+  if (hot_reload_dir != nullptr && hot_reload_dir[0] != '\0') {
+    auto* mgr = app->hot_reload_manager();
+    if (mgr != nullptr) {
+      auto st = mgr->Attach(vx::StringView(hot_reload_dir));
+      if (!st.ok()) {
+        return VX_WARNING_HOT_RELOAD_FAILED;
+      }
+    }
   }
   return VX_OK;
 #endif

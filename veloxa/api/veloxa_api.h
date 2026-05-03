@@ -38,6 +38,15 @@ typedef enum {
   /* TASK-20260502-01 A.0.6: reserved for node_id-keyed APIs (A.1.x).
    * Returned when a node_id handle does not resolve in the current document. */
   VX_ERROR_NOT_FOUND = -4,
+  /* TASK-20260503-01 C.4.1: vx_view_attach_devtool's hot_reload_dir
+   * attach failed (T2 path-traversal guard rejected the directory, dir
+   * does not exist, etc.). Inspector + Performance Overlay attach still
+   * succeeded; hot reload is best-effort and the warning is informational
+   * — embedders can call vx_devtool_get_hot_reload_status to inspect
+   * last_error, or simply ignore the warning. Positive value to remain
+   * cleanly distinguishable from VX_OK while not colliding with any
+   * existing negative error code. */
+  VX_WARNING_HOT_RELOAD_FAILED = 1,
 } VxResult;
 
 /* ── Event types ────────────────────────────────────────────────── */
@@ -187,6 +196,19 @@ typedef struct {
   uint32_t devtool_width;
   /* 0=off, 1=on. When NULL opts is passed, defaults to 1. */
   uint8_t enable_f12_hotkey;
+  /* TASK-20260503-01 C.4.1: optional Hot Reload watch directory. NULL
+   * or "" disables Hot Reload (Inspector + Performance Overlay attach
+   * still succeed). When set, must be an absolute path; the underlying
+   * InotifyFileWatcher applies the T2 8-step canonical-path /
+   * symlink-rejection / max-file-size guards and only forwards .css
+   * file changes to Application::LoadCSS. Attach failure (relative
+   * path, missing dir, T2 reject) returns VX_WARNING_HOT_RELOAD_FAILED
+   * — Inspector + Overlay attach are NOT rolled back. The warning is
+   * informational; embedders can read vx_devtool_get_hot_reload_status
+   * for the last_error string. DEVTOOL=OFF: hot_reload_dir is ignored
+   * (the whole attach returns VX_ERROR_INVALID_STATE before reaching
+   * this field). */
+  const char* hot_reload_dir;
 } VxDevtoolOptions;
 
 /* Attach DevTool dogfood UI to view. opts may be NULL → uses
