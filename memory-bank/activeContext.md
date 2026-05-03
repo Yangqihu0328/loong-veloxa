@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — `/van` ✅ + `/plan` ✅ + `/build` ✅（**5 commits**：3 P3 + 1 finalize）→ 等待 `/reflect`
+**回顾中** — `/van` ✅ + `/plan` ✅ + `/build` ✅ + `/reflect` ✅（reflection 文档 + 4 项改进建议落地策略）→ 等待 `/archive`
 
 **当前任务 ID：** `TASK-20260503-03`
 **任务焦点：** DevTool 三件套主线收官 — 4 项 P3 候选批量清零 → **build 阶段调整为 3 项完成 + 1 项升级 P3**（P3.1+P3.2 三元守卫 fix ✅ / P2 三件套 dogfood 装裱 ✅ / P4 DevTool README ✅ / ~~P1 多帧验证~~ ❌ 拆细化为 P3 候选 — 反复模式 #1 命中 dirty_ 机制硬约束）
