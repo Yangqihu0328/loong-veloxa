@@ -221,6 +221,15 @@ VxResult vx_view_detach_devtool(VxView* view);
 /* Returns: 1 if DevTool currently attached, 0 if not, -1 if view is NULL. */
 int vx_view_devtool_loaded(VxView* view);
 
+/* TASK-20260503-01 C.4.2 — read HotReloadManager::tracked_count (count of
+ * Application::LoadCSS invocations driven by Hot Reload). Returns:
+ *    >=0  current tracked count (0 when no hot_reload_dir was configured)
+ *    -1   view is NULL
+ *    -1   DEVTOOL=OFF (A14 zero-byte stub guard)
+ * Useful for embedders + smoke tests to verify a CSS edit was picked up
+ * by the watcher without round-tripping through the JS binding. */
+int vx_view_hot_reload_tracked_count(VxView* view);
+
 /* TASK-20260502-02 B.3.1 — Performance Overlay HUD visibility flag.
  * Returns:
  *   1 if HUD is currently visible (default after attach when DEVTOOL=ON),

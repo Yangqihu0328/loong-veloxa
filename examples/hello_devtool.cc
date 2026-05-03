@@ -26,6 +26,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <string>
 #include <string_view>
 
 static const char kHTML[] =
@@ -100,12 +102,58 @@ int main() {
     return 1;
   }
 
+  /* TASK-20260503-01 C.4.2 — Hot Reload smoke setup. Driven by env var
+   * VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1 so the production embedder use
+   * case (no hot reload, no temp dir) stays the default. The smoke
+   * scenario:
+   *   1. mkdtemp /tmp/vx_hr_smoke_XXXXXX/
+   *   2. write style.css with an initial body { background: red }
+   *   3. attach DevTool with hot_reload_dir = the temp dir
+   *   4. SDL timer at +100ms rewrites style.css to body { background: blue }
+   *   5. inotify worker debounces (50ms) → main-thread DrainEvents picks
+   *      up next frame → Application::LoadCSS → tracked_count++
+   *   6. autoquit (caller-controlled, default 500ms in the smoke test)
+   *      then print "HOT RELOAD: triggered count=N" — ctest regex matches.
+   * cleanup: filesystem::remove_all on the temp dir before returning.
+   */
+  static char s_hr_dir[256] = {0};
+  static char s_hr_css_path[512] = {0};
+  bool hot_reload_test = false;
+  if (const char* env = std::getenv("VX_HELLO_DEVTOOL_HOT_RELOAD_TEST")) {
+    if (env[0] == '1') hot_reload_test = true;
+  }
+
+  if (hot_reload_test) {
+    std::strncpy(s_hr_dir, "/tmp/vx_hr_smoke_XXXXXX", sizeof(s_hr_dir) - 1);
+    if (::mkdtemp(s_hr_dir) == nullptr) {
+      std::fprintf(stderr, "ERROR: mkdtemp failed\n");
+      vx_view_destroy(view);
+      vx_surface_destroy(surface);
+      vx_event_loop_destroy(loop);
+      return 1;
+    }
+    std::snprintf(s_hr_css_path, sizeof(s_hr_css_path), "%s/style.css",
+                  s_hr_dir);
+    FILE* f = std::fopen(s_hr_css_path, "w");
+    if (!f) {
+      std::fprintf(stderr, "ERROR: open %s failed\n", s_hr_css_path);
+      vx_view_destroy(view);
+      vx_surface_destroy(surface);
+      vx_event_loop_destroy(loop);
+      return 1;
+    }
+    std::fputs("body { background-color: red; }\n", f);
+    std::fclose(f);
+    std::printf("Hot Reload smoke: watching %s\n", s_hr_dir);
+  }
+
   /* Attach DevTool dogfood UI on the right-hand 270px dock with F12
    * hotkey enabled. Production embedders typically attach unconditionally
    * during development and ship a build with VX_BUILD_DEVTOOL=OFF. */
   VxDevtoolOptions opts{};
   opts.devtool_width = 270;
   opts.enable_f12_hotkey = 1;
+  opts.hot_reload_dir = hot_reload_test ? s_hr_dir : nullptr;
   if (vx_view_attach_devtool(view, &opts) != VX_OK) {
     std::fprintf(stderr,
                  "ERROR: vx_view_attach_devtool failed (rebuild with "
@@ -117,6 +165,25 @@ int main() {
   }
   std::printf("DevTool attached on right-hand dock (width=%u, F12 to toggle).\n",
               opts.devtool_width);
+
+  if (hot_reload_test) {
+    /* Schedule the CSS rewrite at +100ms so the watcher has settled. The
+     * timer body MUST be fast (SDL timer thread) — write the file and
+     * return; the main thread picks the inotify event up via
+     * Application::Update → HotReloadManager::DrainEvents. */
+    SDL_InitSubSystem(SDL_INIT_TIMER);
+    SDL_AddTimer(
+        100,
+        [](Uint32, void* /*ud*/) -> Uint32 {
+          FILE* f = std::fopen(s_hr_css_path, "w");
+          if (f) {
+            std::fputs("body { background-color: blue; }\n", f);
+            std::fclose(f);
+          }
+          return 0;
+        },
+        nullptr);
+  }
 
   /* TASK-20260502-02 B.3.2 — Performance Overlay smoke.
    * Install pipeline hooks via the C ABI to count frames. The Performance
@@ -191,10 +258,24 @@ int main() {
                  "ERROR: pipeline hooks did not fire — perf overlay broken\n");
   }
 
+  /* C.4.2 — Hot Reload smoke: print stable line BEFORE detach so the
+   * tracked count reflects what actually fired during the run. ctest
+   * matches the regex "HOT RELOAD: triggered count=[1-9]" to PASS. */
+  if (hot_reload_test) {
+    int tracked = vx_view_hot_reload_tracked_count(view);
+    std::printf("HOT RELOAD: triggered count=%d\n", tracked);
+  }
+
   vx_view_detach_devtool(view);
   vx_view_destroy(view);
   vx_surface_destroy(surface);
   vx_event_loop_destroy(loop);
+
+  if (hot_reload_test && s_hr_dir[0] != '\0') {
+    std::error_code ec;
+    std::filesystem::remove_all(s_hr_dir, ec);
+  }
+
   std::printf("Done.\n");
   return 0;
 }

@@ -351,6 +351,23 @@ int vx_view_devtool_loaded(VxView* view) {
 #endif
 }
 
+int vx_view_hot_reload_tracked_count(VxView* view) {
+  if (!view) return -1;
+#ifndef VX_BUILD_DEVTOOL
+  return -1;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  auto* mgr = app->hot_reload_manager();
+  if (mgr == nullptr) return 0;
+  /* tracked_count() is usize; cast to signed int is safe in practice
+   * (CSS hot reload tracking is bounded by user edits over a session,
+   * not adversarial). Saturate negative on overflow defensively. */
+  vx::usize n = mgr->tracked_count();
+  if (n > static_cast<vx::usize>(INT32_MAX)) return INT32_MAX;
+  return static_cast<int>(n);
+#endif
+}
+
 int vx_view_is_hud_visible(VxView* view) {
   if (!view) return -1;
 #ifndef VX_BUILD_DEVTOOL

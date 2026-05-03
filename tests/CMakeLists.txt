@@ -382,5 +382,25 @@ if(VX_PLATFORM_SDL2)
       PASS_REGULAR_EXPRESSION "PERF SMOKE: frames=[1-9][0-9]* hud_visible=1"
       TIMEOUT 10
     )
+
+    # TASK-20260503-01 C.4.2: Hot Reload end-to-end smoke. Drives
+    # hello_devtool with VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1 so the
+    # binary mkdtemps a watch dir, attaches DevTool with hot_reload_dir,
+    # rewrites the watched style.css at +100ms, and then prints the
+    # stable "HOT RELOAD: triggered count=N" line on exit.
+    # Auto-quit is generous (800 ms) so on slow CI the inotify worker
+    # has time to: fire IN_CLOSE_WRITE → debounce 50ms → main-thread
+    # DrainEvents → LoadCSS → tracked_count++. PASS_REGULAR_EXPRESSION
+    # demands at least one tracked invocation.
+    add_test(
+      NAME hello_devtool_hot_reload_smoke
+      COMMAND $<TARGET_FILE:hello_devtool>
+    )
+    set_tests_properties(hello_devtool_hot_reload_smoke PROPERTIES
+      ENVIRONMENT
+        "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=800;VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1"
+      PASS_REGULAR_EXPRESSION "HOT RELOAD: triggered count=[1-9][0-9]*"
+      TIMEOUT 15
+    )
   endif()
 endif()
