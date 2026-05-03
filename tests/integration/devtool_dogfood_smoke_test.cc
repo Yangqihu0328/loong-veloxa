@@ -103,7 +103,8 @@ TEST_F(DevtoolDogfoodSmokeTest, VxDevtoolGetDomJsonReachesTargetDocument) {
   auto json = app_->EvalDevtoolScript(
       vx::StringView("vx_devtool_get_dom_json()"),
       vx::StringView("smoke_probe"));
-  ASSERT_TRUE(json.ok()) << "EvalDevtoolScript: " << json.status().message().data();
+  ASSERT_TRUE(json.ok()) << "EvalDevtoolScript: "
+                         << (!json.ok() ? json.status().message().data() : "");
   const std::string& s = json.value();
   EXPECT_NE(s.find("\"document\""), std::string::npos) << s;
   EXPECT_NE(s.find("\"div\""), std::string::npos) << s;
