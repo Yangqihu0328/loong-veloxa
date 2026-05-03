@@ -16,6 +16,7 @@ enum class StatusCode : u8 {
   kNotFound,
   kAlreadyExists,
   kInternal,
+  kAborted,
 };
 
 class Status {
