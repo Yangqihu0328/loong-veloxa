@@ -17,10 +17,12 @@ target_sources(vx_devtool PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/overlay/perf_overlay.cc
 )
 
-# TASK-20260503-01 C.0.1: FileWatcher abstract base + Platform factory. Same
-# cross-subsystem append pattern as overlay/perf_overlay.cc — avoids creating
-# a separate sub-library for the Hot Reload module. C.1.1 will append
-# hot_reload/file_watcher_inotify.cc here for the real Linux implementation.
+# TASK-20260503-01 C.0.1 + C.1.1: Hot Reload file watcher. Cross-subsystem
+# append pattern (same as overlay/perf_overlay.cc above). Linux backend
+# `file_watcher_inotify.cc` is unconditionally compiled — its top-level
+# `#if defined(__linux__)` guard means it produces an empty TU on other
+# platforms while keeping the CMake target list portable.
 target_sources(vx_devtool PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/hot_reload/file_watcher.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/hot_reload/file_watcher_inotify.cc
 )
