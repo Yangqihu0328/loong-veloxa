@@ -264,6 +264,58 @@ alwaysApply: false
 
 此段产出物：「注入点核对表」一节进入设计文档。
 
+## 调参/调阈值/调时间常量类子任务前置 baseline smoke 实证（涉及调整现有参数/阈值/时间常量类子任务时**必填**）
+
+> 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次同源新维度（TASK-20260503-03 P1 实证）：plan §3 P1 假设「调 `VX_HELLO_DEVTOOL_AUTOQUIT_MS` 200→600ms + 收紧 PASS_REGULAR_EXPRESSION = 自然多帧」；实测 autoquit 600ms / 1500ms 均 frames=1 — `UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 短路 + `dirty_` 仅 `transition_mgr_.HasActive()` 才 rearm，静态 CSS 第 1 帧后永久 frames=1。VAN/plan 阶段 grep 看到 `set_pipeline_hooks` C ABI + `OnFrame` 调用链 + `update_manager_->Update()` 全部存在 ✅，但**「现有实现 runtime 行为」是另一个维度，grep 不能发现**。反复模式 #1 适用范围**升级**到包括「调参/调阈值/调时间类假设的 runtime 行为未验证」子维度。
+
+**触发条件**：plan §3 子任务涉及以下任一情形 → 必填本段：
+
+- 调整现有 ctest `set_tests_properties(... PROPERTIES TIMEOUT N)` / `ENVIRONMENT "...=N"` 时间/数值常量假设可获得某种 runtime 行为变化
+- 调整现有 `PASS_REGULAR_EXPRESSION` / 断言阈值假设可收紧/放宽既有测试范围
+- 调整现有 source code 中 magic number / 默认参数 / 配置常量假设可调整 runtime 行为
+- 任何「调 X 即可获得 Y」的 runtime 行为假设，X 与 Y 之间的因果路径未在 plan §0 grep 之外做实证或源码 Read 确认
+
+**强制 5min baseline smoke 实证（plan §0 必填两步择一）**：
+
+1. **实证路径（推荐 — 5 min 投入）**：
+   - 跑一次现有 baseline 命令，记录实测输出到 plan
+   - 例（本任务的反例）：`SDL_VIDEODRIVER=dummy VX_HELLO_DEVTOOL_AUTOQUIT_MS=200 ./build/examples/hello_devtool 2>&1 | grep "PERF SMOKE"` → 若实测 frames=1 已经是 baseline，则「调 autoquit ms = 多帧」假设立即被否决
+   - 实证记录格式：「实测命令：[命令] / 实测输出：[输出] / 假设是否成立：✅/❌」
+
+2. **Read 路径（替代 — 适用 baseline 不可跑情形）**：
+   - 若 baseline 依赖大型 reconfigure / 真实硬件 / 用户交互等无法快速跑，必须 Read 假设涉及的核心 runtime 行为源码（不只 grep API 存在性）确认机制路径
+   - Read 范围：从假设的「触发源」（如 SetTimer / OnFrame）到「目标行为」（如 frame hooks 调用）的完整调用链中的关键短路 / 守卫 / 状态机分支
+   - 例（本任务应该做的）：`Read veloxa/core/update_manager.cc` → 看到 `if (!dirty_) return;` 第 17 行短路 → 立即识别 dirty_ rearm 路径仅 `transition_mgr_.HasActive()` 一个源 → 静态 CSS 场景下假设否决
+
+3. **若 1 + 2 都不可执行**：
+   - plan §3 子任务必须显式标注「**未验证假设 — 实施失败概率高**」，并把该子任务降级为「探针式实施」（先做最小验证子任务，PASS 后再做主体）
+   - 反例：本任务 P1 没标注「未验证」直接进入 build 阶段实施 → 12 min 失败回退代价
+
+**判读规则**：
+
+- 实证假设成立 ✅ → plan 子任务正常进入实施
+- 实证假设否决 ❌ → 立即在 plan 阶段拆细化 / 取消该子任务（节省 build 阶段反复模式 #1 命中代价）
+- Read 路径机制清晰 → plan 子任务带「机制依赖说明」段进入实施
+- Read 路径发现「调 X 不能直接获得 Y」→ plan 子任务必须重新设计或拆细化
+
+**反模式**：
+
+- ❌ plan §0 grep 仅查 API/调用链存在性（如「`set_pipeline_hooks` 存在 ✅」），不查 runtime 行为机制（如「`UpdateManager::Update()` 是否每帧无条件触发 hooks」）
+- ❌ 假设「调 autoquit ms 多大 = 自然多帧」「调 timeout 大 = 测试更稳定」「调阈值更宽松 = 更多测试 PASS」类**线性外推**，不做实证或 Read 验证
+- ❌ 把 baseline 跑过 1 次（如「frames=1 hud_visible=1 旧 PASS」）当作假设可成立证据 — baseline PASS 不等于「线性外推假设」可成立
+
+**ROI 公式**：
+
+```
+plan 5min baseline smoke 投入 → 节省 build 阶段（反复模式 #1 命中代价 ~30-60 min + 用户 AskQuestion ~5-10 min + plan 调整 ~5-10 min）= ROI 8-16×
+```
+
+**TASK-20260503-03 实证**：P1 子任务实施失败 ~12 min（手测 ~5 + 根因定位 ~2 + 回退 ~1 + AskQuestion ~5 + plan 调整 ~5）— **反复模式 #1 命中代价基线**入库。若 plan 阶段做 5min baseline smoke（`SDL_VIDEODRIVER=dummy ... ./hello_devtool` 一次），假设立即否决，0 build 阶段代价。
+
+**正例对比（同任务 P3 task #3 audit 预跑）**：VAN 阶段对「8 处反模式」假设做 grep + Read 实证 → 修正为「2 处反模式」 → build 阶段 0 浪费，估时 ×0.20。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「调参/调阈值类子任务的 5min baseline smoke 实证规则」段（archive 阶段同步补）。
+
 ## 既有测试隐式契约 fingerprint（layout / parser / event 等富边界子系统**必填**）
 
 > 反复模式「前置依赖/环境/API 能力未验证」第 9+ 次同源新维度（TASK-20260430-01 实证）：plan §0 grep 仅查目标功能 fingerprint（F1-F6），未对**即将 touch 的代码路径相关的所有 `*test*.cc` 做边界期望反向 fingerprint**。R3 既有 sibling collapse 测试隐含「`Layout(root, ctx)` 之后 root 自身 margin-top 不会 propagate 到 viewport」假设，build P3 GREEN 实施完后该测试退化（root 节点 propagate 到了不该 propagate 的位置）。

@@ -983,3 +983,70 @@ T6 / 性能 / 边界场景测时，如设计意图含「特殊值 = 特殊语义
 
 **DevTool 三件套主线收官** — Inspector + Performance Overlay + Hot Reload 完整闭环 ✅；后续候选见 activeContext.md 待处理事项 §「Phase C 完成后 P3 候选」段。
 
+---
+
+## Veloxa 引擎核心机制注意点（TASK-20260503-03 P1 实证沉淀）
+
+> **背景**：TASK-20260503-03 P1 实施失败（反复模式 #1 第 9 次命中）暴露 Veloxa 引擎层面的「脏区优化」机制对所有 frame-hook based 子系统 smoke 测试设计有硬约束。本段汇总 4 个 invalidate 源 + frame-hook based 子系统 smoke 设计 SOP，避免下次再踩坑。
+
+### update_manager.dirty_ 短路机制
+
+**核心代码（截至 2026-05-03）**：
+
+```16:18:veloxa/core/update_manager.cc
+void UpdateManager::Update() {
+  if (!dirty_ || !config_.document) return;
+```
+
+```69:73:veloxa/core/update_manager.cc
+  display_list_ = std::move(new_list);
+  dirty_ = false;
+
+  if (transition_mgr_.HasActive()) {
+    dirty_ = true;
+  }
+```
+
+**语义：**
+- `UpdateManager::Update()` 第 17 行 `if (!dirty_) return;` 是 frame hooks（`pipeline_hooks_->on_frame_start/on_after_style/on_after_layout/on_after_render/on_frame_end` 共 5 个 hook 注入点）触发的硬约束
+- `dirty_` 在每帧末尾 reset（第 69 行），仅当 `transition_mgr_.HasActive()` 才 rearm（第 71-73 行）
+- 静态 CSS 场景（无 transition / animation / 用户输入）→ 第 1 帧后 `dirty_=false` 永久阻断 hooks → frames=1 是天然稳态
+
+### dirty_ rearm 4 个 invalidate 源
+
+| # | 源 | 触发路径 | 适用场景 |
+|:-:|---|---|---|
+| 1 | **用户输入** | `Application::InjectInput → event_manager_.HandleInput → UpdateManager::Invalidate()` | 真实交互场景 / SDL2 input forwarding |
+| 2 | **active CSS transition** | `transition_mgr_.HasActive() == true → dirty_ = true`（update_manager.cc:71-73）| 有 transition 属性 + 属性变更触发 |
+| 3 | **CSS animation** | （引擎是否支持待验证 — 见 `memory-bank/systemPatterns.md`「待定架构决策」段）| 持续动画场景 |
+| 4 | **公开 vx_view_invalidate API** | **待立项**（TASK-20260503-03 P3 候选 #0）| Embedder 主动触发 / dogfood smoke 强制多帧 |
+
+### frame-hook based 子系统 smoke 设计 SOP
+
+**任何 frame-hook based 子系统**（perf overlay / hot reload / debug overlay / 用户 PipelineHooks）的 smoke 测试设计必须满足以下任一条件：
+
+1. **持续输入源** — 测试 fixture 周期注入用户输入（`Application::InjectInput`）触发 `UpdateManager::Invalidate()`
+2. **持续 transition 源** — 测试 fixture 在 DOM 中注入 active CSS transition（如 :hover 触发 + 周期 hover/unhover）
+3. **公开 invalidate API**（待立项）— 测试 fixture 在 hook 回调中调用 `vx_view_invalidate()` force rearm
+4. **明确接受 frames=1 ABI smoke 语义** — 在 ctest 注释中**显式说明** smoke 仅验证 ABI 表面，不验证多帧 ring buffer 聚合
+
+### 现有 ctest 设计实证（截至 2026-05-03）
+
+| ctest | 选择条件 | 当前状态 |
+|---|:-:|:-:|
+| `hello_devtool_perf_smoke` | 选 4（明确接受 frames=1 ABI smoke）| ✅ TASK-20260503-03 P2 ctest 注释已显式说明 |
+| `hello_devtool_hot_reload_smoke` | 选 1（VX_HELLO_DEVTOOL_HOT_RELOAD_TEST=1 fixture 写入 watched style.css → DrainEvents → LoadCSS → invalidate）| ✅ 设计已满足 |
+| `hello_devtool_smoke` | 选 4（DevTool attach 仅 baseline + load_html/load_css 自带 invalidate）| ✅ 单帧 attach 验证已足够 |
+
+### Trade-off 设计意图
+
+- **dirty_ 短路是 Veloxa 「脏区优化」核心** — 节省静态场景 CPU 占用（车载嵌入式场景关键 — 100MB 内存预算下 idle 帧不浪费 CPU）
+- **持续 invalidate 是付费扩展能力，不是默认行为** — embedder 主动选择是否需要持续渲染
+- **frame hooks 多帧验证 = update_manager.dirty_ 机制依赖** — 不是 bug，是 design choice
+
+### 交叉引用
+
+- `memory-bank/systemPatterns.md`「调参/调阈值/调时间常量类子任务的 5min baseline smoke 实证规则」段（同源沉淀）
+- `.cursor/rules/skills/writing-plans.mdc`「调参/调阈值/调时间常量类子任务前置 baseline smoke 实证（必填）」段
+- `memory-bank/activeContext.md`「P3 候选 — 来自 TASK-20260503-03 build 阶段 P1 实施失败拆细化」段（候选 #0 Performance Overlay 持续 invalidate 机制）
+

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾中** — `/van` ✅ + `/plan` ✅ + `/build` ✅ + `/reflect` ✅（reflection 文档 + 4 项改进建议落地策略）→ 等待 `/archive`
+**归档中** — `/van` ✅ + `/plan` ✅ + `/build` ✅ + `/reflect` ✅ + `/archive` 启动 → 落实改进建议 + 创建 archive 文档
 
 **当前任务 ID：** `TASK-20260503-03`
 **任务焦点：** DevTool 三件套主线收官 — 4 项 P3 候选批量清零 → **build 阶段调整为 3 项完成 + 1 项升级 P3**（P3.1+P3.2 三元守卫 fix ✅ / P2 三件套 dogfood 装裱 ✅ / P4 DevTool README ✅ / ~~P1 多帧验证~~ ❌ 拆细化为 P3 候选 — 反复模式 #1 命中 dirty_ 机制硬约束）
@@ -345,6 +345,20 @@
 ---
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
+
+### P2 来自 TASK-20260503-03 reflection §6（archive 阶段迁移）
+
+- **P2 #4「commit body Source 溯源 + 实测数据格式固化」** — TASK-20260503-02（6 docs commits）+ TASK-20260503-03（5 commits）= 11 commits 累计 double-evidence；建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`，commit message 范本段新增：
+  ```
+  <type>(<scope>): <subject> (<task-tag>)
+
+  Source: TASK-XXXXXXXX-XX <reflection §X | build | candidate | etc>.
+
+  <2-4 句根因/设计决策记录>
+
+  <可选：实测数据，如 "DEVTOOL=ON N/N PASS" / "+L 行 / +R 重构">
+  ```
+  **预估**：~10-15 min；下次工作流元任务批量落地。
 
 ### P1/P2 来自 TASK-20260503-02 reflection §6（reflect 阶段迁移 — archive 阶段直接落实）
 
