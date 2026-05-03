@@ -179,6 +179,47 @@ alwaysApply: false
    - **次选**：在被测类中显式 `friend class XxxTest;`（白名单 friend）
    - **禁止**：`#define private public`、`reinterpret_cast` 越权访问
 
+## ctest 数量预期 config 矩阵（plan 验收段写「期望 ctest N PASS」时**必填**）
+
+> 反复出现 P1（TASK-20260502-02 P1 #2 + TASK-20260503-01 C-#2 第二次同类反复升 P1 警戒线）：plan §验收写「期望 ctest 1228+」未明示「DEVTOOL=ON + SDL2=ON + Benchmarks=ON 矩阵」假设；实测 1247 是 SDL2/Benchmarks=OFF 的活跃测试集（DEVTOOL=ON），属正常配置差额，但 plan vs 实测 偏差产生疑似回归恐慌 → 浪费 reflect 阶段澄清时间。
+
+**触发条件**：plan / spec / reflection 中出现 ctest 数量声明（"期望 N PASS" / "+M cases" / "baseline N/N" 等）时**必填**。
+
+**强制产出 ctest config 矩阵**：
+
+| Config | DEVTOOL | SDL2 | Benchmarks | 期望 ctest | 实测 ctest | diff |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| baseline | ON | OFF | OFF | 1195 | - | - |
+| 本任务 ON path | ON | OFF | OFF | +N → 1195+N | - | - |
+| OFF path（A14 验证）| OFF | OFF | OFF | -M（黑名单 M 测试）| - | - |
+| SDL2 path（example smoke）| ON | ON | OFF | +K（含 hello_*_smoke）| - | - |
+
+**判读规则**：
+
+- 期望 vs 实测 diff = 0 → ✅ PASS，plan 假设正确
+- diff = 配置差额（如 SDL2 套件未启用）→ ✅ 配置差额，plan 写明则非回归
+- diff ≠ 0 且非配置差额 → 🔴 真实回归，触发 systematic-debugging skill
+
+**最小标注模板**（plan 验收段必备 1 行）：
+
+```markdown
+**ctest 期望矩阵**：DEVTOOL=ON 1195+N / DEVTOOL=OFF 1082+0（A14 黑名单守门）/ SDL2=ON 1265+K（含 example smoke）
+```
+
+**反模式**：
+
+- ❌ plan 写「期望 1228+」未明示配置矩阵 → 实测 1247 / 1265 / 1082 等数字时无法快速判定哪个是真 baseline
+- ❌ 仅声明 baseline 数字未声明配置 → 跨任务跨 host 跨配置难以对照
+- ❌ 把「ctest 1228 PASS」当作所有配置永真 — 配置矩阵差额可达 ±200 测试
+
+**TASK-20260502-02 / TASK-20260503-01 双重实证**：
+
+- TASK-20260502-02 P1 #2 首次出现：plan §B.5.2 验收写「DEVTOOL=ON 1228 / DEVTOOL=OFF 1082」未明示 SDL2/Benchmarks 配置 → reflect 阶段才补
+- TASK-20260503-01 C-#2 第二次同源：plan §C.5.2 写「期望 1260+」未识别 SDL2 配置差 → 实测 1247（DEVTOOL=ON + SDL2=OFF）vs 1265（DEVTOOL=ON + SDL2=ON）反 plan 假设
+- **第二次同源 = P1 警戒线** — 本规则首版即避免第三次同源
+
+**交叉引用**：`memory-bank/systemPatterns.md`「ctest baseline 配置矩阵」段（待本任务 archive 阶段补）；`memory-bank/techContext.md`「CMake basic vs full 配置矩阵」段（VX_BUILD_BENCHMARKS + VX_PLATFORM_SDL2 配置语义说明）。
+
 ## 边界输入清单（涉及解析、查找、转换、边界判断时**必填**）
 
 > 反复出现（TASK-06）：only happy path 测试，遇到空/null/超长立刻崩。
