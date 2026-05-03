@@ -28,6 +28,39 @@ alwaysApply: false
 - 一起变更的文件应该放在一起
 - 在现有代码库中遵循已有模式
 
+## 公开 API testability 检查清单（涉及新增公开 C ABI / public API 时**必填**）
+
+> 反复出现升级 P1（TASK-20260503-01 C-#1 实证）：C.4.2 dogfood smoke 需要 `vx_view_hot_reload_tracked_count` 才能验证「count=1」契约，plan 阶段未识别该 testability 接口需求 → build §C.5.2 finalize 才补加 → 1 行 ABI 加 1 commit 但破坏 plan 原子性。
+
+**触发条件**：本次 plan 涉及以下任一**必填**：
+
+- 新增公开 C ABI 函数（`vx_*` / `VX_*` 前缀，对外可见）
+- 新增公开 C++ class / namespace API（`veloxa::*` 头部 export）
+- 扩展既有公开 API 行为（新增参数 / 新增返回字段 / 新增错误码）
+
+**强制产出 testability 接口需求清单**：
+
+| 维度 | 问题 | 接口需求 | 落实子任务 |
+|---|---|---|---|
+| **smoke 可观测** | 该 API 的副作用可被 `examples/<name>` smoke 测试观测吗？ | 如 hot_reload 触发计数 → `vx_view_hot_reload_tracked_count()` getter | 写 ctest smoke 时同步加 |
+| **dogfood 可达** | 该 API 的状态可被 DevTool / inspector / debugger 读取吗？ | 如 hot_reload status → `vx_devtool_get_hot_reload_status()` JS binding | DevTool UI 子任务前置 |
+| **observability 可断言** | 该 API 的内部状态可被 ctest / valgrind / log assert 验证吗？ | 如 last_error 字段 → 单测 `EXPECT_TRUE(mgr.last_error().has_value())` | unit test 子任务覆盖 |
+
+**判读规则**：
+
+- 任一维度回答「否」→ plan 必须补「testability 子任务」前置（getter / binding / log accessor 暴露）
+- 三维度均「是」→ plan 标注「testability OK」并在验收要点段重复 ✅
+
+**反模式**：
+
+- ❌ plan 仅写「实现 API X」未列 testability 清单 → build 阶段 dogfood smoke 才发现缺 getter
+- ❌ 把 internal-only `friend class XxxTest;` 混淆为公开 API testability — 内部 friend 不暴露给 example/dogfood/observability 工具
+- ❌ 假设「下一个任务再加」— testability 接口与 API 同子任务设计才能保证 commit 原子性
+
+**TASK-20260503-01 实证**：plan §C.4.1 设计 `vx_view_attach_devtool` + `hot_reload_dir` 参数，未识别 dogfood smoke 需要「reload 触发次数 getter」→ §C.4.2 才追加 `vx_view_hot_reload_tracked_count()` 1 行 ABI + 1 commit；如 plan 阶段三问 testability 清单则可前置到 C.4.1 同 commit。
+
+**交叉引用**：`memory-bank/systemPatterns.md`「lazy-attach C ABI 容错模式」段（同源 C ABI 设计模式）；`.cursor/rules/skills/test-driven-development.mdc`（testability 是 TDD 前置条件）。
+
 ## CMake 链接方向约束分析（涉及 C/C++ 编译单元时**必填**）
 
 > 反复出现（TASK-20260414-01、TASK-20260418-01 至少 2 次）：下游目标需要上游的"间接"依赖时，若上游是 PRIVATE 链接，下游编译/链接会失败。
