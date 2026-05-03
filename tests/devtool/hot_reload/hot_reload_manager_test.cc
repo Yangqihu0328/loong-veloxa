@@ -201,6 +201,66 @@ TEST_F(HotReloadManagerTest, HtmlFileChangeDoesNotCallLoadCSSorLoadHTML) {
          "this guards the F-025 LoadHTML use-after-free contract";
 }
 
+// ============================================================================
+// C.2.3 — CSS parse failure recovery
+// ============================================================================
+
+// Invalid CSS (unbalanced braces) is rejected by the pre-validation
+// step: tracked_count stays put, last_error surfaces a "css parse
+// failure" message, and the existing stylesheets remain intact — the
+// caller can fix the file and the next change drains cleanly
+// (covered by the following test). CssParser is too lenient to use
+// rules.size() as the signal, so we detect brace imbalance which is
+// the most common observable symptom of a half-edited stylesheet.
+TEST_F(HotReloadManagerTest, InvalidCssIsNotLoadedAndLastErrorSet) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+  // Missing closing brace — classic mid-edit state.
+  tmp.WriteFile("broken.css", "body { color: red");
+
+  HotReloadManager mgr(app_.get());
+
+  FileChangeEvent evt;
+  evt.path = String((tmp.path() + "/broken.css").c_str());
+  mgr.OnFileChanged(evt);
+  mgr.DrainEvents();
+
+  EXPECT_EQ(mgr.tracked_count(), 0u);
+  EXPECT_NE(mgr.last_error().find("css parse failure"), std::string::npos)
+      << "got: " << mgr.last_error();
+}
+
+// After a parse failure the manager must accept a subsequent valid edit:
+// last_error is cleared on the next successful LoadCSS and
+// tracked_count advances.
+TEST_F(HotReloadManagerTest, ValidCssAfterErrorClearsLastError) {
+  TempDir tmp;
+  ASSERT_TRUE(tmp.valid());
+  tmp.WriteFile("style.css", "body { color: red");  // missing brace
+
+  HotReloadManager mgr(app_.get());
+
+  // First drain — parse failure path.
+  FileChangeEvent bad_evt;
+  bad_evt.path = String((tmp.path() + "/style.css").c_str());
+  mgr.OnFileChanged(bad_evt);
+  mgr.DrainEvents();
+  EXPECT_EQ(mgr.tracked_count(), 0u);
+  EXPECT_FALSE(mgr.last_error().empty());
+
+  // Repair the file + re-drain.
+  tmp.WriteFile("style.css", "body { color: black; }");
+  FileChangeEvent good_evt;
+  good_evt.path = String((tmp.path() + "/style.css").c_str());
+  mgr.OnFileChanged(good_evt);
+  mgr.DrainEvents();
+
+  EXPECT_EQ(mgr.tracked_count(), 1u);
+  EXPECT_TRUE(mgr.last_error().empty())
+      << "last_error should clear on a successful drain, got: "
+      << mgr.last_error();
+}
+
 // (f) tracked_count increments per successful LoadCSS, including drains
 // across multiple distinct files.
 TEST_F(HotReloadManagerTest, TrackedCountReflectsLoadCSSCalls) {
