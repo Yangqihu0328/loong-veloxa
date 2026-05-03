@@ -2,7 +2,60 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务立项（用户调用 `/van` 启动）。
+### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
+
+**当前阶段**：🟢 **构建完成 — 待 reflect**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+
+**里程碑**：
+
+- 2026-05-03 17:30 — `/van 清理技术债` 启动 / AskQuestion 选 A 工作流类批量清理 / 任务 ID `TASK-20260503-02` 生成 / Level 2 锁定 / feature 分支创建
+- 2026-05-03 18:00 — `/plan` 启动 / 6 P1 设计概要展示 / B1-B8 决策表抛出
+- 2026-05-03 18:10 — 用户选 all_recommended → B1-B8 8/8 锁定
+- 2026-05-03 18:20 — Phase 0 §0.2 audit 预跑（全 codebase `.status()` 6 处 6/6 ✅ 零误用）+ §0.3 工具可用性矩阵
+- 2026-05-03 18:50 — plan 文档落盘 `docs/plans/2026-05-03-techdebt-workflow-cleanup.md`（~480 行 / 6 子任务 [文档调整模式] / CP1+CP2 / 9 systemPatterns 协同度自我对照）
+- 2026-05-03 18:55 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 规划阶段闭环
+- 2026-05-03 18:55 — `/build` 启动 / activeContext 阶段 规划中 → 构建中
+- 2026-05-03 19:00 — 任务 1 C-#1 commit `51bf9d4` writing-plans testability 段（+33 行）
+- 2026-05-03 19:02 — 任务 2 C-#2 commit `71b830c` writing-plans ctest config 矩阵段（+41 行）⚠️ 第二次反复抑制成功
+- 2026-05-03 19:04 — 任务 3 C-#4 commit `31b237f` writing-plans toolchain 升级检查段（+49 行）
+- 2026-05-03 19:05 — 🛑 CP1 自审 ✅ PASS（标题层级 / 5 段结构 / 过度工程 / 交叉引用 / 总长 943 行 / 3 commits 独立）
+- 2026-05-03 19:07 — 任务 4 A-P1#4 commit `b8365ec` git-workflow `git add -p` 段（+56 行）
+- 2026-05-03 19:10 — 任务 5 A-P1#6 commit `02250f0` StatusOr audit 文档化（+51 行 / 14/14 ✅ 含 tests/ 扩展）
+- 2026-05-03 19:11 — 🛑 CP2 自审 ✅ PASS（audit 范围扩展 + 1 新 P3 候选发现）
+- 2026-05-03 19:13 — 任务 6 A-P1#8 commit `af7be2b` spec A14 解读附录段（+62 行）
+- 2026-05-03 19:14 — 完成验证 ✅：ctest 1247/1247 PASS（plan §3.1 期望一致 — C-#2 自我吃狗粮）+ lint 0 错误 + 4 文件 +292 行
+- 2026-05-03 19:15 — Memory Bank 三件套（tasks/activeContext/progress）finalize 更新 + 进入 /reflect
+
+**6 子任务实测耗时**（plan 阶段假设 ~85-100 min plan ×0.6 / ~40-65 min 实测期待）：
+
+| # | 子任务 | plan ×0.6 | 实测 | 比值 | 备注 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1 | C-#1 testability | 10-15 min | ~5 min | 0.33-0.50× | StrReplace 一次成功 |
+| 2 | C-#2 ctest config | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
+| 3 | C-#4 toolchain | 10 min | ~2 min | 0.20× | 同文件 batch 收益 |
+| 4 | A-P1#4 git add -p | 10-15 min | ~3 min | 0.20-0.30× | 单次 StrReplace |
+| 5 | A-P1#6 audit 文档化 | 15-20 min | ~3 min | 0.15-0.20× | Phase 0 预跑 + CP2 扩展 ~2 min |
+| 6 | A-P1#8 spec A14 | 15-20 min | ~3 min | 0.15-0.20× | 单次 StrReplace |
+| **合计** | - | **70-100 min** | **~18 min** | **~0.18-0.26×** | **远超「极窄档加速衰减区」下沿** |
+
+**关键效率发现**：实测 ~18 min vs plan ×0.6 ~85 min = **0.21× 比值**，比 Phase C 0.31× 进一步加速 → 触发新效率区候选「**纯文档/规则类极速区 ~0.15-0.25×**」（plan ×0.6 第 56+ 数据点群组延伸）。原因分析：
+- 零代码逻辑 → 无 RED→GREEN cycle / 无 ctest 等待 / 无 link 风险
+- Phase 0 §0.2 audit 预跑 → 任务 5 CP2 扩展仅 ~2 min（vs plan 假设需独立 audit）
+- writing-plans 3 项同文件 batch → 任务 2/3 收益（mental model 持续性）
+- 6/6 子任务零返工（CP1 + CP2 自审一次通过）
+
+**B1-B8 决策（all_recommended 8/8）**：详见 `tasks.md` 同任务段
+
+**Phase 0 §0.2 audit 预跑结论**：详见 `tasks.md` 同任务段（6/6 ✅ 零误用 / 0 fix 必要 / clang-tidy enforce 留 P3）
+
+**预期外发现入库（待 reflection 沉淀）**：
+
+1. 新 P3 候选：tests/ 中 `ASSERT_TRUE(x.ok()) << x.status().message()` 模式依赖 GoogleTest 短路评估，是易错模式 — 可考虑 codebase guideline P3
+2. A-P1#6 audit 范围超 plan：plan §0.2 仅 veloxa/(6) → CP2 扩展到 tests/(8) + examples/(0) + benchmarks/(0) = 总 14 处 ✅
+3. C-#4 toolchain 段层级决策：plan 写 `##` 一级但实际选 `####` 子段（紧邻 toolchain 检查族），实施时调整使语义更合理
+4. commit 消息范式自我应用：6 docs commits 全部含「Source: TASK-XXXXXXXX-XX reflection §X」前置溯源
+
+---
 
 ---
 

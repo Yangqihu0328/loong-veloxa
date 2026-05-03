@@ -2,6 +2,103 @@
 
 ## 当前任务
 
+### TASK-20260503-02：工作流/规则类技术债批量清理（6 项 P1 — 跨任务 reflection 沉淀）
+
+- **复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / 5 项规则文档调整 + 1 项 codebase audit / 无新代码逻辑变更）
+- **状态：** 🟢 **构建完成 — 待 reflect**（VAN ✅ + Plan ✅ + Build ✅ 6/6 子任务 + CP1+CP2 + ctest 1247 不退化 → 待 `/reflect` 阶段）
+- **创建日期：** 2026-05-03
+- **分支：** `feature/TASK-20260503-02-techdebt-workflow-cleanup`（基于 main `55dea8f` ✅ 已创建并切换）
+- **设计 spec：** ❌ 不需（纯文档 / 规则调整任务，直接以 plan 替代 spec）
+- **实现 plan：** ✅ `docs/plans/2026-05-03-techdebt-workflow-cleanup.md`（~480 行 / 6 子任务 [文档调整模式] / Phase 0 极简 1 子段含 audit 预跑 / B1-B8 8/8 锁定 / CP1+CP2 / 9 systemPatterns 协同度自我对照）
+- **创意文档：** ❌ 否（纯文档调整无设计空白）
+- **需要创意阶段：** ❌ 否
+- **来源：** 用户 2026-05-03 通过 `/van 清理技术债` 显式启动；用户 AskQuestion 选 A（工作流/规则类批量清理）— 6 项 P1 全部来自 `activeContext.md` 待处理事项段
+- **安全相关：** ❌ 否（纯文档/规则清理，无代码逻辑变更，无新外部输入处理）
+
+#### 任务范围（V1-V5 默认锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 子任务范围 | **6 子任务**（C-#1 / C-#2 / C-#4 / A-P1#4 / A-P1#6 / A-P1#8） | 用户 AskQuestion 选 A 锁定 6 项 P1 全清理 |
+| V2 | 实施模式 | **b 完整实施**（含 plan / build / verify / commit / reflect / archive） | 与 Level 2 标准路径一致 |
+| V3 | 复杂度 | **Level 2** | 6 文件修改 / 需求清晰 / 无新组件 / 无设计决策 |
+| V4 | 创意需求 | **❌ 否** | 纯文档清理无设计空白 |
+| V5 | 安全标注 | **❌ 否** | 纯规则文档调整 |
+
+#### 6 项 P1 清单（详细子任务定义）
+
+| # | ID | 标题 | 文件位置 | 估时 plan ×0.6 | 反复模式 |
+|:-:|---|---|---|:-:|:-:|
+| 1 | C-#1 | writing-plans skill「§API 设计」补 testability 子段 | `.cursor/rules/skills/writing-plans.mdc` | ~10-15 min | — |
+| 2 | C-#2 | writing-plans skill「§验收要点」补 ctest config 矩阵明示 | `.cursor/rules/skills/writing-plans.mdc` | ~10 min | ⚠️ 与 502-02 P1 #2 同类反复（升 P1） |
+| 3 | C-#4 | writing-plans skill Phase 0 §0.10 补 toolchain 版本激进升级检查 | `.cursor/rules/skills/writing-plans.mdc` | ~10 min | — |
+| 4 | A-P1#4 | git-workflow.mdc 补「Multi-subtask commit 拆分」`git add -p` 段 | `.cursor/rules/skills/git-workflow.mdc` | ~10-15 min | — |
+| 5 | A-P1#6 | StatusOr<T>::status() 三元守卫 codebase audit | 全 codebase rg 验证 + 必要时 fix | ~30-60 min | — |
+| 6 | A-P1#8 | spec template「A14 解读」附录段 | `docs/specs/2026-04-30-devtool-design.md` | ~15-20 min | — |
+
+**总估时**：~85-130 min plan ×0.6（不含 clang-tidy enforce 路径，留 P3）
+
+#### 验收要点
+
+- 5 项规则/spec 文档调整 git diff 可见 + 内容符合各 P1 描述
+- A-P1#6 audit 结果文档化（如有 fix 需 ctest 验证 + commit 单独记录）
+- DEVTOOL=ON ctest 1247 baseline 不退化（如 A-P1#6 触发 codebase fix 必须 verify）
+- `activeContext.md` 待处理事项段中已落实项标 ✅ 并迁移到「长期沉淀」段
+
+#### 前置验证（4/4 PASS）
+
+| 维度 | 检查内容 | 结果 |
+|---|---|:-:|
+| 依赖可获取性 | 无新依赖 | ✅ |
+| 环境就绪 | main 干净 / GTest + ctest / `rg` audit 工具 | ✅ |
+| 已有 artifact | 4 skill 文件 + 1 spec + audit 范围 | ✅ |
+| 待处理事项 | 直接清理 6 项 P1 | ✅ 极强 |
+
+#### Checkpoint（B6 Plan 阶段确认）
+
+- **CP1**：任务 1-3 完成后（writing-plans 3 段同文件 batch）→ 自审段落语义连贯 / 无过度工程 / 标题层级 / 交叉引用真实
+- **CP2**：任务 5 完成后（audit 文档化）→ 自审 audit 范围完整性 / 命令兜底正确 / P3 候选迁移
+
+#### Plan 阶段决策表（B1-B8 — 用户 1 次 AskQuestion 选 all_recommended → 8/8 按推荐锁定）
+
+| # | 维度 | 锁定 |
+|:-:|---|---|
+| B1 | writing-plans 3 项 commit 粒度 | 3 commits（每项独立，自我吃 A-P1#4 狗粮）|
+| B2 | A-P1#6 audit 输出 | audit only + 0 fix（Phase 0 §0.2 预跑 6/6 ✅）|
+| B3 | 子任务执行顺序 | 按文件分组（writing-plans 3 → git-workflow → audit → spec）|
+| B4 | 测试模式 | [文档调整模式] 新模式（无 TDD，git diff + ctest 不退化 verify）|
+| B5 | Phase 0 检查 | 极简 1 子段（含 audit 预跑 + 工具链快照 C-#4 落实首版）|
+| B6 | Checkpoint | CP1（任务 1-3 后）+ CP2（任务 5 后）|
+| B7 | plan 估时 | ~85-100 min plan ×0.6 → 实测 ~40-65 min 期待（极窄档延续 0.40-0.50×）|
+| B8 | 反复模式记录 | C-#2 标注「第二次同类反复」+ reflect 阶段统计反复抑制有效性 |
+
+#### Phase 0 §0.2 audit 预跑结论（plan 阶段已固化）
+
+全 codebase `.status()` 调用 6 处（5 文件 5 上下文）：
+
+| # | 文件:行 | 守卫模式 | 评估 |
+|:-:|---|---|:-:|
+| 1 | `application.cc:113` | `if (!result.ok()) return result.status();` | ✅ |
+| 2 | `application.cc:135` | 同上 | ✅ |
+| 3 | `application.cc:348` | `eval.ok() ? Status::Ok() : eval.status();` | ✅ 三元守卫范本 |
+| 4 | `image_cache.cc:16` | `if (!result.ok()) { return result.status(); }` | ✅ |
+| 5 | `file_watcher_inotify.cc:239+242` | `if (!resolved.ok()) { ... .status().code()/message() ... }` | ✅ 守卫块内合法 |
+
+结论：6/6 ✅ 全部正确，0 fix 必要 → 任务 5 仅文档化 + clang-tidy enforce 留 P3。
+
+#### 推荐工作流
+
+`/plan` → `/build`（含 CP1 + CP2 自审）→ `/reflect` → `/archive`
+
+#### 关键约束
+
+- 纯文档/规则任务零代码逻辑变更（除 A-P1#6 audit 触发的可能 fix）
+- 子任务必须 1 commit/项保持语义清洁（应用 A-P1#4 自身的 `git add -p` 推荐范式）
+- 反复模式 C-#2 必须在 plan 阶段标注「第二次反复 → 必须落实」
+- A-P1#6 如全 codebase audit 零误用 → 直接关闭（无 fix 需求）
+
+---
+
 ### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关]
 
 - **复杂度级别：** **Level 3**（中等功能 — 蓝图 plan §Phase C 直接锁定 Level 3；新增子系统 `veloxa/devtool/hot_reload/`：FileWatcher 抽象基类 + InotifyFileWatcher Linux 实现（~150-200 LOC + std::thread watch loop）+ HotReloadManager CSS-only 增量重载 + 1 公开 C API + 1 example 扩展 + 8+ 安全单测；vs Phase A escalate 是因为 dogfood UI 子系统级 — 本任务**无 dogfood UI 新搭** + **无 JS native binding 设计** + **无新 example 子系统**（hello_devtool 第三次扩展 = 已成熟范式）+ **无新创意决策**（creative #2 5 决策已锁定）— Level 3 锁定不 escalate）
