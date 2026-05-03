@@ -4,7 +4,7 @@
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）
 
-**当前阶段**：🟢 **构建中·全部完成（VAN ✅ + Plan ✅ + Build ✅ — 待用户 `/reflect` 启动回顾）**
+**当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待用户 `/archive` 启动归档）**
 
 **里程碑**：
 
@@ -28,6 +28,44 @@
 - 2026-05-03 23:38 — 🛑 **CP1 自审 ✅ PASS**：DEVTOOL=ON 1247→**1252 PASS** (6.39s) + DEVTOOL=OFF 1082→**1087 PASS** (6.42s 含 build-off 配置 + 60s 全量构建) + 9/9 QuickjsEngine + D2/D5/D8b/D1 全实证 + plan-fact reconcile #1 记录（plan §0.4 假设 OFF 1082 不变错误，实际也 +5 因 quickjs_engine_test 在 tests/CMakeLists.txt:273 无 DEVTOOL guard / vx_script 在 OFF 仍含）
 - 2026-05-03 23:40 — E4 commit `58e3688` techContext.md #44 条文更新（+1/-1 行 / 闭环 Phase 2 + JSMallocFunctions 技术债保留）
 - 2026-05-03 23:42 — E5 finalize MB 三件套同步（tasks/activeContext/progress 阶段「构建中 → 构建中·全部完成」）+ 🛑 **CP2 自审 ✅ PASS**：5 commits Source 溯源完整（plan + E1+E2+E3+E4 + finalize 待 commit）+ 反复模式 **0/7 自检** + 1 plan-fact reconcile 项 + 1 P3 候选迁移（详见下方反复模式段）
+- 2026-05-03 23:50 — `/reflect` 启动 / 前置条件检查 ✅（阶段「构建中·全部完成」非「构建中·轮次 N 完成」中间态 / progress.md 含完整实现记录）/ activeContext 阶段「构建中·全部完成 → 回顾中」
+- 2026-05-03 23:55 — reflection 文档 `memory-bank/reflection/reflection-TASK-20260503-05.md` 落盘（Level 2+ 12 段 ~280 行）/ 全维度回顾完成：
+  - **§1 计划 vs 实际**：5/5 子任务 ✅ / 5/5 文件 ✅ / +184 行 vs +138-174 估略高 5% / **plan ×0.6 实测 0.16× 远低于 0.30-0.45× 预测** / 1 plan-fact reconcile（DEVTOOL=OFF 测数）
+  - **§2 做得好（5 项）**：(1) Phase 0 三 grep + Status.h audit 反复模式 #1 第 10 次抑制 ⭐⭐⭐ / (2) **brainstorm 中途主动 push-back 模式 D8b 新协议首次实证** ⭐⭐ / (3) 完整 cpp 代码片段 plan §3 100% 完成 build 0 返工 ⭐⭐ / (4) 5/5 commits + 9/9 测试 RED-GREEN cycle 一次过 / (5) build-off 复用 build/_deps SOP 实证（FETCHCONTENT_BASE_DIR 节省 75s+）
+  - **§3 挑战（3 项）**：(1) plan §0.4 ctest config 矩阵假设错误（OFF 1082 → 实际 1087 / quickjs_engine_test 无 DEVTOOL guard）/ (2) build-off 不存在 / (3) brainstorm AskQuestion 3 轮 vs 02/03 1-2 轮（中性 — more_brainstorm 触发的两步式必要成本）
+  - **§4 教训（4 项）**：(1) plan §0.4 ctest config 矩阵 audit 子条强化 / (2) **brainstorm 中途主动 push-back 模式沉淀**「证据优于断言」延伸 / (3) build-off 复用 build/_deps SOP 沉淀 / (4) **新效率区候选「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」识别**（5 触发条件）
+  - **§5 改进建议（4 项）**：**P0×1**（plan ×0.6 矩阵新子档入库 + 第 67-72 数据点 + Phase 0 投入定律 sext-evidence — archive 落实）+ **P1×2**（writing-plans audit 子条强化 + brainstorming 主动 push-back 模式新段 — 下次工作流元任务）+ **P2×1**（systemPatterns DEVTOOL=OFF baseline 验证 SOP — archive 落实）
+  - **§6 技术改进（3 项 P3 候选）**：(1) JS_SetInterruptHandler opaque ptr lifetime audit / (2) kCancelled 进一步语义拆分 / (3) SetEvalInterruptBudget 在 Init 之前调用边界处理
+  - **§7 反复模式自检 0/7 ✅**：连续第 5 次零反复达成 — 抵消 03 的 1/7 回升；plan-fact reconcile #1 是反复模式 #1 新形式（config 矩阵 guard 边界假设漏审）已 CP1 自审捕获
+  - **§8 安全评估**：T1 mitigation 基础设施 ✅ — kAborted 错误信息脱敏 ✅ / T1 mitigation 5 维度完整性（默认安全 + opt-in / 不可绕过 / 单线程 atomic / 状态可查 / 回调约束）
+  - **§9 Phase 0 投入定律 sext-evidence**：A 5.3× / B 5.2× / C 7.6× / 02 6.7× / 03 8.0× / **05 16×（创历史新高）** — 平均 8.1×；quint → sext-evidence 升级
+  - **§10 跨任务沉淀（5 项）**：plan ×0.6 新子档 + Phase 0 sext-evidence + 主动 push-back 模式 + writing-plans audit + DEVTOOL=OFF baseline SOP
+  - **§11 估时校准**：第 67-72 数据点群组（5 子任务 + 1 finalize）入库；中位 0.16× / E2/E3 = 0.08-0.10×（最快）/ E5 = 0.30×（含 CP2 自审）
+  - **§12 下一步**：archive 阶段 P0+P2 直接落实 / P1 迁移 activeContext 待处理事项 / TASK-20260503-04 恢复决策
+- 2026-05-03 23:58 — activeContext.md 待处理事项段顶部添加新子段「P0/P1/P2 来自 TASK-20260503-05 reflection §5」（4 项 / P0+P2 archive 阶段直接落实 / P1×2 留下次工作流元任务）
+
+**回顾产出物：**
+
+- `memory-bank/reflection/reflection-TASK-20260503-05.md` ✅ Level 2+ 12 段 ~280 行
+- `memory-bank/tasks.md` ✅ TASK-20260503-05 阶段「构建中·全部完成 → 回顾完成」+ 回顾文档引用
+- `memory-bank/activeContext.md` ✅ 阶段「构建中·全部完成 → 回顾中」+ 待处理事项段顶部新子段（4 项 P0/P1/P2）
+- `memory-bank/progress.md` ✅ 阶段「构建中·全部完成 → 回顾完成」+ 回顾里程碑追加（本段）
+
+**回顾阶段关键发现：**
+
+1. **Phase 0 投入定律升级 quint → sext-evidence**（5.2-16× ROI / 平均 8.1×）— 16× ROI 创历史新高，加速因子：(1) Phase 0 极简 1 子段 5 min（vs Level 3 30 min） + (2) 4 grep 实证全 surface 重大设计偏差（D8b 避免灾难） + (3) Status.h audit 提前发现 + (4) Level 2 + creative 已预决策 = 0 设计探索
+2. **新效率区候选「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」识别**（5 触发条件叠加）— archive 阶段入库 systemPatterns plan ×0.6 矩阵段
+3. **新协议「brainstorm 中途主动 push-back 模式」首次实证（D8b）** — 「证据优于断言」原则延伸；触发条件：brainstorm scope 已被限定 + Phase 0 grep 实证发现显著偏差 → 必须主动 surface
+4. **plan-fact reconcile #1 暴露 audit 缺一子条** — config 矩阵 guard 边界假设漏审 / 已沉淀为 P1 改进建议
+
+**改进建议落实闭环：**
+
+- **P0 #1（archive 阶段必须）**：plan ×0.6 矩阵新子档「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」入库 + 第 67-72 数据点群组 + Phase 0 sext-evidence 升级 → ⏳ 待 archive 阶段落实
+- **P1 #1**（下次工作流元任务）：writing-plans.mdc «ctest 数量预期 config 矩阵» 段补强 audit 子条「待新增测的 add_test 是否有 config guard」+ grep 范本 → ✅ 已迁移 activeContext 待处理事项段
+- **P1 #2**（下次工作流元任务）：brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」+ 触发条件清单 → ✅ 已迁移 activeContext 待处理事项段
+- **P2 #1**（archive 阶段）：systemPatterns.md「DEVTOOL=OFF / 次配置 baseline 验证 SOP」段沉淀（FETCHCONTENT_BASE_DIR 复用范式） → ⏳ 待 archive 阶段落实
+
+**下一步：** 用户调用 `/archive` 启动归档阶段（P0+P2 改进建议直接落实到 systemPatterns）
 
 **5 子任务实测耗时**（plan 阶段假设 ~85-105 min plan ×0.6 / ~25-45 min 实测期待）：
 

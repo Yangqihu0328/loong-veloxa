@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中·全部完成** — TASK-20260503-05 QuickJS Interrupt Handler + SetEvalInterruptBudget API（creative-quickjs-host.md §组件 1 方案 C Phase 2 完整落地 ✅）
+**回顾中** — TASK-20260503-05 QuickJS Interrupt Handler + SetEvalInterruptBudget API（creative-quickjs-host.md §组件 1 方案 C Phase 2 完整落地 ✅）
 
 **Build 阶段终局结果**（CP1 + CP2 全 PASS）：
 - 5 commits 1/子任务 全 Source 溯源 ✅（plan + E1 f1dfe86 + E2 c371e2f + E3 7d9732f + E4 58e3688 + E5 待 commit）
@@ -475,6 +475,31 @@
 ---
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
+
+### P0/P1/P2 来自 TASK-20260503-05 reflection §5（reflect 阶段迁移 — archive 阶段直接落实 P0+P2 / P1 留下次工作流元任务）
+
+> 4 项建议来自 QuickJS Interrupt Handler 反思（P0×1 + P1×2 + P2×1）— P0+P2 在 archive 阶段直接落实 / P1 留下次工作流元任务批量落地。
+
+- **P0 #1 plan ×0.6 矩阵新子档「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」入库 + 第 67-72 数据点群组 + Phase 0 投入定律 sext-evidence 升级（5.2-16× ROI）** — 5 子任务 + 1 finalize 实测 ~15 min vs plan ×0.6 ~85-105 min = 0.16×（远超「纯文档/规则极速区 0.15-0.25×」下沿，但加速因子不同 — 本任务有真实代码改动 + 单测 RED-GREEN cycle）；5 项触发条件叠加（真实代码 ≤ 200 行 / Phase 0 grep audit 完整 ≥ 3 grep + Status.h audit / 完整 cpp 代码片段 plan 阶段已就位 / 0 brainstorm 之外的设计决策 / 测试矩阵预 audit 含 ctest config 假设）；Phase 0 投入定律 ROI 16× 创历史新高（quint → sext-evidence 升级）。**预估**：~15 min；**archive 阶段直接落实**。
+- **P1 #1 writing-plans.mdc «ctest 数量预期 config 矩阵» 段补强 audit 子条**「待新增测的 add_test 是否有 config guard」+ grep 范本 — plan §0.4 ctest config 矩阵假设错误（OFF 1082 → 实际 1087 / quickjs_engine_test 在 vx_script 无 DEVTOOL guard）；这是反复模式 #1 的新形式（config 矩阵 guard 边界假设漏审）；建议给 `vx_add_test` 范本：
+
+  ```bash
+  rg "vx_add_test\($NEW_TEST_NAME" tests/CMakeLists.txt -C 5 | rg "if\s*\(VX_"
+  # 如有 if (...) 包围 → 该测仅在该 config 下跑
+  # 如无 if (...) 包围 → 该测在所有 config 下都跑（影响 OFF 估时）
+  ```
+
+  **预估**：~10 min；下次工作流元任务批量落地。
+- **P1 #2 brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现 creative / spec / 既有实现 runtime 行为偏差 + (3) 偏差**显著**（默认值差 10³+ 倍 / API 不存在 / signature 不符）。这是「证据优于断言」原则的延伸 — Phase 0 实证 > 用户原始限定。**预估**：~10 min；下次工作流元任务批量落地。
+- **P2 #1 systemPatterns.md「DEVTOOL=OFF / 次配置 baseline 验证 SOP」段沉淀** — `-DFETCHCONTENT_BASE_DIR="$(pwd)/build/_deps"` 复用主 build/ 的 _deps，cmake reconfigure 1.8s（vs 75s+ FetchContent 完整拉取）+ build ~60s = 总 ~70s 节省 ~3-5 min；范本：
+
+  ```bash
+  cmake -S . -B build-off -G Ninja \
+      -DVX_BUILD_DEVTOOL=OFF [其他 OFF flags] \
+      -DFETCHCONTENT_BASE_DIR="$(pwd)/build/_deps"
+  ```
+
+  **预估**：~10 min；archive 阶段直接落实。
 
 ### P2 来自 TASK-20260503-03 reflection §6（archive 阶段迁移）
 
