@@ -2,7 +2,123 @@
 
 ## 当前任务
 
-**无活跃任务** — 等待新任务启动（使用 `/van` 创建新任务）
+### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关]
+
+- **复杂度级别：** **Level 3**（中等功能 — 蓝图 plan §Phase C 直接锁定 Level 3；新增子系统 `veloxa/devtool/hot_reload/`：FileWatcher 抽象基类 + InotifyFileWatcher Linux 实现（~150-200 LOC + std::thread watch loop）+ HotReloadManager CSS-only 增量重载 + 1 公开 C API + 1 example 扩展 + 8+ 安全单测；vs Phase A escalate 是因为 dogfood UI 子系统级 — 本任务**无 dogfood UI 新搭** + **无 JS native binding 设计** + **无新 example 子系统**（hello_devtool 第三次扩展 = 已成熟范式）+ **无新创意决策**（creative #2 5 决策已锁定）— Level 3 锁定不 escalate）
+- **状态：** 🟡 **构建中**（§0.1 baseline ✅ 完成 + binutils 2.46+ link hotfix 完成 2026-05-03 14:40）— Phase 0 13 子段实测填写完成；B1-B8 决策表全部锁定；plan ~700 行落盘；**Build 阶段 §0.1 baseline 二次验证遭遇意外 binutils 2.46+ ld 静态归档单次扫描严格化阻塞 → 用户决策方案 B `hotfix/binutils-2.46-link-group` 单分支修复 → 根 CMakeLists.txt +10 行 `-Wl,--start-group/--end-group` 包围 LINK_LIBRARIES（仅 GNU/Clang + Linux）→ 271/271 link OK + 1195/1195 ctest PASS（实测低于 plan 假设的 1228，因 SDL2/Benchmarks OFF 配置差额，非回归）→ fast-forward merge to main `ddc1e3c` → feature 分支 rebase 上 main → 进入 C.0.1 RED 阶段**。**预期外发现：archive 阶段须沉淀 R12「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern 候选**
+- **创建日期：** 2026-05-03
+- **分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后，含 TASK-20260502-01 Phase A + TASK-20260502-02 Phase B 全归档 + 5 大可复用架构范式 + lazy-attach C ABI 容错模式 + binutils 2.46+ link group 兼容修复）
+- **设计 spec：** ✅ 复用 `docs/specs/2026-04-30-devtool-design.md` Hot Reload 验收段（A10-A12 + A13-A14 + T2 路径穿越威胁高 + T8 mutation propagation 中威胁 + I7/I8 注入点 + R4/R6 风险 + 强依赖 R3+ #3 F-025 LoadHTML use-after-free）
+- **实现 plan：** ⏳ **本任务专属 build 级 plan** `docs/plans/2026-05-03-devtool-hot-reload.md`（待 `/plan` 阶段产出，预估 ~500-600 行 / 10-12 子任务 5-步 TDD 模板 + Phase 0 实测填写 + B1-B8 决策表 + plan ×0.6 第 48+ 数据点假设 + R 风险登记 + Checkpoint）；蓝图 plan `docs/plans/2026-04-30-devtool.md` §Phase C 段（10-12 子任务粗粒度模板）作为参照基线（不修改）
+- **创意文档：** ✅ 复用 `memory-bank/creative/creative-devtool-hot-reload.md`（5 决策已锁定 — file watcher 抽象层接口 / CSS-only 增量重载策略 / DOM 状态保留协议 / watcher root 边界 / CSS 解析失败错误恢复，**无新 creative 需求**）
+- **需要创意阶段：** ❌ 否（TASK-30-04 蓝图阶段已产出 creative #2 全覆盖 Phase C 5 决策；纯 inotify Linux 实现 + LoadCSS path 单路径，无新架构空白）
+- **来源：** TASK-20260430-04 蓝图主交付独立立项候选 §主线 3 项之 C；用户 2026-05-03 通过 `/van` AskQuestion 选 `phase_c_hot_reload` 显式启动；Phase A archive §10 / Phase B archive §11 标注 Phase C「立项条件就绪」+ 估时回填校准下调（Phase A 5 大可复用架构范式 + Phase B 进一步 ~30% 下调因 lazy-attach C ABI 模式 + dogfood 路径成熟）
+- **安全相关：** ✅ 是（**T2 路径穿越高威胁** — 8 步守卫：watcher root allowlist + IN_MODIFY/IN_CLOSE_WRITE only（不监听 IN_CREATE 防 atomic+symlink 穿越） + realpath canonicalize + boundary check + 4 MiB max_size 上限 + symlink 跨 root 拒绝 + 安全日志 + reverse probe；**T8 mutation propagation 中威胁** — CSS-only 严格不触发 LoadHTML（不踩 F-025 use-after-free）；双 Document 严格独立 stylesheet）
+
+#### 任务范围（VAN 推荐默认锁定 V1-V5）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 子系统范围 | **Phase C Hot Reload 10-12 子任务**（C.0.1 FileWatcher 抽象 + C.1.1-C.1.3 InotifyFileWatcher 实现/反向探针/8 项测试 + C.2.1-C.2.3 HotReloadManager 基础/CSS 重载/状态保留 + C.4.1-C.4.2 C API + example smoke + C.5.1-C.5.2 T2 安全测/reflect）| TASK-30-04 plan §Phase C 直接复用，无新增子任务 |
+| V2 | 实施模式 | **b 完整实施**（含 build / ctest / commit / merge） | 与 Phase A/B 模式一致；Level 3 build 主路径 |
+| V3 | 复杂度 | **Level 3** | 跨 4 子系统（devtool-hot_reload/api/examples/tests）但 plan 已明确；不需新架构决策；无 dogfood 子系统级风险 |
+| V4 | 创意需求 | **❌ 否** | creative #2 5 决策已覆盖 Hot Reload 设计；无新设计空白 |
+| V5 | 安全标注 | ✅ **是** | T2 路径穿越（高，8 步守卫）+ T8 mutation propagation（中，CSS-only 不踩 F-025）2 威胁面全程守门 |
+
+#### VAN 阶段实证（F1-F8 — 基础设施成熟度三色，5 ✅ / 1 ⚠️ / 2 🔴）
+
+| # | 命题 | grep 实证 | 影响蓝图 |
+|:-:|---|---|:-:|
+| F1 | I7 inotify watcher 基础（platform/ 当前无 file watcher）| 🔴 **完全不存在** — 全代码库无 `inotify_init` / `IN_MODIFY` / `sys/inotify.h` 调用；蓝图 spec §6 I7 标记「需新建 `veloxa/devtool/hot_reload/file_watcher_inotify.{h,cc}`」| 🔴 C.0.1 + C.1.1 必做（~150-200 LOC 自实现 + std::thread watch loop） |
+| F2 | I8 Hot Reload restyle 入口（Application::LoadCSS 已存在）| ✅ 已就绪 — `Application::LoadCSS()` 在 application.cc 已存在并经 R3+ codebase review 验证（不像 LoadHTML 有 dom_bindings_ use-after-free 风险）；HotReloadManager::OnFileChanged 仅调 LoadCSS 即可触发全 restyle | 🟢 C.2.1-C.2.2 极简 — 单路径调用 |
+| F3 | F-025 LoadHTML use-after-free 是否已修复（强依赖判断）| ⚠️ **仍未修复**（R3+ #3 标 P1 但未独立立项）| 🟢 一期 CSS-only 严格不踩 — 显式契约：HotReloadManager 仅识别 .css 文件 + 仅调 LoadCSS（不调 LoadHTML），plan 必须设计反向探针单测验证此契约 |
+| F4 | C API 双层模式（lazy-attach 兼容）| ✅ Phase B B.0.1 实证 lazy-attach C ABI 容错模式 — `vx_view_set_pipeline_hooks` 即使 update_manager_ 未初始化也返 INVALID_STATE 提示 + cache hooks → EnsureUpdateManager 时激活 | 🟢 C.4.1 `vx_view_attach_devtool` 加 hot_reload_dir 参数透传 + 同款 lazy-attach 范式（hot_reload_dir cache → first LoadCSS 时启动 watcher）|
+| F5 | std::thread + std::condition_variable + std::atomic 已有用例 | ⚠️ 需 grep 确认 — `Threads::Threads` CMake link 在 vx_devtool 当前未声明（蓝图 plan §3 标 PRIVATE Threads::Threads 需新增）；已有 vx_image / vx_layout 是否用 std::thread 待 plan 阶段实测 | 🟡 C.1.1 需 CMake 加 `target_link_libraries(vx_devtool PRIVATE Threads::Threads)`（一行 patch） |
+| F6 | inotify 系统头可用性（Linux libc）| ✅ Linux 平台 100% — `<sys/inotify.h>` / `<unistd.h>` / `<fcntl.h>` 是 libc 系统头，无 CMake link 需求；macOS/Windows 不支持 → 一期 D5=A 锁定 Linux only，跨平台留 P2 候选 | 🟢 C.1.1 直接 #include 即可 |
+| F7 | T2 8 步守卫的 realpath / canonicalize 工具 | ⚠️ 全代码库无 `realpath()` / `std::filesystem::canonical()` 调用 — 蓝图 plan §3 推荐用 `realpath(path, nullptr)` (POSIX) 或 `std::filesystem::canonical()` (C++17) | 🟡 C.1.2-C.1.3 + C.5.1 T2 守卫实施需新引入；plan 阶段决策 POSIX vs std::filesystem（lib 体积/异常 trade-off） |
+| F8 | examples/hello_devtool.cc 现状（example 第三次扩展）| ✅ Phase A.3.1 + Phase B.3.2 已成熟 example 范式 — 包含 EnsureUpdateManager + auto-quit + PASS_REGULAR_EXPRESSION ctest smoke；C.4.2 仅需追加 hot_reload_dir 参数 + 修改临时 CSS 文件 + 验证 restyle 触发 | 🟢 C.4.2 极简 — example 第三次扩展，dogfood 路径已成熟 |
+
+**汇总：** **5 ✅ 已就绪 / 2 ⚠️ 部分（F5 std::thread / F7 realpath，需 plan 阶段决策）/ 1 🔴 需新建（F1 inotify watcher 子系统）— 比 Phase B 启动前 5/1/1 略多新建因子（inotify 子系统 + std::thread + realpath 三点新引入）**
+
+**关键发现（Phase A/B 后续 ROI 验证）：**
+
+- **F2 LoadCSS 已就绪 + F4 lazy-attach C ABI 模式可复用** = 比 Phase B archive §11 估时进一步下调到 ~2-3 h plan ×0.6 是合理的（实际 plan 阶段需做 Phase 0 实测才能锁定）
+- **F8 example 第三次扩展 + dogfood 路径成熟** = C.4.2 是「极窄档延续」候选（plan 30 min ×0.6 = 18 min 可能进一步压缩）
+- **F1 inotify 是新子系统但量级有限**（~150-200 LOC 自实现 + 业界范式成熟）= 不构成 escalate 触发条件
+- **F3 F-025 不踩契约清晰** = 一期 CSS-only 严格边界 + 反向探针单测验证（C.2.x「不调 LoadHTML」契约）= 安全守门强
+
+#### 触及技术债映射（与 `techContext.md` 对照）
+
+| # | 技术债 | 子任务 | 闭环节奏 |
+|:-:|---|---|---|
+| #4 | ImageCache 命名空间隔离（DevTool icon vs target image）| ⊘ Phase C 不需 icon → 不闭环 | 留 P3（Phase D 完整 UI Editor 才会用 icon）|
+| #35 阶段 2 | LayoutEngine 内 style/layout 子阶段拆分 | ⊘ 不在本任务范围 | 留 P3（独立立项，Phase B 已闭环阶段 1） |
+| F-025 | LoadHTML use-after-free | ⊘ **强依赖但本任务不踩**（CSS-only 严格契约）| 留 R3+ #3 独立立项（如未来扩展段加 HTML 增量重载，必须前置闭环）|
+
+#### 验收要点（Phase C 主交付，A10-A12 + A13 + A14）
+
+- A10 修改 watcher root 内 .css 文件 → 目标 View 自动 restyle 不重启（手工 + inotify 事件 → restyle 触发单测）
+- A11 watcher root 安全：路径穿越拒绝（`../../etc/passwd`）+ symlink 跨 root 拒绝 + 安全日志（T2 单测 8 步守卫验证）
+- A12 4 MiB CSS 文件大小上限 + 超限拒绝 + 错误日志（max_size 守卫单测，沿用 R2.5 image_decoder max_size 模式）
+- A13 现有 ctest 全绿（DevTool OFF 时零回归）— ctest 1228 ON / 1082 OFF baseline 维持
+- A14 DevTool 关闭时构建产物零变化（链接闭合 + binary size diff = 0）— 复用 TASK-20260502-01 A.2.4 + Phase B B.3.3 自动化 ctest smoke（`tests/smoke/devtool_a14_link_closure.cmake` 加 `FileWatcher` / `InotifyFileWatcher` / `HotReloadManager` 内部符号到黑名单）
+
+#### Phase C 子任务清单（蓝图 plan §Phase C 10 子任务，待 `/plan` 阶段精化）
+
+| 子任务 | 描述 | 估时 plan ×0.6（蓝图）|
+|:-:|---|---:|
+| C.0.1 | FileWatcher 抽象基类 + Platform factory（pure virtual + nullptr 退化） | 18 min |
+| C.1.1 | InotifyFileWatcher 基础实现（init + add_watch + watch loop std::thread）| 54 min |
+| C.1.2 | InotifyFileWatcher T2 路径守卫 8 步（allowlist + realpath + boundary + max_size + symlink 拒绝）| 36 min |
+| C.1.3 | InotifyFileWatcher 完整测试集（8 项 — modify / atomic write / symlink escape / max_size / extension filter / debounce / restart / kInvalidArgument 反向探针）| 45 min |
+| C.2.1 | HotReloadManager 基础（path_to_stylesheet_id_ + OnFileChanged） | 36 min |
+| C.2.2 | HotReloadManager LoadCSS 调用 + restyle 触发 + dom_bindings_ 不重建（CSS-only 契约 — F-025 不踩反向探针单测） | 27 min |
+| C.2.3 | HotReloadManager DOM 状态保留协议（hover_target / focus_target / scroll_position snapshot + restyle 后恢复 — creative #2 决策 3）| 27 min |
+| C.4.1 | `vx_view_attach_devtool` 加 hot_reload_dir 参数透传（lazy-attach C ABI 模式复用 Phase B B.0.1）| 18 min |
+| C.4.2 | examples/hello_devtool.cc — Hot Reload smoke（修改 .css 实时观察 restyle 触发，第三次 example 扩展） | 27 min |
+| C.5.1 | T2 完整安全单测（路径穿越 / canonicalize / boundary 8 测，独立 security_test.cc）| 27 min |
+| C.5.2 | Phase C reflect prep + finalize commit + A14 黑名单更新（FileWatcher / InotifyFileWatcher / HotReloadManager 3 项）| 18 min |
+| **合计** | **11 子任务**（plan 阶段可能进一步合并/拆分 — 蓝图原写 10 子任务，本 VAN 拆 C.2 三段更细） | **333 min（5.55 h，蓝图）** |
+
+**估时回填校准（基于 TASK-20260502-01 + TASK-20260502-02 实证）：** 蓝图 5.55 h plan ×0.6 → Phase A archive §10 调整为 ~2.5-4 h（基于 5 大可复用范式）→ Phase B archive §11 进一步下调 ~30%（因 lazy-attach C ABI 模式 + dogfood 路径成熟）→ **plan 阶段假设 ~2-3 h plan ×0.6**（11 子任务 vs Phase B 10 子任务略多 + 5/2/1 已就绪与 Phase B 5/1/1 接近 + 5 大可复用架构范式 100% 命中预期 + lazy-attach C ABI 模式 + dogfood 路径第三次复用，落「极窄档延续高效区 0.30-0.45×」候选新子档 — Phase B 同档实证 0.40×）。
+
+#### 前置验证清单（VAN 阶段产出）
+
+| 维度 | 结果 | 备注 |
+|---|:-:|---|
+| 依赖可获取性 | ✅ | 零新 FetchContent；Linux inotify 是 libc 系统调用 + std::thread / std::filesystem (C++17) 标准库 |
+| 环境就绪 | ⚠️ 需 reconfigure | `build/` + `build-noffi/` 不存在（Phase B 后已清理）→ plan §0.1 必跑全新 cmake configure + ctest 二次验证 |
+| 已有 artifact | ✅ | spec + plan §Phase C + creative #2 全部就绪（TASK-30-04 蓝图主交付）；可直接进 build phase 精化 |
+| ctest 基线 | ✅ | 1228 ON / 1082 OFF PASS（main `c0c4cbd` 终态继承自 TASK-20260502-02 Phase B 完成快照），plan 阶段 reconfigure 后实证 |
+| FetchContent 代理守卫 | ⊘ 跳过 | 零新依赖（inotify 是 libc，std::thread/filesystem 是 stdlib） |
+| 待处理事项关联 | ✅ 极强 | DevTool 三件套主线收官（A → B → C 完整闭环）；与 Phase A/B 沉淀的 5 大架构范式 + lazy-attach C ABI 模式直接用；与 R3+ #3 F-025 LoadHTML use-after-free 强依赖（一期 CSS-only 严格不踩，反向探针单测验证）；与 R2 P3 三连 / R9 EventManager HitTest / #35 阶段 2 无相互依赖 |
+
+#### VAN 阶段 push-back 决策（已沉淀）
+
+| 风险 | 应对 |
+|---|---|
+| 「F-025 LoadHTML use-after-free 一期 CSS-only 边界守不住」陷阱 | C.2.x 实施必须设计**反向探针单测**：HotReloadManager 仅识别 `.css` 后缀文件 + 仅调 LoadCSS（断言不调 LoadHTML）+ 删除该 if-branch → 反向探针测 FAIL；spec §F-025 已记录强依赖契约 |
+| 「inotify watch loop 在独立 std::thread 但事件投递到主线程 race condition」陷阱 | C.1.1 plan 阶段必须设计：std::condition_variable + queue 跨线程消息传递 + 主线程 OnFrame 时 drain queue（与 Phase B B.0.1 PipelineHooks 五钩子主线程范式一致）；T6 类比 callback budget 1ms guard |
+| 「T2 路径穿越 8 步守卫漏一步导致 CVE 级风险」陷阱 | C.5.1 独立 `security_test.cc` 必须 8 步全测 + 反向探针（删 `realpath` → SymlinkEscape FAIL）；creative #2 决策 4 watcher root 边界 + spec §7 T2 mitigation 8 步逐项对应单测 |
+| 「跨平台抽象一期仅 Linux，未来 macOS/Windows 接口不兼容」陷阱（spec §9 R4）| C.0.1 抽象基类设计参考 efsw 库 ≥ 3 平台共有接口（不绑死 inotify 特性，creative #2 决策 1 callback-based + 事件归一化已锁定）；Platform factory nullptr 退化（非 Linux 平台返 nullptr，HotReloadManager 安全 no-op） |
+| 「直接进 build 跳过 plan 精化」诱惑 | 拒绝 — Level 3 默认进 `/plan` 做 Phase 0 grep（callsite 全表 + 既有测试 fingerprint + CMake 链接审计 + plan ×0.6 估时校准 + reconfigure 二次验证 ctest baseline + std::thread/realpath 标准库选型决策）+ 沉淀 plan ×0.6 第 48+ 数据点 |
+| 「TASK-30-04 plan 已就绪 build phase 全照搬」陷阱 | plan 阶段必须验证：(a) plan 写于 2026-04-30，main 终态后续大变（TASK-20260502-01 Phase A + TASK-20260502-02 Phase B 已合入 + 5 大可复用范式 + lazy-attach C ABI 模式）；(b) F4/F8 已就绪发现可能进一步简化 C.4.1/C.4.2；(c) plan ×0.6 第 48+ 数据点回归「极窄档延续高效区」vs「大件实现下端」可能 |
+| 「DOM 状态保留协议（hover/focus/scroll）实施复杂度低估」陷阱（creative #2 决策 3）| C.2.3 单独子任务 27 min 不应低估 — 需 grep 验证 dom::Node 指针稳定性（restyle 不改变 Node tree 是 creative #2 假设，plan §0.x 必须实证）+ ScrollPosition / FocusManager / EventManager hover_target_ 三处状态 snapshot/restore API 设计 |
+
+#### 与并发任务关系
+
+- **TASK-20260502-01**（DevTool Phase A · Inspector）：✅ 已归档（2026-05-02 ~18:10），main `c0c4cbd` 已含 5 大可复用架构范式 + DevTool 子系统骨架 + A14 自动化守门；本任务在新 main 上独立演进，零 git 依赖
+- **TASK-20260502-02**（DevTool Phase B · Performance Overlay）：✅ 已归档（2026-05-03 ~00:30），main `c0c4cbd` 已含 lazy-attach C ABI 容错模式 + Phase 0 投入定律 dual-evidence + Level 3 vs L4 子代理决策法则 + A14 黑名单维护演进透明度子段；本任务复用 lazy-attach C ABI 模式 + 5 大架构范式
+- **TASK-20260430-04**（DevTool 蓝图）：✅ 已归档，spec §Phase C + plan §Phase C + creative #2 全部就绪可直接复用
+- **TASK-20260430-03**（codebase review）：**强依赖 R3+ #3 F-025 LoadHTML use-after-free**（一期 CSS-only 严格不踩，反向探针单测验证；如未来扩展 HTML 增量重载必须前置闭环）；R3+ #2 EventDispatcher snapshot iteration 与本任务**无关**（HotReloadManager 不调 EventDispatcher）
+
+#### 任务历史
+
+| 时间 | 阶段 | 备注 |
+|---|---|---|
+| 2026-05-03 13:15 | 用户启动 | `/van` AskQuestion 选 `phase_c_hot_reload`（DevTool 三件套主线收官） |
+| 2026-05-03 13:20 | VAN 完成 | 工作区干净 ✅；F1-F8 grep 实证（5 ✅ / 2 ⚠️（std::thread + realpath 选型）/ 1 🔴（inotify 子系统必做））— 比 Phase B 启动时 5/1/1 略多新建因子但仍 Level 3 量级；F4 lazy-attach C ABI 模式 + F8 dogfood 路径第三次复用发现 ROI 高于蓝图预期；分支 `feature/TASK-20260503-01-devtool-hot-reload` 基于 main `c0c4cbd` 创建（含 TASK-20260502-01 Phase A + TASK-20260502-02 Phase B 全归档 + 5 大可复用架构范式 + lazy-attach C ABI 模式）；前置验证 6/6 全 PASS（ctest 1228 ON / 1082 OFF 基线隐式继承，plan §0.1 reconfigure 必跑二次验证因 build/ 已清理）；MB 三件套同步；推荐路径 `/plan` 做 build 级精化 |
+| 2026-05-03 13:35 | Plan 完成 | Phase 0 13 子段实测填写完成（核心发现 3 项：§0.7 LoadCSS 路径 100% 安全 — `Application::LoadCSS` 仅 `stylesheets_.push_back` + `update_manager_.reset()` 不动 dom_bindings_/target_document_ → CSS-only 严格契约自然成立 + 反向探针单测验证；§0.12 std::thread 全代码库零既有用例 → 本任务首次引入需谨慎 thread-safe queue 设计；§0.13 realpath / std::filesystem 全代码库零既有用例 → POSIX `realpath()` + RAII 一致性优胜）；B1-B8 build 级精化决策表全部锁定（用户 1 次 AskQuestion 选 all_recommended → 8/8 按 VAN 推荐：B1=A 独立 plan / B2=A 严格串行 / B3=A 新建 tests/devtool/hot_reload/ 子树 / B4=A POSIX realpath + unique_ptr RAII / B5=A 合并 C.2.2（YAGNI — §0.7 grep 实证 hover/focus/scroll 当前不持久化 → 节省 ~27 min plan）/ B6=A 每子任务 1 commit / B7=A ~2-3 h plan ×0.6 假设 / B8=A 复用 spec+creative）；plan `docs/plans/2026-05-03-devtool-hot-reload.md` 落盘 ~700 行（11 子任务 5-步 TDD 模板 + 完整代码片段 + 5 个 R 风险登记 R4/R6/R7 race condition 新增/R8 T2 8 步漏 CVE 新增/R9 F-025 不踩契约新增 + R10/R11 + 3 Checkpoint + 12 条 systemPatterns 协同度自我对照 + plan ×0.6 第 48+ 数据点假设入库）；安全分析 STRIDE 6 项 + T2 8 步守卫详细映射表（步骤 1:1 对应 §0.6 边界输入 #2-9 单测 + 反向探针 meta-test）；plan ×0.6 第 48+ 数据点假设入库（蓝图 5.55 h → 11 子任务 plan ~555 min / plan ×0.6 ~333 min → 最终预测 ~100-150 min 实测耗时即 0.30-0.45× 比值，落「极窄档延续高效区」候选新子档延续 Phase B 0.40× 实证）；推荐路径 `/build` 启动 C.0.1 FileWatcher 抽象（最小子任务 plan 30 min ×0.6 = 18 min）|
 
 ---
 

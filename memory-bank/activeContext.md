@@ -2,20 +2,58 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260502-02 Phase B Performance Overlay ✅ **已归档（2026-05-03 ~00:30）** — main `bf6626a` fast-forward merge 完成。等待新任务。
+**构建中** — TASK-20260503-01 DevTool Phase C Hot Reload 实施 [安全相关] / Level 3 / §0.1 baseline ✅ 完成 2026-05-03 14:40
 
-**最近完成任务速查：**
+**环境就绪：** cmake 4.2.3 / gcc 15.2.0 / **ld 2.46（Binutils 2026）** / ninja 1.13.2 / pkg-config 2.5.1 / libpng 1.6.57 / libjpeg 2.1.5 / freetype 26.5.20 / harfbuzz 12.3.2 / sdl2 2.32.10 / **GTest 1.17.0** 全部 ✅
+
+**§0.1 ctest baseline 二次验证 ✅ 完成（hotfix 分支验证 + main fast-forward 合入）：**
+- 实测 baseline：**1195/1195 PASS, 0 FAIL, 1 SKIPPED**（13.3 sec）— 注：plan 中写的「1228 PASS」是 spec 旧值，本次实测 1195 是 SDL2/Benchmarks OFF 的活跃测试集（DEVTOOL=ON），属正常配置差额，不影响契约
+- 进入 build 阶段第一步即触发**意外 baseline 阻塞**：GNU ld 2.46 单次扫描静态归档严格化，破坏既有 vx_core ↔ vx_script ↔ vx_devtool 循环依赖（CMake「重复列出 .a」hack 失效）→ 271 link target 中 ~6 个测试 link FAILED（undefined: `EnumValueToCssString` / `dom::ToJson` / `LayoutBox::ToJson`）
+- **决策方案 B（用户选择）**：开 `hotfix/binutils-2.46-link-group` 单独分支修复 → 根 CMakeLists.txt 加 GNU ld + Linux 条件 `-Wl,--start-group <LINK_LIBRARIES> -Wl,--end-group` → 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge 到 main `ddc1e3c`（1 commit / 10 行 / Phase C 范围外的环境适配）→ feature 分支 rebase 上 main → stash pop WIP 文档
+- **预期外发现入库**：plan 阶段未识别此 binutils 严格化风险（plan §0.1 假设 baseline 直接通过）→ archive 阶段须沉淀 R12 「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern 候选
+
+**当前子任务：** C.0.1 FileWatcher 抽象基类（最小子任务 plan 30 min ×0.6 = **18 min** 实测目标）
+
+**当前任务 ID：** `TASK-20260503-01`
+**任务焦点：** Linux inotify file watcher（自实现 ~150-200 LOC）+ HotReloadManager CSS-only 增量重载（严格不踩 F-025 use-after-free）+ T2 路径穿越 8 步守卫 + DevTool 三件套主线收官（Phase A → B → C 完整闭环）
+**分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后）
+**Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务 / 5 R 风险 / 3 Checkpoint / 12 条 systemPatterns 协同度自我对照）
+**下一步：** C.0.1 RED 阶段 — 创建 `tests/devtool/hot_reload/file_watcher_test.cc` + `tests/devtool/hot_reload/CMakeLists.txt` + 根 `tests/CMakeLists.txt` `add_subdirectory(devtool/hot_reload)` 接入
+
+**Plan 阶段 B1-B8 决策（用户选 all_recommended 8/8 锁定）：**
+- B1=A 独立 plan / B2=A 严格串行 / B3=A 新建 tests/devtool/hot_reload/ / B4=A POSIX realpath + unique_ptr RAII / B5=A 合并 C.2.2（YAGNI 节省 27 min — §0.7 grep 实证 hover/focus/scroll 当前不持久化）/ B6=A 每子任务 1 commit / B7=A ~2-3 h plan ×0.6 / B8=A 复用 spec+creative
+
+**关键约束（已锁定 + Plan 阶段补强）：**
+- 一期 D5=A 严格 CSS-only — HotReloadManager `evt.path.EndsWith(".css")` filter 短路 + 仅调 `app_->LoadCSS`（**不调 LoadHTML**）→ 反向探针单测 `HtmlFileChangeDoesNotCallLoadCSSorLoadHTML` 验证 R9 F-025 不踩契约
+- Linux only — Platform factory `#if defined(__linux__)` + 非 Linux 平台 nullptr 退化（macOS kqueue / Windows ReadDirectoryChangesW 留 P2 候选）
+- T2 路径穿越 8 步守卫完整实施（plan §3.3 表 1:1 对应 C.5.1 8 单测 + 反向探针 meta-test）+ POSIX `realpath(path, nullptr)` + `unique_ptr<char, decltype(&free)>` RAII wrapper
+- 跨线程消息传递：inotify 线程仅 push thread-safe queue（mutex）+ main 线程仅 drain queue + watcher_ 析构 join thread + std::atomic<bool> running_ + sleep_for(50ms) 兜底 read EAGAIN 路径
+- 复杂度 Level 3 锁定不 escalate（vs Phase A 中途 escalate Level 4 — 本任务无 dogfood UI 子系统级 + 无 JS native binding 设计（C.3.1 状态指示器是既有 inspector_panel 扩展非新建）+ 无新 example 子系统）
+
+**3 Checkpoint：**
+- CP1 C.1.3 完成 → 暂停审视 watch loop race condition / debounce / max_size 实测大文件
+- CP2 C.4.1 完成 → 暂停审视 lazy-attach C ABI 模式实证 + DEVTOOL=OFF 路径
+- CP3 C.5.1 完成 → 暂停审视 8 步守卫每项反向探针 + §3.3 表覆盖完整性
+
+**估时假设（plan 阶段最终）：** 蓝图 555 min plan / plan ×0.6 333 min → **最终预测 ~100-150 min 实测耗时**（0.30-0.45× 比值落「极窄档延续高效区」候选新子档延续 Phase B 0.40× 实证）；plan ×0.6 第 48+ 数据点群组假设入库
+
+---
+
+## 上次任务（已归档闭环）
+
+**TASK-20260502-02 Phase B Performance Overlay ✅ 已归档（2026-05-03 ~00:30）** — main `bf6626a` fast-forward merge 完成 → main `c0c4cbd`（含远程 merge）。
+
+**最近完成任务速查（已归档闭环）：**
 - ✅ TASK-20260502-02 DevTool Phase B Performance Overlay（Level 3 / ~104 min plan ×0.6 = 0.40× 落「极窄档延续高效区」新子档）
 - ✅ TASK-20260502-01 DevTool Phase A Inspector（Level 4 / ~281 min plan ×0.6 = 0.64×）
 - ✅ TASK-20260430-04 DevTool 三件套蓝图设计（Level 4 V2=a 蓝图）
 
-**下次任务推荐路径：**
-1. `/van` 启动新任务（基于「待处理事项」选项）
-2. 推荐高优先级候选：
-   - **TASK-30-04-C Hot Reload**（plan ×0.6 ~2-3 h — 受益于 Phase A + B 双范式复用）
-   - **#35 阶段 2 拆 LayoutEngine**（plan ×0.6 ~2-3 h Level 3）
-   - **R9 EventManager HitTest 改造**（plan ×0.6 ~1.5-2 h Level 2-3）
-   - **DomBindings R2 三连补全**（plan ×0.6 ~3-5 h — Phase A dogfood 暴露）
+**Phase C 完成后 DevTool 三件套主线收官** — 后续 P3 候选（按用户优先级排期）：
+- **#35 阶段 2 拆 LayoutEngine**（plan ×0.6 ~2-3 h Level 3）
+- **R9 EventManager HitTest 改造**（plan ×0.6 ~1.5-2 h Level 2-3）
+- **DomBindings R2 三连补全**（plan ×0.6 ~3-5 h — Phase A dogfood 暴露）
+- **R3+ #1 image_decoder 安全三件套**（4-6 h Level 3 P1 安全）
+- **TASK-30-04-D/E/F/G 扩展段**（Console JS REPL / JS Debugger / CDP 远程 port / 完整 UI Editor — 按需独立立项）
 
 ---
 

@@ -2,7 +2,73 @@
 
 ## 当前任务
 
-**无活跃任务** — TASK-20260502-02 ✅ 已归档（2026-05-03 ~00:30）。等待新任务启动（使用 `/van` 创建新任务）。
+### TASK-20260503-01：DevTool Phase C — Hot Reload 实施（Linux inotify + CSS-only 增量重载）[安全相关]
+
+- **复杂度：** Level 3（蓝图 plan §Phase C 锁定，无 dogfood UI 子系统级 → 不 escalate；vs Phase A escalate L4）
+- **状态：** 🟡 **构建中**（§0.1 baseline ✅ 完成 2026-05-03 14:40）
+- **分支：** `feature/TASK-20260503-01-devtool-hot-reload`（基于 main `ddc1e3c` rebase 后）
+- **Plan 文档：** `docs/plans/2026-05-03-devtool-hot-reload.md`（~700 行 / 11 子任务）
+- **下一步：** C.0.1 RED — 创建 `tests/devtool/hot_reload/file_watcher_test.cc` + `CMakeLists.txt` + 接入根 tests
+
+#### Build 阶段进度（实测）
+
+- **§0.1 ctest baseline 二次验证 ✅**（**意外发现 + hotfix 修复**）
+  - 1195/1195 PASS / 0 FAIL / 1 SKIPPED（13.3 sec），DEVTOOL=ON 配置 + SDL2/Benchmarks OFF（实际数低于 plan 假设的 1228，因 SDL2 OFF 关闭 ~33 个 SDL2 依赖测试，是配置差额非回归）
+  - **意外阻塞**：GNU ld 2.46（2026 Binutils）单次扫描静态归档严格化 → vx_core ↔ vx_script ↔ vx_devtool 循环依赖失效 → 6 测试 link FAILED
+  - **mitigation hotfix**：开 `hotfix/binutils-2.46-link-group` 单分支 → 根 CMakeLists.txt +10 行（`-Wl,--start-group/--end-group` 包围 LINK_LIBRARIES，仅 GNU/Clang + Linux 生效）→ 271/271 link OK + 1195/1195 ctest PASS → fast-forward merge to main `ddc1e3c` → feature 分支 rebase 上 main → stash pop WIP
+  - **预期外发现入库**：plan 阶段未识别此 binutils 严格化风险 → archive 阶段须沉淀 R12 「工具链版本激进升级 → CI/baseline 失败」风险登记 + 「baseline 阻塞 hotfix 分离协议」systemPattern 候选
+
+#### Plan 阶段产出（2026-05-03 13:35）
+
+- **Phase 0 13 子段实测填写**（核心发现 3 项）：
+  - §0.7 LoadCSS 路径 100% 安全 — `Application::LoadCSS` 仅 `stylesheets_.push_back` + `update_manager_.reset()` 不动 dom_bindings_/target_document_ → CSS-only 严格契约自然成立 → R9 F-025 不踩契约由代码路径自然守门
+  - §0.12 std::thread 全代码库零既有用例 — 本任务首次引入多线程 + 跨线程消息传递；设计 thread-safe queue（mutex + condition_variable + atomic running_）+ inotify 线程仅 push + main 线程仅 drain
+  - §0.13 realpath / std::filesystem 全代码库零既有用例 — POSIX `realpath()` + unique_ptr<char, decltype(&free)> RAII 一致性优胜（vs std::filesystem 大库 + 异常守门 + libstdc++fs link 复杂）
+- **B1-B8 决策表全部锁定**（用户 1 次 AskQuestion 选 all_recommended → 8/8 按 VAN 推荐）
+- **plan 落盘** `docs/plans/2026-05-03-devtool-hot-reload.md` ~700 行：
+  - 11 子任务 5-步 TDD 模板 + 完整代码片段
+  - 5 R 风险登记（R4 跨平台 + R6 DOM 状态 + R7 race condition 新增 + R8 T2 8 步漏 CVE 新增 + R9 F-025 不踩契约新增 + R10 inotify mask + R11 watch_thread join）
+  - 安全分析 STRIDE 6 项 + T2 8 步守卫详细映射表（§3.3 1:1 对应 C.5.1 8 单测 + 反向探针 meta-test）
+  - 3 Checkpoint（CP1 C.1.3 / CP2 C.4.1 / CP3 C.5.1）
+  - 12 条 systemPatterns 协同度自我对照（含 5 大可复用范式 + lazy-attach C ABI + Phase 0 投入定律 + A14 守门 + 反向探针 + Level 3 vs L4 决策法则）
+- **plan ×0.6 第 48+ 数据点假设入库**：蓝图 5.55 h → 11 子任务 plan 555 min / plan ×0.6 333 min → 最终预测 ~100-150 min 实测耗时（0.30-0.45× 比值落「极窄档延续高效区」候选新子档延续 Phase B 0.40× 实证）
+
+#### 11 子任务清单（plan ×0.6 估时）
+
+| 子任务 | plan ×0.6 |
+|:-:|---:|
+| C.0.1 FileWatcher 抽象 | 18 min |
+| C.1.1 InotifyFileWatcher 基础 | 54 min |
+| C.1.2 T2 8 步守卫 | 54 min |
+| C.1.3 完整测试集 4 项 | 45 min |
+| C.2.1 HotReloadManager 基础（合并 B5）| 36 min |
+| C.2.3 CSS 解析失败错误恢复 | 18 min |
+| C.3.1 DevTool UI 状态指示器 | 18 min |
+| C.4.1 vx_view_attach_devtool 扩展 | 18 min |
+| C.4.2 example smoke | 27 min |
+| C.5.1 T2 完整安全单测 | 27 min |
+| C.5.2 finalize + A14 黑名单 | 18 min |
+| **合计** | **333 min（5.55 h）** |
+
+#### VAN 阶段产出
+
+- F1-F8 grep 实证（5 ✅ / 2 ⚠️ / 1 🔴）— 比 Phase B 启动时 5/1/1 略多新建因子（inotify 子系统 + std::thread + realpath 三点新引入）但仍 Level 3 量级
+- 前置验证 6/6 全 PASS（依赖可获取性 ✅ / 环境就绪 ⚠️ 需 reconfigure / 已有 artifact ✅ / ctest 基线 1228 ON / 1082 OFF / FetchContent 守卫 ⊘ 跳过 / 待处理事项关联 ✅ 极强）
+- 6 项 push-back 决策已沉淀（F-025 边界 / inotify race condition / T2 8 步守卫 / 跨平台抽象 / 直接进 build 拒绝 / TASK-30-04 plan 全照搬陷阱 / DOM 状态保留协议低估陷阱）
+- 触及技术债映射：#4 不闭环（不需 icon）/ #35 阶段 2 不在范围 / F-025 一期严格不踩
+
+#### 估时假设
+
+- 蓝图 5.55 h plan ×0.6 → Phase A archive ~2.5-4 h → Phase B archive 进一步 ~30% 下调 → **VAN 假设 ~2-3 h plan ×0.6**（落「极窄档延续高效区 0.30-0.45×」候选新子档 — Phase B 同档实证 0.40×）
+- 11 子任务（C.0/C.1/C.2/C.4/C.5 跨 5 段 — 蓝图原 10 拆 C.2 三段更细）
+
+#### 验收要点（A10-A12 + A13 + A14）
+
+- A10 修改 .css → 自动 restyle 不重启
+- A11 路径穿越拒绝（`../../etc/passwd`）+ symlink 跨 root 拒绝 + 安全日志
+- A12 4 MiB CSS 文件大小上限 + 超限拒绝
+- A13 现有 ctest 全绿（DEVTOOL=ON 1228 / DEVTOOL=OFF 1082 baseline 维持）
+- A14 DevTool OFF 时构建产物零变化（A14 黑名单加 FileWatcher / InotifyFileWatcher / HotReloadManager 3 项）
 
 ---
 
