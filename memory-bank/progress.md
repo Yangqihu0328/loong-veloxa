@@ -4,7 +4,7 @@
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）
 
-**当前阶段**：🟢 **规划中（VAN ✅ + Plan ✅ — 待用户 `/build` 启动构建）**
+**当前阶段**：🟢 **构建中·全部完成（VAN ✅ + Plan ✅ + Build ✅ — 待用户 `/reflect` 启动回顾）**
 
 **里程碑**：
 
@@ -20,7 +20,43 @@
 - 2026-05-03 23:14 — Phase 0 §0.3.4 Status.h audit 发现无 kAborted/kCancelled/kDeadlineExceeded（仅 6 项 enum）→ **D2 细化为 D2.B.1**（本任务新增 enum / Status.h u8 空间充裕 / backwards-compatible）
 - 2026-05-03 23:15 — ctest baseline 二次验证 DEVTOOL=ON 1247/1247 PASS 6.42s（与 main `72f011e` 一致）
 - 2026-05-03 23:18 — plan 文档落盘 `docs/plans/2026-05-03-quickjs-interrupt-handler.md`（~700 行 / 5 子任务 / brainstorm 4 决策 + B1-B8 8 决策 = 12 决策表 / Phase 0 极简 1 子段含 3 grep 实证 + Status.h audit / CP1+CP2 / 9 systemPatterns 协同度自我对照 / 完整 cpp 代码片段 / 5 R 风险登记 / 反复模式预防清单）
-- 2026-05-03 23:20 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 阶段 初始化 → 规划中
+- 2026-05-03 23:20 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 阶段 初始化 → 规划中 + plan chore commit `3c71334`
+- 2026-05-03 23:30 — `/build` 启动 / activeContext 阶段 规划中 → 构建中 / TodoWrite 8 子任务追踪
+- 2026-05-03 23:32 — E1 commit `f1dfe86` Status.h kAborted +1 enum + quickjs_engine.h 公开 API + 私有字段（+28 行 / 2 文件 / vx_script + vx_foundation 链接通过 / 0 lint）
+- 2026-05-03 23:34 — E2 commit `c371e2f` Init 注册 InterruptHandler + EvalGlobal 重置 + 静态 InterruptCallback + 错误识别（+49/-1 行 / 既有 4 测无回归 / 0 lint）
+- 2026-05-03 23:36 — E3 commit `7d9732f` 5 新测 D5 A+C 组合（+101 行 / **9/9 PASS 总 0.31s**：5 新测 0.08+0.01+0.01+0.08+0.07 = 0.25s 远低于 hang 风险 / 0 lint）
+- 2026-05-03 23:38 — 🛑 **CP1 自审 ✅ PASS**：DEVTOOL=ON 1247→**1252 PASS** (6.39s) + DEVTOOL=OFF 1082→**1087 PASS** (6.42s 含 build-off 配置 + 60s 全量构建) + 9/9 QuickjsEngine + D2/D5/D8b/D1 全实证 + plan-fact reconcile #1 记录（plan §0.4 假设 OFF 1082 不变错误，实际也 +5 因 quickjs_engine_test 在 tests/CMakeLists.txt:273 无 DEVTOOL guard / vx_script 在 OFF 仍含）
+- 2026-05-03 23:40 — E4 commit `58e3688` techContext.md #44 条文更新（+1/-1 行 / 闭环 Phase 2 + JSMallocFunctions 技术债保留）
+- 2026-05-03 23:42 — E5 finalize MB 三件套同步（tasks/activeContext/progress 阶段「构建中 → 构建中·全部完成」）+ 🛑 **CP2 自审 ✅ PASS**：5 commits Source 溯源完整（plan + E1+E2+E3+E4 + finalize 待 commit）+ 反复模式 **0/7 自检** + 1 plan-fact reconcile 项 + 1 P3 候选迁移（详见下方反复模式段）
+
+**5 子任务实测耗时**（plan 阶段假设 ~85-105 min plan ×0.6 / ~25-45 min 实测期待）：
+
+| # | 子任务 | plan ×0.6 | 实测 | 比值 | 备注 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1 | E1 API + StatusCode | 10 min | ~2 min | 0.20× | StrReplace + Write 一次成功 |
+| 2 | E2 实现 | 30-40 min | ~3 min | 0.08-0.10× | Write 全文件 + 编译验证 / 0 reflinement |
+| 3 | E3 5 新测 | 30-40 min | ~3 min | 0.08-0.10× | StrReplace 一次成功 / 9/9 PASS 一次过 |
+| — | CP1 自审（含 build-off ~60s） | — | ~3 min | — | DEVTOOL=ON + DEVTOOL=OFF 双 verify |
+| 4 | E4 techContext | 5 min | ~1 min | 0.20× | 单 StrReplace |
+| 5 | E5 finalize | 10 min | ~3 min | 0.30× | 含 CP2 自审 |
+| **合计** | — | **85-105 min** | **~15 min** | **~0.14-0.18×** | **远超「纯文档/规则极速区 0.15-0.25×」下沿** |
+
+**关键效率发现**：实测 ~15 min vs plan ×0.6 ~95 min 中位 = **0.16× 总比值**，比 TASK-20260503-02 「纯文档/规则极速区 0.21×」进一步加速 24%。原因分析：
+- 完整 cpp 代码片段在 plan §3 已 100% 完成 → build 阶段直接 Write/StrReplace 无返工
+- Phase 0 §0.3 三 grep 实证 + Status.h audit 提前发现 D2.B.1 + D8b → 0 build 阶段惊喜
+- 9/9 测试 RED-GREEN cycle 一次通过（无任何返工）
+- 5/5 commits 一次通过（CP1 + CP2 自审无 fix）
+- 反复模式 0/7 命中（Phase 0 三层抑制有效）
+
+**新效率区候选触发**：plan ×0.6 实测 **0.16×** → 比「纯文档/规则极速区 0.15-0.25×」下沿略低 → 触发候选「**最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×**」（plan ×0.6 第 67-72 数据点群组）— 适用条件：(1) 真实代码改动 ≤ 200 行 + (2) Phase 0 grep audit 完整 + (3) 完整 cpp 代码片段在 plan 阶段已就位 + (4) 0 brainstorm 之外的设计决策 + (5) 测试矩阵预 audit。
+
+**预期外发现入库（待 reflection 阶段沉淀）**：
+
+1. **plan-fact reconcile #1**：plan §0.4 配置矩阵假设「DEVTOOL=OFF 1082 不变」错误 — 实际 1082→1087（quickjs_engine_test 在 tests/CMakeLists.txt:273 无 DEVTOOL guard / vx_script 在 OFF 仍编译运行）。**沉淀**：plan §0.4 ctest config 矩阵假设需在 plan 阶段单独 audit 「待新增测的 add_test 是否有 DEVTOOL guard」（writing-plans.mdc «ctest 数量预期 config 矩阵» 段可补强 audit 子条）。
+2. **build-off 复用 build/_deps 加速实证**：通过 `-DFETCHCONTENT_BASE_DIR="$(pwd)/build/_deps"` 复用既有 _deps 实现 cmake reconfigure 1.8s + build 60s（vs 完全冷启动 ~75s+ reconfigure + 数分钟构建）。**沉淀**：systemPatterns 「DEVTOOL=OFF baseline 验证 SOP」段可加入 build-off + FETCHCONTENT_BASE_DIR 复用范式。
+3. **Phase 0 三层反复模式抑制全部生效实证**：(a) §0.3.2 grep 发现 JS_INTERRUPT_COUNTER_INIT 触发 D8b → 默认 budget 重校准 = 10000（避免 100-1000s 死循环灾难）/ (b) §0.3.4 Status.h audit 触发 D2.B.1 → 本任务新增 kAborted（避免 build 阶段才发现）/ (c) §0.3.3 quickjs.c 错误信息实证 → EvalGlobal 错误识别 anchor 稳定。**反复模式 0/7 命中**（连续第 5 次零反复达成 / 抵消 03 的 1/7 回升）。
+4. **brainstorm 中途 push-back 实证**：D8b 是 Phase 0 grep 实证后**主动**抛出的（不在用户原始 D 选项中），是「主动 surface 设计偏差」的范例。可沉淀为新 systemPattern「Phase 0 grep 实证驱动的主动 push-back 模式」。
+5. **commit body Source 溯源 + 实测数据 累积**：本任务 5 commits（含 plan）+ 待 finalize commit = 6 commits，全部含 Source 溯源前缀 + 实测数据（ctest PASS 数 / 行数 / 反向探针耗时）。累计 11+5 = **16 commits 累计 → triple-evidence 升级**（git-workflow.mdc commit body 范式确立）。
 
 **5 子任务计划（plan ×0.6 假设 ~85-105 min / 实测预期 ~25-45 min）**：
 

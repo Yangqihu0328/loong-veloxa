@@ -4,7 +4,7 @@
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）[安全相关]
 
-- **当前阶段：** **规划中**（VAN ✅ + Plan ✅ — 待用户 `/build` 启动构建）
+- **当前阶段：** **构建中·全部完成**（VAN ✅ + Plan ✅ + Build ✅ — 待用户 `/reflect` 启动回顾阶段）
 - **复杂度级别：** Level 2（多文件修改 / 需求清晰 / creative 已预决策方案 C Phase 2 / 无新设计决策 / 无新组件）
 - **焦点：** 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + `StatusCode::kAborted` + 死循环中止单测；作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
 - **分支：** `feature/TASK-20260503-05-quickjs-interrupt-handler`（基于 main `72f011e` ✅ 已创建 / VAN commit `67c8c81`）
