@@ -429,3 +429,65 @@ DevTool 是 Veloxa 自我应用，几乎所有既有 systemPatterns 都需自我
 3. §5.2 注入点核对表是否全部 grep 验证（I1-I8）
 4. §7 威胁面 T1-T8 mitigation 是否充分（T2 路径穿越 / T6 callback budget / T7 buffer overflow 是核心三项）
 5. §10 与 ≥ 30 systemPatterns 自我对照是否漏掉关键模式
+
+---
+
+## 附录 A：A14 解读 — 链接闭合 vs binary size diff 双层语义
+
+> 来源：TASK-20260502-01 A.1.7/A.1.8 实证 + reflection §6 P1 #8 沉淀；TASK-20260503-02 落实。
+
+### A.1 A14 双层语义区分
+
+A14「DevTool 关闭时构建产物零变化（链接闭合 + binary size diff = 0）」实际包含两层独立语义：
+
+| 层 | 名称 | 验证方法 | 严格度 | 失败后果 |
+|:-:|---|---|:-:|---|
+| **L1** | 链接闭合（Hard Constraint）| `tests/smoke/devtool_a14_link_closure.cmake` 用 `nm` 黑名单符号验证 DevTool 内部符号零泄漏到 `DEVTOOL=OFF` binary | 🔴 强制 | A14 违规，必须修复（#ifdef 守门 + CMakeLists.txt 条件 link） |
+| **L2** | binary size diff（Soft Indicator）| `cmake --build` + `ls -l <binary>` size 对比 `git stash` 前后 | 🟡 软指示 | 由公开 stub 引起 → 合规；由 leak 引起 → 升级为 L1 违规 |
+
+### A.2 L1 链接闭合（严格契约）
+
+- 黑名单符号定义在 `tests/smoke/devtool_a14_link_closure.cmake`
+- 每个 DevTool 子系统新增 1+ 符号到黑名单（如 Phase A 8 项 / Phase B 2 项 / Phase C 3 项）
+- ctest 自动 nm 验证：`DEVTOOL=OFF` binary 中黑名单符号必须 0 命中
+- **L1 PASS = A14 主契约满足**
+
+### A.3 L2 binary size diff（软指示）
+
+- A.1.7/A.1.8 实证：`vx_view_attach_devtool` always-fail stub（OFF 路径返 `VX_ERROR_INVALID_STATE`）+ `vx_view_get_perf_stats` 等 6 个 C ABI stub 累计 +4196 bytes 在 OFF binary 中
+- 这些 bytes 不是 DevTool 实现 leak，而是**公开 C ABI 表面的 stub 占位**（保持 ABI 兼容性 — OFF binary 仍可 link 调用方代码，只是返错码）
+- **L2 > 0 由公开 stub 引起 = 合规**；L2 > 0 由实现 leak 引起 = L1 违规升级
+
+### A.4 区分公式
+
+```
+A14 严格 = L1 PASS（链接闭合）AND L2 ≥ 0（diff 由公开 stub 解释）
+```
+
+判读流程：
+
+1. ctest A14 link closure smoke → L1 PASS/FAIL
+2. L1 FAIL → 直接 A14 违规，修复 #ifdef + CMakeLists.txt
+3. L1 PASS + L2 = 0 → 理想 A14（无新公开 stub）
+4. L1 PASS + L2 > 0 → 验证 L2 增量来源：
+   - `nm <binary> | grep vx_` 确认增量符号是公开 C ABI（前缀 `vx_`）
+   - 公开 stub → 合规
+   - 内部符号泄漏 → 升级为 L1 违规
+
+### A.5 实证
+
+- **TASK-20260502-01 Phase A**：A.1.7 + A.1.8 累计 +4196 bytes（490 + 3706）；L1 PASS（黑名单 8 项 nm 0 命中）；L2 增量全部来源 7 个公开 C ABI stub → 合规
+- **TASK-20260502-02 Phase B**：黑名单 +2 项（PerfOverlay + InjectDirtyRectHighlights）；L1 PASS；L2 ~+800 bytes 来源新 stub → 合规
+- **TASK-20260503-01 Phase C**：黑名单 +3 项（FileWatcher + InotifyFileWatcher + HotReloadManager）；L1 PASS；L2 ~+900 bytes 来源 `vx_view_hot_reload_tracked_count` + `vx_view_attach_devtool(hot_reload_dir)` 扩展 → 合规
+
+### A.6 反模式
+
+- ❌ 把 L2 = 0 当作 A14 唯一判据 → 误判公开 stub 为违规
+- ❌ 仅看 L1 不看 L2 → 错过 leak 升级信号（L2 > 0 + 来源不是公开 ABI 时）
+- ❌ A14 验证仅在 reflect 阶段做 → 应在每个子任务 finalize 时由 ctest A14 smoke 守门
+
+### A.7 交叉引用
+
+- `tests/smoke/devtool_a14_link_closure.cmake` — L1 自动化守门
+- `memory-bank/systemPatterns.md`「子系统关闭守门 ctest smoke 范式」段 — 范式总结
+- `memory-bank/systemPatterns.md`「黑名单维护演进透明度」子段 — 黑名单更新协议
