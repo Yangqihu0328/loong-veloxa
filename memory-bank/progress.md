@@ -4,7 +4,7 @@
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）
 
-**当前阶段**：🟡 **初始化（VAN — 待 feature 分支 AskQuestion 确认后进入 `/plan`）**
+**当前阶段**：🟢 **规划中（VAN ✅ + Plan ✅ — 待用户 `/build` 启动构建）**
 
 **里程碑**：
 
@@ -12,8 +12,17 @@
 - 2026-05-03 21:50 — spec §11.1 读取 / 关键 push-back 识别：TASK-30-04-D 硬依赖技术债 #44（spec §11.1 原文明示）/ `quickjs_engine.cc:46` 实证 `JS_SetMemoryLimit` **已落地**（creative 组件 3 方案 B 一期闭环）/ `JS_SetInterruptHandler` 仍完整开放（creative 组件 1 Phase 2 占位未落地）
 - 2026-05-03 21:52 — AskQuestion 3 问抛决策 / 用户答：**V3=A + V1=B + go_plan**
 - 2026-05-03 21:52 — 流程决策：搁置 TASK-20260503-04（保留 V1=B 决策以备恢复）+ 独立立项 TASK-20260503-05 #44 组件 1 Phase 2 完整落地（Level 2 / ~1-2 h plan ×0.6 / creative 方案 C Phase 2 已预决策）
+- 2026-05-03 22:30 — VAN commit `67c8c81` 初始化 MB 三件套 / feature 分支 `feature/TASK-20260503-05-quickjs-interrupt-handler` 创建（基于 main `72f011e`）
+- 2026-05-03 23:05 — `/plan` 启动 / 前置检查 ✅（feature 分支已就位，跳过 AskQuestion 创建分支步骤）
+- 2026-05-03 23:08 — Brainstorm 阶段 AskQuestion 抛 D1-D10 设计空白清单 / 用户选 `core_only` (D1+D2+D5)
+- 2026-05-03 23:12 — Phase 0 §0.3.2 grep 实证发现 `JS_INTERRUPT_COUNTER_INIT = 10000`（quickjs.c:474-476）→ **主动 push-back D8b**：creative「10⁷ 检查点」字面值会导致 10¹¹ 字节码 ≈ 100-1000s 死循环 ❌ → 重校准默认 budget = 10000（反复模式 #1 第 10 次抑制 — Phase 0 grep 实证 → 避免「现有实现 runtime 行为假设未实证」反复）
+- 2026-05-03 23:13 — Brainstorm 4 决策抛出 / 用户选 `all_recommended` → D1=B + D2=B + D5=A+C + D8b=B 4/4 锁定
+- 2026-05-03 23:14 — Phase 0 §0.3.4 Status.h audit 发现无 kAborted/kCancelled/kDeadlineExceeded（仅 6 项 enum）→ **D2 细化为 D2.B.1**（本任务新增 enum / Status.h u8 空间充裕 / backwards-compatible）
+- 2026-05-03 23:15 — ctest baseline 二次验证 DEVTOOL=ON 1247/1247 PASS 6.42s（与 main `72f011e` 一致）
+- 2026-05-03 23:18 — plan 文档落盘 `docs/plans/2026-05-03-quickjs-interrupt-handler.md`（~700 行 / 5 子任务 / brainstorm 4 决策 + B1-B8 8 决策 = 12 决策表 / Phase 0 极简 1 子段含 3 grep 实证 + Status.h audit / CP1+CP2 / 9 systemPatterns 协同度自我对照 / 完整 cpp 代码片段 / 5 R 风险登记 / 反复模式预防清单）
+- 2026-05-03 23:20 — Memory Bank 三件套（tasks/activeContext/progress）更新 + 阶段 初始化 → 规划中
 
-**5 子任务计划（plan ×0.6 假设 ~1-2 h）**：
+**5 子任务计划（plan ×0.6 假设 ~85-105 min / 实测预期 ~25-45 min）**：
 
 | # | 子任务 | 文件 | plan ×0.6 | 测试模式 |
 |:-:|---|---|:-:|---|
@@ -34,6 +43,42 @@
 - §0.3 既有 quickjs_engine_test 文件结构 / 单测范式熟悉（三元守卫 / Status-StatusOr 用法）
 - §0.4 默认 budget 值常量选择（creative 建议 10⁷ / 具体在实现时用单测「死循环 100ms 内被中止」校准）
 - §0.5 InterruptCallback 静态函数线程安全实现（std::atomic<int64_t> 预算计数器 / opaque ptr → QuickjsEngine 实例）
+
+---
+
+**Plan 阶段填充实证（2026-05-03 23:18 — 与 Phase 0 §0.3 grep 对应）**：
+
+- §0.1 ctest baseline 二次验证 DEVTOOL=ON 1247/1247 PASS 6.42s ✅
+- §0.2 / §0.3.1 `JS_SetInterruptHandler` 签名实证 ✅（quickjs.h:1147-1149）
+- §0.3.2 `JS_INTERRUPT_COUNTER_INIT = 10000` 实证 ✅ → **D8b push-back 重校准默认 budget=10000**
+- §0.3.3 `JS_ThrowInterrupted` 错误信息实证 ✅（"interrupted" + uncatchable）
+- §0.3.4 `Status.h` StatusCode audit ✅（无 kAborted / 触发 D2.B.1）
+- §0.4 默认 budget 重校准 = 10000（不再用 creative 字面 10⁷ 因 D8b 实证 → 10¹¹ bytecode 100-1000s 与原意「死循环被中止」相悖）
+- §0.5 ✅ InterruptCallback 静态 free function（cc anon namespace）+ std::atomic<int64_t> + opaque ptr → QuickjsEngine 实例
+
+**Brainstorm 4 决策（用户已批准 2026-05-03 23:13）**：
+
+- D1=B Phase 2 实现 WasInterrupted（私有 bool flag + getter）
+- D2=B.1 本任务新增 `StatusCode::kAborted = 6`（Status.h u8 backwards-compatible / Phase 0 audit 触发）
+- D5=A+C 组合（不真测死循环 + 小 budget=10/100 准死循环反向探针）
+- D8b=B 默认 budget = 10000 重校准（与 JS_INTERRUPT_COUNTER_INIT 对齐 / 死循环 100-500ms 内中止）
+
+**B1-B8 Plan 阶段决策（all_recommended 8/8）**：详见 `tasks.md` 同任务段
+
+**关键约束**：
+
+- `quickjs_engine.h` ABI 扩展（新增公开方法 + constexpr，不改既有方法签名）
+- `Status.h` 仅追加 enum（不修改既有 6 项 / u8 空间充裕 / backwards-compatible）
+- ctest 双 config 不退化（DEVTOOL=ON 1247→1252 / DEVTOOL=OFF 1082 不变）
+- 5 commits + Source 溯源前缀「`Source: TASK-20260503-05 creative-quickjs-host.md §组件 1 方案 C Phase 2`」
+- 反复模式 0/7 自检（CP2 必检）— Phase 0 三层抑制（§0.3 三 grep + D8b push-back + D2 audit）
+
+**反复模式预防（详见 plan §8）**：
+
+- **#1 前置依赖/环境/API 能力未验证**（历史 9 次最高）— **三层抑制**：Phase 0 §0.3 三 grep 实证（签名 + counter + 错误信息）+ D2 Status.h audit + D8b creative 单位重校准
+- #2 测试覆盖不全 — 5 新测 D5 A+C 双向覆盖 4 维度
+- #3 共享文件冲突 — Status.h 仅追加 enum + build 全 config verify
+- #4-7 commit 粒度 / 安全边界 / MB 同步 / 反复模式自检 — B8 + D2 + E5 + CP2 全部覆盖
 
 ---
 

@@ -2,13 +2,14 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260503-05 QuickJS Interrupt Handler + SetEvalInterruptBudget API（creative-quickjs-host.md §组件 1 方案 C Phase 2 完整落地）
+**规划中** — TASK-20260503-05 QuickJS Interrupt Handler + SetEvalInterruptBudget API（creative-quickjs-host.md §组件 1 方案 C Phase 2 完整落地）
 
 **当前任务 ID：** `TASK-20260503-05`
 **任务焦点：** 技术债 #44 组件 1 Phase 2 闭环 — 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + 死循环中止单测。作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
 **复杂度级别：** **Level 2**（多文件修改 / 需求清晰 / creative-quickjs-host.md §组件 1 方案 C Phase 2 已预决策 / 无新设计决策 / 无新组件）
 **安全相关：** ✅ **是**（T1 mitigation 基础设施 — JS eval CPU DoS 缓解 / 不可信脚本执行预算保护 / 解锁 TASK-04 Console 的 T1 完整 mitigation）
-**分支基线：** `main` `72f011e`（working tree clean）→ **feature 分支待用户确认后创建** `feature/TASK-20260503-05-quickjs-interrupt-handler`
+**分支：** `feature/TASK-20260503-05-quickjs-interrupt-handler`（基于 main `72f011e` ✅ 已创建 / VAN commit `67c8c81`）
+**Plan 文档：** `docs/plans/2026-05-03-quickjs-interrupt-handler.md`（~700 行 / 5 子任务 / brainstorm 4 决策 + B1-B8 8 决策 = 12 决策表 / Phase 0 极简 1 子段含 3 grep 实证 + Status.h audit / CP1+CP2 / 9 systemPatterns 协同度自我对照 / §1.1 文件清单 / §3 完整 TDD 模板含 cpp 代码片段 / §6 5 R 风险登记 / §7 9 systemPatterns / §8 反复模式预防清单 / §9 plan ×0.6 第 67-72 数据点假设入库）
 
 **任务范围（3 源码文件 + 2 MB 文件 / 预估 +150-200 行）：**
 
@@ -30,31 +31,60 @@
 | 已有 artifact | ✅ | `veloxa/script/quickjs_engine.{h,cc}` 已存在极简结构待扩展 / `tests/script/quickjs_engine_test.cc` 已存在（三元守卫范本 TASK-20260503-02 标定）/ creative-quickjs-host.md §组件 1 方案 C Phase 2 决策已就位 |
 | 待处理事项关联 | ✅ 极强 | 闭环 techContext.md #44 + creative-quickjs-host.md §组件 1 Phase 2 占位 + 解锁 TASK-20260503-04 Console JS REPL（搁置） |
 
-**关键实证（VAN 阶段已落地 — 修正 techContext 部分过时描述）：**
+**关键实证（VAN + Phase 0 阶段累积 — 含 3 grep 实证 + 1 Status.h audit）：**
 
-- `quickjs_engine.cc:46` — `JS_SetMemoryLimit(rt_, 32 MiB)` **已落地**（creative §组件 3 方案 B 一期闭环 — techContext.md:620 #44 描述中 `JS_SetMemoryLimit` 已不开放）
-- `quickjs_engine.{h,cc}` — `JS_SetInterruptHandler` / `SetEvalInterruptBudget` / `WasInterrupted` **零命中** → 本任务新增范围明确
+- `quickjs_engine.cc:46` — `JS_SetMemoryLimit(rt_, 32 MiB)` **已落地**（creative §组件 3 方案 B 一期闭环）
+- `quickjs.h:1147-1149` — `JSInterruptHandler` 签名 `int (*)(JSRuntime*, void*)` / return != 0 中止 ✅
+- `quickjs.c:474-476 + 8174` — **关键发现**：`JS_INTERRUPT_COUNTER_INIT = 10000`（QuickJS 内部每 ~10000 字节码触发一次 handler 回调）→ creative「10⁷ 级检查点」字面值会导致 10¹¹ 字节码 ≈ 100-1000 秒死循环才中止 ❌ → **D8b push-back 重校准默认 budget = 10000**（反复模式 #1 第 10 次抑制）
+- `quickjs.c:8165-8169` — `JS_ThrowInterrupted` 抛 `InternalError("interrupted")` + `JS_SetUncatchableError`（消息固定字符串可作识别 anchor）
+- `Status.h:12-19` — 当前 6 个 StatusCode（无 kAborted/kCancelled/kDeadlineExceeded）→ **D2.B.1 触发**：本任务在 Status.h 新增 `kAborted = 6`（u8 空间充裕 / backwards-compatible / +1 行 trivial）
 - creative-quickjs-host.md §组件 1 方案 C Phase 2 — 默认关闭 + 显式 API 开启 + 不耦合 EventLoop 决策已批准（2026-04-13）
-- 默认 budget 值 creative 建议 **10⁷ 级检查点**（具体数值在实现时用常量 + 单测校准）
-- 回调内**仅** atomic 递减 + return != 0 中止，**不**调 EventLoop / 不分配复杂 C++ 对象
+
+**Brainstorm 阶段 4 决策（用户已批准 2026-05-03 / Phase 0 audit 触发 D2 细化为 B.1）：**
+
+| # | 维度 | 锁定 | 触发 |
+|:-:|---|---|---|
+| D1 | `WasInterrupted()` 边界 | **B：Phase 2 实现（私有 bool flag + getter）** | activeContext 已列入 Phase 2 范围 / 单测语义清晰 / TASK-04 复用 |
+| D2 | interrupt 错误码 | **B.1：本任务新增 `StatusCode::kAborted = 6` enum** | Phase 0 §0.3.4 audit 触发 / u8 空间充裕 / backwards-compatible |
+| D5 | budget=0 死循环测避免 hang | **A+C 组合**（不真测死循环 + 小 budget=10/100 准死循环反向探针）| 0 hang 风险 + 双向覆盖 / std::thread 引入复杂度过高 |
+| D8b | 默认 budget 单位重定义 | **B：`kDefaultInterruptBudgetCheckpoints = 10000`** | Phase 0 §0.3.2 grep 实证 / 与 JS_INTERRUPT_COUNTER_INIT 对齐 / 死循环 100-500ms 内中止 |
+
+**Plan 阶段 B1-B8 决策（用户 1 次 AskQuestion 选 all_recommended → 8/8 按推荐锁定）：**
+
+- B1=A 串行 E1→E2→E3 (CP1)→E4→E5 (CP2) / B2=A E1/E2/E3 [覆盖补充] + E4 [文档调整] / B3=A 公开常量 `kDefaultInterruptBudgetCheckpoints=10000` / B4=A 静态 free function + std::atomic<int64_t> + opaque ptr / B5=A budget=0 显式短路（统一注册 handler 路径） / B6=A EvalGlobal 入口一次性重置 counter + flag / B7=A Phase 0 极简 1 子段 + CP1+CP2 / B8=A 5 commits + Source 溯源 + 实测 ~25-45 min
+
+**任务范围（5 子任务 + 2 CP / 5 文件 / +138-174 行 估）：**
+
+| # | 子任务 | 文件 | plan ×0.6 |
+|:-:|---|---|:-:|
+| E1 | API + StatusCode 扩展声明 | `Status.h` (+1) + `quickjs_engine.h` (+12-15) | ~10 min |
+| E2 | Init 注册 InterruptHandler + EvalGlobal 重置预算 + 静态 InterruptCallback + 错误识别 | `quickjs_engine.cc` (+40-50) | ~30-40 min |
+| E3 | 5 新测（D5 A+C 组合 + 4 维度覆盖）| `quickjs_engine_test.cc` (+80-100) | ~30-40 min |
+| — | 🛑 **CP1 自审**（DEVTOOL=ON 1247→1252 / DEVTOOL=OFF 1082 / D2/D5/D8b 全实证）| — | — |
+| E4 | techContext #44 条文更新 | `techContext.md` (+5-8) | ~5 min |
+| E5 | finalize（MB 三件套同步 + 分支合并 ff）| `tasks.md` + `activeContext.md` + `progress.md` | ~10 min |
+| — | 🛑 **CP2 自审**（5 commits Source 溯源 + 反复模式 0/7 自检）| — | — |
+| **合计** | — | — | **~85-105 min plan ×0.6 / 实测预期 ~25-45 min** |
 
 **不在本任务范围（留后续 TASK）：**
 
 - 组件 3 `JSMallocFunctions → vx::MallocAllocator` 分配器对齐（creative 明示「记入技术债 / 独立 TASK」— 新 P3 候选）
 - Phase 3 宿主 `Application` 集成（creative §组件 1 Phase 3 留未来 — 与 TASK-04 Console / TASK-30-04-E JS Debugger 耦合时再做）
+- `JS_SetInterruptHandler` 失败处理 / opaque ptr lifetime audit（留 P3 候选）
+- `kCancelled` 进一步语义拆分（留 P3 — 当前 kAborted 足够覆盖 interrupt + 未来手动取消等）
 
 **关键约束：**
 
-- `quickjs_engine.h` ABI 扩展（新增公开方法，不改既有方法签名）
-- ctest 1247 baseline DEVTOOL=ON + 1082 DEVTOOL=OFF 双配置不退化
-- 预期新增 ~5 测（quickjs_engine_test 扩展 — 死循环中止 / 预算 0 关闭 / 合法脚本 PASS / 预算耗尽重置 / interrupt 回调语义）
-- 5 commits 期望：E1 + E2 + E3 + E4 + finalize
-- Source 溯源前缀延续 TASK-20260503-02/03 沉淀 convention：`Source: TASK-20260503-05 creative-quickjs-host.md §组件 1 方案 C Phase 2`
-- 反复模式预期 0/7 命中（连续第 5 次零反复目标 — TASK-20260503-02 → -03（1/7 命中）→ 本任务）
+- `quickjs_engine.h` ABI 扩展（新增公开方法 + 公开 constexpr，不改既有方法签名）
+- `Status.h` 仅追加 enum（不修改既有 6 项 / u8 空间充裕 / backwards-compatible）
+- ctest 1247 baseline DEVTOOL=ON → 1252（+5）/ 1082 DEVTOOL=OFF 不变 双配置不退化
+- 5 commits 期望：E1 + E2 + E3 + E4 + finalize（每 commit 含 `Source: TASK-20260503-05 creative-quickjs-host.md §组件 1 方案 C Phase 2` 溯源前缀）
+- 反复模式预期 0/7 命中（连续第 5 次零反复目标 — TASK-20260503-02 → -03（1/7 命中）→ 本任务三层抑制：Phase 0 §0.3 三 grep + D8b push-back + D2 audit）
+- 9 systemPatterns 协同度 4 ✅ + 4 ⊘ + 1 🎯（详见 plan §7）
 
-**推荐工作流（Level 2 锁定）：** `/van` 收尾 → `/plan`（5 子任务 [覆盖补充] ×3 + [文档调整] + finalize / Phase 0 极简 1 子段 / B1-Bn 决策表 / 9 systemPatterns 协同度自我对照）→ `/build`（串行 5 子任务 + CP1 E3 单测通过）→ `/reflect` → `/archive` → 用户决策是否立即恢复 TASK-20260503-04 Console
+**推荐工作流（Level 2 锁定）：** ✅ `/van` → ✅ `/plan` → `/build`（5 子任务串行 + CP1 + CP2）→ `/reflect` → `/archive` → 用户决策是否立即恢复 TASK-20260503-04 Console
 
-**下一步：** 用户已答 `go_plan` → AskQuestion 确认 feature 分支创建 → 创建分支 → 进入 `/plan` 阶段
+**下一步：** 用户调用 `/build` 启动构建阶段（E1 API + StatusCode 扩展 ~3-6 min 实测预期）
 
 ---
 

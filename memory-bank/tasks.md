@@ -4,15 +4,119 @@
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）[安全相关]
 
-- **当前阶段：** 初始化（VAN — 待 feature 分支 AskQuestion 确认后进入 `/plan`）
+- **当前阶段：** **规划中**（VAN ✅ + Plan ✅ — 待用户 `/build` 启动构建）
 - **复杂度级别：** Level 2（多文件修改 / 需求清晰 / creative 已预决策方案 C Phase 2 / 无新设计决策 / 无新组件）
-- **焦点：** 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + 死循环中止单测；作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
-- **分支基线：** `main` `72f011e`（feature 分支 `feature/TASK-20260503-05-quickjs-interrupt-handler` 待创建）
+- **焦点：** 实现 `QuickjsEngine::SetEvalInterruptBudget(usize max_checkpoints)` + `JS_SetInterruptHandler` 注册 + `WasInterrupted()` API + `StatusCode::kAborted` + 死循环中止单测；作为 TASK-20260503-04 Console JS REPL 的硬前置依赖（spec §11.1 明示）
+- **分支：** `feature/TASK-20260503-05-quickjs-interrupt-handler`（基于 main `72f011e` ✅ 已创建 / VAN commit `67c8c81`）
+- **Plan 文档：** `docs/plans/2026-05-03-quickjs-interrupt-handler.md`（~700 行 / 5 子任务 / brainstorm 4 决策 + B1-B8 8 决策 = 12 决策表 / Phase 0 极简 1 子段含 3 grep 实证 + Status.h audit / CP1+CP2 / 9 systemPatterns 协同度自我对照 / 完整 cpp 代码片段 / 5 R 风险登记 / 反复模式预防清单）
 - **依赖：** `memory-bank/creative/creative-quickjs-host.md` §组件 1 方案 C Phase 2（已批准 2026-04-13）
+- **设计 spec：** ❌ 不需（Level 2 + creative 已预决策 + 沿用 TASK-20260503-02/03 范式 / plan 直接覆盖）
+- **创意文档：** ❌ 否（creative §组件 1 已批准 / 本任务为实施落地）
+- **需要创意阶段：** ❌ 否
 - **触及威胁：** T1 基础设施（JS eval CPU DoS mitigation — 解锁 TASK-04 Console 完整 T1 mitigation）
-- **触及技术债：** #44 QuickJS Interrupt Handler（本任务闭环组件 1 Phase 2，组件 3 JSMallocFunctions 留后续 TASK）
-- **估时：** ~1-2 h plan ×0.6（E1 API ~10m + E2 实现 ~30-40m + E3 单测 ~30-40m + E4 techContext ~5m + E5 finalize ~10m）
-- **预期反复模式：** 0/7 命中（连续第 5 次零反复目标 — TASK-20260503-02/03 基线延续）
+- **触及技术债：** #44 QuickJS Interrupt Handler（本任务闭环组件 1 Phase 2 / 组件 3 JSMallocFunctions 仍记技术债 / `JS_SetMemoryLimit` 已落地无需本任务）
+- **估时：** plan ×0.6 ~85-105 min / 实测预期 ~25-45 min（落「极窄档延续高效区 0.30-0.45×」候选）
+- **预期反复模式：** 0/7 命中（连续第 5 次零反复目标 — Phase 0 §0.3 三 grep 实证 + D8b push-back + D2 Status.h audit = 三层抑制）
+
+#### 任务范围（V1-V5 默认锁定）
+
+| # | 维度 | 选择 | 理由 |
+|:-:|---|---|---|
+| V1 | 子任务范围 | **5 子任务**（E1 API + E2 实现 + E3 单测 + E4 techContext + E5 finalize）| creative §组件 1 Phase 2 范围明确锁定 |
+| V2 | 实施模式 | **b 完整实施**（含 plan / build / verify / commit / reflect / archive） | 与 Level 2 标准路径一致 |
+| V3 | 复杂度 | **Level 2** | 5 文件修改 / 需求清晰 / 无新组件 / 无设计决策（creative 已预决策） |
+| V4 | 创意需求 | **❌ 否** | creative §组件 1 方案 C Phase 2 已批准 |
+| V5 | 安全标注 | **✅ 是** | T1 mitigation 基础设施 |
+
+#### 5 子任务清单（详细子任务定义）
+
+| # | ID | 标题 | 文件 | plan ×0.6 | 测试模式 |
+|:-:|---|---|---|:-:|---|
+| 1 | E1 | API + StatusCode 扩展声明（Status.h `kAborted` + quickjs_engine.h 公开方法 + 私有字段）| `Status.h` (+1) + `quickjs_engine.h` (+12-15) | ~10 min | [覆盖补充] |
+| 2 | E2 | Init 注册 InterruptHandler + EvalGlobal 重置预算 + 静态 InterruptCallback + 错误识别（"interrupted" → kAborted） | `quickjs_engine.cc` (+40-50) | ~30-40 min | [覆盖补充] |
+| 3 | E3 | 5 新测（D5 A+C 组合 + 4 维度覆盖 — 中止 / 关闭 / 不误杀 / 重置 / WasInterrupted 语义）| `quickjs_engine_test.cc` (+80-100) | ~30-40 min | [覆盖补充] |
+| — | 🛑 CP1 自审 | E3 完成 → DEVTOOL=ON 1247 → 1252 + 既有 4 测无回归 / DEVTOOL=OFF 1082 不退化 / D2/D5/D8b 全实证 | — | — | — |
+| 4 | E4 | techContext.md #44 条文更新（JS_SetMemoryLimit 已落地 + interrupt handler 本任务闭环 + JSMallocFunctions 仍记技术债）| `techContext.md` (+5-8) | ~5 min | [文档调整模式] |
+| 5 | E5 | finalize（MB 三件套同步 + 分支合并 ff）| `tasks.md` + `activeContext.md` + `progress.md` | ~10 min | — |
+| — | 🛑 CP2 自审 | E5 完成 → 5 commits Source 溯源完整 / 反复模式 0/7 自检 / 新 P3 候选迁移 | — | — | — |
+
+**总估时：** plan ×0.6 ~85-105 min / **实测预期 ~25-45 min**（落「极窄档延续高效区 0.30-0.45×」候选）
+
+#### 验收要点（A1-A10 详见 plan §5）
+
+- A1: DEVTOOL=ON ctest 1247 → 1252 PASS（+5 新测）
+- A2: DEVTOOL=OFF ctest 1082 PASS（不退化）
+- A3: 既有 4 QuickjsEngine 测无回归
+- A4-A6: API + 实现 + Status.h 变更范围严格控制
+- A7-A8: D2/D5/D8b 实证（kAborted + 双向 budget 覆盖 + 默认值不误杀）
+- A9: techContext.md #44 闭环 + JSMallocFunctions 技术债保留
+- A10: 5 commits 全 Source 溯源 + 1 commit/子任务
+
+#### 前置验证（4/4 PASS — VAN 阶段）
+
+| 维度 | 检查内容 | 结果 |
+|---|---|:-:|
+| 依赖可获取性 | quickjsng 已离线预置 / 零新依赖 / F9 ⊘ 跳过 | ✅ |
+| 环境就绪 | main `72f011e` 干净 / cmake 4.2.3 + gcc 15.2.0 + ninja + ctest / build/ DEVTOOL=ON 1247 baseline 可用 | ✅ |
+| 已有 artifact | `quickjs_engine.{h,cc}` 极简结构待扩展 / `quickjs_engine_test.cc` 已存在含三元守卫范本 / creative-quickjs-host.md §组件 1 方案 C Phase 2 决策已就位 | ✅ |
+| 待处理事项 | 闭环 techContext.md #44 + creative-quickjs-host.md §组件 1 Phase 2 占位 + 解锁 TASK-20260503-04 Console JS REPL（搁置） | ✅ 极强 |
+
+#### Phase 0 极简 1 子段（plan §0 — 含 3 grep 实证 + Status.h audit）
+
+- §0.1 工具链快照 ✅（cmake 4.2.3 + gcc 15.2.0 + ninja + ctest + ld 2.46 hotfix）
+- §0.2 ctest baseline DEVTOOL=ON 1247/1247 PASS 6.42s（与 main 一致）
+- §0.3.1 `JS_SetInterruptHandler` 签名实证 ✅（quickjs.h:1147-1149）
+- §0.3.2 `JS_INTERRUPT_COUNTER_INIT = 10000` 实证 ✅（quickjs.c:474-476）→ **触发 D8b push-back**
+- §0.3.3 `JS_ThrowInterrupted` 错误信息实证 ✅（quickjs.c:8165-8169）— "interrupted" + uncatchable
+- §0.3.4 `Status.h` StatusCode audit ✅（无 kAborted）→ **触发 D2.B.1 决策**
+- §0.4 配置矩阵假设：DEVTOOL=ON 1247→1252 / DEVTOOL=OFF 1082 不变 / SDL2=ON 1265→1270
+- §0.5 smoke 工具：rg ❌ MISS → Grep 兜底已实证
+
+#### Brainstorm 决策（4 项 — D1+D2+D5+D8b 用户已批准）
+
+| # | 维度 | 决策 |
+|:-:|---|---|
+| D1 | `WasInterrupted()` Phase 2 vs Phase 3 边界 | **B：Phase 2 实现（私有 bool flag + getter）** |
+| D2 | interrupt 错误码 / 消息设计 | **B.1：本任务新增 `StatusCode::kAborted = 6` enum 值**（Phase 0 audit 触发）|
+| D5 | budget=0 死循环测避免 ctest hang 策略 | **A+C 组合**（不真测死循环 + 小 budget=10/100 准死循环反向探针）|
+| D8b | creative「10⁷ 级检查点」单位语义重定义 | **B：默认 `kDefaultInterruptBudgetCheckpoints = 10000`**（handler 调用次数 / 与 JS_INTERRUPT_COUNTER_INIT 对齐 / 死循环 100-500ms 内中止） |
+
+#### Plan 阶段决策表（B1-B8 — 用户 1 次 AskQuestion 选 all_recommended → 8/8 按推荐锁定）
+
+| # | 维度 | 锁定 |
+|:-:|---|---|
+| B1 | 子任务执行顺序 | E1 → E2 → E3 (CP1) → E4 → E5 (CP2) |
+| B2 | 测试模式 | E1/E2/E3 [覆盖补充] / E4 [文档调整] / E5 — |
+| B3 | 默认 budget 值常量 | `static constexpr usize kDefaultInterruptBudgetCheckpoints = 10000`（公开 / 暴露给单测）|
+| B4 | InterruptCallback 实现 | 静态 free function（cc anon namespace）+ opaque ptr → `QuickjsEngine*` + `std::atomic<int64_t>` 计数器 |
+| B5 | budget=0 语义 | 显式短路：budget=0 时 handler 内 `return 0` 不递减（统一注册 handler 路径减少代码分支）|
+| B6 | EvalGlobal 重置点 | 入口处一次性：`interrupt_counter_.store(budget, relaxed); was_interrupted_ = false;` |
+| B7 | Phase 0 + Checkpoint | Phase 0 极简 1 子段 + CP1（E3 后）+ CP2（E5 后）|
+| B8 | commit 粒度 + 估时 | 5 commits 1/子任务 + Source 溯源前缀 + 1 reflect + 1 archive = 7 commits 总 / plan ×0.6 ~85-105 min → 实测 ~25-45 min |
+
+#### 9 systemPatterns 协同度自我对照
+
+详见 plan §7。摘要：4 ✅（Phase 0 quint-evidence / 反复模式渐进式抑制 / Multi-subtask commit / 显式语义状态）+ 4 ⊘（双层 API / A14 / lazy-attach / dogfood — 本任务不涉及）+ 1 🎯（连续第 5 次零反复目标 — 抵消 03 的 1/7 回升）
+
+#### 推荐工作流
+
+✅ `/van` → ✅ `/plan` → `/build`（5 子任务串行 + CP1 + CP2）→ `/reflect` → `/archive` → 用户决策是否立即恢复 TASK-20260503-04 Console
+
+#### 关键约束
+
+- `quickjs_engine.h` ABI 扩展（新增公开方法 + constexpr，不改既有方法签名）
+- `Status.h` 仅追加 enum（不修改既有 6 项 / u8 空间充裕 / backwards-compatible）
+- ctest 双 config 不退化（DEVTOOL=ON 1247→1252 / DEVTOOL=OFF 1082 不变）
+- 5 commits + Source 溯源前缀「`Source: TASK-20260503-05 creative-quickjs-host.md §组件 1 方案 C Phase 2`」
+- 反复模式 0/7 自检（CP2 必检）— Phase 0 三层抑制 + 主动 push-back D8b + audit D2
+
+#### 反复模式预防清单
+
+详见 plan §8。Top 抑制目标：#1 前置依赖/环境/API 能力未验证（历史 9 次） — 本任务三层抑制（Phase 0 §0.3 三 grep + D2 audit + D8b push-back）
+
+#### plan ×0.6 数据点假设入库
+
+第 67-72 数据点群组（5 子任务 + 1 finalize）/ 假设比值 0.30-0.45×（落「极窄档延续高效区」候选续延 02 0.21× 与 03 0.42× 之间）
 
 ### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟡 已搁置 2026-05-03 21:52
 
