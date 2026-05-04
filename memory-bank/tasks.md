@@ -2,7 +2,76 @@
 
 ## 当前任务
 
-> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：TASK-20260503-04 DevTool Phase D · Console JS REPL ✅ 已归档（详见下方「任务历史」段顶部）。
+> **TASK-20260504-01 规划完成（2026-05-04 ~17:50）** — 阶段：**规划中**（VAN ✅ + Plan ✅ / spec + plan 已落盘 / 11/11 决策 all_recommended 锁定 / 等待 `/creative`）。详细见下方任务段。
+
+### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— 🟢 规划完成 2026-05-04 ~17:50
+
+- **当前阶段：** **规划中**（VAN ✅ + Plan ✅ + Phase 0 7 子段 grep 实证 ✅ + spec 落盘 ~480 行 + plan 落盘 ~440 行 / 11/11 决策 all_recommended 锁定 / 等待 `/creative`）
+- **创建日期：** 2026-05-04
+- **复杂度级别：** **Level 4 蓝图（V2=a 完整变体）** — 沿用 [TASK-20260430-04 DevTool 三件套蓝图范式](33afb7c)（systemPatterns「Level 4 蓝图任务 V2=a 工作流变体」段）/ 含 creative ×N（预期 MVP-A/B/C 三档分级各一篇 / 视 plan 阶段决策）/ **跳过 `/build`**（纯文档蓝图）
+- **焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
+- **分支：** `feature/TASK-20260504-01-mvp-scope-doc`（基于 main `fd22dd8` ✅ 已创建）
+- **来源：** [TASK-20260503-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) — 用户问"MVP 还差哪些"时识别项目缺统一 MVP 范围定义文档（projectbrief 5 大目标 + 29 specs + activeContext P3 候选清单 全部可作上游素材）→ 用户拍板独立立项
+- **触及威胁：** ❌ 无（纯文档 / 无新外部输入处理）
+- **触及技术债：** 项目级架构决策文档化（影响后续所有任务排期 + 资源投入）
+- **安全相关：** ❌ 否
+- **估时假设：** plan ×0.6 待 plan 阶段精化（参考 TASK-20260430-04 蓝图任务 / 4 篇文档 / Level 4 V2=a — 本任务规模约 1/4 因仅 1-3 篇文档）
+
+#### 前置验证（4/4 PASS）
+
+| 维度 | 检查内容 | 结果 |
+|---|---|:-:|
+| 依赖可获取性 | 零新依赖（纯文档）| ✅ |
+| 环境就绪 | `docs/specs/` 已有 29 个 spec 范本可参考（含 `2026-04-30-devtool-design.md` Level 4 V2=a 蓝图直接范本 / `2026-04-14-feature-completion-design.md §不在范围内` MVP 局部排除项作上游素材）| ✅ |
+| 已有 artifact | `docs/specs/MVP-scope.md` / `docs/specs/*scope*.md` / `docs/specs/*MVP*.md` 全不存在（无冲突）+ 上游素材**极强**（projectbrief.md 5 大目标 / productContext.md 已实现表 / techContext.md 平台后端 / 29 specs / activeContext P3 候选清单 / DevTool 蓝图 spec §11/§12 / hello example 实证）| ✅ |
+| 待处理事项 | [TASK-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) 已识别项目缺统一 MVP 验收清单 → 视为本任务的隐式上游 | ✅ 极强 |
+
+#### VAN 阶段识别的 5 维度关键 push-back（plan 阶段 brainstorm 决策）
+
+| # | 维度 | 候选 | 备注 |
+|:-:|---|---|---|
+| **V1** | MVP 范围视角 | A 最小可运行 demo / B 桌面 dogfood 完整 / C 真嵌入式部署 / **D 三档分级 MVP-A/B/C**（推荐）| 影响 creative ×N 数量（D 选项 = 3 篇 creative）|
+| **V2** | 工作流形态 | **a V2=a 纯蓝图**（含 creative ×N 不含 build / 用户已选 Level 4）/ b V2=b 蓝图 + 后续立项 N 个 Level 3 子任务 | Level 4 V2=a 已确认 |
+| **V3** | 文档形态 | a 独立 spec / b 嵌入 projectbrief 章节 / **c 双管齐下**（独立 spec + projectbrief 章节链接 + README 路线图段同步 — 推荐）| 影响 V5 同步范围 |
+| **V4** | 验收清单粒度 | a 粗粒度功能列表 / b 细粒度 ctest / **c 二者兼有**（推荐）| MVP "完成"标准明确 = 功能 + ctest 双维度 |
+| **V5** | 同步更新范围 | a 仅新建 spec / b 同步 README 路线图段 / **c 全量同步**（spec + README + projectbrief + productContext 已实现表 — 推荐）| 影响最终 commit 文件数 |
+
+**用户已锁定决策（VAN ✅ + Plan ✅ — 11/11 all_recommended 1 次 AskQuestion）：**
+
+| # | 维度 | 决策 |
+|:-:|---|---|
+| V1 | MVP 范围视角 | **D 三档分级 MVP-A/B/C** |
+| V2 | 工作流形态 | **a V2=a 完整蓝图变体**（含 creative ×3 不含 build）|
+| V3 | 文档形态 | **c 双管齐下** |
+| V4 | 验收清单粒度 | **c 二者兼有** |
+| V5 | 同步更新范围 | **c 全量同步** |
+| B1 | 主 spec 文档结构 | 沿用 DevTool 蓝图 spec §1-§12 范式 |
+| B2 | creative ×N 拆分粒度 | **3 篇**（MVP-A/B/C 各一篇）|
+| B3 | 验收清单矩阵格式 | 单矩阵 三档 × 多维度 |
+| B4 | 与既有 spec 交叉引用 | 上游/下游分表 |
+| B5 | 估时 | plan ×0.6 ~120-180 min（standalone-AI 实测条件）|
+| B6 | commit 拆分粒度 | **5 commits**（plan+spec / creative-A / B / C / finalize）|
+| B7 | Phase 0 grep 实证 | 7 子段（已完成 ✅）|
+
+**Plan 阶段产出（2026-05-04 ~17:45）：**
+
+- spec `docs/specs/2026-05-04-mvp-scope.md` ✅（~480 行 / 12 段含附录 A-D / 三档分级验收 A.1-A.6 + B.1-B.10 + C.1-C.10 / MVP-B 4 gap + MVP-C 9 gap 完整复用 activeContext P3 候选清单）
+- plan `docs/plans/2026-05-04-mvp-scope.md` ✅（~440 行 / 10 段 / 5 commits 子任务分解 + commit message 范本 + 2 Checkpoint + 11 systemPatterns 协同度自我对照 + 反复模式预防 0/7 预期）
+- Phase 0 7 子段 grep 实证 ✅（§0.1 ctest baseline / §0.2 文件名冲突 / §0.3-0.4 上游素材 / §0.5 29 specs audit / §0.6 P3 候选清单 / §0.7 反复模式 #1 守门）
+
+**需要 creative 阶段的组件（B2=3 篇）：**
+
+- ⏳ `memory-bank/creative/creative-mvp-A.md`（~300-400 行 / commit 2 / 基线档详细设计）
+- ⏳ `memory-bank/creative/creative-mvp-B.md`（~400-500 行 / commit 3 / 桌面 dogfood 完整档详细设计 + 4 项 gap 补全方案）
+- ⏳ `memory-bank/creative/creative-mvp-C.md`（~500-600 行 / commit 4 / 真嵌入式部署档详细设计 + 9 项 gap 补全方案）
+
+**待 finalize（commit 5）：** README + projectbrief + productContext + MB 三件套全量同步
+
+#### 11 systemPatterns 协同度自我对照
+
+预期：**5 ✅**（Level 4 蓝图 V2=a 工作流 + Phase 0 投入定律 sept-evidence + 跨决策协同度 100% 第 8 次连续命中 + 反复模式渐进式抑制 + reflection 沉淀回流）+ **5 引用**（DevTool 4 范式 + isolated JSRuntime 协议 + lazy-attach C ABI + A14 守门 + 5 大可复用范式）+ **1 🆕**（plan ×0.6 第 78-80 数据点群组入库蓝图任务子档候选）
+
+<!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）
 
 <!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）
 

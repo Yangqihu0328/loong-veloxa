@@ -2,7 +2,50 @@
 
 ## 当前任务
 
-> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：TASK-20260503-04 DevTool Phase D · Console JS REPL ✅ 已归档（详细里程碑见 `memory-bank/archive/archive-TASK-20260503-04.md` §3 + §6）。
+> **TASK-20260504-01 规划完成（2026-05-04 ~17:50）** — 阶段：**规划中**（VAN ✅ + Plan ✅ / spec + plan 已落盘 / 11/11 决策 all_recommended 锁定 / 等待 `/creative`）。详细见 `activeContext.md` + `tasks.md` + `docs/specs/2026-05-04-mvp-scope.md` + `docs/plans/2026-05-04-mvp-scope.md`。
+
+### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）
+
+**当前阶段**：🟢 **规划完成（VAN ✅ + Plan ✅ / 等待 `/creative` ×3）**
+
+**里程碑**：
+
+- 2026-05-04 ~17:25 — 用户 `/van MVP-scope 文档` 启动 / VAN 阶段读取上下文（projectbrief / productContext / techContext / activeContext / tasks / 29 specs / DevTool 蓝图 spec §11/§12 / TASK-04 archive 后续讨论 gap 分析）
+- 2026-05-04 ~17:27 — 前置验证 4/4 PASS（依赖可获取性 ✅ + 环境就绪 ✅ + 已有 artifact ✅ 极强 + 待处理事项 ✅ 极强 — 上轮回答主动建议）
+- 2026-05-04 ~17:28 — VAN 阶段识别 5 维度关键 push-back（V1 MVP 范围视角 / V2 工作流形态 / V3 文档形态 / V4 验收清单粒度 / V5 同步更新范围）+ AskQuestion 抛复杂度 + 分支命名 2 决策
+- 2026-05-04 ~17:30 — 用户决策：**Level 4 蓝图（V2=a 完整变体）** ✅ + 立即创建 `feature/TASK-20260504-01-mvp-scope-doc` 分支基于 main `fd22dd8` ✅
+- 2026-05-04 ~17:30 — feature 分支 `feature/TASK-20260504-01-mvp-scope-doc` 创建（基于 main `fd22dd8` / 工作树干净 / 0 stash）
+- 2026-05-04 ~17:30 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段「空闲」→「初始化」/ 待 plan 阶段决策 V1 / V3 / V4 / V5 4 维度 + brainstorm B1-B? 决策表 / 等待 `/plan`
+- 2026-05-04 ~17:38 — `/plan` 启动 / 前置条件检查 ✅（阶段「初始化」符合）
+- 2026-05-04 ~17:38 — brainstorm + plan 阶段 1 次 AskQuestion 抛 11 决策（V1+V3+V4+V5 brainstorm 4 + B1-B7 plan 7）+ 5 选项（A 全推荐 11/11 / B-D V1=A/B/C 三选一 + 其他全推荐 / E 细分调整）
+- 2026-05-04 ~17:39 — 用户全选推荐 → **11/11 1 次 AskQuestion all_recommended 锁定**（创纪录第 8 次跨决策协同度 100% — vs TASK-04 第 7 次 12/12）
+- 2026-05-04 ~17:40 — Phase 0 7 子段 grep 实证完成（§0.1 ctest baseline 1284/1091 / §0.2 文件名冲突 0 / §0.3 projectbrief 5 大目标完整 / §0.4 productContext 已实现表 14 项 + 6 大里程碑完整 / §0.5 29 specs 全部已实施 + 8 项非 MVP-A/B 排除项中 1 项已闭环 7 项映射到 C-G5/G6/G7 / §0.6 activeContext P3 候选清单完整映射 / §0.7 反复模式 #1 全 4 子维度不适用本任务但守门完整）
+- 2026-05-04 ~17:42 — spec 文档落盘 `docs/specs/2026-05-04-mvp-scope.md` ✅（~480 行 / 12 段含附录 A-D / 三档分级验收 A.1-A.6 + B.1-B.10 + C.1-C.10 / MVP-B 4 gap + MVP-C 9 gap 完整复用 activeContext P3 候选清单 / 0 omission 0 duplicate / 沿用 DevTool 蓝图 spec §1-§12 范式）
+- 2026-05-04 ~17:48 — plan 文档落盘 `docs/plans/2026-05-04-mvp-scope.md` ✅（~440 行 / 10 段 / 5 commits 子任务分解 + commit message 范本 + 2 Checkpoint + 11 systemPatterns 协同度自我对照 100% + 反复模式预防 0/7 预期 + estimating ~25-48 min standalone-AI 实测条件）
+- 2026-05-04 ~17:50 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段「初始化」→「规划中」/ 标识 3 维度需要 creative 阶段（B2=3 篇 — MVP-A/B/C 各一篇）/ 等待 `/creative`
+
+**Plan 阶段产出（commit 1 即将落盘）：**
+- spec ✅ ~480 行 / 12 段 / 三档分级验收完整
+- plan ✅ ~440 行 / 10 段 / 5 commits 计划完整
+- Phase 0 7 子段实证 ✅ / 全部判读 PASS
+
+**Level 4 蓝图 V2=a 完整变体工作流路径：**
+
+```
+/van ✅ → /plan（含 brainstorm + 主 spec 文档落盘）
+       → /creative ×N（视 V1 决策 — 若 D 三档分级则 N=3：MVP-A / MVP-B / MVP-C 各一篇）
+       → /reflect → /archive
+       ↑
+       跳过 /build（纯文档蓝图 — 沿用 systemPatterns「Level 4 蓝图任务 V2=a 工作流变体」段范式）
+```
+
+**预期产出（视 plan 阶段 V 系列决策）：**
+
+- 1 主 spec 文档 `docs/specs/2026-05-04-mvp-scope.md`（必出 — 含 MVP 范围定义 + 5 大目标映射 + 验收清单 + 三档分级矩阵 + 与 spec §11/§12 + activeContext P3 候选清单交叉引用）
+- 1-3 篇 creative 文档（视 V1 决策 — D 选项 = 3 篇 MVP-A/B/C 各一篇）
+- 同步候选 README / projectbrief / productContext（视 V5 决策）
+
+<!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）
 
 <!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）
 

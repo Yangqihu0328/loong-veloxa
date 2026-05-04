@@ -2,9 +2,38 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260503-04 已归档闭环 ✅。等待用户启动新任务（`/van`）或恢复 P3 候选清单中的下游任务。
+**规划中** — TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）/ VAN ✅ + Plan ✅ / spec 落盘 ~480 行 + plan 落盘 ~440 行 + Phase 0 7 子段 grep 实证 ✅ / 11/11 决策 1 次 AskQuestion all_recommended 锁定 / 等待 `/creative`（3 篇 — MVP-A/B/C 各一篇）
 
-**最近闭环：** TASK-20260503-04 DevTool Phase D · Console JS REPL（V1=B 扩展段）[安全相关] — DevTool 4 件套全部完整闭环 ✅ + spec §11.1 Console 占位完整闭环 ✅ + T1 任意 eval mitigation 5 维度首次完整暴露 ✅ + P0×3 改进建议 archive 阶段全部落实 ✅（详见下方「上次任务」段）。
+**任务焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
+
+**任务来源：** [TASK-20260503-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) — 用户问"MVP 还差哪些"时识别项目缺统一 MVP 范围定义文档 → 用户拍板独立立项
+
+**复杂度级别：** **Level 4 蓝图（V2=a 完整变体）**（用户 VAN 阶段确认 — 沿用 [TASK-20260430-04 DevTool 三件套蓝图范式](33afb7c) / 含 creative ×N 不含 build）
+
+**安全相关：** ❌ 否（纯文档 / 无新外部输入处理）
+
+**分支：** `feature/TASK-20260504-01-mvp-scope-doc`（基于 main `fd22dd8` ✅ 已创建）
+
+**用户已锁定决策（VAN ✅ + Plan ✅ — 11/11 1 次 AskQuestion all_recommended）：**
+- ✅ V1=D 三档分级 MVP-A/B/C
+- ✅ V2=a V2=a 完整蓝图变体（含 creative ×3 不含 build）
+- ✅ V3=c 双管齐下（spec + projectbrief 链接 + README 同步 + productContext 表）
+- ✅ V4=c 二者兼有（粗粒度功能 + 细粒度 ctest + 配置矩阵）
+- ✅ V5=c 全量同步（4 处文档一致更新 + finalize commit 守门）
+- ✅ B1-B7 Plan 决策 7/7 全推荐（沿用 DevTool 蓝图 spec §1-§12 范式 + 3 篇 creative + 单矩阵三档对照 + 上游/下游分表 + plan ×0.6 ~120-180 min + 5 commits + 7 子段 Phase 0 grep）
+- ✅ 分支命名 `feature/TASK-20260504-01-mvp-scope-doc` + 基于 main `fd22dd8` 创建
+
+**Plan 阶段产出：**
+- spec 落盘 ✅ `docs/specs/2026-05-04-mvp-scope.md`（~480 行 / 12 段含附录 A-D）
+- plan 落盘 ✅ `docs/plans/2026-05-04-mvp-scope.md`（~440 行 / 10 段 / 5 commits 子任务分解）
+- Phase 0 7 子段 grep 实证 ✅（文件名冲突 0 / 上游素材完整 / activeContext P3 候选清单 0 omission 0 duplicate / 反复模式 #1 守门）
+
+**需要 creative 阶段的组件（3 篇）：**
+- ⏳ creative-mvp-A.md（基线档详细设计 / commit 2）
+- ⏳ creative-mvp-B.md（桌面 dogfood 完整档 + 4 项 gap 补全方案 / commit 3）
+- ⏳ creative-mvp-C.md（真嵌入式部署档 + 9 项 gap 补全方案 / commit 4）
+
+**下一步：** 用户调用 `/creative` 启动 creative ×3 阶段（MVP-A → MVP-B → MVP-C 串行 3 commits）
 
 **上次归档闭环：** TASK-20260503-04 DevTool Phase D · Console JS REPL ✅（详见下方「上次任务（已归档闭环）」段）
 
