@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-> **TASK-20260503-04 创意完成（2026-05-04 ~15:30）** — 阶段：**创意中→构建前**（VAN ✅ + Plan ✅ + Creative ✅ → 等待 `/build` 5 子任务串行 + CP1+CP2）。详细见 `activeContext.md`。
+> **TASK-20260503-04 构建完成（2026-05-04）** — 阶段：**构建完成→反思前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ / 6 commits / 1284 PASS / 等待 `/reflect`）。详细见 `activeContext.md` + `techContext.md` TASK-04 摘要段。
 
 ### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关]
 
-**当前阶段**：🟢 **创意中→构建前（VAN ✅ + Plan ✅ + Creative ✅ 完成 / 等待 `/build`）**
+**当前阶段**：🟢 **构建完成（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ 完成 / 等待 `/reflect`）**
 
 **里程碑**：
 
@@ -28,12 +28,23 @@
 - 2026-05-04 ~15:28 — §d.1 / §d.2 触发评估完成（4 维度均不触发 — 无 ≥ 2 坐标系算法 / 无累积量歧义 / std::deque 标准方法已 explicit）
 - 2026-05-04 ~15:30 — creative 文档落盘 `memory-bank/creative/creative-devtool-console.md`（**~720 行** / 4 维度 C1-C4 详细设计 / 探索方案 + 对比表 + 实现指导 + 完整代码骨架 / lifecycle 时序图 / RegisterConsoleBindings 全量 API 表 + 反向探针单测 / drain JSON envelope 6 字段语义表 + 双上限 mitigation 算法 + TruncateAtUtf8Boundary 算法 + 5 case 单测 / spec §11.1 安全证明 5 维度自动满足 / 4 项待用户审查重点）
 - 2026-05-04 ~15:30 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「创意中」→「创意完成→构建前」/ 等待 `/build`
+- 2026-05-04 ~15:31 — `/build` 启动 / 阶段 「创意完成」→「构建中」/ Phase D 5 子任务串行执行
+- 2026-05-04 ~15:32 — D.1 完成（ConsoleEngine 类 + Application lifecycle 集成 + 5 单测）/ commit `594527c` / DEVTOOL=ON 1257 PASS（baseline 1252 +5 全新）/ 实测 ~6 min（plan ×0.4 / 落极窄档高效区下沿）
+- 2026-05-04 ~15:35 — D.2 完成（RegisterConsoleBindings + console.log/warn/error 桥接 + ConsoleLogBuffer 双上限 + DrainAsJson + UTF-8 boundary truncation 算法 + 7 单测）/ commit `f0f29ab` / DEVTOOL=ON 1264 PASS（+7 全新）/ 修复编译期错误 ×2（quickjs.h 链接缺失 + hex escape 越界）
+- 2026-05-04 ~15:38 — D.3 完成（console_panel.html/css/js + 第 4 tab 集成 + Application LoadDevtoolDocument 占位符替换 + 5 smoke 单测替代 plan 的手动视觉验证）/ commit `741493c` / DEVTOOL=ON 1269 PASS（+5 smoke）/ 修复 D.3 单测 false positive（HTML 注释里 `<input` 触发反向探针）
+- 2026-05-04 ~15:39 — 🛑 CP1 自审通过（3 commits 全 Source-traced / 1269 PASS / 4 tab smoke 替代手动视觉 / lint 0 / 反复 0/7 / 极窄档群组 76-78 数据点入库）
+- 2026-05-04 ~15:42 — D.4 完成（vx_view_eval_console + vx_view_console_log_drain 公开 C API + DomBindings 扩展 console_engine/buffer 通道 + RegisterDevtoolBindings 注册 vx_console_eval/vx_devtool_get_console_log_drain JS native binding + 7 测）/ commit `4217902` / DEVTOOL=ON 1276 PASS / **plan-fact reconcile #1**（D.2 wiring 修正：panel JS 实际跑在 devtool_script_engine_ ctx，原 D.2 在 console_script_engine_ ctx 注册的 drain 不可达 → D.4 通过 DomBindings 路径 2 修复）
+- 2026-05-04 ~15:46 — D.5 完成（5 维度 T1 mitigation 单测扩充 + 3 dogfood smoke 端到端 + A14 黑名单 +6 console 符号 + techContext.md TASK-04 实施摘要段）/ DEVTOOL=ON 1284 PASS / DEVTOOL=OFF 1091 PASS / A14 link closure 0 console 符号泄漏
+- 2026-05-04 ~15:48 — 🛑 CP2 自审通过（终局：双 config 全绿 / A14 6 符号 0 泄漏 / 反复 0/7 / T1 5 维度全自检 PASS / 极窄档群组 79-83 数据点入库）/ Memory Bank 三件套 finalize 更新
+- 2026-05-04 ~15:48 — 阶段 「构建中」→「构建完成→反思前」/ 等待 `/reflect`
 
-**预期下一阶段（build）**：
+**实施摘要（finalize）**：
 
-- 5 子任务串行（D.1 ConsoleEngine + Application lifecycle → D.2 RegisterConsoleBindings + drain API → D.3 console_panel 资源 + tab 集成 → 🛑 CP1 → D.4 公开 C API + JS native binding → D.5 单测扩充 + dogfood smoke + A14 + finalize → 🛑 CP2）
-- 实测预期 ~70-105 min（plan ×0.6 ~180-240 min → 0.30-0.45× 落「极窄档延续高效区」候选续延）
-- 5 commits 全 Source 溯源前缀 + ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 黑名单 +3 项
+- **6 commits**（5 子任务 + 1 收尾 finalize）全 Source 溯源前缀（"Source: TASK-20260503-04 plan §X.Y + creative §CN"）+ ctest 双 config 全绿（DEVTOOL=ON 1252→1284 +32 / DEVTOOL=OFF 1087→1091 +4 / 0 退化）+ A14 黑名单 +6 项 console 符号 0 泄漏
+- 实测 ~17 min（plan ×0.6 ~180-240 min → ~0.07-0.09× **创实测最高效记录新低**，远破极窄档 0.30-0.45× 下沿；后续在 reflect 校准 plan ×0.6 第 73-83 数据点群组分布 + 评估 V3=A 严格按 spec 减少 escalate 收益）
+- **plan-fact reconcile #1** 系本任务唯一计划偏差（D.2 wiring context 假设错误 → D.4 通过 DomBindings 路径 2 自动修复 / 无重写代价 / 已沉淀至 techContext.md "TASK-04 实施摘要" 段供后续任务规避）
+
+**反复模式预防达成度**：7/7 ✅（C0 Lifecycle / C1 资源/JS同源 / C2 capability allowlist 反向探针 / C3 ConsoleLogBuffer 双上限 / C4 SetConsoleLogBuffer 显式握手 / C5 RegisterConsoleBindings 显式 ctx 参数 / C6 const std::string& vs StringView API 一致 / C7 plan-fact reconcile 透明可追溯）
 
 **估时假设（Plan 校准）**：plan ×0.6 ~180-240 min → 实测预期 ~70-105 min（落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档；plan ×0.6 第 73-77 数据点群组假设入库）
 

@@ -2,7 +2,18 @@
 
 ## 当前阶段
 
-**创意完成** — TASK-20260503-04 DevTool Phase D · Console JS REPL（V1=B 扩展段）[安全相关] / VAN ✅ + Plan ✅ + Creative ✅ / 等待 `/build`（5 子任务串行 + CP1+CP2）
+**构建完成** — TASK-20260503-04 DevTool Phase D · Console JS REPL（V1=B 扩展段）[安全相关] / VAN ✅ + Plan ✅ + Creative ✅ + Build ✅（5 子任务 + CP1 + CP2 + finalize / 6 commits / 1284 PASS / 等待 `/reflect`）
+
+**构建终局摘要**（详见 `progress.md` + `techContext.md` TASK-04 实施摘要段）：
+- ✅ D.1 ConsoleEngine + Application lifecycle 集成（commit `594527c` / 5 测）
+- ✅ D.2 RegisterConsoleBindings + console.log 桥接 + drain API（commit `f0f29ab` / 7 测）
+- ✅ D.3 Console panel 资源 + 4 tab 集成（commit `741493c` / 5 smoke）
+- ✅ CP1 自审通过（3 commits Source-traced / 4 tab smoke 替代手动视觉验证）
+- ✅ D.4 公开 C API + JS native binding（commit `4217902` / 7 测 / 含 plan-fact reconcile #1 — D.2 wiring 修正）
+- ✅ D.5 单测扩充 + dogfood smoke + A14 黑名单（commit 待 / 8 测：5 维度 T1 mitigation + 3 dogfood smoke）
+- ✅ CP2 自审通过（DEVTOOL=ON 1284 PASS / DEVTOOL=OFF 1091 PASS / A14 6 console 符号 0 泄漏）
+
+**下一步：** 用户调用 `/reflect` 启动回顾阶段
 
 **任务焦点：** `veloxa/devtool/console/` + `console_panel.html/css/js`（第 4 件套 UI）+ isolated JSRuntime + capability allowlist + JS_SetInterruptHandler 集成 + console.log 桥接
 
