@@ -29,6 +29,7 @@ class HotReloadManager;
 
 namespace vx::devtool::console {
 class ConsoleEngine;
+class ConsoleLogBuffer;
 }  // namespace vx::devtool::console
 
 namespace vx {
@@ -179,6 +180,19 @@ class Application {
 #endif
   }
 
+  // TASK-20260503-04 D.2 — Console log buffer accessor.
+  // Same lifecycle as console_script_engine() (created/destroyed inside
+  // Load/UnloadDevtoolDocument). The C-API drain (D.4) and integration
+  // tests (D.5) reach the buffer through this getter rather than touching
+  // the unique_ptr directly.
+  vx::devtool::console::ConsoleLogBuffer* console_log_buffer() const {
+#ifdef VX_BUILD_DEVTOOL
+    return console_log_buffer_.get();
+#else
+    return nullptr;
+#endif
+  }
+
  private:
   void OnFrame();
   void EnsureUpdateManager();
@@ -260,6 +274,14 @@ class Application {
   // hypothetical cross-engine binding (none registered today) cannot
   // dangle. UnloadDevtoolDocument enforces the order explicitly.
   std::unique_ptr<vx::devtool::console::ConsoleEngine> console_script_engine_;
+  // D.2 — buffer that receives console.log/error/warn pushes from the
+  // Console JS scope (via RegisterConsoleBindings on the engine ctx).
+  // Drained by vx_devtool_get_console_log_drain (called every ~200 ms
+  // by D.3 console_panel.js). MUST release AFTER console_script_engine_
+  // since the JS callbacks hold a JS_GetContextOpaque(ctx) pointer to
+  // the buffer; the engine reset clears that channel before the buffer
+  // memory disappears.
+  std::unique_ptr<vx::devtool::console::ConsoleLogBuffer> console_log_buffer_;
 #endif
   platform::EventLoop::TimerId frame_timer_id_ = 0;
 };

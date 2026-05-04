@@ -11,3 +11,8 @@ add_executable(console_engine_test console_engine_test.cc)
 target_link_libraries(console_engine_test
   PRIVATE vx_devtool vx_core GTest::gtest_main)
 gtest_discover_tests(console_engine_test)
+
+add_executable(console_bindings_test console_bindings_test.cc)
+target_link_libraries(console_bindings_test
+  PRIVATE vx_devtool vx_core GTest::gtest_main)
+gtest_discover_tests(console_bindings_test)

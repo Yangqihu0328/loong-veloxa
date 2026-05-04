@@ -8,9 +8,13 @@
 # symbols never reach libvx_api.a).
 #
 # D.1: console_engine.cc — isolated QuickjsEngine wrap with default-safe
-#      T1 budget. RegisterConsoleBindings (D.2) is a separate file added
-#      here when D.2 lands.
+#      T1 budget.
+# D.2: console_bindings.cc — RegisterConsoleBindings + ConsoleLogBuffer
+#      (capability allowlist + console.log/error/warn → buffer push +
+#      drain JSON envelope query). Links against quickjs (transitively
+#      via vx_devtool's existing qjs link).
 
 target_sources(vx_devtool PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/console_engine.cc
+  ${CMAKE_CURRENT_SOURCE_DIR}/console_bindings.cc
 )
