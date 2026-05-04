@@ -2949,6 +2949,50 @@ TEST_F(RegisterConsoleBindingsTest, CapabilityAllowlistReverseProbe) {
 
 ---
 
+## 中文文档编辑安全 audit（TASK-20260504-01 反思入库 / P0 沉淀）
+
+> **背景**：TASK-20260504-01 MVP-scope 蓝图任务 commit 5 finalize 阶段编辑 README.md「项目状态」段时，因中文标点全角/半角字符差异（`（` vs `(` / `；` vs `;` / `「」` vs `""` 等）导致 StrReplace fuzzy match 失败 4 次重试，浪费 ~5-10 min。视觉上字符差异不易区分（特别是括号），易形成「凭记忆构造 old_string」陷阱。
+
+### 触发条件
+
+编辑以下任一文件类型时**强制**做本 audit：
+
+- 中文 README / spec / archive / progress / activeContext / systemPatterns / techContext / productContext
+- 中文 reflection / creative 文档
+- 任何含中文标点的 .md / .mdc / .rst / .txt 文档
+
+### 强制 4 项 mitigation
+
+| # | mitigation | 描述 | 反模式 |
+|:-:|---|---|---|
+| 1 | **强制先 Read 原文范围** | 所有 StrReplace 前先用 Read 工具读取准确目标范围（含 ≥3-5 行上下文）/ 不允许凭记忆构造 old_string | ❌ 凭直觉/记忆构造 old_string，假设字符类型 |
+| 2 | **缩小 StrReplace 范围** | 单段 StrReplace 跨越全角/半角字符越少 / 错配概率越低 / 推荐每次 StrReplace ≤ 10 行 / 大段改动拆 N 次 | ❌ 一次性大段（≥ 30 行）替换 |
+| 3 | **复制粘贴而非手动输入** | old_string 内容必须**完整复制**自 Read 输出 / 不允许手动输入中文标点 | ❌ 手敲 `（` `；` `、` 等全角符号 |
+| 4 | **首次失败立即 Read + 缩小** | 第 1 次 StrReplace 失败（even after relaxing whitespace）→ 立即 Read 准确范围 + 缩小 old_string / 不允许「再试一次」式盲猜 | ❌ 第 1 次失败后立即用稍微变形的 old_string 再试 |
+
+### 实证数据
+
+| 任务 | 文件 | 重试次数 | 浪费时间 | 根因字符 |
+|---|---|:-:|:-:|---|
+| TASK-20260504-01 commit 5 | `README.md` 「路线图」段 | **4** | ~5-10 min | 全角 `（` vs 半角 `(` / 全角 `；` vs 半角 `;` |
+| TASK-20260504-01 commit 5 | `productContext.md` 「已实现表」 | 1 | ~30 s | 全角 `；` 中部混入 |
+
+### 与既有 systemPatterns 协同
+
+- 与 [«StrReplace hunk 隔离 path-level isolation 范式»](#已验证的模式来自-foundation-实现) 协同 — 缩小范围本质即更小 hunk
+- 与 [writing-plans.mdc «文件清单一致性 audit»](33afb7c) 协同 — 后者管文件清单 / 本 audit 管文件内容字符精度
+
+### 反复模式候选定型
+
+本次为**首次定型**（1 实证 / TASK-20260504-01）/ 待未来 ≥ 1 次重复后正式升级反复模式 #N（沿用 [反复模式渐进式抑制范式](#反复模式渐进式抑制)）。但 mitigation 已立即沉淀生效。
+
+### 交叉引用
+
+- `memory-bank/reflection/reflection-TASK-20260504-01.md` §4.2 候选 ⓪ 完整定义
+- `.cursor/rules/skills/writing-plans.mdc` 「中文文档 StrReplace 字符类型 audit」段（同源沉淀）
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

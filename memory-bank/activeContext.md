@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**蓝图主交付物落盘完成** — TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）/ VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize 全量同步 ✅ / spec 480 行 + plan 440 行 + creative-mvp-A 270 行 + creative-mvp-B 470 行 + creative-mvp-C 524 行 + README + projectbrief + productContext 同步 / 11/11 决策 1 次 AskQuestion all_recommended 锁定 / 等待 `/reflect` 启动反思阶段（V2=a 蓝图变体跳过 `/build`）
+**回顾中** — TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）/ VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 6 commits 累计（含 reflect commit）/ reflection-TASK-20260504-01.md 落盘 ~290 行 / P0 ×1 立即沉淀 ✅（systemPatterns 「中文文档编辑安全 audit」段 + writing-plans.mdc 同源 audit 子条 — 反复模式新候选首次定型）/ 反复模式 0/7 已知模式 + 1 新候选定型 / 跨决策协同度 100% 第 8 次连续命中 / 等待 `/archive` 启动归档阶段
 
 **任务焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
 
@@ -597,6 +597,16 @@ C1-C4 4 维度需 creative 阶段产出详细设计文档：
 ---
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
+
+### P0/P1/P2 来自 TASK-20260504-01 reflection §5（reflect 阶段迁移 — archive 阶段已落实 P0×1 / P1×1 留下次工作流元任务 / P2×3 长期）
+
+> 5 项建议来自 MVP-scope 蓝图任务反思（**P0×1 反复模式新候选首次定型** / P1×1 / P2×3）— P0×1 在 reflect 阶段**已立即沉淀** ✅（systemPatterns 「中文文档编辑安全 audit」段 + writing-plans.mdc 同源 audit 子条）/ P1×1 留下次工作流元任务 / P2×3 长期。
+
+- **✅ P0 #1（已 reflect 阶段立即沉淀）systemPatterns 「中文文档编辑安全 audit」段** + writing-plans.mdc 「中文文档 StrReplace 字符类型 audit」段 — 反复模式新候选首次定型 / 4 项 mitigation（强制先 Read 原文范围 + 缩小 StrReplace 范围 + 复制粘贴而非手动输入 + 首次失败立即 Read+缩小）+ 实证数据表（README 4 次重试 / productContext 1 次）+ 与既有规则协同段 + 反复模式候选定型阶段说明（待未来 ≥1 次重复后正式升级反复模式 #N）。
+- **P1 #2 蓝图任务 spec 行数估算公式入库**（N 段 × 30-50 行/段 + 附录 50-100 行）— 本任务 spec 估 600-800 / 实际 449 / 偏差 -25%~-44% 因 MVP-scope 主题信息密度比 DevTool 主题紧凑（验收矩阵化 + 附录复用 productContext）；建议沉淀到 systemPatterns 「蓝图任务规模估算公式」段。**预估**：~10 min；下次工作流元任务批量落地。
+- **P2 #3 Level 4 V2=a 蓝图变体 plan ×0.6 比值范围 0.25-0.38× 第 2 数据点入库** — TASK-30-04 + 本任务 = 第 2 数据点 / 形成 dual-evidence / 待第 3 个完成正式入 systemPatterns plan ×0.6 矩阵作 sept-evidence 子档。
+- **P2 #4 systemPatterns 「超 MVP plus 标识范式」段沉淀**（沿用本 spec §10）— DevTool Phase E/F/G「超 MVP plus 而非 MVP」标识范式可推广到其他子系统（Vulkan / SVG / Web Animations 等长期愿景）；建议 systemPatterns 加新段。
+- **P2 #5 跨决策协同度 100% 第 8 次连续命中 sept-evidence 升级数据点** — 累计 11+12+12+10+13+12+12+11 = 93/93 跨决策一次锁定纪录 / 入 systemPatterns 跨决策协同度统计。
 
 ### P0/P1/P2 来自 TASK-20260503-04 reflection §5（reflect 阶段迁移 — archive 阶段直接落实 P0×3 / P1×2 留下次工作流元任务）
 

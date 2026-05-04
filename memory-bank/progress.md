@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-> **TASK-20260504-01 蓝图主交付物落盘完成（2026-05-04 ~19:30）** — 阶段：**蓝图主交付物落盘完成**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize 全量同步 ✅ / 5 commits / 等待 `/reflect`）。详细见 `activeContext.md` + `tasks.md` + `docs/specs/2026-05-04-mvp-scope.md` + `docs/plans/2026-05-04-mvp-scope.md` + `memory-bank/creative/creative-mvp-{A,B,C}.md`。
+> **TASK-20260504-01 回顾完成（2026-05-04 ~19:50）** — 阶段：**回顾中**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 6 commits / 等待 `/archive`）。详细见 `activeContext.md` + `tasks.md` + `docs/specs/2026-05-04-mvp-scope.md` + `docs/plans/2026-05-04-mvp-scope.md` + `memory-bank/creative/creative-mvp-{A,B,C}.md` + `memory-bank/reflection/reflection-TASK-20260504-01.md`。
 
 ### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）
 
-**当前阶段**：🟢 **蓝图主交付物落盘完成（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ / 等待 `/reflect`）**
+**当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 等待 `/archive`）**
 
 **里程碑**：
 
@@ -44,8 +44,24 @@
 - creative-mvp-A ✅ 270 行 / 10 段 / commit `6b7a298`
 - creative-mvp-B ✅ 470 行 / 11 段 / commit `acca25a`
 - creative-mvp-C ✅ 524 行 / 11 段 / commit `6a41e85`
-- README + projectbrief + productContext + MB 同步 ✅ / commit 5 待落盘
-- 5 commits 累计文档产出：1098 + 272 + 468 + 524 + (~150-200 sync) ≈ ~2500-2600 行
+- README + projectbrief + productContext + MB 同步 ✅ / commit `511104e` 落盘
+- 5 commits 累计文档产出：+2487 / -38 = 净 +2449 行
+
+- 2026-05-04 ~19:39 — `/reflect` 启动 / 前置条件按 main.mdc Level 4 V2=a 蓝图变体段灵活解读「广义构建 = 主交付物落盘」= PASS ✅
+- 2026-05-04 ~19:39 — Phase 0 数据收集（git log 5 commits 时序 / diff 统计 / 行数对照）
+- 2026-05-04 ~19:45 — reflection-TASK-20260504-01.md 落盘 ✅（~290 行 / 8 段 / Level 4 全面回顾：计划 vs 实际对比 + 检查清单 + 6 维度回顾 + 反复模式识别 + 5 项改进建议 + 架构评估 + Phase 0 sept-evidence 升级 + 待固化清单）
+- 2026-05-04 ~19:48 — P0 #1 立即沉淀 ✅（systemPatterns 加新段「中文文档编辑安全 audit」/ writing-plans.mdc 加 audit 子条「中文文档 StrReplace 字符类型 audit」/ 反复模式新候选首次定型 / 4 项 mitigation + 实证数据表）
+- 2026-05-04 ~19:49 — activeContext.md 待处理事项加 TASK-20260504-01 P0×1 已沉淀 + P1×1 + P2×3 段
+- 2026-05-04 ~19:50 — MB 三件套阶段「蓝图主交付物落盘完成」→「回顾中」+ commit reflect 即将落盘
+
+**回顾阶段关键发现：**
+- 已知 7 反复模式 0/7 命中（5 N/A + 2 明示守门）— 创第 6 次连续 0 反复纪录候选
+- 1 项新反复模式候选首次定型（中文文档 StrReplace 全角/半角字符差异）/ P0 立即沉淀
+- 跨决策协同度 100% 第 8 次连续命中（11/11 1 次 AskQuestion all_recommended）
+- plan ×0.6 比值 0.25-0.38× 落入 plan §5 估时上限预测中上区间
+- Phase 0 投入定律 sept-evidence 第 8 次实证（蓝图任务 ROI 偏低 ~3-5×）
+- 11 文件变更 100% 契合 plan §4（反复模式 #1 0/9+ 重复 ✅）
+- 5 commits 严格按 plan / 0 大杂烩（反复模式 #6 0/7+ 重复 ✅）
 
 **Level 4 蓝图 V2=a 完整变体工作流路径：**
 
