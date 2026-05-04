@@ -1,0 +1,27 @@
+<!--
+  TASK-20260503-04 D.3: DevTool Console panel HTML fragment.
+
+  Loaded inline via __INLINE_CONSOLE_HTML__ replacement inside
+  inspector_panel.html (see Application::LoadDevtoolDocument). The wrapper
+  div #console-panel is provided by inspector_panel.html so this fragment
+  only ships the inner output + REPL row.
+
+  Why no native input element here?
+    Veloxa's HTML/CSS subset registers the input tag as void+inline-block
+    (tag.cc:67) but provides NO native keyboard capture / value attribute
+    sync / caret rendering. Per creative-devtool-console §C1, the REPL
+    uses a <span> for the input echo + a <span> blink-target caret + a
+    self-managed value buffer in console_panel.js (window.keydown
+    listener guarded by isConsoleActive()). This degrades cleanly when
+    DOM input support lands later (V2 candidate).
+
+  Layout — when this fragment renders inside #console-panel which
+  inherits the splitter dock zone, it stacks #console-output (scroll)
+  over #console-input-row (single-line REPL).
+-->
+<div id="console-output"></div>
+<div id="console-input-row">
+  <span id="console-prompt">JS&gt;</span>
+  <span id="console-input-display"></span>
+  <span id="console-caret">_</span>
+</div>

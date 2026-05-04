@@ -71,8 +71,12 @@ function setupTabs() {
         for (var j = 0; j < buttons.length; j++) {
           buttons[j].className = (buttons[j] === btn) ? "active" : "";
         }
-        var panels = ["dom-tree-panel", "style-panel", "layout-panel"];
-        var targets = ["dom", "style", "layout"];
+        // TASK-20260503-04 D.3 — extend the panels list with the Console
+        // pane so the 4th tab uses the exact same .active toggle protocol
+        // (creative-devtool-console §C1 decision A — parallel tab).
+        var panels =
+            ["dom-tree-panel", "style-panel", "layout-panel", "console-panel"];
+        var targets = ["dom", "style", "layout", "console"];
         for (var k = 0; k < panels.length; k++) {
           var p = document.getElementById(panels[k]);
           if (p) p.className = (targets[k] === which) ? "active" : "";

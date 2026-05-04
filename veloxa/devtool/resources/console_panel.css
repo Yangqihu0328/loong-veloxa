@@ -1,0 +1,65 @@
+/*
+  TASK-20260503-04 D.3: DevTool Console panel CSS.
+
+  Embedded via __INLINE_CONSOLE_CSS__ replacement inside
+  inspector_panel.html <style> block. Reuses the same monospace +
+  dark theme as the surrounding inspector panel (R2 grep-allowed
+  shorthand only — see inspector_panel.css R2 mitigation comment).
+*/
+
+#console-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+#console-output {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 280px;
+  overflow: scroll;
+  background-color: #0e0e0e;
+  color: #d0d0d0;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.console-line {
+  width: 100%;
+}
+
+.console-input  { color: #ffeb3b; }   /* yellow — user input echo */
+.console-result { color: #a0d0ff; }   /* light blue — eval result */
+.console-log    { color: #d0d0d0; }   /* default gray */
+.console-warn   { color: #ffaa00; }   /* orange */
+.console-error  { color: #ff6060; }   /* red */
+.console-meta   { color: #888888; }   /* dim gray for "[dropped N]" notes */
+
+#console-input-row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  background-color: #050505;
+  color: #00ff00;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-top: 1px solid #444;
+}
+
+#console-prompt {
+  color: #00ff00;
+  margin-right: 4px;
+}
+
+#console-input-display {
+  color: #ffffff;
+  flex: 1 1 auto;
+}
+
+#console-caret {
+  color: #00ff00;
+}

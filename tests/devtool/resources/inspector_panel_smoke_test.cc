@@ -73,6 +73,56 @@ TEST(InspectorPanelHtmlSmoke, ContainsThreePanelDivs) {
   EXPECT_NE(html.find("id=\"layout-panel\""), std::string::npos);
 }
 
+// TASK-20260503-04 D.3 — Console pane is the 4th DevTool sub-pane.
+// These smoke tests stand in for the manual "F12 attach + click Console
+// tab" visual verification noted in plan §3.D.3, ensuring the 4 tab
+// structure + 3 placeholders are present in the embedded HTML so that
+// LoadDevtoolDocument's ReplaceFirst chain has something to operate on.
+TEST(InspectorPanelHtmlSmoke, ContainsFourthConsoleTab) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("data-tab=\"console\""), std::string::npos);
+  EXPECT_NE(html.find("id=\"console-panel\""), std::string::npos);
+}
+
+TEST(InspectorPanelHtmlSmoke, ContainsThreeConsoleInlinePlaceholders) {
+  const std::string html = AsString(kInspectorPanelHtml);
+  EXPECT_NE(html.find("__INLINE_CONSOLE_HTML__"), std::string::npos);
+  EXPECT_NE(html.find("__INLINE_CONSOLE_CSS__"), std::string::npos);
+  EXPECT_NE(html.find("__INLINE_CONSOLE_JS__"), std::string::npos);
+}
+
+TEST(ConsolePanelResourceSmoke, ConsoleHtmlContainsReplPrimitives) {
+  // creative §C1 decision A — REPL uses <span> + JS-managed value state
+  // instead of <input> (no native input behaviour in Veloxa subset).
+  const std::string html = AsString(kConsolePanelHtml);
+  EXPECT_NE(html.find("id=\"console-output\""), std::string::npos);
+  EXPECT_NE(html.find("id=\"console-input-display\""), std::string::npos);
+  EXPECT_NE(html.find("id=\"console-caret\""), std::string::npos);
+  // Defensive: ensure we did NOT regress by introducing <input> which
+  // would compile+render but never capture keyboard input.
+  EXPECT_EQ(html.find("<input"), std::string::npos);
+}
+
+TEST(ConsolePanelResourceSmoke, ConsoleCssDefinesLevelColors) {
+  const std::string css = AsString(kConsolePanelCss);
+  EXPECT_NE(css.find(".console-log"),    std::string::npos);
+  EXPECT_NE(css.find(".console-warn"),   std::string::npos);
+  EXPECT_NE(css.find(".console-error"),  std::string::npos);
+  EXPECT_NE(css.find(".console-input"),  std::string::npos);
+  EXPECT_NE(css.find(".console-result"), std::string::npos);
+}
+
+TEST(ConsolePanelResourceSmoke, ConsoleJsCallsRequiredBindings) {
+  const std::string js = AsString(kConsolePanelJs);
+  // creative §C4 — drain query polled every 200 ms.
+  EXPECT_NE(js.find("vx_devtool_get_console_log_drain"), std::string::npos);
+  // D.4 will register vx_console_eval; D.3 already wires the call site.
+  EXPECT_NE(js.find("vx_console_eval"), std::string::npos);
+  // creative §C1 — keydown listener on window guarded by isConsoleActive.
+  EXPECT_NE(js.find("isConsoleActive"), std::string::npos);
+  EXPECT_NE(js.find("addEventListener"), std::string::npos);
+}
+
 TEST(InspectorPanelHtmlSmoke, ContainsInlineCssPlaceholder) {
   // A.1.6 Application::LoadDevtoolDocument runtime 用 std::string::replace
   // 把占位符替换为实际 CSS 内容（避免 DevTool Document 加载 sub-resources

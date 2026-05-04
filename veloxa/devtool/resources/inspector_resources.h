@@ -18,6 +18,14 @@ extern const char* const kInspectorPanelHtml;
 extern const char* const kInspectorPanelCss;
 extern const char* const kInspectorPanelJs;
 
+// TASK-20260503-04 D.3 — Console panel resources (4th DevTool sub-pane).
+// Injected via __INLINE_CONSOLE_HTML__ / __INLINE_CONSOLE_CSS__ /
+// __INLINE_CONSOLE_JS__ placeholders inside inspector_panel.html, same
+// embed pipeline + same A14 zero-byte-OFF guard.
+extern const char* const kConsolePanelHtml;
+extern const char* const kConsolePanelCss;
+extern const char* const kConsolePanelJs;
+
 }  // namespace vx::devtool::resources
 
 #endif  // VELOXA_DEVTOOL_RESOURCES_INSPECTOR_RESOURCES_H_

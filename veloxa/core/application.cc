@@ -310,6 +310,17 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
   std::string html(devtool::resources::kInspectorPanelHtml);
   ReplaceFirst(html, "__INLINE_CSS__", devtool::resources::kInspectorPanelCss);
   ReplaceFirst(html, "__INLINE_JS__", devtool::resources::kInspectorPanelJs);
+  // TASK-20260503-04 D.3 — Console panel resources (4th DevTool sub-pane).
+  // The 3 placeholders are populated in the same pass as the inspector
+  // ones so the parser only sees the fully-resolved markup. The order
+  // does not matter — none of the placeholder strings appear inside
+  // another resource's body.
+  ReplaceFirst(html, "__INLINE_CONSOLE_HTML__",
+               devtool::resources::kConsolePanelHtml);
+  ReplaceFirst(html, "__INLINE_CONSOLE_CSS__",
+               devtool::resources::kConsolePanelCss);
+  ReplaceFirst(html, "__INLINE_CONSOLE_JS__",
+               devtool::resources::kConsolePanelJs);
 
   // Replace any previously loaded DevTool Document (idempotent).
   UnloadDevtoolDocument();

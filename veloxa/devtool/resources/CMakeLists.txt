@@ -9,11 +9,18 @@ set(_embed_inputs
   "${CMAKE_CURRENT_SOURCE_DIR}/inspector_panel.html"
   "${CMAKE_CURRENT_SOURCE_DIR}/inspector_panel.css"
   "${CMAKE_CURRENT_SOURCE_DIR}/inspector_panel.js"
+  # TASK-20260503-04 D.3 — Console panel resources (4th sub-pane).
+  "${CMAKE_CURRENT_SOURCE_DIR}/console_panel.html"
+  "${CMAKE_CURRENT_SOURCE_DIR}/console_panel.css"
+  "${CMAKE_CURRENT_SOURCE_DIR}/console_panel.js"
 )
 set(_embed_names
   "kInspectorPanelHtml"
   "kInspectorPanelCss"
   "kInspectorPanelJs"
+  "kConsolePanelHtml"
+  "kConsolePanelCss"
+  "kConsolePanelJs"
 )
 set(_gen_cc "${CMAKE_CURRENT_BINARY_DIR}/inspector_resources.cc")
 set(_embed_script "${CMAKE_CURRENT_SOURCE_DIR}/embed_resources.py")

@@ -57,7 +57,8 @@
 
 #dom-tree-panel,
 #style-panel,
-#layout-panel {
+#layout-panel,
+#console-panel {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -65,9 +66,19 @@
 
 #dom-tree-panel.active,
 #style-panel.active,
-#layout-panel.active {
+#layout-panel.active,
+#console-panel.active {
   background-color: #1e1e1e;
 }
+
+/* TASK-20260503-04 D.3 — When the Console tab is NOT active, hide its
+   pane to mirror the DOM/Style/Layout protocol. inspector_panel.js
+   setupTabs flips the .active class on panels in lockstep with the
+   buttons. We do not set display:none on the inactive class because
+   the existing 3 panes don't either (they rely on visual stack +
+   .active class only) — keeping symmetry simplifies setupTabs's
+   panels list extension. */
+
 
 /*
   TASK-20260502-02 B.2.1: Performance Overlay HUD (creative #1 决策 3 +

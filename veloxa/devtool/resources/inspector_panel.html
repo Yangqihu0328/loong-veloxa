@@ -15,18 +15,26 @@
   by mutating the .active class on tab buttons and panel divs in sync.
 -->
 <html>
-<head><style>__INLINE_CSS__</style></head>
+<head><style>__INLINE_CSS__
+__INLINE_CONSOLE_CSS__</style></head>
 <body>
   <div id="devtool-root">
     <div id="devtool-tabs">
       <button data-tab="dom" class="active">DOM</button>
       <button data-tab="style">Style</button>
       <button data-tab="layout">Layout</button>
+      <!-- TASK-20260503-04 D.3 — 4th tab (Console JS REPL + console.log
+           bridge). creative-devtool-console §C1 decision A: parallel to
+           existing 3 tabs, reuses inspector_panel.js setupTabs protocol. -->
+      <button data-tab="console">Console</button>
     </div>
     <div id="devtool-content">
       <div id="dom-tree-panel" class="active"></div>
       <div id="style-panel"></div>
       <div id="layout-panel"></div>
+      <!-- D.3 — Console pane content fragment is inlined here via
+           __INLINE_CONSOLE_HTML__ replacement (kConsolePanelHtml). -->
+      <div id="console-panel">__INLINE_CONSOLE_HTML__</div>
     </div>
   </div>
   <!--
@@ -61,6 +69,7 @@
       <span class="hud-value status-watching" id="hot-reload-status">--</span>
     </div>
   </div>
-  <script>__INLINE_JS__</script>
+  <script>__INLINE_JS__
+__INLINE_CONSOLE_JS__</script>
 </body>
 </html>
