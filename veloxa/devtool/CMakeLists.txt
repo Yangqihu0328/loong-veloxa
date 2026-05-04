@@ -30,3 +30,9 @@ target_sources(vx_devtool PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/hot_reload/file_watcher_inotify.cc
   ${CMAKE_CURRENT_SOURCE_DIR}/hot_reload/hot_reload_manager.cc
 )
+
+# TASK-20260503-04 D.1 — Console subsystem (isolated QuickJS REPL).
+# Dispatches into console/CMakeLists.txt for the cross-subsystem
+# target_sources append; D.1 ships console_engine.cc, D.2 will add
+# console_bindings.cc to the same target.
+add_subdirectory(console)

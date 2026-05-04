@@ -27,6 +27,10 @@ namespace vx::devtool::hot_reload {
 class HotReloadManager;
 }  // namespace vx::devtool::hot_reload
 
+namespace vx::devtool::console {
+class ConsoleEngine;
+}  // namespace vx::devtool::console
+
 namespace vx {
 
 class Application {
@@ -161,6 +165,20 @@ class Application {
 #endif
   }
 
+  // TASK-20260503-04 D.1 — Console isolated JSRuntime accessor.
+  // Non-null only between LoadDevtoolDocument / UnloadDevtoolDocument
+  // (Console scope is tied to the DevTool Document lifecycle so the
+  // panel JS that drains the buffer is guaranteed to be alive). Always
+  // nullptr when DEVTOOL=OFF (A14 zero-byte stub guard, mirrors
+  // hot_reload_manager() pattern).
+  vx::devtool::console::ConsoleEngine* console_script_engine() const {
+#ifdef VX_BUILD_DEVTOOL
+    return console_script_engine_.get();
+#else
+    return nullptr;
+#endif
+  }
+
  private:
   void OnFrame();
   void EnsureUpdateManager();
@@ -232,6 +250,16 @@ class Application {
   // must be guarded by the same #ifdef as application.cc's include of
   // hot_reload_manager.h.
   std::unique_ptr<vx::devtool::hot_reload::HotReloadManager> hot_reload_manager_;
+  // TASK-20260503-04 D.1 — Console isolated JSRuntime (DEVTOOL=ON only;
+  // same A14 zero-byte stub rationale + same complete-type-at-dtor
+  // requirement as hot_reload_manager_ above — Phase C R4 范式 reuse).
+  // Constructed/destroyed inside Load/UnloadDevtoolDocument so the
+  // panel JS that drains the log buffer always has a live engine to
+  // talk to. Field ordering matters at teardown: this must release
+  // BEFORE devtool_dom_bindings_ / devtool_script_engine_ so a
+  // hypothetical cross-engine binding (none registered today) cannot
+  // dangle. UnloadDevtoolDocument enforces the order explicitly.
+  std::unique_ptr<vx::devtool::console::ConsoleEngine> console_script_engine_;
 #endif
   platform::EventLoop::TimerId frame_timer_id_ = 0;
 };

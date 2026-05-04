@@ -10,6 +10,7 @@
 #include "veloxa/text/freetype_shaper.h"
 
 #ifdef VX_BUILD_DEVTOOL
+#include "veloxa/devtool/console/console_engine.h"
 #include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/resources/inspector_resources.h"
 #include "veloxa/script/dom_bindings.h"
@@ -81,6 +82,15 @@ Application::~Application() {
 #endif
   // A.1.8 — tear down DevTool script bindings/engine BEFORE the DevTool
   // Document slot so JS callbacks cannot fire on a freed Document.
+  // TASK-20260503-04 D.1 — Console engine releases first (reverse of its
+  // construction in LoadDevtoolDocument), preserving the contract that
+  // by the time devtool_dom_bindings_ unbinds, no separate runtime is
+  // still holding any cross-engine reference (today there is none — see
+  // creative-devtool-console §C3 path 2 — but the ordering keeps future
+  // additions safe by default).
+#ifdef VX_BUILD_DEVTOOL
+  console_script_engine_.reset();
+#endif
   if (devtool_dom_bindings_) devtool_dom_bindings_->Unbind();
   devtool_dom_bindings_.reset();
   devtool_script_engine_.reset();
@@ -341,6 +351,19 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
       // tracked_count + last_error via vx_devtool_get_hot_reload_status.
       devtool_dom_bindings_->SetHotReloadManager(hot_reload_manager_.get());
       script::RegisterDevtoolBindings(devtool_script_engine_->context());
+      // TASK-20260503-04 D.1 — bring up Console isolated runtime BEFORE
+      // evaluating inspector_panel.js so the panel script can probe
+      // (typeof vx_console_eval) without race. RegisterConsoleBindings
+      // (D.2) and the C-API side (D.4) wire eval/drain endpoints onto
+      // this engine. Init() failure is non-fatal for the DevTool UI —
+      // the inspector panel still works; only the Console tab degrades
+      // (REPL eval will return NOT_ATTACHED at the C ABI layer).
+      console_script_engine_ =
+          std::make_unique<vx::devtool::console::ConsoleEngine>();
+      auto console_init = console_script_engine_->Init();
+      if (!console_init.ok()) {
+        console_script_engine_.reset();  // explicit teardown on Init failure
+      }
       auto eval = devtool_script_engine_->EvalGlobal(
           StringView(devtool::resources::kInspectorPanelJs),
           StringView("inspector_panel.js"));
@@ -353,9 +376,11 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
 }
 
 void Application::UnloadDevtoolDocument() {
-  // Reverse construction order: script engine → bindings → update mgr →
-  // Document slot. Bindings hold a JSContext pointer obtained from the
-  // engine; tearing them in the wrong order risks dangling JS callbacks.
+  // Reverse construction order: console engine → devtool bindings → devtool
+  // engine → update mgr → Document slot. Console engine MUST go first so
+  // its JSRuntime is gone before the rest of the DevTool wires unwind —
+  // creative-devtool-console §C2 lifecycle timing constraint.
+  console_script_engine_.reset();
   devtool_dom_bindings_.reset();
   devtool_script_engine_.reset();
   devtool_script_status_ = Status::Ok();
