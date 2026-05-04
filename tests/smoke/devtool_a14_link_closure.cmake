@@ -62,6 +62,15 @@ message(STATUS "A14 smoke: libvx_core.a  = ${core_size} bytes")
 #     Application::LoadCSS main thread, owns CSS-only contract
 #     (vx::devtool::hot_reload::HotReloadManager)
 #
+# Phase D symbols (TASK-20260503-04 D.5):
+#   - ConsoleEngine: isolated QuickJS runtime wrap with default-safe T1
+#     budget (vx::devtool::console::ConsoleEngine)
+#   - ConsoleLogBuffer: bounded ring with double cap + UTF-8 boundary
+#     truncate (vx::devtool::console::ConsoleLogBuffer)
+#   - RegisterConsoleBindings: capability allowlist installer for the
+#     console_script_engine ctx (console.* + drain query)
+#   - kConsolePanelHtml/Css/Js: 4th DevTool sub-pane resources
+#
 # NOT in blacklist (intentional):
 #   - vx_view_set_pipeline_hooks / vx_view_get_perf_stats / vx_view_is_hud_visible:
 #     public C ABI; OFF builds expose them as stubs (returning INVALID_STATE / 0)
@@ -89,7 +98,13 @@ set(devtool_internal_syms
     "InjectDirtyRectHighlights"
     "FileWatcher"
     "InotifyFileWatcher"
-    "HotReloadManager")
+    "HotReloadManager"
+    "ConsoleEngine"
+    "ConsoleLogBuffer"
+    "RegisterConsoleBindings"
+    "kConsolePanelHtml"
+    "kConsolePanelCss"
+    "kConsolePanelJs")
 
 if(DEVTOOL_ON STREQUAL "ON")
   # Sanity: when ON, the public C-API stub vx_view_attach_devtool must

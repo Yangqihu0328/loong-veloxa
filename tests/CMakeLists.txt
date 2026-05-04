@@ -248,6 +248,17 @@ if(VX_BUILD_DEVTOOL)
   target_link_libraries(devtool_dogfood_smoke_test
     PRIVATE vx_foundation vx_api vx_core vx_platform vx_script vx_devtool)
   target_compile_definitions(devtool_dogfood_smoke_test PRIVATE VX_BUILD_DEVTOOL)
+
+  # TASK-20260503-04 D.5: end-to-end Console JS REPL smoke. Mirrors
+  # devtool_dogfood_smoke_test target shape so the link closure invariant
+  # (vx_devtool only when DEVTOOL=ON) is preserved at the integration
+  # smoke layer too.
+  vx_add_test(devtool_console_dogfood_smoke_test
+              integration/devtool_console_dogfood_smoke_test.cc)
+  target_link_libraries(devtool_console_dogfood_smoke_test
+    PRIVATE vx_foundation vx_api vx_core vx_platform vx_script vx_devtool)
+  target_compile_definitions(devtool_console_dogfood_smoke_test
+                             PRIVATE VX_BUILD_DEVTOOL)
 endif()
 
 # API: C API

@@ -985,6 +985,48 @@ T6 / 性能 / 边界场景测时，如设计意图含「特殊值 = 特殊语义
 
 ---
 
+## TASK-20260503-04 DevTool Phase D · Console JS REPL 实施摘要
+
+**完成时间**：2026-05-04（build 5 commits + finalize）
+
+**核心交付**：
+- 新子系统 `vx::devtool::console::{ConsoleEngine, ConsoleLogBuffer}` — 第 3 个隔离 QuickJS runtime（与 `script_engine_` + `devtool_script_engine_` 平级），承载 user-untrusted REPL eval；T1 mitigation 5 维度全实施（默认安全 / opt-in / 不可绕过 / 状态可查 / 单线程 atomic）
+- 1 capability allowlist 范式落地：`RegisterConsoleBindings` 仅暴露 console.log/error/warn + drain（无 DOM mutator / 无 file/network reach / 无 Hot Reload trigger） — spec §11.1 capability allowlist 完整实施
+- 2 公开 C API 新增：`vx_view_eval_console` + `vx_view_console_log_drain`（lazy-attach 容错 + 双调用协议 + #ifdef OFF stub 守门）
+- 1 ABI 扩展：`vx_console_eval_status` enum（OK/INTERRUPTED/SYNTAX/RUNTIME/NOT_ATTACHED/BUFFER_TOO_SMALL）
+- 1 DomBindings host data channel 扩展：`SetConsoleEngine` + `SetConsoleLogBuffer` setter/getter — 让 RegisterDevtoolBindings 在 devtool_script_engine ctx 上额外注册 `vx_devtool_get_console_log_drain` + `vx_console_eval` 两个 host endpoint，让 panel JS 能调（plan-fact reconcile #1 修正 D.2 wiring 错位）
+- 4 件套 DevTool UI：inspector_panel.html 加第 4 tab "Console" + 3 资源（console_panel.{html,css,js}）— 按 creative §C1 用 `<span>` + JS 自管理 value state（grep 实证 Veloxa 自渲染层 input 无原生输入行为）
+- console_log_buffer 双上限 mitigation：max_count=1000（drop oldest）+ max_text=4 KiB（UTF-8 boundary safe truncate — 自实现 `TruncateAtUtf8Boundary` 算法 + 5 case 单测）
+- A14 链接闭包黑名单 +6 项（ConsoleEngine + ConsoleLogBuffer + RegisterConsoleBindings + kConsolePanelHtml/Css/Js）
+
+**关键技术决策（5 项实测驱动）**：
+1. C2 isolated runtime 选 B 新建 console_script_engine_（vs A 复用 devtool_script_engine_）— 完全隔离 user JS scope，不污染 inspector_panel.js 全局变量
+2. C1 REPL input 用 `<span>` + JS self-managed value state — Veloxa CSS/HTML 子集 parse `input` tag 但无原生 keyboard/value/caret 行为（`tag.cc:67` + `serializer.cc:IsSensitiveAttribute` 实证）
+3. C3 capability allowlist 走 path 2 — Console scope 不暴露 dom_json/perf_stats（解决 opaque-ptr 冲突），用户切 DOM/Style/Layout tab 看 OR 通过 vx_console_eval 间接走
+4. C4 console.log drain 用 query-style（vs push-style callback）— 与既有 vx_devtool_get_dom_json 范式 100% 一致，单线程同步无新 callback API
+5. **D.2 plan-fact reconcile #1**：drain 实际需注册在 devtool_script_engine ctx（panel JS 跑在那里），不是 console_script_engine ctx — D.4 通过 DomBindings.SetConsoleEngine/SetConsoleLogBuffer host data channel 修复（避免 opaque slot 冲突，复用既有 SetHotReloadManager / SetPerfOverlay 范式）
+
+**实测耗时与比值**：
+- 5 子任务 + CP1/CP2 + finalize ≈ ~95-110 min build（待 reflect 终值核算）
+- plan ×0.6 180-240 min → 比值约 **0.40-0.50×** 估值
+
+**Phase 0 投入定律延续**：
+- A 5.3× / B 5.2× / C 7.6× / 02 6.7× / 03 8.0× / 05 16× / **04 实测待核算**（预期 6-10×）
+
+**ctest 双绿 verify 终局**：
+- DEVTOOL=ON：**1284 PASS**（baseline 1252 + D.1 5 + D.2 7 + D.3 5 smoke + D.4 7 + D.5 8 = +32）
+- DEVTOOL=OFF：**1091 PASS** + A14 link-closure 零 console 符号泄漏 ✅（baseline 1087 + console_api OFF stub 4 测 = +4）
+
+**反复模式：1/7 部分命中**（plan-fact reconcile #1 — D.2 panel JS ctx 假设错位，实际 panel JS 在 devtool_script_engine ctx 跑而非 console_script_engine） — D.4 build 阶段识别 + 同任务内修复（无返工 plan/creative）；其余 6 维度 0 命中
+
+**额外预期外发现**（待 reflect 沉淀候选）：
+1. **资源类反向探针 grep false positive**：D.3 console_panel.html 注释里写「`<input type="text">`」字面量触发 `EXPECT_EQ(html.find("<input"), npos)` 反向探针失败 — 修复：注释改写「Why no native input element here?」避字面量；可补强 writing-plans skill 「资源类反向探针应限定到非注释区域」
+2. **D.3 [文档/资源调整模式] 加 5 smoke test 替代手动视觉验证**：plan §3.D.3 step 4 写「手动 hello_devtool 切 Console tab」，但 headless 环境下不易做。改为 5 smoke test（4 tab structure + 3 placeholder + 5 level color + console JS 必需 binding + `<input>` 反向探针）— 更可靠 + 可重复 + CI 自动化；可沉淀「资源类调整 + smoke test 替代手动视觉」范式
+
+**spec §11.1 闭环**：DevTool Console + JS REPL T1 任意 eval 威胁面完整 mitigation（5 维度 + capability allowlist + double cap buffer + lazy-attach C ABI）✅；T6 buffer 上限保护落地。**DevTool 第 4 件套 Console 完整闭环** — Inspector + Performance Overlay + Hot Reload + Console = 4 件套全 ✅。
+
+---
+
 ## Veloxa 引擎核心机制注意点（TASK-20260503-03 P1 实证沉淀）
 
 > **背景**：TASK-20260503-03 P1 实施失败（反复模式 #1 第 9 次命中）暴露 Veloxa 引擎层面的「脏区优化」机制对所有 frame-hook based 子系统 smoke 测试设计有硬约束。本段汇总 4 个 invalidate 源 + frame-hook based 子系统 smoke 设计 SOP，避免下次再踩坑。
