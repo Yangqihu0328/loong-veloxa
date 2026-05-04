@@ -2,18 +2,157 @@
 
 ## 当前任务
 
-> **空闲** — 等待新任务（`/van` 启动 / 用户决策是否立即恢复 TASK-20260503-04 Console JS REPL 已搁置任务，详见下方「TASK-20260503-04 已搁置」段）
+> **TASK-20260503-04 创意完成（2026-05-04 ~15:30）** — 阶段：**创意中→构建前**（VAN ✅ + Plan ✅ + Creative ✅ → 等待 `/build` 5 子任务串行 + CP1+CP2）。详细见下方任务段。
 
-### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟡 已搁置 2026-05-03 21:52
+### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟢 创意完成 2026-05-04 ~15:30
 
-- **当前阶段：** 已搁置（VAN 阶段识别硬前置依赖技术债 #44 → 用户 V3=A 决策独立立项 TASK-20260503-05 作为前置任务；05 完成后恢复）
-- **复杂度级别：** Level 3（恢复时以原范围重启）
+- **当前阶段：** **创意中→构建前**（VAN ✅ + Plan ✅ + **Creative ✅** — 12/12 brainstorm+plan 决策锁定 / 4 维度 C1-C4 详细设计完成 / Phase 0 7 子段实证完成 / Plan 文档 ~530 行 + Creative 文档 ~720 行 / 等待 `/build`）
+- **创建日期：** 2026-05-03（搁置） / **恢复日期：** 2026-05-04
+- **复杂度级别：** **Level 3**（恢复时以原范围重启 — V3=A 锁定）
 - **焦点：** `veloxa/devtool/console/` + `console_panel.html/css/js`（第 4 件套 UI）+ isolated JSRuntime + capability allowlist + JS_SetInterruptHandler 集成 + console.log 桥接
-- **分支基线（恢复时）：** TASK-20260503-05 完成合并 main 后基于新 main 创建 `feature/TASK-20260503-04-devtool-console-repl`
-- **已锁定决策（恢复时复用，无需重问）：** V1=B 完整 Console Panel + V3=A 严格按 spec（05 做 #44 独立前置）
-- **估时假设：** ~3-5 h plan ×0.6
-- **预期复用：** Phase A/B/C 5 大范式 100% + 第 4 件套 UI 一致性
-- **恢复前置条件：** TASK-20260503-05 完成归档 + 用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
+- **分支：** `feature/TASK-20260503-04-devtool-console-repl`（基于 main `509fec3` ✅ 已创建）
+- **已锁定决策（搁置时锁定，恢复时复用，无需重问）：**
+  - **V1=B**：完整 Console Panel（DevTool 第 4 件套 UI — `console_panel.html/css/js` 复用 inspector_panel 双层 API 范式 + REPL input + 滚动 output + console.log 桥接 + C API 完整）
+  - **V3=A**：严格按 spec — 05 做 #44 独立前置已完成（commit `63a0bab` 闭环 ✅），04 在 05 完成后以 Level 3 原范围重启
+- **触及威胁：** **T1 任意 eval mitigation**（首次完整暴露 — Console 引入是 T1 威胁面落地实施）
+- **触及技术债：** 闭环 spec §11.1 Console 占位 / 解锁 TASK-30-04-E JS Debugger backend / 复用 TASK-05 闭环的 SetEvalInterruptBudget API + WasInterrupted（V1=B 一行配置即可）
+- **安全相关：** ✅ 是（T1 任意 eval — isolated JSRuntime + capability allowlist 双层防御 + interrupt handler 复用）
+- **估时假设：** ~3-4 h plan ×0.6（VAN 校准；落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档）
+
+#### 前置验证（4/4 PASS）
+
+| 维度 | 检查内容 | 结果 |
+|---|---|:-:|
+| 依赖可获取性 | quickjsng 已离线预置（`build/_deps/`）/ 零新依赖 / interrupt handler 已闭环（TASK-05 commit `63a0bab` / `kDefaultInterruptBudgetCheckpoints = 10000` 已就位 / `WasInterrupted()` 已就位 / `kAborted` enum 已就位）/ FetchContent F9 ⊘ 跳过 | ✅ |
+| 环境就绪 | main `509fec3` 干净 / cmake 4.2.3 + gcc 15.2.0 + ninja + ctest + ld 2.46 hotfix 全可用 / build/ DEVTOOL=ON 1252 baseline 已知（TASK-05 闭环值）/ rg 仍 MISS → Grep 兜底 | ✅ |
+| 已有 artifact | ⚠️ **混合**：可复用 ✅（inspector_panel.{html,css,js} 双层 API 范式 + inspector_resources.h 资源嵌入范式 + overlay HUD 范式 + hot_reload status indicator 范式 + QuickjsEngine class + Application::LoadDevtoolDocument）+ 待新建 ⏳（`veloxa/devtool/console/` 子系统 + console_panel.{html,css,js} + creative-devtool-console.md 设计文档 + 第 4 件套 UI 在 DevTool 主屏布局占位 — creative-devtool-screen-layout.md 未预留） | ✅ |
+| 待处理事项 | 闭环 spec §11.1 Console 占位 ✅ + 闭环 TASK-05 reflection §6 P3 #2「kCancelled 进一步语义拆分」可顺带触及 + 解锁下游 TASK-30-04-E JS Debugger backend ✅ + Phase 0 P1×2 待处理事项可在本任务 plan 阶段顺带验证（writing-plans audit 子条 + brainstorming 主动 push-back 模式） | ✅ 极强 |
+
+#### VAN 阶段识别的关键 push-back（待 brainstorm/creative 决策）
+
+| # | 维度 | 关键发现 | 待决策 |
+|:-:|---|---|---|
+| C1 | DevTool 主屏第 4 件套布局 | creative-devtool-screen-layout.md 仅预留 3 tab（DOM/Style/Layout）+ 1 HUD（FPS+stages+HR），**未预留 Console 位置** | 4 tab 扩展（Console 同 inspector tab 平级）vs 底部 dock（Chrome DevTools 风格）vs splitter 分离上下区域 |
+| C2 | isolated JSRuntime 实施 | `QuickjsEngine` 当前是**单 runtime + 单 context**（`rt_` / `ctx_` 单实例 / quickjs_engine.h:56-57）；spec §11.1 强制 isolated JSRuntime | 新建独立 `QuickjsEngine` 实例 vs 新建 `ConsoleQuickjsEngine` 子类 vs capability flag 复用既有 |
+| C3 | capability allowlist 实施 | spec §11.1 要求「默认仅 read-only DOM access，禁 file / network / Hot Reload trigger」 — 当前 DomBindings 设计未区分 read-only vs mutable | DomBindings 增加 read-only mode flag vs 新建 ConsoleDomBindings 子集 vs JS-level Object.freeze 包裹 |
+| C4 | console.log 桥接 | target Document 的 `console.log(x)` 需输出到 DevTool Document Console panel — 涉及双 Document 跨 binding | console.log → DevTool C API 回调 → DevTool JS 端 dom append 节点 vs 共享 JSON queue + 轮询 drain |
+| C5 | Interrupt handler 集成 | TASK-05 已闭环 `SetEvalInterruptBudget(N)` + `WasInterrupted()` API — V1=B 仅需 1 行 `console_engine.SetEvalInterruptBudget(10000)` + 错误识别 | ✅ 无设计决策（直接复用） |
+
+**结论：** C1-C4 共 4 维度需 creative 阶段决策 → 触发 V4=✅ creative 必要 → 产出 `memory-bank/creative/creative-devtool-console.md`
+
+#### Phase 0 极简清单（plan 阶段实证）
+
+- §0.1 ctest baseline 二次验证 DEVTOOL=ON 1252 + DEVTOOL=OFF 1087（TASK-05 闭环值）
+- §0.2 grep `JS_NewRuntime` / `JS_NewContext` 当前用法实证 + isolated runtime 多实例可行性
+- §0.3 grep `inspector_panel` 双层 API 范式 + `LoadDevtoolDocument` 范式 + `inspector_resources.h` 资源嵌入范式
+- §0.4 grep DomBindings 当前公开 API 表 + read-only 隔离切入点
+- §0.5 grep `vx_devtool_register_callback` 范式 + JS-side console.log 桥接路径
+- §0.6 配置矩阵假设：DEVTOOL=ON 1252→1252+N（含 N 新测）/ DEVTOOL=OFF 1087 不变（A14 黑名单加 ConsoleEngine + ConsoleDomBindings + ConsoleBridge 3-N 项）
+- §0.7 反复模式预防：grep + 实证「现有实现 runtime 行为假设未实证」（反复模式 #1 第 10 次抑制）
+
+#### 推荐工作流（V3=A Level 3 标准路径）
+
+`/van` ✅ → **`/plan`（含 brainstorm C1-C5 决策表 + Phase 0 实证 + B1-BN plan 决策表）→ `/creative`（4 维度设计 → creative-devtool-console.md）→ `/build`（4-5 子任务串行 + CP1+CP2）→ `/reflect` → `/archive`**
+
+#### 关键约束（VAN 阶段锁定）
+
+- ABI 严格扩展（新增公开 C API + JS native binding，不改既有签名）— 复用 lazy-attach C ABI 容错模式 + 双层 API 范式（Phase A/B/C 沉淀）
+- ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 链接闭包黑名单更新（ConsoleEngine 等 3-N 项）
+- Source 溯源 commit body 范式延续（19 commits triple-evidence 已达 git-workflow.mdc 固化阈值）
+- 反复模式预防：Phase 0 三层抑制（§0.2 isolated runtime 可行性 grep + §0.4 DomBindings read-only 切入点 grep + §0.6 ctest config 矩阵 audit 含 add_test guard 检查 — 闭环 TASK-05 reflection P1 #1 audit 子条）
+- T1 mitigation 5 维度完整性验证（默认 isolated runtime + capability allowlist 不可绕过 + interrupt handler 复用 + console.log 桥接 redact / 双向覆盖单测 / dogfood 路径覆盖）
+
+#### 9 systemPatterns 协同度自我对照（plan 阶段细化）
+
+预期：**5 ✅**（双层 API + #ifdef + CMake conditional + lazy-attach C ABI 容错 + canvas Translate / 资源嵌入 + dogfood 路径）+ **2 🆕**（isolated JSRuntime 隔离模式新沉淀 + capability allowlist 范式新沉淀）+ **1 🎯**（连续第 6 次零反复目标 — Phase 0 三层抑制延续 TASK-05 范式）+ **1 ⊘**（A14 守门 — 沿用既有自动化）
+
+---
+
+#### Plan 阶段产出（2026-05-04 ~14:55）
+
+**12/12 决策锁定（C1-C4 brainstorm + B1-B8 plan / 1 次 AskQuestion + all_recommended 范式）：**
+
+| 维度 | 锁定 |
+|:-:|---|
+| C1 第 4 件套布局 | A 第 4 tab 平级（DOM/Style/Layout/Console） |
+| C2 isolated JSRuntime | B 新建 console_script_engine_（第 3 个 QuickjsEngine 实例） |
+| C3 capability allowlist | A 严格隔离 binding（不调 DomBindings::Bind） |
+| C4 console.log 桥接 | A drain 模式（vx_devtool_get_console_log_drain query） |
+| B1 子任务划分 | A 5 子任务串行（D.1 → D.2 → D.3 [CP1] → D.4 → D.5 [CP2]） |
+| B2 测试模式 | A 推荐组合（D.1/D.2/D.4 [覆盖补充] / D.3 [文档调整] / D.5 [覆盖补充] + [集成测]） |
+| B3 buffer 上限 | A 双上限（max_count=1000 + max_text=4 KiB） |
+| B4 lifecycle | A 与 LoadDevtoolDocument 同步 |
+| B5 drain envelope | A 完整格式（messages + truncated + dropped_count） |
+| B6 公开 C API | A vx_view_eval_console + vx_view_console_log_drain |
+| B7 Checkpoint | A CP1 D.3 + CP2 D.5 |
+| B8 commit + 估时 | A 5 commits + Source 溯源 / plan ×0.6 ~180-240 min |
+
+**Plan 文档：** `docs/plans/2026-05-04-devtool-console-repl.md`（~530 行 / 14 段 / 5 子任务详细 + 完整代码骨架 + 5 R 风险 + T1 mitigation 5 维度自检表 + 2 Checkpoint + 9 systemPatterns 协同度自我对照 + 反复模式预防清单）
+
+**估时（VAN+Plan 校准）：** plan ×0.6 ~180-240 min → 实测预期 ~70-105 min（落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档；plan ×0.6 第 73-77 数据点群组假设入库）
+
+#### 需要创意阶段的组件（V4=✅ creative 必要）
+
+C1-C4 4 维度需 `/creative` 阶段产出详细设计文档：
+
+| # | 维度 | brainstorm 锁定方向 | creative 阶段详细设计内容 |
+|:-:|---|---|---|
+| C1 | DevTool 主屏第 4 件套布局 | A 第 4 tab 平级 | tab 切换协议精化 / dock-to-bottom 视觉范式（Chrome 参考）/ Enter keydown 与既有冲突解决 / CSS input element 子集 grep 验证 |
+| C2 | isolated JSRuntime 实施 | B 新建 console_script_engine_ | 与 devtool_script_engine_ 协同设计 / lifecycle 时序图 / DEVTOOL=OFF 路径 #ifdef / 与 creative-quickjs-host 兼容性自查 |
+| C3 | capability allowlist 实施 | A 严格隔离 binding | RegisterConsoleBindings 全量 API 表 vs RegisterDevtoolBindings 对比表 / 反向探针单测设计 / spec §11.1 安全证明 |
+| C4 | console.log 桥接 | A drain 模式 | drain JSON envelope 完整规范 / 双上限 mitigation 算法 / utf8 边界截断算法 / level 颜色 mapping / ts_ms 时间源选择 |
+
+**待产出：** ~~`memory-bank/creative/creative-devtool-console.md`（预期 ~400-500 行）~~ ✅ **已落盘 ~720 行**（详见下方「Creative 阶段产出」段）
+
+#### Creative 阶段产出（2026-05-04 ~15:30）
+
+**创意文档落盘：** `memory-bank/creative/creative-devtool-console.md`（**~720 行** / vs plan 预期 ~400-500 行 = 1.4-1.8× 文档密度延续 plan 文档密度规律）
+
+**4 维度详细设计完成（C1-C4 全决策含探索方案 + 对比表 + 实现指导 + 代码骨架）：**
+
+| 维度 | 决策 | 关键设计输出 | 关键 push-back |
+|:-:|---|---|---|
+| **C1** DevTool 主屏第 4 件套布局 | A 第 4 tab 平级 | inspector_panel.html 集成范式 + console_panel.{html,css,js} 完整代码骨架 + Enter keydown 冲突 0 风险表 | **input element 子集**：grep 实证 Veloxa 自渲染层 input 无浏览器原生输入行为 → 用 `<span>` + JS 自管理 value state（不用 `<input>`） |
+| **C2** isolated JSRuntime 实施 | B 新建 console_script_engine_ | lifecycle 时序图（Load 19 步 / Unload 7 步 / 关键时序约束 3 项）+ application.h #ifdef 包围范式（Phase C R4 范式延续）+ 与 creative-quickjs-host.md 兼容性自查表（4 项 ✅） | **JS_SetMemoryLimit audit 待办**：留 P3（不阻塞本任务） |
+| **C3** capability allowlist 实施 | A 严格隔离 binding | RegisterConsoleBindings 全量 API 表（7 函数）vs RegisterDevtoolBindings 对比 + 完整代码骨架（~150 行）+ 反向探针单测设计（5+ mutator + 5 allowlist）+ spec §11.1 安全证明（5 维度全自动满足） | **opaque-ptr channel 冲突**：路径 2 解决（Console 不暴露 dom_json/perf_stats，用户从 console_panel.js 内通过 vx_console_eval 间接访问） |
+| **C4** console.log 桥接 | A drain 模式 | drain JSON envelope 完整规范（messages/level/text/ts + truncated + dropped_count 6 字段语义表）+ 双上限 mitigation 算法（max_count=1000 drop_oldest + max_text=4096 truncate_utf8_safe）+ DrainAsJson envelope 构建 + level 颜色 mapping 5 类 + ts_ms 时间源 system_clock | **TruncateAtUtf8Boundary 自实现**：grep 实证 utf.cc 0 boundary 函数 → 自实现 + 5 case 单测 |
+
+**Phase 0 Creative pre-check 实证：**
+
+- **#1 input element 子集**: `tag.cc:67` 已 `kInput, kInlineBlock, kVoid` 注册但**无原生输入行为** → C1 改用 `<span>` + JS keydown
+- **#2 utf8 boundary 函数**: `utf.cc` 0 命中 `FindUtf8Boundary` → C4 自实现（参考 EncodeUtf8 字节判定逻辑）
+- **#3 RegisterDevtoolBindings 完整 API**: 实证 3 函数全 query-only + opaque-ptr 冲突识别 → C3 路径 2 解决
+
+**§d.1 / §d.2 触发评估**：4 维度均无 ≥ 2 坐标系算法 / 无累积量赋值歧义 → **均不触发**（已显式标注）
+
+**Build 阶段待解决（已在 creative 文档标注）：**
+
+| # | 待解决 | 责任阶段 | 备注 |
+|:-:|---|---|---|
+| 1 | opaque-ptr channel 冲突 — 默认走路径 2 | D.2 build | creative §C3 已锁定路径 |
+| 2 | quickjs_engine.cc audit `JS_SetMemoryLimit` | D.1 build 前 | 如未调用 → 留 P3 |
+
+**4 项待用户审查重点（creative 文档末尾段）：**
+
+1. C1 `<span>` + JS 自管理 value state 方案（input 原生支持留 V2）
+2. C2 application.h #ifdef 包围粒度（默认整段包围）
+3. C3 不暴露 dom_json/perf_stats 给 Console（用户用 vx_console_eval 间接访问）
+4. C4 max_count=1000 + max_text=4 KiB 默认值（可配置上限留 P3）
+
+#### 5 子任务清单（B1.A 锁定）
+
+| # | 子任务 | plan ×0.6 | 实测预期 | 测试模式 | 文件数 |
+|:-:|---|:-:|:-:|---|:-:|
+| D.1 | ConsoleEngine + Application lifecycle | 30-40 min | 12-18 min | [覆盖补充] | 8 |
+| D.2 | RegisterConsoleBindings + drain API | 40-50 min | 15-22 min | [覆盖补充] | 6 |
+| D.3 | console_panel 资源 + tab 集成 | 40-50 min | 15-22 min | [文档/资源调整] | 10 |
+| — | 🛑 **CP1 自审** | — | ~3 min | — | — |
+| D.4 | 公开 C API + JS native binding | 30-40 min | 12-18 min | [覆盖补充] | 5 |
+| D.5 | 单测扩充 + dogfood smoke + A14 + finalize | 40-60 min | 16-25 min | [覆盖补充] + [集成测] | 9 |
+| — | 🛑 **CP2 自审**（终局） | — | ~5 min | — | — |
+| **合计** | — | **180-240 min** | **70-105 min** | — | ~38 / ~800-900 行 |
+
+**下一步：** ~~用户调用 `/creative` 启动创意阶段~~ ✅ 已完成 → 用户调用 `/build` 启动子任务串行（D.1 → D.2 → D.3 → CP1 → D.4 → D.5 → CP2）
 
 ## 任务历史（最近完成）
 

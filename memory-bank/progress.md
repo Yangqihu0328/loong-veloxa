@@ -2,18 +2,48 @@
 
 ## 当前任务
 
-> **空闲** — 等待新任务（`/van` 启动 / 详细见 `activeContext.md`）。最近归档：TASK-20260503-05 ✅（详见下方「上次任务（已归档闭环）」段）。
+> **TASK-20260503-04 创意完成（2026-05-04 ~15:30）** — 阶段：**创意中→构建前**（VAN ✅ + Plan ✅ + Creative ✅ → 等待 `/build` 5 子任务串行 + CP1+CP2）。详细见 `activeContext.md`。
 
-### TASK-20260503-04：DevTool Phase D — Console JS REPL（已搁置）
+### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关]
 
-**当前阶段**：🟡 **已搁置 2026-05-03 21:52**
+**当前阶段**：🟢 **创意中→构建前（VAN ✅ + Plan ✅ + Creative ✅ 完成 / 等待 `/build`）**
 
 **里程碑**：
 
-- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动 / VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别
-- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，等待 TASK-20260503-05 完成后恢复 / 已锁定决策 V1=B（完整 Console Panel）保留以备恢复无需重问
+- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动（首轮）/ VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别（硬前置依赖技术债 #44）
+- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，独立立项 TASK-20260503-05 作为前置 / V1=B + V3=A 决策已锁定保留以备恢复无需重问
+- 2026-05-04 ~13:55 — TASK-20260503-05 归档闭环（commit `63a0bab` fast-forward to main / interrupt handler API 完整 / `kDefaultInterruptBudgetCheckpoints = 10000` + `WasInterrupted()` + `kAborted` enum 全就位）→ 解锁本任务恢复条件
+- 2026-05-04 14:46 — `/van TASK-30-04-D` 启动（恢复）/ 沿用原任务 ID TASK-20260503-04 / VAN 阶段完成前置验证 4/4 PASS（依赖可获取性 ✅ 含 interrupt handler 已闭环 / 环境就绪 ✅ main `509fec3` 干净 + DEVTOOL=ON 1252 baseline / 已有 artifact ⚠️ 混合 / 待处理事项 ✅ 极强）
+- 2026-05-04 14:46 — feature 分支 `feature/TASK-20260503-04-devtool-console-repl` 创建（基于 main `509fec3`）+ 工作区干净（无残留）+ 0 stash
+- 2026-05-04 14:46 — 关键 push-back 识别 5 维度（C1 第 4 件套布局 / C2 isolated JSRuntime 实施 / C3 capability allowlist / C4 console.log 桥接 / C5 interrupt handler — C5 已自动解决，剩 C1-C4 待 creative）/ 复杂度 Level 3 锁定（V3=A 不 escalate）
+- 2026-05-04 14:46 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「空闲」→「初始化」/ 等待 `/plan`
+- 2026-05-04 ~15:00 — `/plan` 启动 / 前置条件检查 ✅（阶段「初始化」符合）
+- 2026-05-04 ~15:01 — Phase 0 7 子段 grep 实证完成（关键发现：Application 已有 devtool_script_engine_ + RegisterDevtoolBindings 已 query-only / ctest baseline DEVTOOL=ON 1252/1252 PASS 6.39s 二次验证）
+- 2026-05-04 ~15:02 — brainstorm AskQuestion 抛 C1-C4 决策表（4 维度 + all_recommended）/ 用户全选推荐 → C1.A + C2.B + C3.A + C4.A 4/4 锁定
+- 2026-05-04 ~15:03 — plan 阶段 AskQuestion 抛 B1-B8 决策表（8 决策 + all_recommended）/ 用户全选推荐 → B1.A...B8.A 8/8 锁定 / **创纪录第 7 次跨决策协同度 100%**（C1-C4 4 + B1-B8 8 = 12/12）
+- 2026-05-04 ~15:04 — plan 文档落盘 `docs/plans/2026-05-04-devtool-console-repl.md`（~530 行 / 14 段 / 5 子任务详细 + 完整代码骨架 + 5 R 风险 + T1 mitigation 5 维度自检表 + 2 Checkpoint + 9 systemPatterns 协同度自我对照 + 反复模式预防清单）
+- 2026-05-04 ~15:05 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「初始化」→「规划中」/ 标识 4 维度需要 creative 阶段 / 等待 `/creative`
+- 2026-05-04 ~15:25 — `/creative` 启动 / 阶段 「规划中」→「创意中」/ Phase 0 creative pre-check 实证 3 维度（grep input element 子集 / grep utf8 boundary 函数 / 读取 RegisterDevtoolBindings 完整 API + opaque-ptr 冲突识别）
+- 2026-05-04 ~15:26 — 关键 push-back 识别（C1 input element 无原生输入行为 → 改 `<span>` + JS 自管理；C3 opaque-ptr channel 冲突 → 路径 2 解决 / Console 不暴露 dom_json/perf_stats；C4 utf8 boundary 函数缺失 → 自实现）
+- 2026-05-04 ~15:28 — §d.1 / §d.2 触发评估完成（4 维度均不触发 — 无 ≥ 2 坐标系算法 / 无累积量歧义 / std::deque 标准方法已 explicit）
+- 2026-05-04 ~15:30 — creative 文档落盘 `memory-bank/creative/creative-devtool-console.md`（**~720 行** / 4 维度 C1-C4 详细设计 / 探索方案 + 对比表 + 实现指导 + 完整代码骨架 / lifecycle 时序图 / RegisterConsoleBindings 全量 API 表 + 反向探针单测 / drain JSON envelope 6 字段语义表 + 双上限 mitigation 算法 + TruncateAtUtf8Boundary 算法 + 5 case 单测 / spec §11.1 安全证明 5 维度自动满足 / 4 项待用户审查重点）
+- 2026-05-04 ~15:30 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「创意中」→「创意完成→构建前」/ 等待 `/build`
 
-**恢复前置：** TASK-20260503-05 完成归档后，用户显式 `/van TASK-30-04-D` 或 `/van 恢复 TASK-20260503-04`
+**预期下一阶段（build）**：
+
+- 5 子任务串行（D.1 ConsoleEngine + Application lifecycle → D.2 RegisterConsoleBindings + drain API → D.3 console_panel 资源 + tab 集成 → 🛑 CP1 → D.4 公开 C API + JS native binding → D.5 单测扩充 + dogfood smoke + A14 + finalize → 🛑 CP2）
+- 实测预期 ~70-105 min（plan ×0.6 ~180-240 min → 0.30-0.45× 落「极窄档延续高效区」候选续延）
+- 5 commits 全 Source 溯源前缀 + ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 黑名单 +3 项
+
+**估时假设（Plan 校准）**：plan ×0.6 ~180-240 min → 实测预期 ~70-105 min（落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档；plan ×0.6 第 73-77 数据点群组假设入库）
+
+**关键约束（VAN + Plan 阶段锁定）**：
+
+- ABI 严格扩展 + 复用 lazy-attach C ABI 容错模式 + 双层 API 范式（Phase A/B/C 沉淀）
+- ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 链接闭包黑名单更新（ConsoleEngine 等 3-N 项）
+- Source 溯源 commit body 范式延续（19 commits triple-evidence 已达 git-workflow.mdc 固化阈值）
+- 反复模式预防：Phase 0 三层抑制（连续第 6 次零反复目标 — 抵消 03 的 1/7 回升 + 延续 05 的 0/7 第 5 次）
+- T1 mitigation 5 维度完整性验证
 
 ---
 
