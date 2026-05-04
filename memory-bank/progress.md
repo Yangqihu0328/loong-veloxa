@@ -2,155 +2,31 @@
 
 ## 当前任务
 
-> **TASK-20260504-01 回顾完成（2026-05-04 ~19:50）** — 阶段：**回顾中**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 6 commits / 等待 `/archive`）。详细见 `activeContext.md` + `tasks.md` + `docs/specs/2026-05-04-mvp-scope.md` + `docs/plans/2026-05-04-mvp-scope.md` + `memory-bank/creative/creative-mvp-{A,B,C}.md` + `memory-bank/reflection/reflection-TASK-20260504-01.md`。
+> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：**TASK-20260504-01 MVP-scope 文档**（Level 4 蓝图 V2=a 完整变体）✅ — DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 详细见下方「任务历史」段。
 
-### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）
+<!-- TASK-20260504-01 详细里程碑（含 VAN/Plan/Creative ×3/Finalize/Reflect/Archive 全阶段时间线 + plan-fact reconcile 0 + 反复模式 0/7 + 1 新候选定型 + P0+P1+P2×4 全 archive 阶段直接落实）已迁移到 archive 文档（见 archive-TASK-20260504-01.md §3 文件变更 + §7 长期影响 + §8 度量数据）-->
 
-**当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 等待 `/archive`）**
+<!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）-->
 
-**里程碑**：
-
-- 2026-05-04 ~17:25 — 用户 `/van MVP-scope 文档` 启动 / VAN 阶段读取上下文（projectbrief / productContext / techContext / activeContext / tasks / 29 specs / DevTool 蓝图 spec §11/§12 / TASK-04 archive 后续讨论 gap 分析）
-- 2026-05-04 ~17:27 — 前置验证 4/4 PASS（依赖可获取性 ✅ + 环境就绪 ✅ + 已有 artifact ✅ 极强 + 待处理事项 ✅ 极强 — 上轮回答主动建议）
-- 2026-05-04 ~17:28 — VAN 阶段识别 5 维度关键 push-back（V1 MVP 范围视角 / V2 工作流形态 / V3 文档形态 / V4 验收清单粒度 / V5 同步更新范围）+ AskQuestion 抛复杂度 + 分支命名 2 决策
-- 2026-05-04 ~17:30 — 用户决策：**Level 4 蓝图（V2=a 完整变体）** ✅ + 立即创建 `feature/TASK-20260504-01-mvp-scope-doc` 分支基于 main `fd22dd8` ✅
-- 2026-05-04 ~17:30 — feature 分支 `feature/TASK-20260504-01-mvp-scope-doc` 创建（基于 main `fd22dd8` / 工作树干净 / 0 stash）
-- 2026-05-04 ~17:30 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段「空闲」→「初始化」/ 待 plan 阶段决策 V1 / V3 / V4 / V5 4 维度 + brainstorm B1-B? 决策表 / 等待 `/plan`
-- 2026-05-04 ~17:38 — `/plan` 启动 / 前置条件检查 ✅（阶段「初始化」符合）
-- 2026-05-04 ~17:38 — brainstorm + plan 阶段 1 次 AskQuestion 抛 11 决策（V1+V3+V4+V5 brainstorm 4 + B1-B7 plan 7）+ 5 选项（A 全推荐 11/11 / B-D V1=A/B/C 三选一 + 其他全推荐 / E 细分调整）
-- 2026-05-04 ~17:39 — 用户全选推荐 → **11/11 1 次 AskQuestion all_recommended 锁定**（创纪录第 8 次跨决策协同度 100% — vs TASK-04 第 7 次 12/12）
-- 2026-05-04 ~17:40 — Phase 0 7 子段 grep 实证完成（§0.1 ctest baseline 1284/1091 / §0.2 文件名冲突 0 / §0.3 projectbrief 5 大目标完整 / §0.4 productContext 已实现表 14 项 + 6 大里程碑完整 / §0.5 29 specs 全部已实施 + 8 项非 MVP-A/B 排除项中 1 项已闭环 7 项映射到 C-G5/G6/G7 / §0.6 activeContext P3 候选清单完整映射 / §0.7 反复模式 #1 全 4 子维度不适用本任务但守门完整）
-- 2026-05-04 ~17:42 — spec 文档落盘 `docs/specs/2026-05-04-mvp-scope.md` ✅（~480 行 / 12 段含附录 A-D / 三档分级验收 A.1-A.6 + B.1-B.10 + C.1-C.10 / MVP-B 4 gap + MVP-C 9 gap 完整复用 activeContext P3 候选清单 / 0 omission 0 duplicate / 沿用 DevTool 蓝图 spec §1-§12 范式）
-- 2026-05-04 ~17:48 — plan 文档落盘 `docs/plans/2026-05-04-mvp-scope.md` ✅（~440 行 / 10 段 / 5 commits 子任务分解 + commit message 范本 + 2 Checkpoint + 11 systemPatterns 协同度自我对照 100% + 反复模式预防 0/7 预期 + estimating ~25-48 min standalone-AI 实测条件）
-- 2026-05-04 ~17:50 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段「初始化」→「规划中」/ 标识 3 维度需要 creative 阶段（B2=3 篇 — MVP-A/B/C 各一篇）/ 等待 `/creative`
-
-**Plan 阶段产出（commit 1 已落盘 `09b376c`）：**
-- spec ✅ ~480 行 / 12 段 / 三档分级验收完整
-- plan ✅ ~440 行 / 10 段 / 5 commits 计划完整
-- Phase 0 7 子段实证 ✅ / 全部判读 PASS
-
-- 2026-05-04 ~17:55 — `/creative` 启动 / 前置条件检查 ✅（阶段「规划中」+ tasks.md 标识 3 篇 creative 组件）
-- 2026-05-04 ~17:55 — creative-mvp-A.md 落盘 ✅（270 行 / 10 段 / 3 方案 + B 主推 + C 长期增量 + 9 维度对比表 + commit body Source 段标准范本 + baseline 红线 1284/1091/A14 0 byte + writing-plans.mdc audit 引用 + 5 systemPatterns 协同度 100%）+ commit 2 落盘 `6b7a298`
-- 2026-05-04 ~18:30 — creative-mvp-B.md 落盘 ✅（470 行 / 11 段 / 3 方案 + C 按类型分组 + 9 维度对比表 + DomBindings R2 三连 API 设计完整 + B-G4 perf invalidate 路径决策表 + dogfood 工作流完整链路图 + 7 systemPatterns 协同度 100%）+ commit 3 落盘 `acca25a`
-- 2026-05-04 ~19:00 — creative-mvp-C.md 落盘 ✅（524 行 / 11 段 / 3 方案 + C 分层并行 + 4 层时序图 + 9 项 gap 详细补全方案 + G1 OpenGL ES 4 Phase + G2 DRM/KMS 实施范围 + 5 项新威胁面 T9-T13 + 11 systemPatterns 协同度 100% + 标 §d.1/§d.2 强制 G1 子任务做 audit）+ commit 4 落盘 `6a41e85`
-- 2026-05-04 ~19:00 — CP2 自审通过（creative ×3 全部落盘 / commit body Source 溯源完整 / 各档 MVP 与 productContext 已实现表的映射一致）
-- 2026-05-04 ~19:15 — Finalize 阶段启动 / 同步 README + projectbrief + productContext + MB
-- 2026-05-04 ~19:25 — README.md 同步完成 ✅（badge 数字 1252→1284 / 1087→1091 + 顶部 lead 段加 MVP 范围参考 + DevTool 三件套→4 件套表加 Phase D + ` hotkey 启用说明 + T1 mitigation 安全段 + ctest baseline 数字更新 + 「MVP 档对照」子段插入项目状态前 + 已完成里程碑 +Phase D + MVP 蓝图 2 项 + 路线图重写按 MVP-A/B/C 5 段分层）
-- 2026-05-04 ~19:28 — projectbrief.md 同步完成 ✅（加「MVP 范围参考」段 / 三档对照表 + 与核心目标 #1-#5 对应 + 链接 spec + 链接 3 篇 creative）
-- 2026-05-04 ~19:29 — productContext.md 同步完成 ✅（已实现表加「MVP 档」列对照 / 14+4=18 行 + 待补 gap 段 MVP-B 4 项 + MVP-C 9 项 / DevTool A/B/C/D 4 行入表）
-- 2026-05-04 ~19:30 — MB 三件套阶段「规划中」→「蓝图主交付物落盘完成」（Level 4 V2=a 蓝图变体「广义构建完成」语义 / 沿用 [main.mdc Level 4 蓝图 V2=a 工作流变体段](../.cursor/rules/main.mdc)）
-
-**Creative + Finalize 阶段产出（commits 2/3/4/5）：**
-- creative-mvp-A ✅ 270 行 / 10 段 / commit `6b7a298`
-- creative-mvp-B ✅ 470 行 / 11 段 / commit `acca25a`
-- creative-mvp-C ✅ 524 行 / 11 段 / commit `6a41e85`
-- README + projectbrief + productContext + MB 同步 ✅ / commit `511104e` 落盘
-- 5 commits 累计文档产出：+2487 / -38 = 净 +2449 行
-
-- 2026-05-04 ~19:39 — `/reflect` 启动 / 前置条件按 main.mdc Level 4 V2=a 蓝图变体段灵活解读「广义构建 = 主交付物落盘」= PASS ✅
-- 2026-05-04 ~19:39 — Phase 0 数据收集（git log 5 commits 时序 / diff 统计 / 行数对照）
-- 2026-05-04 ~19:45 — reflection-TASK-20260504-01.md 落盘 ✅（~290 行 / 8 段 / Level 4 全面回顾：计划 vs 实际对比 + 检查清单 + 6 维度回顾 + 反复模式识别 + 5 项改进建议 + 架构评估 + Phase 0 sept-evidence 升级 + 待固化清单）
-- 2026-05-04 ~19:48 — P0 #1 立即沉淀 ✅（systemPatterns 加新段「中文文档编辑安全 audit」/ writing-plans.mdc 加 audit 子条「中文文档 StrReplace 字符类型 audit」/ 反复模式新候选首次定型 / 4 项 mitigation + 实证数据表）
-- 2026-05-04 ~19:49 — activeContext.md 待处理事项加 TASK-20260504-01 P0×1 已沉淀 + P1×1 + P2×3 段
-- 2026-05-04 ~19:50 — MB 三件套阶段「蓝图主交付物落盘完成」→「回顾中」+ commit reflect 即将落盘
-
-**回顾阶段关键发现：**
-- 已知 7 反复模式 0/7 命中（5 N/A + 2 明示守门）— 创第 6 次连续 0 反复纪录候选
-- 1 项新反复模式候选首次定型（中文文档 StrReplace 全角/半角字符差异）/ P0 立即沉淀
-- 跨决策协同度 100% 第 8 次连续命中（11/11 1 次 AskQuestion all_recommended）
-- plan ×0.6 比值 0.25-0.38× 落入 plan §5 估时上限预测中上区间
-- Phase 0 投入定律 sept-evidence 第 8 次实证（蓝图任务 ROI 偏低 ~3-5×）
-- 11 文件变更 100% 契合 plan §4（反复模式 #1 0/9+ 重复 ✅）
-- 5 commits 严格按 plan / 0 大杂烩（反复模式 #6 0/7+ 重复 ✅）
-
-**Level 4 蓝图 V2=a 完整变体工作流路径：**
-
-```
-/van ✅ → /plan（含 brainstorm + 主 spec 文档落盘）
-       → /creative ×N（视 V1 决策 — 若 D 三档分级则 N=3：MVP-A / MVP-B / MVP-C 各一篇）
-       → /reflect → /archive
-       ↑
-       跳过 /build（纯文档蓝图 — 沿用 systemPatterns「Level 4 蓝图任务 V2=a 工作流变体」段范式）
-```
-
-**预期产出（视 plan 阶段 V 系列决策）：**
-
-- 1 主 spec 文档 `docs/specs/2026-05-04-mvp-scope.md`（必出 — 含 MVP 范围定义 + 5 大目标映射 + 验收清单 + 三档分级矩阵 + 与 spec §11/§12 + activeContext P3 候选清单交叉引用）
-- 1-3 篇 creative 文档（视 V1 决策 — D 选项 = 3 篇 MVP-A/B/C 各一篇）
-- 同步候选 README / projectbrief / productContext（视 V5 决策）
-
-<!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）
-
-<!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）
-
-### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关]
-
-**当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ 完成 / 等待 `/archive`）**
-
-**里程碑**：
-
-- 2026-05-03 21:48 — `/van TASK-30-04-D` 启动（首轮）/ VAN 阶段完成前置验证 4/4 PASS / 关键 push-back 识别（硬前置依赖技术债 #44）
-- 2026-05-03 21:52 — 用户 V3=A 决策 → 搁置本任务，独立立项 TASK-20260503-05 作为前置 / V1=B + V3=A 决策已锁定保留以备恢复无需重问
-- 2026-05-04 ~13:55 — TASK-20260503-05 归档闭环（commit `63a0bab` fast-forward to main / interrupt handler API 完整 / `kDefaultInterruptBudgetCheckpoints = 10000` + `WasInterrupted()` + `kAborted` enum 全就位）→ 解锁本任务恢复条件
-- 2026-05-04 14:46 — `/van TASK-30-04-D` 启动（恢复）/ 沿用原任务 ID TASK-20260503-04 / VAN 阶段完成前置验证 4/4 PASS（依赖可获取性 ✅ 含 interrupt handler 已闭环 / 环境就绪 ✅ main `509fec3` 干净 + DEVTOOL=ON 1252 baseline / 已有 artifact ⚠️ 混合 / 待处理事项 ✅ 极强）
-- 2026-05-04 14:46 — feature 分支 `feature/TASK-20260503-04-devtool-console-repl` 创建（基于 main `509fec3`）+ 工作区干净（无残留）+ 0 stash
-- 2026-05-04 14:46 — 关键 push-back 识别 5 维度（C1 第 4 件套布局 / C2 isolated JSRuntime 实施 / C3 capability allowlist / C4 console.log 桥接 / C5 interrupt handler — C5 已自动解决，剩 C1-C4 待 creative）/ 复杂度 Level 3 锁定（V3=A 不 escalate）
-- 2026-05-04 14:46 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「空闲」→「初始化」/ 等待 `/plan`
-- 2026-05-04 ~15:00 — `/plan` 启动 / 前置条件检查 ✅（阶段「初始化」符合）
-- 2026-05-04 ~15:01 — Phase 0 7 子段 grep 实证完成（关键发现：Application 已有 devtool_script_engine_ + RegisterDevtoolBindings 已 query-only / ctest baseline DEVTOOL=ON 1252/1252 PASS 6.39s 二次验证）
-- 2026-05-04 ~15:02 — brainstorm AskQuestion 抛 C1-C4 决策表（4 维度 + all_recommended）/ 用户全选推荐 → C1.A + C2.B + C3.A + C4.A 4/4 锁定
-- 2026-05-04 ~15:03 — plan 阶段 AskQuestion 抛 B1-B8 决策表（8 决策 + all_recommended）/ 用户全选推荐 → B1.A...B8.A 8/8 锁定 / **创纪录第 7 次跨决策协同度 100%**（C1-C4 4 + B1-B8 8 = 12/12）
-- 2026-05-04 ~15:04 — plan 文档落盘 `docs/plans/2026-05-04-devtool-console-repl.md`（~530 行 / 14 段 / 5 子任务详细 + 完整代码骨架 + 5 R 风险 + T1 mitigation 5 维度自检表 + 2 Checkpoint + 9 systemPatterns 协同度自我对照 + 反复模式预防清单）
-- 2026-05-04 ~15:05 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「初始化」→「规划中」/ 标识 4 维度需要 creative 阶段 / 等待 `/creative`
-- 2026-05-04 ~15:25 — `/creative` 启动 / 阶段 「规划中」→「创意中」/ Phase 0 creative pre-check 实证 3 维度（grep input element 子集 / grep utf8 boundary 函数 / 读取 RegisterDevtoolBindings 完整 API + opaque-ptr 冲突识别）
-- 2026-05-04 ~15:26 — 关键 push-back 识别（C1 input element 无原生输入行为 → 改 `<span>` + JS 自管理；C3 opaque-ptr channel 冲突 → 路径 2 解决 / Console 不暴露 dom_json/perf_stats；C4 utf8 boundary 函数缺失 → 自实现）
-- 2026-05-04 ~15:28 — §d.1 / §d.2 触发评估完成（4 维度均不触发 — 无 ≥ 2 坐标系算法 / 无累积量歧义 / std::deque 标准方法已 explicit）
-- 2026-05-04 ~15:30 — creative 文档落盘 `memory-bank/creative/creative-devtool-console.md`（**~720 行** / 4 维度 C1-C4 详细设计 / 探索方案 + 对比表 + 实现指导 + 完整代码骨架 / lifecycle 时序图 / RegisterConsoleBindings 全量 API 表 + 反向探针单测 / drain JSON envelope 6 字段语义表 + 双上限 mitigation 算法 + TruncateAtUtf8Boundary 算法 + 5 case 单测 / spec §11.1 安全证明 5 维度自动满足 / 4 项待用户审查重点）
-- 2026-05-04 ~15:30 — Memory Bank 三件套（tasks/activeContext/progress）更新 / 阶段 「创意中」→「创意完成→构建前」/ 等待 `/build`
-- 2026-05-04 ~15:31 — `/build` 启动 / 阶段 「创意完成」→「构建中」/ Phase D 5 子任务串行执行
-- 2026-05-04 ~15:32 — D.1 完成（ConsoleEngine 类 + Application lifecycle 集成 + 5 单测）/ commit `594527c` / DEVTOOL=ON 1257 PASS（baseline 1252 +5 全新）/ 实测 ~6 min（plan ×0.4 / 落极窄档高效区下沿）
-- 2026-05-04 ~15:35 — D.2 完成（RegisterConsoleBindings + console.log/warn/error 桥接 + ConsoleLogBuffer 双上限 + DrainAsJson + UTF-8 boundary truncation 算法 + 7 单测）/ commit `f0f29ab` / DEVTOOL=ON 1264 PASS（+7 全新）/ 修复编译期错误 ×2（quickjs.h 链接缺失 + hex escape 越界）
-- 2026-05-04 ~15:38 — D.3 完成（console_panel.html/css/js + 第 4 tab 集成 + Application LoadDevtoolDocument 占位符替换 + 5 smoke 单测替代 plan 的手动视觉验证）/ commit `741493c` / DEVTOOL=ON 1269 PASS（+5 smoke）/ 修复 D.3 单测 false positive（HTML 注释里 `<input` 触发反向探针）
-- 2026-05-04 ~15:39 — 🛑 CP1 自审通过（3 commits 全 Source-traced / 1269 PASS / 4 tab smoke 替代手动视觉 / lint 0 / 反复 0/7 / 极窄档群组 76-78 数据点入库）
-- 2026-05-04 ~15:42 — D.4 完成（vx_view_eval_console + vx_view_console_log_drain 公开 C API + DomBindings 扩展 console_engine/buffer 通道 + RegisterDevtoolBindings 注册 vx_console_eval/vx_devtool_get_console_log_drain JS native binding + 7 测）/ commit `4217902` / DEVTOOL=ON 1276 PASS / **plan-fact reconcile #1**（D.2 wiring 修正：panel JS 实际跑在 devtool_script_engine_ ctx，原 D.2 在 console_script_engine_ ctx 注册的 drain 不可达 → D.4 通过 DomBindings 路径 2 修复）
-- 2026-05-04 ~15:46 — D.5 完成（5 维度 T1 mitigation 单测扩充 + 3 dogfood smoke 端到端 + A14 黑名单 +6 console 符号 + techContext.md TASK-04 实施摘要段）/ DEVTOOL=ON 1284 PASS / DEVTOOL=OFF 1091 PASS / A14 link closure 0 console 符号泄漏
-- 2026-05-04 ~15:48 — 🛑 CP2 自审通过（终局：双 config 全绿 / A14 6 符号 0 泄漏 / 反复 0/7 / T1 5 维度全自检 PASS / 极窄档群组 79-83 数据点入库）/ Memory Bank 三件套 finalize 更新
-- 2026-05-04 ~15:48 — 阶段 「构建中」→「构建完成→反思前」/ 等待 `/reflect`
-- 2026-05-04 ~16:35 — `/reflect` 启动 / 阶段 「构建完成」→「回顾中」/ 读取 plan + creative + progress + git history（6 commits / +2181 行 src+tests / 30 文件） + reflection-TASK-20260503-05.md 作为格式参考
-- 2026-05-04 ~16:40 — reflection 文档落盘 `memory-bank/reflection/reflection-TASK-20260503-04.md`（**~480 行** / Level 3 详细回顾深度 / 12 段：§1 计划 vs 实际 / §2 5 项做得好 / §3 4 项挑战 / §4 4 项教训 / §5 5 项改进建议 P0×2/P1×2/P2×1 / §6 3 项技术改进 / §7 反复模式 1/7 部分命中（第 11 次抑制部分） / §8 安全评估 T1 5 维度完整性 + capability allowlist / §9 Phase 0 投入定律 sept-evidence 升级候选 / §10 跨任务沉淀 5 项 / §11 估时校准第 73-77 数据点群组 / §12 下一步 P0×3）
-- 2026-05-04 ~16:42 — Memory Bank 三件套（tasks/activeContext/progress）finalize 更新 + activeContext「待处理事项」段新增 5 项（P0×3 含 1 项升级 / P1×2 / P2×1）+ TASK-05 P1 #1 标注「⬆️ 已升级 P0」/ 阶段 「回顾中」→「回顾完成→归档前」/ 等待 `/archive`
-
-**回顾核心发现总结：**
-
-- **plan-fact reconcile 双命中（C2 wiring + OFF +4）**：均在 build 阶段同任务内识别 + 修复 / 0 重写代价 / 0 返回 creative；但暴露 Phase 0 grep 两个新形式漏审（panel JS ctx 归属 + config 矩阵 guard 边界假设）
-- **反复模式 #1 第 2 次连续命中升级 P0**：「config 矩阵 guard 边界假设漏审」TASK-05+TASK-04 = 2 次 → 触发 3 次=P0 升级阈值（systemPatterns「反复模式渐进式抑制」段已沉淀） → archive 阶段必须立即修 writing-plans.mdc
-- **新子档候选「creative 全锁死 + 范式 100% 复用 + AI agent 极速区 0.05-0.15×」**：实测 build phase ~17 min vs plan ×0.6 180-240 min = 0.07-0.10× **创历史新低**；含 AI agent 加速因子标注（区分 standalone-AI / human-only / mixed）；6 项触发条件 + 第 73-77 数据点群组
-- **5 大范式 + 9 systemPatterns 协同度 100%**：含 2 项新沉淀候选（isolated JSRuntime 隔离模式 + capability allowlist 范式 — spec §11.1 落地范本）
-- **27 commits 累计 quad-evidence**（远破 git-workflow.mdc 固化阈值 — TASK-02 + TASK-03 + TASK-05 + TASK-04 = 6+5+8+8）
-
-**实施摘要（finalize）**：
-
-- **6 commits**（5 子任务 + 1 收尾 finalize）全 Source 溯源前缀（"Source: TASK-20260503-04 plan §X.Y + creative §CN"）+ ctest 双 config 全绿（DEVTOOL=ON 1252→1284 +32 / DEVTOOL=OFF 1087→1091 +4 / 0 退化）+ A14 黑名单 +6 项 console 符号 0 泄漏
-- 实测 ~17 min（plan ×0.6 ~180-240 min → ~0.07-0.09× **创实测最高效记录新低**，远破极窄档 0.30-0.45× 下沿；后续在 reflect 校准 plan ×0.6 第 73-83 数据点群组分布 + 评估 V3=A 严格按 spec 减少 escalate 收益）
-- **plan-fact reconcile #1** 系本任务唯一计划偏差（D.2 wiring context 假设错误 → D.4 通过 DomBindings 路径 2 自动修复 / 无重写代价 / 已沉淀至 techContext.md "TASK-04 实施摘要" 段供后续任务规避）
-
-**反复模式预防达成度**：7/7 ✅（C0 Lifecycle / C1 资源/JS同源 / C2 capability allowlist 反向探针 / C3 ConsoleLogBuffer 双上限 / C4 SetConsoleLogBuffer 显式握手 / C5 RegisterConsoleBindings 显式 ctx 参数 / C6 const std::string& vs StringView API 一致 / C7 plan-fact reconcile 透明可追溯）
-
-**估时假设（Plan 校准）**：plan ×0.6 ~180-240 min → 实测预期 ~70-105 min（落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档；plan ×0.6 第 73-77 数据点群组假设入库）
-
-**关键约束（VAN + Plan 阶段锁定）**：
-
-- ABI 严格扩展 + 复用 lazy-attach C ABI 容错模式 + 双层 API 范式（Phase A/B/C 沉淀）
-- ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 链接闭包黑名单更新（ConsoleEngine 等 3-N 项）
-- Source 溯源 commit body 范式延续（19 commits triple-evidence 已达 git-workflow.mdc 固化阈值）
-- 反复模式预防：Phase 0 三层抑制（连续第 6 次零反复目标 — 抵消 03 的 1/7 回升 + 延续 05 的 0/7 第 5 次）
-- T1 mitigation 5 维度完整性验证
-
--->
 
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260504-01 闭环摘要（2026-05-04 ~19:55 已归档）
+
+- **7 commits** main `fd22dd8 → 4e35cea`（fast-forward / feature 分支已删除）
+- **14 文件 / +2798 行 / -46 行 / 净 +2752 行**（含 spec + plan + creative ×3 + reflection + archive 6 新文档 + README/projectbrief/productContext/MB/systemPatterns/writing-plans 8 同步更新）
+- **DevTool 4 件套主线收官标识完成 🎉**（Phase A+B+C+D 全部完整闭环 / Phase E/F/G 标识为「超 MVP plus」由用户需求驱动）
+- **三档分级 MVP-A/B/C 体系建立 ✅**（A 100% / B ~90% / C ~70% / 验收清单 + gap 数 0/4/9 / 总估时 ~40-80 h MVP-C）
+- **路线图按 MVP 档分层重写 ✅**（短期 MVP-B 收口 / 中期过渡 / 长期主线 P0 / 长期次线 / 超 MVP 5 段）
+- **核心目标 #1+#2 路径量化 ✅**（C-G1 OpenGL ES ~30-60+ h + C-G2 DRM/KMS ~10-20 h）
+- ctest 双 config 全 PASS：DEVTOOL=ON 1284/1284 + DEVTOOL=OFF 1091/1091 baseline 不退化（纯文档零代码改动）
+- plan ×0.6 实测 **0.25-0.38× standalone-AI**（落「蓝图任务 V2=a」子档下沿延伸第 4 数据点 / standalone-AI 实测条件标注）
+- **跨决策协同度 100% 第 8 次连续命中**（11/11 1 次 AskQuestion all_recommended / 累计 11+12+12+10+13+12+12+11 = 93/93 跨决策一次锁定纪录）
+- **反复模式命中 0/7 已知模式 + 1 新候选定型**（中文文档 StrReplace 全角/半角字符差异 — 已 reflect 阶段立即沉淀 P0 mitigation）
+- **改进建议 P0+P1+P2×4 archive 阶段全直接落实** ✅：systemPatterns 4 新段（中文文档 audit / 蓝图规模公式 / 超 MVP plus / 跨决策协同度 sept-evidence）+ plan ×0.6 矩阵第 4 数据点 + writing-plans.mdc 同源 audit 子条
+- 后续 10 候选立项推荐顺序就位（DomBindings R2 三连补全第一推荐 / G1 OpenGL ES 蓝图第 5 推荐 — MVP-C 核心 P0 第一刚需）
 
 ### TASK-20260503-04 闭环摘要（2026-05-04 ~16:55 已归档）
 

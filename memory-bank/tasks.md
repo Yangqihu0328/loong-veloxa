@@ -2,239 +2,28 @@
 
 ## 当前任务
 
-> **TASK-20260504-01 回顾完成（2026-05-04 ~19:50）** — 阶段：**回顾中**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 6 commits 累计 / reflection 落盘 ~290 行 + P0 ×1 立即沉淀 ✅ / 等待 `/archive`）。详细见下方任务段。
+> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：**TASK-20260504-01 MVP-scope 文档**（Level 4 蓝图 V2=a 完整变体）✅ — DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 详细见下方「任务历史」段。
 
-### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— 🟢 回顾完成 2026-05-04 ~19:50
+<!-- TASK-20260504-01 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260504-01.md）-->
 
-- **当前阶段：** **回顾中**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ / 6 commits / reflection §1-§8 完整产出 / P0 ×1 立即沉淀 ✅（systemPatterns 「中文文档编辑安全 audit」段 + writing-plans.mdc 同源 audit 子条 — 反复模式新候选首次定型）/ 反复模式 0/7 已知模式 + 1 新候选定型 / 跨决策协同度 100% 第 8 次连续命中 / 等待 `/archive`）
-- **创建日期：** 2026-05-04
-- **复杂度级别：** **Level 4 蓝图（V2=a 完整变体）** — 沿用 [TASK-20260430-04 DevTool 三件套蓝图范式](33afb7c)（systemPatterns「Level 4 蓝图任务 V2=a 工作流变体」段）/ 含 creative ×N（预期 MVP-A/B/C 三档分级各一篇 / 视 plan 阶段决策）/ **跳过 `/build`**（纯文档蓝图）
-- **焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
-- **分支：** `feature/TASK-20260504-01-mvp-scope-doc`（基于 main `fd22dd8` ✅ 已创建）
-- **来源：** [TASK-20260503-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) — 用户问"MVP 还差哪些"时识别项目缺统一 MVP 范围定义文档（projectbrief 5 大目标 + 29 specs + activeContext P3 候选清单 全部可作上游素材）→ 用户拍板独立立项
-- **触及威胁：** ❌ 无（纯文档 / 无新外部输入处理）
-- **触及技术债：** 项目级架构决策文档化（影响后续所有任务排期 + 资源投入）
-- **安全相关：** ❌ 否
-- **估时假设：** plan ×0.6 待 plan 阶段精化（参考 TASK-20260430-04 蓝图任务 / 4 篇文档 / Level 4 V2=a — 本任务规模约 1/4 因仅 1-3 篇文档）
+<!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）-->
 
-#### 前置验证（4/4 PASS）
-
-| 维度 | 检查内容 | 结果 |
-|---|---|:-:|
-| 依赖可获取性 | 零新依赖（纯文档）| ✅ |
-| 环境就绪 | `docs/specs/` 已有 29 个 spec 范本可参考（含 `2026-04-30-devtool-design.md` Level 4 V2=a 蓝图直接范本 / `2026-04-14-feature-completion-design.md §不在范围内` MVP 局部排除项作上游素材）| ✅ |
-| 已有 artifact | `docs/specs/MVP-scope.md` / `docs/specs/*scope*.md` / `docs/specs/*MVP*.md` 全不存在（无冲突）+ 上游素材**极强**（projectbrief.md 5 大目标 / productContext.md 已实现表 / techContext.md 平台后端 / 29 specs / activeContext P3 候选清单 / DevTool 蓝图 spec §11/§12 / hello example 实证）| ✅ |
-| 待处理事项 | [TASK-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) 已识别项目缺统一 MVP 验收清单 → 视为本任务的隐式上游 | ✅ 极强 |
-
-#### VAN 阶段识别的 5 维度关键 push-back（plan 阶段 brainstorm 决策）
-
-| # | 维度 | 候选 | 备注 |
-|:-:|---|---|---|
-| **V1** | MVP 范围视角 | A 最小可运行 demo / B 桌面 dogfood 完整 / C 真嵌入式部署 / **D 三档分级 MVP-A/B/C**（推荐）| 影响 creative ×N 数量（D 选项 = 3 篇 creative）|
-| **V2** | 工作流形态 | **a V2=a 纯蓝图**（含 creative ×N 不含 build / 用户已选 Level 4）/ b V2=b 蓝图 + 后续立项 N 个 Level 3 子任务 | Level 4 V2=a 已确认 |
-| **V3** | 文档形态 | a 独立 spec / b 嵌入 projectbrief 章节 / **c 双管齐下**（独立 spec + projectbrief 章节链接 + README 路线图段同步 — 推荐）| 影响 V5 同步范围 |
-| **V4** | 验收清单粒度 | a 粗粒度功能列表 / b 细粒度 ctest / **c 二者兼有**（推荐）| MVP "完成"标准明确 = 功能 + ctest 双维度 |
-| **V5** | 同步更新范围 | a 仅新建 spec / b 同步 README 路线图段 / **c 全量同步**（spec + README + projectbrief + productContext 已实现表 — 推荐）| 影响最终 commit 文件数 |
-
-**用户已锁定决策（VAN ✅ + Plan ✅ — 11/11 all_recommended 1 次 AskQuestion）：**
-
-| # | 维度 | 决策 |
-|:-:|---|---|
-| V1 | MVP 范围视角 | **D 三档分级 MVP-A/B/C** |
-| V2 | 工作流形态 | **a V2=a 完整蓝图变体**（含 creative ×3 不含 build）|
-| V3 | 文档形态 | **c 双管齐下** |
-| V4 | 验收清单粒度 | **c 二者兼有** |
-| V5 | 同步更新范围 | **c 全量同步** |
-| B1 | 主 spec 文档结构 | 沿用 DevTool 蓝图 spec §1-§12 范式 |
-| B2 | creative ×N 拆分粒度 | **3 篇**（MVP-A/B/C 各一篇）|
-| B3 | 验收清单矩阵格式 | 单矩阵 三档 × 多维度 |
-| B4 | 与既有 spec 交叉引用 | 上游/下游分表 |
-| B5 | 估时 | plan ×0.6 ~120-180 min（standalone-AI 实测条件）|
-| B6 | commit 拆分粒度 | **5 commits**（plan+spec / creative-A / B / C / finalize）|
-| B7 | Phase 0 grep 实证 | 7 子段（已完成 ✅）|
-
-**Plan 阶段产出（2026-05-04 ~17:45）：**
-
-- spec `docs/specs/2026-05-04-mvp-scope.md` ✅（~480 行 / 12 段含附录 A-D / 三档分级验收 A.1-A.6 + B.1-B.10 + C.1-C.10 / MVP-B 4 gap + MVP-C 9 gap 完整复用 activeContext P3 候选清单）
-- plan `docs/plans/2026-05-04-mvp-scope.md` ✅（~440 行 / 10 段 / 5 commits 子任务分解 + commit message 范本 + 2 Checkpoint + 11 systemPatterns 协同度自我对照 + 反复模式预防 0/7 预期）
-- Phase 0 7 子段 grep 实证 ✅（§0.1 ctest baseline / §0.2 文件名冲突 / §0.3-0.4 上游素材 / §0.5 29 specs audit / §0.6 P3 候选清单 / §0.7 反复模式 #1 守门）
-
-**Creative 阶段产出（B2=3 篇 / 落盘完成）：**
-
-- ✅ `memory-bank/creative/creative-mvp-A.md`（270 行 / commit 2 `6b7a298` / 10 段 / 3 方案 + B 主推 + C 长期增量 + 9 维度对比表 + commit body Source 段标准范本 + 5 systemPatterns 协同度自检 100%）
-- ✅ `memory-bank/creative/creative-mvp-B.md`（470 行 / commit 3 `acca25a` / 11 段 / 3 方案 + C 按类型分组 + 9 维度对比表 + DomBindings R2 三连 API 设计 + 路径决策表 + dogfood 工作流完整链路图 + 7 systemPatterns 协同度自检 100%）
-- ✅ `memory-bank/creative/creative-mvp-C.md`（524 行 / commit 4 `6a41e85` / 11 段 / 3 方案 + C 分层并行 + 4 层时序图 + 9 项 gap 详细补全方案 + G1 4 Phase + G2 实施范围 + 5 项新威胁面 T9-T13 + 11 systemPatterns 协同度自检 100%）
-
-**Finalize 阶段产出（commit 5 - 待落盘）：**
-
-- ✅ README.md：「项目状态」段加「MVP 档对照」子段 + 路线图按 MVP-A/B/C 分层重写（短期/中期/长期主线/长期次线/超 MVP 5 段）+ ctest baseline 数字更新 1284/1091 + DevTool 4 件套表加 Phase D 行 + T1 mitigation 安全设计段 + Phase D + MVP 蓝图 2 项里程碑入表
-- ✅ projectbrief.md：加「MVP 范围参考」段（含三档对照表 + 与核心目标对应映射 + 链接到 spec + 链接到 3 篇 creative）
-- ✅ productContext.md：已实现表加「MVP 档」列对照（14 行 + DevTool A/B/C/D 4 行 = 18 行）+ 待补 gap 段（按 MVP 档分类）
-- ⏳ MB 三件套阶段「规划中」→「蓝图主交付物落盘完成」（Level 4 V2=a 蓝图变体「广义构建完成」语义 / 沿用 main.mdc Level 4 蓝图 V2=a 工作流变体段）
-
-**Build 阶段：** **跳过**（V2=a 蓝图变体）
-
-#### 11 systemPatterns 协同度自我对照
-
-预期：**5 ✅**（Level 4 蓝图 V2=a 工作流 + Phase 0 投入定律 sept-evidence + 跨决策协同度 100% 第 8 次连续命中 + 反复模式渐进式抑制 + reflection 沉淀回流）+ **5 引用**（DevTool 4 范式 + isolated JSRuntime 协议 + lazy-attach C ABI + A14 守门 + 5 大可复用范式）+ **1 🆕**（plan ×0.6 第 78-80 数据点群组入库蓝图任务子档候选）
-
-<!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）
-
-<!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）
-
-### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟢 回顾完成 2026-05-04 ~16:42
-
-- **当前阶段：** **回顾完成→归档前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + **Reflect ✅** — reflection-TASK-20260503-04.md ~480 行 Level 3 详细回顾深度 / 12 段 / 5 改进建议 P0×2+P1×2+P2×1 + TASK-05 P1 #1 升级 P0 / 反复模式 1/7 部分命中（第 11 次抑制部分 — main runtime 已抑制 / 2 个新形式漏审：panel JS ctx 归属 + config 矩阵 guard）/ 等待 `/archive`）
-- **创建日期：** 2026-05-03（搁置） / **恢复日期：** 2026-05-04
-- **复杂度级别：** **Level 3**（恢复时以原范围重启 — V3=A 锁定）
-- **焦点：** `veloxa/devtool/console/` + `console_panel.html/css/js`（第 4 件套 UI）+ isolated JSRuntime + capability allowlist + JS_SetInterruptHandler 集成 + console.log 桥接
-- **分支：** `feature/TASK-20260503-04-devtool-console-repl`（基于 main `509fec3` ✅ 已创建）
-- **已锁定决策（搁置时锁定，恢复时复用，无需重问）：**
-  - **V1=B**：完整 Console Panel（DevTool 第 4 件套 UI — `console_panel.html/css/js` 复用 inspector_panel 双层 API 范式 + REPL input + 滚动 output + console.log 桥接 + C API 完整）
-  - **V3=A**：严格按 spec — 05 做 #44 独立前置已完成（commit `63a0bab` 闭环 ✅），04 在 05 完成后以 Level 3 原范围重启
-- **触及威胁：** **T1 任意 eval mitigation**（首次完整暴露 — Console 引入是 T1 威胁面落地实施）
-- **触及技术债：** 闭环 spec §11.1 Console 占位 / 解锁 TASK-30-04-E JS Debugger backend / 复用 TASK-05 闭环的 SetEvalInterruptBudget API + WasInterrupted（V1=B 一行配置即可）
-- **安全相关：** ✅ 是（T1 任意 eval — isolated JSRuntime + capability allowlist 双层防御 + interrupt handler 复用）
-- **估时假设：** ~3-4 h plan ×0.6（VAN 校准；落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档）
-
-#### 前置验证（4/4 PASS）
-
-| 维度 | 检查内容 | 结果 |
-|---|---|:-:|
-| 依赖可获取性 | quickjsng 已离线预置（`build/_deps/`）/ 零新依赖 / interrupt handler 已闭环（TASK-05 commit `63a0bab` / `kDefaultInterruptBudgetCheckpoints = 10000` 已就位 / `WasInterrupted()` 已就位 / `kAborted` enum 已就位）/ FetchContent F9 ⊘ 跳过 | ✅ |
-| 环境就绪 | main `509fec3` 干净 / cmake 4.2.3 + gcc 15.2.0 + ninja + ctest + ld 2.46 hotfix 全可用 / build/ DEVTOOL=ON 1252 baseline 已知（TASK-05 闭环值）/ rg 仍 MISS → Grep 兜底 | ✅ |
-| 已有 artifact | ⚠️ **混合**：可复用 ✅（inspector_panel.{html,css,js} 双层 API 范式 + inspector_resources.h 资源嵌入范式 + overlay HUD 范式 + hot_reload status indicator 范式 + QuickjsEngine class + Application::LoadDevtoolDocument）+ 待新建 ⏳（`veloxa/devtool/console/` 子系统 + console_panel.{html,css,js} + creative-devtool-console.md 设计文档 + 第 4 件套 UI 在 DevTool 主屏布局占位 — creative-devtool-screen-layout.md 未预留） | ✅ |
-| 待处理事项 | 闭环 spec §11.1 Console 占位 ✅ + 闭环 TASK-05 reflection §6 P3 #2「kCancelled 进一步语义拆分」可顺带触及 + 解锁下游 TASK-30-04-E JS Debugger backend ✅ + Phase 0 P1×2 待处理事项可在本任务 plan 阶段顺带验证（writing-plans audit 子条 + brainstorming 主动 push-back 模式） | ✅ 极强 |
-
-#### VAN 阶段识别的关键 push-back（待 brainstorm/creative 决策）
-
-| # | 维度 | 关键发现 | 待决策 |
-|:-:|---|---|---|
-| C1 | DevTool 主屏第 4 件套布局 | creative-devtool-screen-layout.md 仅预留 3 tab（DOM/Style/Layout）+ 1 HUD（FPS+stages+HR），**未预留 Console 位置** | 4 tab 扩展（Console 同 inspector tab 平级）vs 底部 dock（Chrome DevTools 风格）vs splitter 分离上下区域 |
-| C2 | isolated JSRuntime 实施 | `QuickjsEngine` 当前是**单 runtime + 单 context**（`rt_` / `ctx_` 单实例 / quickjs_engine.h:56-57）；spec §11.1 强制 isolated JSRuntime | 新建独立 `QuickjsEngine` 实例 vs 新建 `ConsoleQuickjsEngine` 子类 vs capability flag 复用既有 |
-| C3 | capability allowlist 实施 | spec §11.1 要求「默认仅 read-only DOM access，禁 file / network / Hot Reload trigger」 — 当前 DomBindings 设计未区分 read-only vs mutable | DomBindings 增加 read-only mode flag vs 新建 ConsoleDomBindings 子集 vs JS-level Object.freeze 包裹 |
-| C4 | console.log 桥接 | target Document 的 `console.log(x)` 需输出到 DevTool Document Console panel — 涉及双 Document 跨 binding | console.log → DevTool C API 回调 → DevTool JS 端 dom append 节点 vs 共享 JSON queue + 轮询 drain |
-| C5 | Interrupt handler 集成 | TASK-05 已闭环 `SetEvalInterruptBudget(N)` + `WasInterrupted()` API — V1=B 仅需 1 行 `console_engine.SetEvalInterruptBudget(10000)` + 错误识别 | ✅ 无设计决策（直接复用） |
-
-**结论：** C1-C4 共 4 维度需 creative 阶段决策 → 触发 V4=✅ creative 必要 → 产出 `memory-bank/creative/creative-devtool-console.md`
-
-#### Phase 0 极简清单（plan 阶段实证）
-
-- §0.1 ctest baseline 二次验证 DEVTOOL=ON 1252 + DEVTOOL=OFF 1087（TASK-05 闭环值）
-- §0.2 grep `JS_NewRuntime` / `JS_NewContext` 当前用法实证 + isolated runtime 多实例可行性
-- §0.3 grep `inspector_panel` 双层 API 范式 + `LoadDevtoolDocument` 范式 + `inspector_resources.h` 资源嵌入范式
-- §0.4 grep DomBindings 当前公开 API 表 + read-only 隔离切入点
-- §0.5 grep `vx_devtool_register_callback` 范式 + JS-side console.log 桥接路径
-- §0.6 配置矩阵假设：DEVTOOL=ON 1252→1252+N（含 N 新测）/ DEVTOOL=OFF 1087 不变（A14 黑名单加 ConsoleEngine + ConsoleDomBindings + ConsoleBridge 3-N 项）
-- §0.7 反复模式预防：grep + 实证「现有实现 runtime 行为假设未实证」（反复模式 #1 第 10 次抑制）
-
-#### 推荐工作流（V3=A Level 3 标准路径）
-
-`/van` ✅ → **`/plan`（含 brainstorm C1-C5 决策表 + Phase 0 实证 + B1-BN plan 决策表）→ `/creative`（4 维度设计 → creative-devtool-console.md）→ `/build`（4-5 子任务串行 + CP1+CP2）→ `/reflect` → `/archive`**
-
-#### 关键约束（VAN 阶段锁定）
-
-- ABI 严格扩展（新增公开 C API + JS native binding，不改既有签名）— 复用 lazy-attach C ABI 容错模式 + 双层 API 范式（Phase A/B/C 沉淀）
-- ctest 双 config 不退化（DEVTOOL=ON 1252→1252+N / DEVTOOL=OFF 1087 不变）+ A14 链接闭包黑名单更新（ConsoleEngine 等 3-N 项）
-- Source 溯源 commit body 范式延续（19 commits triple-evidence 已达 git-workflow.mdc 固化阈值）
-- 反复模式预防：Phase 0 三层抑制（§0.2 isolated runtime 可行性 grep + §0.4 DomBindings read-only 切入点 grep + §0.6 ctest config 矩阵 audit 含 add_test guard 检查 — 闭环 TASK-05 reflection P1 #1 audit 子条）
-- T1 mitigation 5 维度完整性验证（默认 isolated runtime + capability allowlist 不可绕过 + interrupt handler 复用 + console.log 桥接 redact / 双向覆盖单测 / dogfood 路径覆盖）
-
-#### 9 systemPatterns 协同度自我对照（plan 阶段细化）
-
-预期：**5 ✅**（双层 API + #ifdef + CMake conditional + lazy-attach C ABI 容错 + canvas Translate / 资源嵌入 + dogfood 路径）+ **2 🆕**（isolated JSRuntime 隔离模式新沉淀 + capability allowlist 范式新沉淀）+ **1 🎯**（连续第 6 次零反复目标 — Phase 0 三层抑制延续 TASK-05 范式）+ **1 ⊘**（A14 守门 — 沿用既有自动化）
-
----
-
-#### Plan 阶段产出（2026-05-04 ~14:55）
-
-**12/12 决策锁定（C1-C4 brainstorm + B1-B8 plan / 1 次 AskQuestion + all_recommended 范式）：**
-
-| 维度 | 锁定 |
-|:-:|---|
-| C1 第 4 件套布局 | A 第 4 tab 平级（DOM/Style/Layout/Console） |
-| C2 isolated JSRuntime | B 新建 console_script_engine_（第 3 个 QuickjsEngine 实例） |
-| C3 capability allowlist | A 严格隔离 binding（不调 DomBindings::Bind） |
-| C4 console.log 桥接 | A drain 模式（vx_devtool_get_console_log_drain query） |
-| B1 子任务划分 | A 5 子任务串行（D.1 → D.2 → D.3 [CP1] → D.4 → D.5 [CP2]） |
-| B2 测试模式 | A 推荐组合（D.1/D.2/D.4 [覆盖补充] / D.3 [文档调整] / D.5 [覆盖补充] + [集成测]） |
-| B3 buffer 上限 | A 双上限（max_count=1000 + max_text=4 KiB） |
-| B4 lifecycle | A 与 LoadDevtoolDocument 同步 |
-| B5 drain envelope | A 完整格式（messages + truncated + dropped_count） |
-| B6 公开 C API | A vx_view_eval_console + vx_view_console_log_drain |
-| B7 Checkpoint | A CP1 D.3 + CP2 D.5 |
-| B8 commit + 估时 | A 5 commits + Source 溯源 / plan ×0.6 ~180-240 min |
-
-**Plan 文档：** `docs/plans/2026-05-04-devtool-console-repl.md`（~530 行 / 14 段 / 5 子任务详细 + 完整代码骨架 + 5 R 风险 + T1 mitigation 5 维度自检表 + 2 Checkpoint + 9 systemPatterns 协同度自我对照 + 反复模式预防清单）
-
-**估时（VAN+Plan 校准）：** plan ×0.6 ~180-240 min → 实测预期 ~70-105 min（落「极窄档延续高效区 0.30-0.45×」候选续延 Phase B/C 同档；plan ×0.6 第 73-77 数据点群组假设入库）
-
-#### 需要创意阶段的组件（V4=✅ creative 必要）
-
-C1-C4 4 维度需 `/creative` 阶段产出详细设计文档：
-
-| # | 维度 | brainstorm 锁定方向 | creative 阶段详细设计内容 |
-|:-:|---|---|---|
-| C1 | DevTool 主屏第 4 件套布局 | A 第 4 tab 平级 | tab 切换协议精化 / dock-to-bottom 视觉范式（Chrome 参考）/ Enter keydown 与既有冲突解决 / CSS input element 子集 grep 验证 |
-| C2 | isolated JSRuntime 实施 | B 新建 console_script_engine_ | 与 devtool_script_engine_ 协同设计 / lifecycle 时序图 / DEVTOOL=OFF 路径 #ifdef / 与 creative-quickjs-host 兼容性自查 |
-| C3 | capability allowlist 实施 | A 严格隔离 binding | RegisterConsoleBindings 全量 API 表 vs RegisterDevtoolBindings 对比表 / 反向探针单测设计 / spec §11.1 安全证明 |
-| C4 | console.log 桥接 | A drain 模式 | drain JSON envelope 完整规范 / 双上限 mitigation 算法 / utf8 边界截断算法 / level 颜色 mapping / ts_ms 时间源选择 |
-
-**待产出：** ~~`memory-bank/creative/creative-devtool-console.md`（预期 ~400-500 行）~~ ✅ **已落盘 ~720 行**（详见下方「Creative 阶段产出」段）
-
-#### Creative 阶段产出（2026-05-04 ~15:30）
-
-**创意文档落盘：** `memory-bank/creative/creative-devtool-console.md`（**~720 行** / vs plan 预期 ~400-500 行 = 1.4-1.8× 文档密度延续 plan 文档密度规律）
-
-**4 维度详细设计完成（C1-C4 全决策含探索方案 + 对比表 + 实现指导 + 代码骨架）：**
-
-| 维度 | 决策 | 关键设计输出 | 关键 push-back |
-|:-:|---|---|---|
-| **C1** DevTool 主屏第 4 件套布局 | A 第 4 tab 平级 | inspector_panel.html 集成范式 + console_panel.{html,css,js} 完整代码骨架 + Enter keydown 冲突 0 风险表 | **input element 子集**：grep 实证 Veloxa 自渲染层 input 无浏览器原生输入行为 → 用 `<span>` + JS 自管理 value state（不用 `<input>`） |
-| **C2** isolated JSRuntime 实施 | B 新建 console_script_engine_ | lifecycle 时序图（Load 19 步 / Unload 7 步 / 关键时序约束 3 项）+ application.h #ifdef 包围范式（Phase C R4 范式延续）+ 与 creative-quickjs-host.md 兼容性自查表（4 项 ✅） | **JS_SetMemoryLimit audit 待办**：留 P3（不阻塞本任务） |
-| **C3** capability allowlist 实施 | A 严格隔离 binding | RegisterConsoleBindings 全量 API 表（7 函数）vs RegisterDevtoolBindings 对比 + 完整代码骨架（~150 行）+ 反向探针单测设计（5+ mutator + 5 allowlist）+ spec §11.1 安全证明（5 维度全自动满足） | **opaque-ptr channel 冲突**：路径 2 解决（Console 不暴露 dom_json/perf_stats，用户从 console_panel.js 内通过 vx_console_eval 间接访问） |
-| **C4** console.log 桥接 | A drain 模式 | drain JSON envelope 完整规范（messages/level/text/ts + truncated + dropped_count 6 字段语义表）+ 双上限 mitigation 算法（max_count=1000 drop_oldest + max_text=4096 truncate_utf8_safe）+ DrainAsJson envelope 构建 + level 颜色 mapping 5 类 + ts_ms 时间源 system_clock | **TruncateAtUtf8Boundary 自实现**：grep 实证 utf.cc 0 boundary 函数 → 自实现 + 5 case 单测 |
-
-**Phase 0 Creative pre-check 实证：**
-
-- **#1 input element 子集**: `tag.cc:67` 已 `kInput, kInlineBlock, kVoid` 注册但**无原生输入行为** → C1 改用 `<span>` + JS keydown
-- **#2 utf8 boundary 函数**: `utf.cc` 0 命中 `FindUtf8Boundary` → C4 自实现（参考 EncodeUtf8 字节判定逻辑）
-- **#3 RegisterDevtoolBindings 完整 API**: 实证 3 函数全 query-only + opaque-ptr 冲突识别 → C3 路径 2 解决
-
-**§d.1 / §d.2 触发评估**：4 维度均无 ≥ 2 坐标系算法 / 无累积量赋值歧义 → **均不触发**（已显式标注）
-
-**Build 阶段待解决（已在 creative 文档标注）：**
-
-| # | 待解决 | 责任阶段 | 备注 |
-|:-:|---|---|---|
-| 1 | opaque-ptr channel 冲突 — 默认走路径 2 | D.2 build | creative §C3 已锁定路径 |
-| 2 | quickjs_engine.cc audit `JS_SetMemoryLimit` | D.1 build 前 | 如未调用 → 留 P3 |
-
-**4 项待用户审查重点（creative 文档末尾段）：**
-
-1. C1 `<span>` + JS 自管理 value state 方案（input 原生支持留 V2）
-2. C2 application.h #ifdef 包围粒度（默认整段包围）
-3. C3 不暴露 dom_json/perf_stats 给 Console（用户用 vx_console_eval 间接访问）
-4. C4 max_count=1000 + max_text=4 KiB 默认值（可配置上限留 P3）
-
-#### 5 子任务清单（B1.A 锁定）
-
-| # | 子任务 | plan ×0.6 | 实测预期 | 测试模式 | 文件数 |
-|:-:|---|:-:|:-:|---|:-:|
-| D.1 | ConsoleEngine + Application lifecycle | 30-40 min | 12-18 min | [覆盖补充] | 8 |
-| D.2 | RegisterConsoleBindings + drain API | 40-50 min | 15-22 min | [覆盖补充] | 6 |
-| D.3 | console_panel 资源 + tab 集成 | 40-50 min | 15-22 min | [文档/资源调整] | 10 |
-| — | 🛑 **CP1 自审** | — | ~3 min | — | — |
-| D.4 | 公开 C API + JS native binding | 30-40 min | 12-18 min | [覆盖补充] | 5 |
-| D.5 | 单测扩充 + dogfood smoke + A14 + finalize | 40-60 min | 16-25 min | [覆盖补充] + [集成测] | 9 |
-| — | 🛑 **CP2 自审**（终局） | — | ~5 min | — | — |
-| **合计** | — | **180-240 min** | **70-105 min** | — | ~38 / ~800-900 行 |
-
-**下一步：** ~~用户调用 `/creative` 启动创意阶段~~ ✅ 已完成 → 用户调用 `/build` 启动子任务串行（D.1 → D.2 → D.3 → CP1 → D.4 → D.5 → CP2）
-
--->
 
 ## 任务历史（最近完成）
+
+### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— ✅ 已归档（2026-05-04 ~19:55）
+
+> **本任务已归档闭环。详细执行记录已迁移到 `memory-bank/archive/archive-TASK-20260504-01.md`（详细 10 段 ~440 行）。**
+
+- **当前阶段：** ✅ **已归档闭环**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ + Reflect ✅ + Archive ✅）
+- **复杂度级别：** Level 4 蓝图（V2=a 完整变体 — 跳过 `/build`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260504-01.md`（Level 4 8 段 ~290 行）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260504-01.md`（Level 4 10 段 ~440 行）
+- **闭环成果：** 7 commits（plan+spec / creative-A / B / C / finalize / reflect / archive 全 Source 溯源）/ 14 文件 +2798 行 / -46 行 / 净 +2752 行 / DEVTOOL=ON 1284/1284 + DEVTOOL=OFF 1091/1091 baseline 不退化（纯文档零代码改动）/ **DevTool 4 件套主线收官标识完成 🎉**（Phase A+B+C+D / Phase E/F/G 标识为「超 MVP plus」由用户需求驱动）/ **三档分级 MVP-A/B/C 体系建立 ✅**（A 100% / B ~90% / C ~70% / 验收清单 + gap 数 0/4/9 / 总估时 ~40-80 h MVP-C）/ **路线图按 MVP 档分层重写 ✅**（短期/中期/长期主线/长期次线/超 MVP 5 段）/ **核心目标 #1+#2 路径量化 ✅**（C-G1 OpenGL ES ~30-60+ h + C-G2 DRM/KMS ~10-20 h）/ **跨决策协同度 100% 第 8 次连续命中**（11/11 1 次 AskQuestion all_recommended / 累计 93/93）/ **plan ×0.6 0.25-0.38× standalone-AI 实测**（落「蓝图任务 V2=a」子档下沿延伸第 4 数据点）/ **反复模式命中 0/7 已知模式 + 1 新候选定型**（中文文档 StrReplace 全角/半角字符差异 — 已立即沉淀 P0 mitigation）/ **改进建议 P0+P1+P2×4 全 archive 阶段直接落实** ✅（systemPatterns 4 新段：中文文档 audit + 蓝图规模公式 + 超 MVP plus + 跨决策协同度 sept-evidence + plan ×0.6 矩阵第 4 数据点 + writing-plans.mdc 同源 audit 子条）+ **后续 10 候选立项推荐顺序就位**（DomBindings R2 三连补全第一推荐 / G1 OpenGL ES 蓝图第 5 推荐）
+- **创建日期：** 2026-05-04
+- **分支：** `feature/TASK-20260504-01-mvp-scope-doc`（基于 main `fd22dd8` ✅ 创建 → 7 commits → fast-forward merge 到 main `4e35cea` ✅ feature 分支已删除）
+- **来源：** [TASK-20260503-04 archive 后续讨论](24c60dec-2422-42f4-990f-f4574f60603f) — 用户问"MVP 还差哪些"时识别项目缺统一 MVP 范围定义文档 → 用户拍板独立立项
+- **安全相关：** ❌ 否（纯文档蓝图 / 0 代码改动 / 0 新威胁面引入）
 
 ### TASK-20260503-04：DevTool Phase D · Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — ✅ 已归档（2026-05-04 ~16:55）
 
