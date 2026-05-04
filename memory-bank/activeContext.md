@@ -2,18 +2,17 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260503-04 DevTool Phase D · Console JS REPL（V1=B 扩展段）[安全相关] / VAN ✅ + Plan ✅ + Creative ✅ + Build ✅（5 子任务 + CP1 + CP2 + finalize / 6 commits / 1284 PASS / 等待 `/reflect`）
+**回顾完成** — TASK-20260503-04 DevTool Phase D · Console JS REPL（V1=B 扩展段）[安全相关] / VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅（reflection 文档落盘 ~480 行 / 反复模式 #1 第 11 次抑制部分成功（main runtime 已抑制 / 2 个新形式漏审）/ P0 ×3 必须 archive 阶段落实 / 等待 `/archive`）
 
-**构建终局摘要**（详见 `progress.md` + `techContext.md` TASK-04 实施摘要段）：
-- ✅ D.1 ConsoleEngine + Application lifecycle 集成（commit `594527c` / 5 测）
-- ✅ D.2 RegisterConsoleBindings + console.log 桥接 + drain API（commit `f0f29ab` / 7 测）
-- ✅ D.3 Console panel 资源 + 4 tab 集成（commit `741493c` / 5 smoke）
-- ✅ CP1 自审通过（3 commits Source-traced / 4 tab smoke 替代手动视觉验证）
-- ✅ D.4 公开 C API + JS native binding（commit `4217902` / 7 测 / 含 plan-fact reconcile #1 — D.2 wiring 修正）
-- ✅ D.5 单测扩充 + dogfood smoke + A14 黑名单（commit 待 / 8 测：5 维度 T1 mitigation + 3 dogfood smoke）
-- ✅ CP2 自审通过（DEVTOOL=ON 1284 PASS / DEVTOOL=OFF 1091 PASS / A14 6 console 符号 0 泄漏）
+**回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-04.md`（Level 3 详细回顾深度 / 12 段含 §1 计划 vs 实际 / §2 5 项做得好 / §3 4 项挑战 / §4 4 项教训 / §5 5 项改进 P0×2/P1×2/P2×1 / §6-12 全维度）
 
-**下一步：** 用户调用 `/reflect` 启动回顾阶段
+**关键回顾发现：**
+- **plan-fact reconcile #1（C2 wiring）**：D.2 假设 panel JS 跑在 console_script_engine ctx → 实际跑在 devtool_script_engine ctx；D.4 通过 DomBindings host data channel 扩展修复 / 0 重写代价 / 0 返回 creative
+- **plan-fact reconcile #2（OFF +4 而非 0）**：与 TASK-05 同源「config 矩阵 guard 边界假设漏审」**第 2 次连续命中** → P1 升级 P0（archive 阶段必须落实 writing-plans audit 子条强化）
+- **新子档候选 0.05-0.15× 极速区**：实测 build phase ~17 min vs plan ×0.6 180-240 min = 0.07-0.10× 创历史新低（破 TASK-05 0.16×）；含 AI agent 加速因子需在新子档明确标注「AI agent 实测 vs 人类开发」差异
+- **Phase 0 投入定律 sept-evidence 升级候选**（A 5.3× / B 5.2× / C 7.6× / 02 6.7× / 03 8.0× / 05 16× / **04 ~6-10×**）
+
+**下一步：** 用户调用 `/archive` 启动归档阶段（P0 ×3 改进建议必须落实）
 
 **任务焦点：** `veloxa/devtool/console/` + `console_panel.html/css/js`（第 4 件套 UI）+ isolated JSRuntime + capability allowlist + JS_SetInterruptHandler 集成 + console.log 桥接
 
@@ -559,20 +558,59 @@ C1-C4 4 维度需 creative 阶段产出详细设计文档：
 
 ## 待处理事项（P0/P1/P2 后续 — 跨任务沉淀）
 
-### P0/P1/P2 来自 TASK-20260503-05 reflection §5（reflect 阶段迁移 — archive 阶段直接落实 P0+P2 / P1 留下次工作流元任务）
+### P0/P1/P2 来自 TASK-20260503-04 reflection §5（reflect 阶段迁移 — archive 阶段直接落实 P0×3 / P1×2 留下次工作流元任务）
 
-> 4 项建议来自 QuickJS Interrupt Handler 反思（P0×1 + P1×2 + P2×1）— P0+P2 在 archive 阶段直接落实 / P1 留下次工作流元任务批量落地。
+> 5 项建议来自 DevTool Phase D Console JS REPL 反思（**P0×2 → 因反复模式 #1 第 2 次连续命中升级为 P0×3** / P1×2 / P2×1）— P0×3 在 archive 阶段必须直接落实 / P1×2 留下次工作流元任务 / P2×1 留长期。
 
-- **P0 #1 plan ×0.6 矩阵新子档「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」入库 + 第 67-72 数据点群组 + Phase 0 投入定律 sext-evidence 升级（5.2-16× ROI）** — 5 子任务 + 1 finalize 实测 ~15 min vs plan ×0.6 ~85-105 min = 0.16×（远超「纯文档/规则极速区 0.15-0.25×」下沿，但加速因子不同 — 本任务有真实代码改动 + 单测 RED-GREEN cycle）；5 项触发条件叠加（真实代码 ≤ 200 行 / Phase 0 grep audit 完整 ≥ 3 grep + Status.h audit / 完整 cpp 代码片段 plan 阶段已就位 / 0 brainstorm 之外的设计决策 / 测试矩阵预 audit 含 ctest config 假设）；Phase 0 投入定律 ROI 16× 创历史新高（quint → sext-evidence 升级）。**预估**：~15 min；**archive 阶段直接落实**。
-- **P1 #1 writing-plans.mdc «ctest 数量预期 config 矩阵» 段补强 audit 子条**「待新增测的 add_test 是否有 config guard」+ grep 范本 — plan §0.4 ctest config 矩阵假设错误（OFF 1082 → 实际 1087 / quickjs_engine_test 在 vx_script 无 DEVTOOL guard）；这是反复模式 #1 的新形式（config 矩阵 guard 边界假设漏审）；建议给 `vx_add_test` 范本：
+- **P0 #1（升级 — TASK-05 P1 #1 因第 2 次连续命中升级 P0）writing-plans.mdc «ctest 数量预期 config 矩阵» 段补强 audit 子条**「待新增测的 add_test 是否有 config guard」+ grep 范本 — TASK-05 plan §0.4 OFF 1082 假设错（实际 1087）+ TASK-04 plan §0.6 OFF 1087 假设错（实际 1091）= **第 2 次连续命中** → 触发反复模式 #1 子维度第 3 次 = P0 升级阈值（systemPatterns「反复模式渐进式抑制」段已沉淀 3 次=P0 原则）；建议给 `vx_add_test` 范本：
 
   ```bash
   rg "vx_add_test\($NEW_TEST_NAME" tests/CMakeLists.txt -C 5 | rg "if\s*\(VX_"
   # 如有 if (...) 包围 → 该测仅在该 config 下跑
   # 如无 if (...) 包围 → 该测在所有 config 下都跑（影响 OFF 估时）
+  # 特别注意 OFF stub 测（lazy-attach C ABI 容错验证）通常**不加** guard 让 OFF 也跑
+  ```
+
+  **预估**：~10 min；**archive 阶段必须直接落实**（不能再等下次工作流元任务）。
+
+- **P0 #2 plan ×0.6 矩阵新子档「creative 全锁死 + 范式 100% 复用极速区」0.05-0.15× 入库** + 6 触发条件 + AI agent 加速因子标注 + 第 73-77 数据点群组（5 子任务 + finalize）+ Phase 0 投入定律 sept-evidence 升级（5.2-16× ROI / 平均 8.4×） — 5 实施子任务实测 ~17 min vs plan ×0.6 180-240 min = 0.07-0.10× **创历史新低**（破 TASK-05 0.16×）；6 项触发条件叠加（creative 4+ 维度全锁死 含完整 cpp 代码骨架 / 5 大架构范式 + 9 systemPatterns 100% 命中 / Phase 0 grep ≥ 7 子段实证 / 0 brainstorm 之外的设计决策 / plan-fact reconcile ≤ 2 项 + 同任务内修复 / **AI agent 加速因子**）；含 +2181 行 / 32 测 / 6 commits / plan-fact reconcile 双 / DEVTOOL 双 config — 范围远大于 TASK-05「最小代码改动」子档（≤ 200 行）→ 须建立独立新子档 + AI agent 实测条件列。**预估**：~15 min；**archive 阶段直接落实**。
+
+- **P0 #3 systemPatterns.md「DevTool isolated JSRuntime 协议」新段沉淀**（spec §11.1 落地范本） — 第 3 个 QuickjsEngine 实例 + console_log_buffer 隔离 buffer + lifecycle 反序释放 + capability allowlist 严格隔离（不调 DomBindings::Bind）+ host data channel 扩展（DomBindings.SetConsoleEngine + SetConsoleLogBuffer）作为 panel JS dual-ctx wiring 解决方案；建议 systemPatterns.md 加新段「DevTool isolated JSRuntime 协议」+「dual-ctx wiring SOP」子段。**预估**：~15 min；**archive 阶段直接落实**。
+
+- **P1 #1 writing-plans.mdc Phase 0 段补强「JS context 归属与 host binding 注册 ctx 一致性 audit」子条** — 反复模式 #1 第 4 个新形式（panel JS / 用户脚本 ctx 归属未实证）；本任务 plan-fact reconcile #1（C2 wiring）即此模式实证 — D.2 假设 panel JS 跑在 console_script_engine ctx 实际跑在 devtool_script_engine ctx；建议 Phase 0 grep 子段补强：
+
+  ```markdown
+  ### Phase 0 — JS context 归属与 host binding 注册 ctx 一致性 audit
+
+  如果任务涉及多 JSRuntime 实例 + DevTool/Inspector 类内联 JS：
+  1. grep 「Register*Bindings」找出所有 host endpoint 注册点 → 列每个 endpoint 注册到哪个 ctx
+  2. grep 「LoadDevtoolDocument / load_inline_js / etc」找出 inline JS 实际 eval 走哪个 ctx
+  3. 验证「inline JS call 的 endpoint」⊆「该 ctx 上注册的 endpoint」
+  4. 如有 mismatch → 必须在 plan 阶段决定 host data channel 路径 vs ctx 切换路径
   ```
 
   **预估**：~10 min；下次工作流元任务批量落地。
+
+- **P1 #2 writing-plans.mdc「资源类反向探针 SOP」新子段** — 资源反向探针应限定到非注释区域 / comment policy 推荐；本任务 D.3 console_panel.html 注释里 `<input` 字面量触发 EXPECT_EQ(html.find("<input"), npos) 反向探针 false positive；建议 writing-plans.mdc 加新子段：
+
+  ```markdown
+  ### 资源类反向探针 SOP（HTML/CSS/JS/template）
+
+  如果反向探针目标是「该资源不应包含 X 字面量」：
+  - 错误范本：EXPECT_EQ(text.find("X"), npos)  // 注释里 X 字面量也触发
+  - 正确范本（推荐）：注释规约 — 禁止在注释里写 X 字面量（comment policy）+ 反向探针保持简单
+  ```
+
+  **预估**：~10 min；下次工作流元任务批量落地。
+
+- **P2 #1 writing-plans.mdc「LOC 估算附录」加「隐性附加工作类型清单」+ ×1.3-1.5 buffer 范本** — 本任务 plan ~800-900 行 估 vs 实际 +2181 行（+~140% 偏差）= 隐性附加工作（DomBindings host data channel 扩展 / smoke 替代手动验证 / 自实现算法）超估；与 TASK-20260503-02 P2 #4 同源（plan §文档段落 LOC 预估系数 ×1.5-2× 修正）— 建议合并落地。**预估**：~10 min 长期沉淀（不强制 archive）。
+
+### P0/P1/P2 来自 TASK-20260503-05 reflection §5（reflect 阶段迁移 — archive 阶段直接落实 P0+P2 / P1 留下次工作流元任务）
+
+> 4 项建议来自 QuickJS Interrupt Handler 反思（P0×1 + P1×2 + P2×1）— P0+P2 在 archive 阶段直接落实 / P1 留下次工作流元任务批量落地。
+
+- **P0 #1 plan ×0.6 矩阵新子档「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」入库 + 第 67-72 数据点群组 + Phase 0 投入定律 sext-evidence 升级（5.2-16× ROI）** — 5 子任务 + 1 finalize 实测 ~15 min vs plan ×0.6 ~85-105 min = 0.16×（远超「纯文档/规则极速区 0.15-0.25×」下沿，但加速因子不同 — 本任务有真实代码改动 + 单测 RED-GREEN cycle）；5 项触发条件叠加（真实代码 ≤ 200 行 / Phase 0 grep audit 完整 ≥ 3 grep + Status.h audit / 完整 cpp 代码片段 plan 阶段已就位 / 0 brainstorm 之外的设计决策 / 测试矩阵预 audit 含 ctest config 假设）；Phase 0 投入定律 ROI 16× 创历史新高（quint → sext-evidence 升级）。**预估**：~15 min；**archive 阶段直接落实**。
+- ⬆️ **P1 #1 writing-plans.mdc «ctest 数量预期 config 矩阵» 段补强 audit 子条** — **已被 TASK-20260503-04 reflection §3.2+§4.2 升级为 P0**（反复模式 #1 子维度「config 矩阵 guard 边界假设漏审」**第 2 次连续命中** → 触发 3 次=P0 升级阈值）；详见上方「P0/P1/P2 来自 TASK-20260503-04 reflection §5」段 P0 #1 条目。**状态：⬆️ 升级 P0 / archive 阶段必须落实**（不再是 P1 留下次工作流元任务）。
 - **P1 #2 brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现 creative / spec / 既有实现 runtime 行为偏差 + (3) 偏差**显著**（默认值差 10³+ 倍 / API 不存在 / signature 不符）。这是「证据优于断言」原则的延伸 — Phase 0 实证 > 用户原始限定。**预估**：~10 min；下次工作流元任务批量落地。
 - **P2 #1 systemPatterns.md「DEVTOOL=OFF / 次配置 baseline 验证 SOP」段沉淀** — `-DFETCHCONTENT_BASE_DIR="$(pwd)/build/_deps"` 复用主 build/ 的 _deps，cmake reconfigure 1.8s（vs 75s+ FetchContent 完整拉取）+ build ~60s = 总 ~70s 节省 ~3-5 min；范本：
 

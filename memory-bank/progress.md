@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-> **TASK-20260503-04 构建完成（2026-05-04）** — 阶段：**构建完成→反思前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ / 6 commits / 1284 PASS / 等待 `/reflect`）。详细见 `activeContext.md` + `techContext.md` TASK-04 摘要段。
+> **TASK-20260503-04 回顾完成（2026-05-04 ~16:35）** — 阶段：**回顾完成→归档前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ / reflection 文档 ~480 行 / P0×3 必须 archive 阶段落实 / 等待 `/archive`）。详细见 `activeContext.md` + `reflection-TASK-20260503-04.md`。
 
 ### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关]
 
-**当前阶段**：🟢 **构建完成（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ 完成 / 等待 `/reflect`）**
+**当前阶段**：🟢 **回顾完成（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ 完成 / 等待 `/archive`）**
 
 **里程碑**：
 
@@ -37,6 +37,17 @@
 - 2026-05-04 ~15:46 — D.5 完成（5 维度 T1 mitigation 单测扩充 + 3 dogfood smoke 端到端 + A14 黑名单 +6 console 符号 + techContext.md TASK-04 实施摘要段）/ DEVTOOL=ON 1284 PASS / DEVTOOL=OFF 1091 PASS / A14 link closure 0 console 符号泄漏
 - 2026-05-04 ~15:48 — 🛑 CP2 自审通过（终局：双 config 全绿 / A14 6 符号 0 泄漏 / 反复 0/7 / T1 5 维度全自检 PASS / 极窄档群组 79-83 数据点入库）/ Memory Bank 三件套 finalize 更新
 - 2026-05-04 ~15:48 — 阶段 「构建中」→「构建完成→反思前」/ 等待 `/reflect`
+- 2026-05-04 ~16:35 — `/reflect` 启动 / 阶段 「构建完成」→「回顾中」/ 读取 plan + creative + progress + git history（6 commits / +2181 行 src+tests / 30 文件） + reflection-TASK-20260503-05.md 作为格式参考
+- 2026-05-04 ~16:40 — reflection 文档落盘 `memory-bank/reflection/reflection-TASK-20260503-04.md`（**~480 行** / Level 3 详细回顾深度 / 12 段：§1 计划 vs 实际 / §2 5 项做得好 / §3 4 项挑战 / §4 4 项教训 / §5 5 项改进建议 P0×2/P1×2/P2×1 / §6 3 项技术改进 / §7 反复模式 1/7 部分命中（第 11 次抑制部分） / §8 安全评估 T1 5 维度完整性 + capability allowlist / §9 Phase 0 投入定律 sept-evidence 升级候选 / §10 跨任务沉淀 5 项 / §11 估时校准第 73-77 数据点群组 / §12 下一步 P0×3）
+- 2026-05-04 ~16:42 — Memory Bank 三件套（tasks/activeContext/progress）finalize 更新 + activeContext「待处理事项」段新增 5 项（P0×3 含 1 项升级 / P1×2 / P2×1）+ TASK-05 P1 #1 标注「⬆️ 已升级 P0」/ 阶段 「回顾中」→「回顾完成→归档前」/ 等待 `/archive`
+
+**回顾核心发现总结：**
+
+- **plan-fact reconcile 双命中（C2 wiring + OFF +4）**：均在 build 阶段同任务内识别 + 修复 / 0 重写代价 / 0 返回 creative；但暴露 Phase 0 grep 两个新形式漏审（panel JS ctx 归属 + config 矩阵 guard 边界假设）
+- **反复模式 #1 第 2 次连续命中升级 P0**：「config 矩阵 guard 边界假设漏审」TASK-05+TASK-04 = 2 次 → 触发 3 次=P0 升级阈值（systemPatterns「反复模式渐进式抑制」段已沉淀） → archive 阶段必须立即修 writing-plans.mdc
+- **新子档候选「creative 全锁死 + 范式 100% 复用 + AI agent 极速区 0.05-0.15×」**：实测 build phase ~17 min vs plan ×0.6 180-240 min = 0.07-0.10× **创历史新低**；含 AI agent 加速因子标注（区分 standalone-AI / human-only / mixed）；6 项触发条件 + 第 73-77 数据点群组
+- **5 大范式 + 9 systemPatterns 协同度 100%**：含 2 项新沉淀候选（isolated JSRuntime 隔离模式 + capability allowlist 范式 — spec §11.1 落地范本）
+- **27 commits 累计 quad-evidence**（远破 git-workflow.mdc 固化阈值 — TASK-02 + TASK-03 + TASK-05 + TASK-04 = 6+5+8+8）
 
 **实施摘要（finalize）**：
 
