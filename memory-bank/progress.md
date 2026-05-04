@@ -2,7 +2,9 @@
 
 ## 当前任务
 
-> **TASK-20260503-04 回顾完成（2026-05-04 ~16:35）** — 阶段：**回顾完成→归档前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ / reflection 文档 ~480 行 / P0×3 必须 archive 阶段落实 / 等待 `/archive`）。详细见 `activeContext.md` + `reflection-TASK-20260503-04.md`。
+> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：TASK-20260503-04 DevTool Phase D · Console JS REPL ✅ 已归档（详细里程碑见 `memory-bank/archive/archive-TASK-20260503-04.md` §3 + §6）。
+
+<!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）
 
 ### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关]
 
@@ -67,9 +69,24 @@
 - 反复模式预防：Phase 0 三层抑制（连续第 6 次零反复目标 — 抵消 03 的 1/7 回升 + 延续 05 的 0/7 第 5 次）
 - T1 mitigation 5 维度完整性验证
 
+-->
+
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260503-04 闭环摘要（2026-05-04 ~16:55 已归档）
+
+- **10 commits** main `509fec3 → 33afb7c`（fast-forward / feature 分支已删除）
+- **30 src+tests 文件 / +2181 行**（含 `veloxa/devtool/console/` 新子系统 + 4 件套 UI + 2 公开 C API + DomBindings host data channel 扩展 + 32 测）
+- **DevTool 4 件套全部完整闭环 ✅** + **spec §11.1 Console 占位完整闭环 ✅** + **T1 任意 eval mitigation 5 维度首次完整暴露 ✅**
+- ctest 双 config 全 PASS：DEVTOOL=ON 1252→**1284** (+32) + DEVTOOL=OFF 1087→**1091** (+4) + A14 link-closure 0 console 符号泄漏
+- plan ×0.6 实测 build phase **0.07-0.10× 创历史新低**（vs plan 180-240 min / 实测 ~17 min）→ 触发新效率区子档「creative 全锁死 + 范式 100% 复用 + AI agent 极速区 0.05-0.15×」入库
+- Phase 0 投入定律 sept-evidence 升级（5.2-16× ROI 平均 ~8.4×）
+- commit body Source 溯源 quad-evidence（27-28 commits 累计远破 git-workflow.mdc 固化阈值）
+- 新沉淀 systemPattern「DevTool isolated JSRuntime 协议」（spec §11.1 落地范本 5 节 / 解锁 TASK-30-04-E JS Debugger backend 复用）
+- 改进建议 **P0 3/3 ✅ archive 阶段直接落实**（writing-plans audit + plan ×0.6 子档 + DevTool isolated JSRuntime 协议）+ P1 2/2 ✅ 已迁移待处理事项 + P2 1/1 ✅ 长期沉淀
+- 详细见 `memory-bank/archive/archive-TASK-20260503-04.md`（Level 3 8 段 ~440 行）+ `memory-bank/reflection/reflection-TASK-20260503-04.md`（12 段 ~480 行）
 
 <!-- TASK-20260503-03 详细执行里程碑（11 entries 含 P1 失败发现 + 回退 + 用户决策 + 调整 + 5 commits 链路）已迁移到 archive 文档（见 archive-TASK-20260503-03.md §3.2 commit 历史 + §4 P1 实施失败链路）
 

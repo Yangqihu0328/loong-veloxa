@@ -2,7 +2,9 @@
 
 ## 当前任务
 
-> **TASK-20260503-04 回顾完成（2026-05-04 ~16:42）** — 阶段：**回顾完成→归档前**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ / reflection ~480 行 / P0×3 必须 archive 阶段落实 / 等待 `/archive`）。详细见下方任务段。
+> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：TASK-20260503-04 DevTool Phase D · Console JS REPL ✅ 已归档（详见下方「任务历史」段顶部）。
+
+<!-- TASK-20260503-04 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260503-04.md）
 
 ### TASK-20260503-04：DevTool Phase D — Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — 🟢 回顾完成 2026-05-04 ~16:42
 
@@ -154,7 +156,23 @@ C1-C4 4 维度需 `/creative` 阶段产出详细设计文档：
 
 **下一步：** ~~用户调用 `/creative` 启动创意阶段~~ ✅ 已完成 → 用户调用 `/build` 启动子任务串行（D.1 → D.2 → D.3 → CP1 → D.4 → D.5 → CP2）
 
+-->
+
 ## 任务历史（最近完成）
+
+### TASK-20260503-04：DevTool Phase D · Console JS REPL + console.log 桥接（V1=B 扩展段）[安全相关] — ✅ 已归档（2026-05-04 ~16:55）
+
+> **本任务已归档闭环。详细执行记录已迁移到 `memory-bank/archive/archive-TASK-20260503-04.md`（详细 8 段 ~440 行）。**
+
+- **当前阶段：** ✅ **已归档闭环**（VAN ✅ + Plan ✅ + Creative ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+- **复杂度级别：** Level 3
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260503-04.md`（Level 3 12 段 ~480 行）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260503-04.md`（Level 3 8 段 ~440 行）
+- **闭环成果：** 10 commits（plan + creative + 5 实施 D.1-D.5 全 Source 溯源 + finalize + reflect + archive）/ 30 src+tests 文件 +2181 行 / DEVTOOL=ON 1252→1284 +32 测 / DEVTOOL=OFF 1087→1091 +4 OFF stub 测 / A14 link-closure 0 console 符号泄漏 ✅ / **DevTool 4 件套全部完整闭环 ✅**（Inspector + Performance Overlay + Hot Reload + Console）/ **spec §11.1 Console 占位完整闭环 ✅** / **T1 任意 eval mitigation 5 维度首次完整暴露 ✅**（默认安全 + opt-in + 不可绕过 + 状态可查 + 单线程 atomic / 8 单测 + capability allowlist 8 项反向探针）/ **plan ×0.6 实测 0.07-0.10× 创历史新低**（vs plan 180-240 min / build phase 实测 ~17 min）触发新效率区子档「creative 全锁死 + 范式 100% 复用 + AI agent 极速区 0.05-0.15×」入库 systemPatterns（6 触发条件 + 第 73-77 数据点 + AI agent 实测条件标注协议）/ **Phase 0 投入定律 sept-evidence 升级**（5.2-16× ROI 平均 ~8.4×）/ **commit body Source 溯源 quad-evidence**（27-28 commits 累计远破 git-workflow.mdc 固化阈值）/ **新沉淀 systemPattern「DevTool isolated JSRuntime 协议」**（spec §11.1 落地范本 5 节 / 解锁 TASK-30-04-E JS Debugger backend 复用）/ plan-fact reconcile 双命中 0 重写代价（C2 wiring + OFF +4）/ 反复模式 1/7 部分命中（反复模式 #1 第 11 次抑制 main runtime 已抑制 / 2 个新形式漏审 / 「config 矩阵 guard 边界假设漏审」第 2 次连续命中升级 P0）/ 改进建议 P0 3/3 ✅ archive 阶段直接落实（writing-plans audit + plan ×0.6 子档 + DevTool isolated JSRuntime 协议）+ P1 2/2 ✅ 已迁移待处理事项 + P2 1/1 ✅ 长期沉淀
+- **创建日期：** 2026-05-03（搁置）/ **恢复日期：** 2026-05-04
+- **分支：** `feature/TASK-20260503-04-devtool-console-repl`（基于 main `509fec3` ✅ 创建 → 10 commits → fast-forward merge 到 main `33afb7c` ✅ feature 分支已删除）
+- **来源：** TASK-20260503-04 搁置任务恢复（硬前置依赖 TASK-20260503-05 已闭环 / V1=B + V3=A 决策已锁定 / 沿用原任务 ID）；focus = spec §11.1 Console 占位完整落地 + DevTool 4 件套主线收官
+- **安全相关：** ✅ 是（T1 任意 eval mitigation 完整闭环 / capability allowlist + isolated JSRuntime 双层防御 / T6 buffer 上限保护）
 
 ### TASK-20260503-05：QuickJS Interrupt Handler + SetEvalInterruptBudget API（技术债 #44 组件 1 Phase 2 闭环）[安全相关] — ✅ 已归档（2026-05-03 ~23:55）
 
