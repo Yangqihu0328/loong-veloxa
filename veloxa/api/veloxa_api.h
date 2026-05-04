@@ -306,6 +306,88 @@ VxResult vx_view_set_pipeline_hooks(VxView* view,
                                     const VxPipelineHooks* hooks,
                                     void* userdata);
 
+/* ── DevTool Console JS REPL C API (TASK-20260503-04 D.4) ─────────
+ *
+ * Public thin wrapper around the DevTool Console isolated JSRuntime
+ * (vx::devtool::console::ConsoleEngine + ConsoleLogBuffer). Available
+ * only when built with -DVX_BUILD_DEVTOOL=ON AND DevTool has been
+ * attached via vx_view_attach_devtool; otherwise vx_view_eval_console
+ * returns VX_CONSOLE_EVAL_NOT_ATTACHED and vx_view_console_log_drain
+ * writes the empty envelope. T1 mitigation:
+ *
+ *   - Default-safe interrupt budget (10000 handler hits ≈ 100-500 ms)
+ *     applied at engine Init; cannot be bypassed by `source` (the
+ *     setter is on the C++ owner, not exposed as a JS binding).
+ *   - Capability allowlist: console.* + drain only on the user scope;
+ *     no DOM mutators / no file or network reach (auto-satisfied via
+ *     creative-quickjs-host §组件 2 方案 B — js_std_add_helpers off).
+ *   - Per-eval reset: `interrupted` snapshot is fresh for every call.
+ *
+ * lazy-attach contract: identical to vx_view_serialize_dom_json — both
+ * APIs accept a NULL DevTool slot and return INVALID/NOT_ATTACHED rather
+ * than crashing, so embedders can call either one before/after a
+ * vx_view_attach_devtool / detach pair without lifecycle bookkeeping.
+ */
+
+typedef enum {
+  VX_CONSOLE_EVAL_OK              = 0,
+  VX_CONSOLE_EVAL_INTERRUPTED     = 1,  /* T1: budget exhausted */
+  VX_CONSOLE_EVAL_SYNTAX_ERROR    = 2,  /* QuickJS syntax/parse error */
+  VX_CONSOLE_EVAL_RUNTIME_ERROR   = 3,  /* QuickJS runtime exception */
+  VX_CONSOLE_EVAL_NOT_ATTACHED    = 4,  /* DevTool not attached / OFF */
+  VX_CONSOLE_EVAL_BUFFER_TOO_SMALL = 5,
+} vx_console_eval_status;
+
+/* Eval `source` (length `source_len` bytes) inside the Console isolated
+ * runtime. Writes the toString()-formatted result into out_buf, NUL-
+ * terminated, truncated to out_buf_size-1. Returns the result status:
+ *
+ *   VX_OK on success — out_status (when non-NULL) receives the eval-time
+ *     vx_console_eval_status (always VX_CONSOLE_EVAL_OK on the success
+ *     path; populated for consistency with the failure paths below).
+ *   VX_ERROR_NULL_PARAM when view, source, or out_buf is NULL.
+ *   VX_ERROR_INVALID_STATE when DevTool is not attached / DEVTOOL=OFF.
+ *     out_status (when non-NULL) is set to VX_CONSOLE_EVAL_NOT_ATTACHED.
+ *   VX_ERROR_OUT_OF_MEMORY when out_buf_size==0 — out_status set to
+ *     VX_CONSOLE_EVAL_BUFFER_TOO_SMALL.
+ *   VX_OK with out_status != VX_CONSOLE_EVAL_OK when the eval ran but
+ *     produced an error (interrupted/syntax/runtime). The error message
+ *     is written into out_buf (T7-style cap of out_buf_size-1).
+ *
+ * The dual VxResult + out_status return pattern lets embedders handle
+ * lifecycle errors (NULL/!attached) the same way as other DevTool C APIs
+ * while still surfacing the rich eval status when the call reached the
+ * engine. For panel-JS usage the JS side reads only the JSON envelope
+ * returned by the vx_console_eval native binding (registered by
+ * RegisterDevtoolBindings); this C ABI is for embedders that want to
+ * drive the Console programmatically (smoke tests / SDK clients). */
+VxResult vx_view_eval_console(VxView* view, const char* source,
+                              uint32_t source_len, char* out_buf,
+                              uint32_t out_buf_size,
+                              vx_console_eval_status* out_status);
+
+/* Drain ConsoleLogBuffer into out_buf as a JSON envelope:
+ *   {"messages":[{level,text,ts}],"truncated":<bool>,"dropped_count":N}
+ * Returns:
+ *   VX_OK with *out_len = bytes written (NOT including trailing NUL —
+ *     out_buf is NUL-terminated for caller convenience but the count
+ *     matches strlen).
+ *   VX_ERROR_NULL_PARAM when view, out_buf, or out_len is NULL.
+ *   VX_ERROR_OUT_OF_MEMORY when out_buf_size is too small for the
+ *     envelope; out_buf is left NUL-terminated empty and *out_len is
+ *     set to the required size (excluding NUL — same double-call
+ *     protocol as vx_view_serialize_dom_json).
+ *   VX_ERROR_INVALID_STATE when DevTool is not attached / DEVTOOL=OFF —
+ *     out_buf receives the empty envelope so callers can JSON-parse
+ *     without branching on the return.
+ *
+ * Drain is destructive (clears the buffer + counters). Embedders that
+ * want to peek without clearing should snapshot via
+ * vx_view_eval_console("vx_devtool_get_console_log_drain()") which
+ * goes through the JS binding instead. */
+VxResult vx_view_console_log_drain(VxView* view, char* out_buf,
+                                   uint32_t out_buf_size, uint32_t* out_len);
+
 /* ── Info ───────────────────────────────────────────────────────── */
 
 const char* vx_version(void);

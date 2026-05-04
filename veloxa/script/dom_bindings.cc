@@ -34,6 +34,13 @@ struct DomBindings::InstanceData {
   // attached). vx_devtool_get_hot_reload_status binding reads
   // tracked_count() + last_error().
   vx::devtool::hot_reload::HotReloadManager* hot_reload_manager = nullptr;
+  // TASK-20260503-04 D.4 — Console host data channel sources (borrowed;
+  // nullptr when not attached). console_engine drives vx_console_eval;
+  // console_log_buffer drives vx_devtool_get_console_log_drain. Both
+  // belong to the devtool ctx scope (panel JS callers), see creative §C3
+  // path 2 + DomBindings.h public-API comment.
+  vx::devtool::console::ConsoleEngine* console_engine = nullptr;
+  vx::devtool::console::ConsoleLogBuffer* console_log_buffer = nullptr;
   // A.2.1 T3 mitigation: redaction policy applied by VxDevtoolGetDomJson
   // when serializing the target Document. Defaults to the safe value;
   // synced from Application::redaction_policy() via SetRedactionPolicy.
@@ -790,6 +797,21 @@ vx::devtool::hot_reload::HotReloadManager*
 DomBindings::hot_reload_manager() const {
   return data_->hot_reload_manager;
 }
+void DomBindings::SetConsoleEngine(
+    vx::devtool::console::ConsoleEngine* engine) {
+  data_->console_engine = engine;
+}
+vx::devtool::console::ConsoleEngine* DomBindings::console_engine() const {
+  return data_->console_engine;
+}
+void DomBindings::SetConsoleLogBuffer(
+    vx::devtool::console::ConsoleLogBuffer* buffer) {
+  data_->console_log_buffer = buffer;
+}
+vx::devtool::console::ConsoleLogBuffer*
+DomBindings::console_log_buffer() const {
+  return data_->console_log_buffer;
+}
 void DomBindings::SetRedactionPolicy(dom::RedactionPolicy policy) {
   data_->redaction_policy = policy;
 }
@@ -861,6 +883,8 @@ void DomBindings::Unbind() {
   data_->devtool_target_doc = nullptr;
   data_->perf_overlay = nullptr;
   data_->hot_reload_manager = nullptr;
+  data_->console_engine = nullptr;
+  data_->console_log_buffer = nullptr;
 }
 
 // =============================================================================
@@ -885,6 +909,8 @@ void DomBindings::Unbind() {
 
 #include <cstdio>
 
+#include "veloxa/devtool/console/console_bindings.h"
+#include "veloxa/devtool/console/console_engine.h"
 #include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/inspector/inspector_data.h"
 #include "veloxa/devtool/overlay/perf_overlay.h"
@@ -1001,6 +1027,118 @@ JSValue VxDevtoolGetHotReloadStatus(JSContext* ctx, JSValueConst /*this_val*/,
   return JS_NewStringLen(ctx, out.data(), out.size());
 }
 
+// TASK-20260503-04 D.4 — vx_devtool_get_console_log_drain() native binding.
+// The host-side drain endpoint that console_panel.js polls every 200 ms.
+// Recovers ConsoleLogBuffer* via DomBindings (set by Application after
+// Load via SetConsoleLogBuffer). When unattached returns the empty
+// envelope so panel-side JSON.parse never throws.
+JSValue VxDevtoolGetConsoleLogDrain(JSContext* ctx, JSValueConst /*this_val*/,
+                                    int /*argc*/, JSValueConst* /*argv*/) {
+  auto* bindings = static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+  vx::devtool::console::ConsoleLogBuffer* buf =
+      bindings ? bindings->console_log_buffer() : nullptr;
+  if (buf == nullptr) {
+    static constexpr char kEmpty[] =
+        "{\"messages\":[],\"truncated\":false,\"dropped_count\":0}";
+    return JS_NewStringLen(ctx, kEmpty, sizeof(kEmpty) - 1);
+  }
+  std::string env = buf->DrainAsJson();
+  return JS_NewStringLen(ctx, env.data(), env.size());
+}
+
+// TASK-20260503-04 D.4 — vx_console_eval(source) native binding.
+// console_panel.js calls this with the user-typed REPL line. Returns a
+// JSON envelope {"status":N,"value":"...","interrupted":<bool>} that the
+// panel JS parses to colour the result line. Forwards the eval to the
+// isolated console_script_engine_ which has the default-safe interrupt
+// budget pre-applied (T1 mitigation dim 1+3); a runaway script returns
+// status==1 + interrupted==true. When console_engine is unattached
+// returns status==4 (NOT_ATTACHED) — same code as the public C ABI's
+// VX_CONSOLE_EVAL_NOT_ATTACHED to keep parity.
+JSValue VxConsoleEval(JSContext* ctx, JSValueConst /*this_val*/, int argc,
+                      JSValueConst* argv) {
+  auto* bindings = static_cast<DomBindings*>(JS_GetContextOpaque(ctx));
+  vx::devtool::console::ConsoleEngine* engine =
+      bindings ? bindings->console_engine() : nullptr;
+  if (engine == nullptr || argc < 1) {
+    static constexpr char kNotAttached[] =
+        "{\"status\":4,\"value\":\"\",\"interrupted\":false}";
+    return JS_NewStringLen(ctx, kNotAttached, sizeof(kNotAttached) - 1);
+  }
+  std::size_t src_len = 0;
+  const char* src = JS_ToCStringLen(ctx, &src_len, argv[0]);
+  if (src == nullptr) {
+    static constexpr char kSyntax[] =
+        "{\"status\":2,\"value\":\"source coercion failed\","
+        "\"interrupted\":false}";
+    return JS_NewStringLen(ctx, kSyntax, sizeof(kSyntax) - 1);
+  }
+  StringView source(src, src_len);
+  auto r = engine->EvalGlobal(source, StringView("<console>"));
+  JS_FreeCString(ctx, src);
+
+  std::string out;
+  out.reserve(64);
+  if (r.ok()) {
+    out.append("{\"status\":0,\"value\":\"");
+    // Reuse the dom_bindings JSON-escape helper inline. Console eval
+    // results can contain quotes/backslashes/newlines (e.g. JSON.stringify
+    // round-trip), so escape defensively before embedding in the envelope.
+    const std::string& v = r.value();
+    for (unsigned char c : v) {
+      switch (c) {
+        case '"':  out.append("\\\""); break;
+        case '\\': out.append("\\\\"); break;
+        case '\n': out.append("\\n"); break;
+        case '\r': out.append("\\r"); break;
+        case '\t': out.append("\\t"); break;
+        default:
+          if (c < 0x20) {
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "\\u%04x", c);
+            out.append(hex);
+          } else {
+            out.push_back(static_cast<char>(c));
+          }
+      }
+    }
+    out.append("\",\"interrupted\":false}");
+  } else {
+    const bool interrupted = engine->WasInterrupted();
+    // status mapping aligns with vx_console_eval_status enum
+    //   1 INTERRUPTED, 2 SYNTAX/RUNTIME — split inferred from
+    //   StatusCode::kAborted vs others.
+    const int status = interrupted ? 1 : 3;
+    out.append("{\"status\":");
+    char num_buf[16];
+    std::snprintf(num_buf, sizeof(num_buf), "%d", status);
+    out.append(num_buf);
+    out.append(",\"value\":\"");
+    const std::string& msg = r.status().message();
+    for (unsigned char c : msg) {
+      switch (c) {
+        case '"':  out.append("\\\""); break;
+        case '\\': out.append("\\\\"); break;
+        case '\n': out.append("\\n"); break;
+        case '\r': out.append("\\r"); break;
+        case '\t': out.append("\\t"); break;
+        default:
+          if (c < 0x20) {
+            char hex[8];
+            std::snprintf(hex, sizeof(hex), "\\u%04x", c);
+            out.append(hex);
+          } else {
+            out.push_back(static_cast<char>(c));
+          }
+      }
+    }
+    out.append("\",\"interrupted\":");
+    out.append(interrupted ? "true" : "false");
+    out.push_back('}');
+  }
+  return JS_NewStringLen(ctx, out.data(), out.size());
+}
+
 }  // namespace
 
 void RegisterDevtoolBindings(JSContext* ctx) {
@@ -1019,6 +1157,18 @@ void RegisterDevtoolBindings(JSContext* ctx) {
       ctx, global, "vx_devtool_get_hot_reload_status",
       JS_NewCFunction(ctx, VxDevtoolGetHotReloadStatus,
                       "vx_devtool_get_hot_reload_status", 0));
+  // TASK-20260503-04 D.4 — Console host bindings (drain + eval). These
+  // share the DomBindings opaque-ptr channel because the devtool ctx
+  // already uses it for the 3 query-only endpoints above; creative §C3
+  // path 2 + DomBindings.h header comment explains why this is preferred
+  // over a separate opaque slot or JS_NewCFunctionData closure.
+  JS_SetPropertyStr(
+      ctx, global, "vx_devtool_get_console_log_drain",
+      JS_NewCFunction(ctx, VxDevtoolGetConsoleLogDrain,
+                      "vx_devtool_get_console_log_drain", 0));
+  JS_SetPropertyStr(
+      ctx, global, "vx_console_eval",
+      JS_NewCFunction(ctx, VxConsoleEval, "vx_console_eval", 1));
   JS_FreeValue(ctx, global);
 }
 

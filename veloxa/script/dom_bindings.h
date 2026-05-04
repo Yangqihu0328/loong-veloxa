@@ -19,6 +19,11 @@ class HotReloadManager;  // forward declare for same reason as PerfOverlay
                          // (TASK-20260503-01 C.3.1).
 }
 
+namespace vx::devtool::console {
+class ConsoleEngine;     // forward declare — vx_devtool dependency lands
+class ConsoleLogBuffer;  // via vx_script→vx_devtool conditional link only.
+}  // namespace vx::devtool::console
+
 namespace vx::script {
 
 class DomBindings {
@@ -73,6 +78,24 @@ class DomBindings {
   void SetHotReloadManager(vx::devtool::hot_reload::HotReloadManager* mgr);
   vx::devtool::hot_reload::HotReloadManager* hot_reload_manager() const;
 
+  // TASK-20260503-04 D.4 — Console host data channel. The DevTool panel
+  // JS (inspector_panel.js + console_panel.js) runs inside the
+  // devtool_script_engine_ ctx and needs to invoke two host endpoints:
+  //   vx_devtool_get_console_log_drain() — drain the host buffer
+  //   vx_console_eval(source)            — eval inside console_script_engine_
+  // Both endpoints recover their state via JS_GetContextOpaque(ctx) →
+  // DomBindings → console_engine() / console_log_buffer(), reusing the
+  // exact channel that already serves vx_devtool_get_dom_json /
+  // vx_view_get_perf_stats / vx_devtool_get_hot_reload_status. This
+  // sidesteps the opaque-slot conflict noted in creative §C3 (we do
+  // NOT install a separate ConsoleLogBuffer* opaque on the devtool
+  // ctx — the buffer ptr lives inside DomBindings instead). nullptr
+  // clears; DEVTOOL=OFF: no-op (forward-declared types stay incomplete).
+  void SetConsoleEngine(vx::devtool::console::ConsoleEngine* engine);
+  vx::devtool::console::ConsoleEngine* console_engine() const;
+  void SetConsoleLogBuffer(vx::devtool::console::ConsoleLogBuffer* buffer);
+  vx::devtool::console::ConsoleLogBuffer* console_log_buffer() const;
+
   // Forward declaration is public so internal free-function callbacks
   // (in the .cc file's anonymous namespace) can name the type when
   // receiving a pointer from DomBindingsInternal. The definition and
@@ -101,6 +124,14 @@ class DomBindings {
 // Pre-condition: caller must have already invoked DomBindings::Bind()
 // on the same ctx (RegisterDevtoolBindings depends on the
 // ContextOpaque link to recover the target Document at call time).
+//
+// TASK-20260503-04 D.4 — RegisterDevtoolBindings now ALSO installs
+// vx_devtool_get_console_log_drain + vx_console_eval (host endpoints
+// for console_panel.js). They recover their state via DomBindings'
+// console_log_buffer() / console_engine() getters, so the caller must
+// have set those via SetConsoleEngine/SetConsoleLogBuffer before
+// console_panel.js runs (Application::LoadDevtoolDocument does this
+// right after the engine + buffer are created). DEVTOOL=OFF: stub.
 void RegisterDevtoolBindings(JSContext* ctx);
 
 }  // namespace vx::script

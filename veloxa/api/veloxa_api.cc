@@ -20,6 +20,8 @@
 
 #ifdef VX_BUILD_DEVTOOL
 #include "veloxa/core/dom/serializer.h"
+#include "veloxa/devtool/console/console_bindings.h"
+#include "veloxa/devtool/console/console_engine.h"
 #include "veloxa/devtool/hot_reload/hot_reload_manager.h"
 #include "veloxa/devtool/inspector/inspector_data.h"
 #endif
@@ -434,6 +436,126 @@ VxResult vx_view_set_pipeline_hooks(VxView* view,
    * caller knows update_manager_ wasn't ready and can either call
    * vx_view_update first or rely on the lazy attach. */
   return ok ? VX_OK : VX_ERROR_INVALID_STATE;
+}
+
+/* ── DevTool Console JS REPL (TASK-20260503-04 D.4) ─────────────── */
+
+VxResult vx_view_eval_console(VxView* view, const char* source,
+                              uint32_t source_len, char* out_buf,
+                              uint32_t out_buf_size,
+                              vx_console_eval_status* out_status) {
+  if (!view || !source || !out_buf) return VX_ERROR_NULL_PARAM;
+#ifndef VX_BUILD_DEVTOOL
+  /* A14 acceptance: no DevTool subsystem linked → no Console either. */
+  (void)source_len;
+  if (out_buf_size > 0) out_buf[0] = '\0';
+  if (out_status) *out_status = VX_CONSOLE_EVAL_NOT_ATTACHED;
+  return VX_ERROR_INVALID_STATE;
+#else
+  if (out_buf_size == 0) {
+    if (out_status) *out_status = VX_CONSOLE_EVAL_BUFFER_TOO_SMALL;
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+  out_buf[0] = '\0';
+
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  auto* engine = app->console_script_engine();
+  /* lazy-attach: DevTool not currently attached (or Init failed) → emit
+   * NOT_ATTACHED without touching the engine. Same contract as
+   * vx_view_serialize_dom_json's nullptr Document branch. */
+  if (engine == nullptr) {
+    if (out_status) *out_status = VX_CONSOLE_EVAL_NOT_ATTACHED;
+    return VX_ERROR_INVALID_STATE;
+  }
+
+  vx::StringView src(source, source_len);
+  auto r = engine->EvalGlobal(src, vx::StringView("<vx_console_eval>"));
+  /* T1 mitigation status mapping: WasInterrupted snapshot is the
+   * authoritative INTERRUPTED signal (set by the InterruptCallback before
+   * QuickJS surfaces the exception). Other failure paths fall under
+   * SYNTAX/RUNTIME — we collapse them to RUNTIME because QuickJS does
+   * not split syntax-vs-runtime cleanly in the Status path; the message
+   * inside out_buf preserves the diagnostic for caller inspection. */
+  vx_console_eval_status status;
+  std::string text;
+  if (r.ok()) {
+    status = VX_CONSOLE_EVAL_OK;
+    text = r.value();
+  } else if (engine->WasInterrupted()) {
+    status = VX_CONSOLE_EVAL_INTERRUPTED;
+    text = r.status().message();
+  } else {
+    status = VX_CONSOLE_EVAL_RUNTIME_ERROR;
+    text = r.status().message();
+  }
+
+  /* Truncation: caller-visible cap is out_buf_size-1 + trailing NUL.
+   * Truncating mid-UTF-8 is acceptable here because this is a developer-
+   * facing diagnostic buffer (not surfaced through the JSON drain
+   * envelope which has its own UTF-8-safe truncate). Embedders that
+   * need exact bytes should size out_buf generously (>= 4 KiB matches
+   * the per-text drain cap). */
+  const std::size_t copy_len =
+      text.size() < (out_buf_size - 1) ? text.size() : (out_buf_size - 1);
+  std::memcpy(out_buf, text.data(), copy_len);
+  out_buf[copy_len] = '\0';
+
+  if (out_status) *out_status = status;
+  return VX_OK;
+#endif
+}
+
+VxResult vx_view_console_log_drain(VxView* view, char* out_buf,
+                                   uint32_t out_buf_size, uint32_t* out_len) {
+  if (!view || !out_buf || !out_len) return VX_ERROR_NULL_PARAM;
+  /* Empty envelope is the canonical "nothing to drain" payload. Used
+   * both by the OFF stub and the lazy-attach (DevTool not loaded) path
+   * so callers can JSON.parse(out_buf) unconditionally. */
+  static constexpr char kEmpty[] =
+      "{\"messages\":[],\"truncated\":false,\"dropped_count\":0}";
+  static constexpr std::size_t kEmptyLen = sizeof(kEmpty) - 1;
+
+#ifndef VX_BUILD_DEVTOOL
+  if (out_buf_size <= kEmptyLen) {
+    if (out_buf_size > 0) out_buf[0] = '\0';
+    *out_len = static_cast<uint32_t>(kEmptyLen);
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(out_buf, kEmpty, kEmptyLen);
+  out_buf[kEmptyLen] = '\0';
+  *out_len = static_cast<uint32_t>(kEmptyLen);
+  return VX_ERROR_INVALID_STATE;
+#else
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  auto* buf = app->console_log_buffer();
+  if (buf == nullptr) {
+    if (out_buf_size <= kEmptyLen) {
+      if (out_buf_size > 0) out_buf[0] = '\0';
+      *out_len = static_cast<uint32_t>(kEmptyLen);
+      return VX_ERROR_OUT_OF_MEMORY;
+    }
+    std::memcpy(out_buf, kEmpty, kEmptyLen);
+    out_buf[kEmptyLen] = '\0';
+    *out_len = static_cast<uint32_t>(kEmptyLen);
+    return VX_ERROR_INVALID_STATE;
+  }
+  std::string env = buf->DrainAsJson();
+  const std::size_t needed = env.size();
+  if (out_buf_size <= needed) {
+    /* Double-call protocol — leave buffer empty, report needed. The drain
+     * already cleared the buffer though, so the caller will lose this
+     * batch on a too-small buffer. Embedders should size out_buf >= 64 KiB
+     * (matches the worst-case envelope ≈ 1000 entries × 4 KiB + JSON
+     * scaffolding ≈ 4 MiB upper bound). */
+    if (out_buf_size > 0) out_buf[0] = '\0';
+    *out_len = static_cast<uint32_t>(needed);
+    return VX_ERROR_OUT_OF_MEMORY;
+  }
+  std::memcpy(out_buf, env.data(), needed);
+  out_buf[needed] = '\0';
+  *out_len = static_cast<uint32_t>(needed);
+  return VX_OK;
+#endif
 }
 
 /* ── Info ───────────────────────────────────────────────────────── */

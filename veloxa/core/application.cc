@@ -362,25 +362,43 @@ bool Application::LoadDevtoolDocument(f32 devtool_width) {
       // the inspector_panel.js status indicator (C.3.1) can read
       // tracked_count + last_error via vx_devtool_get_hot_reload_status.
       devtool_dom_bindings_->SetHotReloadManager(hot_reload_manager_.get());
-      script::RegisterDevtoolBindings(devtool_script_engine_->context());
-      // TASK-20260503-04 D.1 + D.2 — bring up Console isolated runtime
-      // BEFORE evaluating inspector_panel.js so the panel script can
-      // probe (typeof console / typeof vx_devtool_get_console_log_drain)
-      // without race. The buffer lives alongside the engine for matching
-      // lifetime. Init() failure is non-fatal for the DevTool UI — the
-      // inspector panel still works; only the Console tab degrades
-      // (REPL eval will return NOT_ATTACHED at the C ABI layer in D.4).
+      // TASK-20260503-04 D.1 + D.2 + D.4 — bring up Console isolated
+      // runtime BEFORE RegisterDevtoolBindings + EvalGlobal of
+      // inspector_panel.js. Order matters:
+      //   (a) ConsoleEngine + ConsoleLogBuffer must exist first
+      //   (b) DomBindings.SetConsoleEngine/SetConsoleLogBuffer publishes
+      //       the host data channel that RegisterDevtoolBindings's two
+      //       new console endpoints (D.4 vx_devtool_get_console_log_drain
+      //       + vx_console_eval) recover via JS_GetContextOpaque
+      //   (c) RegisterConsoleBindings on the console_script_engine ctx
+      //       installs the user-side console.log/error/warn → buffer push
+      //   (d) RegisterDevtoolBindings on the devtool_script_engine ctx
+      //       installs the host-side drain + eval that panel JS calls
+      // ConsoleEngine::Init failure is non-fatal — the inspector panel
+      // still works; the Console tab degrades to NOT_ATTACHED at both
+      // the JS and C ABI layers (panel JS shows the binding-missing
+      // meta line; C API returns VX_CONSOLE_EVAL_NOT_ATTACHED).
       console_script_engine_ =
           std::make_unique<vx::devtool::console::ConsoleEngine>();
       auto console_init = console_script_engine_->Init();
       if (console_init.ok()) {
         console_log_buffer_ =
             std::make_unique<vx::devtool::console::ConsoleLogBuffer>();
+        // (b) publish host data channel before host bindings install.
+        devtool_dom_bindings_->SetConsoleEngine(console_script_engine_.get());
+        devtool_dom_bindings_->SetConsoleLogBuffer(console_log_buffer_.get());
+        // (c) user-side bindings on the console_script_engine ctx.
         vx::devtool::console::RegisterConsoleBindings(
             console_script_engine_->context(), console_log_buffer_.get());
       } else {
         console_script_engine_.reset();
       }
+      // (d) host-side bindings on the devtool_script_engine ctx — the
+      // 5 endpoints (3 existing + 2 new console) all share DomBindings'
+      // opaque slot. Safe to call even when ConsoleEngine::Init failed:
+      // the console endpoints will see null engine/buffer and emit the
+      // NOT_ATTACHED envelope, keeping panel JS JSON.parse robust.
+      script::RegisterDevtoolBindings(devtool_script_engine_->context());
       auto eval = devtool_script_engine_->EvalGlobal(
           StringView(devtool::resources::kInspectorPanelJs),
           StringView("inspector_panel.js"));

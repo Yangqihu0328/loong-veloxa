@@ -270,6 +270,18 @@ if(VX_BUILD_DEVTOOL)
   target_compile_definitions(devtool_api_test PRIVATE VX_BUILD_DEVTOOL)
 endif()
 
+# TASK-20260503-04 D.4: Console JS REPL public C ABI tests
+# (vx_view_eval_console + vx_view_console_log_drain). Mirrors
+# devtool_api_test's #ifdef-driven dual-path strategy: ON path exercises
+# the real engine via vx_view_attach_devtool + lazy-attach reverse probe;
+# OFF path validates the A14 stub guard returns INVALID_STATE without
+# touching DevTool symbols.
+vx_add_test(console_api_test api/console_api_test.cc)
+target_link_libraries(console_api_test PRIVATE vx_api vx_platform)
+if(VX_BUILD_DEVTOOL)
+  target_compile_definitions(console_api_test PRIVATE VX_BUILD_DEVTOOL)
+endif()
+
 vx_add_test(quickjs_engine_test script/quickjs_engine_test.cc)
 target_link_libraries(quickjs_engine_test PRIVATE vx_script)
 
