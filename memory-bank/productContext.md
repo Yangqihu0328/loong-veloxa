@@ -36,25 +36,36 @@
 4. 引擎在目标硬件上渲染 60fps 流畅界面
 5. 应用通过 API 与 UI 双向通信（数据绑定/事件回调）
 
-## 已实现的核心功能（截至 TASK-20260414-01）
+## 已实现的核心功能（截至 TASK-20260504-01 — 含 MVP 档对照）
+
+> **MVP 档详细定义：** [`docs/specs/2026-05-04-mvp-scope.md`](../docs/specs/2026-05-04-mvp-scope.md)
 
 
-| 功能                       | 状态  | 备注                                                                                                                               |
-| ------------------------ | --- | -------------------------------------------------------------------------------------------------------------------------------- |
-| HTML 解析器                 | ✅   | 子集 HTML5，隐式关闭规则                                                                                                                  |
-| CSS 引擎（~45 属性）           | ✅   | 选择器匹配、层叠、继承                                                                                                                      |
-| Block/Inline/Flex 布局     | ✅   | CSS Flexbox Level 1 §9                                                                                                           |
-| 软件渲染器                    | ✅   | 覆盖率光栅化、Display List                                                                                                              |
-| 事件系统                     | ✅   | W3C DOM Events 三阶段，:hover/:active/:focus                                                                                         |
-| 脏区更新                     | ✅   | DisplayList diff                                                                                                                 |
-| CSS Transitions          | ✅   | 单属性过渡                                                                                                                            |
-| C API                    | ✅   | 不透明指针 ABI                                                                                                                        |
-| QuickJS 脚本引擎             | ✅   | EvalGlobal、32MiB 内存限制                                                                                                            |
-| border-radius 渲染         | ✅   | FillRoundedRect + StrokeRoundedRect                                                                                              |
-| FreeType + HarfBuzz 字体渲染 | ✅   | 真实字形光栅化、GlyphCache                                                                                                               |
-| PNG/JPEG 图片支持            | ✅   | 解码 + 缓存 + DrawImage                                                                                                              |
-| JS-DOM 绑定                | ✅   | getElementById、属性、style proxy、事件                                                                                                 |
-| **SDL2 实时窗口后端**          | ✅   | TASK-20260425-01；`Sdl2WindowSurface` + `Sdl2EventLoop`；WSLg/桌面真窗口 + 输入事件桥接；为 hot-reload / inspector / FPS overlay 等 DevTool 解锁前置 |
+| 功能                       | 状态  | MVP 档 | 备注                                                                                                                               |
+| ------------------------ | --- | :-: | -------------------------------------------------------------------------------------------------------------------------------- |
+| HTML 解析器                 | ✅   | A | 子集 HTML5，隐式关闭规则                                                                                                                  |
+| CSS 引擎（~45 属性）           | ✅   | A | 选择器匹配、层叠、继承                                                                                                                      |
+| Block/Inline/Flex 布局     | ✅   | A | CSS Flexbox Level 1 §9                                                                                                           |
+| 软件渲染器                    | ✅   | A | 覆盖率光栅化、Display List                                                                                                              |
+| 事件系统                     | ✅   | B | W3C DOM Events 三阶段，:hover/:active/:focus                                                                                         |
+| 脏区更新                     | ✅   | A | DisplayList diff                                                                                                                 |
+| CSS Transitions          | ✅   | B | 单属性过渡                                                                                                                            |
+| C API                    | ✅   | A | 不透明指针 ABI                                                                                                                        |
+| QuickJS 脚本引擎 + Interrupt Handler T1 mitigation | ✅   | B | EvalGlobal、32MiB 内存限制、SetEvalInterruptBudget opt-in 执行预算（TASK-20260503-05 闭环）|
+| border-radius 渲染         | ✅   | A | FillRoundedRect + StrokeRoundedRect                                                                                              |
+| FreeType + HarfBuzz 字体渲染 | ✅   | B | 真实字形光栅化、GlyphCache                                                                                                               |
+| PNG/JPEG 图片支持            | ✅   | B | 解码 + 缓存 + DrawImage                                                                                                              |
+| JS-DOM 绑定                | ⚠️ 部分 | B | getElementById、属性、style proxy、事件；**R2 三连补全 gap**：Element.children / addEventListener / innerHTML setter（B-G1+G2+G3 / 详见 `creative-mvp-B.md §6.1`）|
+| **SDL2 实时窗口后端**          | ✅   | A | TASK-20260425-01；`Sdl2WindowSurface` + `Sdl2EventLoop`；WSLg/桌面真窗口 + 输入事件桥接；为 hot-reload / inspector / FPS overlay 等 DevTool 解锁前置 |
+| **DevTool Phase A · Inspector** | ✅ | B | 双 Document + 跨文档 DOM JSON + T3 redaction（TASK-20260502-01 闭环）|
+| **DevTool Phase B · Performance Overlay** | ✅ | B | 5 PipelineHooks + 60 帧 ring buffer + F11 HUD + dirty rect 边框可视化（TASK-20260502-02 闭环 / **B-G4 持续 invalidate gap** 待补）|
+| **DevTool Phase C · Hot Reload** | ✅ | B | Linux inotify + CSS-only 增量重载 + T2 8 步守卫（TASK-20260503-01 闭环）|
+| **DevTool Phase D · Console JS REPL** | ✅ | B | Isolated JSRuntime + capability allowlist + console.log/warn/error bridge + T1 5 维度 mitigation + ` hotkey toggle / **DevTool 4 件套全闭环** 🎉（TASK-20260503-04 闭环）|
+
+### 待补 gap（按 MVP 档分类）
+
+- **MVP-B（4 项 gap）**：DomBindings R2 三连补全（B-G1+G2+G3）+ Performance Overlay 持续 invalidate（B-G4）/ 总估时 plan ×0.6 ~2.5-6 h / 详见 [`creative-mvp-B.md`](creative/creative-mvp-B.md)
+- **MVP-C（9 项 gap）**：核心 P0 = G1 OpenGL ES 硬件渲染 (~30-60+ h) + G2 DRM/KMS 嵌入式后端 (~10-20 h) / 总估时 plan ×0.6 ~40-80 h / 详见 [`creative-mvp-C.md`](creative/creative-mvp-C.md)
 
 
 ## 非目标

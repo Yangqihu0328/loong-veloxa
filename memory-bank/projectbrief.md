@@ -29,3 +29,16 @@ Loong Veloxa（龙·疾风）
 - 车载 HMI 开发者
 - 嵌入式 UI 开发者
 - IoT 设备面板开发者
+
+## MVP 范围参考（V1=D 三档分级）
+
+本项目采用**三档分级 MVP-A/B/C**，每档对应一组验收标准 + 完成度 + 已知 gap + 估时 plan ×0.6：
+
+| MVP 档 | 完成度 | 代表性场景 | 与核心目标对应 |
+|:-:|:-:|---|---|
+| **MVP-A 最小可运行 demo** | ✅ **100%** | 嵌入式 boot 屏 / 简单状态显示 | 核心目标 #4 + #5 |
+| **MVP-B 桌面 dogfood 完整** | ⚠️ **~90%** | HMI 原型开发 / 第三方桌面 evaluation | + 核心目标 #3 |
+| **MVP-C 真嵌入式部署** | 🟡 **~70%** | 车载中控 / 仪表盘 / 工业 HMI / IoT 面板 / 医疗设备 | + 核心目标 #1 + #2（嵌入式 Linux + 硬件加速 60fps）|
+
+**详细 MVP 定义、验收清单、9 项 gap 路径、推荐立项顺序：** [`docs/specs/2026-05-04-mvp-scope.md`](../docs/specs/2026-05-04-mvp-scope.md)
+**各档详细设计：** [`memory-bank/creative/creative-mvp-A.md`](creative/creative-mvp-A.md) + [`creative-mvp-B.md`](creative/creative-mvp-B.md) + [`creative-mvp-C.md`](creative/creative-mvp-C.md)

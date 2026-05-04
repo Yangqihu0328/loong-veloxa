@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-> **TASK-20260504-01 规划完成（2026-05-04 ~17:50）** — 阶段：**规划中**（VAN ✅ + Plan ✅ / spec + plan 已落盘 / 11/11 决策 all_recommended 锁定 / 等待 `/creative`）。详细见下方任务段。
+> **TASK-20260504-01 蓝图主交付物落盘完成（2026-05-04 ~19:30）** — 阶段：**蓝图主交付物落盘完成**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize 全量同步 ✅ / 5 commits 累计 / 等待 `/reflect`）。详细见下方任务段。
 
-### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— 🟢 规划完成 2026-05-04 ~17:50
+### TASK-20260504-01：MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— 🟢 蓝图主交付物落盘完成 2026-05-04 ~19:30
 
-- **当前阶段：** **规划中**（VAN ✅ + Plan ✅ + Phase 0 7 子段 grep 实证 ✅ + spec 落盘 ~480 行 + plan 落盘 ~440 行 / 11/11 决策 all_recommended 锁定 / 等待 `/creative`）
+- **当前阶段：** **蓝图主交付物落盘完成**（VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize ✅ / 5 commits / Level 4 V2=a 蓝图变体「广义构建完成」语义 / 等待 `/reflect`）
 - **创建日期：** 2026-05-04
 - **复杂度级别：** **Level 4 蓝图（V2=a 完整变体）** — 沿用 [TASK-20260430-04 DevTool 三件套蓝图范式](33afb7c)（systemPatterns「Level 4 蓝图任务 V2=a 工作流变体」段）/ 含 creative ×N（预期 MVP-A/B/C 三档分级各一篇 / 视 plan 阶段决策）/ **跳过 `/build`**（纯文档蓝图）
 - **焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
@@ -59,13 +59,20 @@
 - plan `docs/plans/2026-05-04-mvp-scope.md` ✅（~440 行 / 10 段 / 5 commits 子任务分解 + commit message 范本 + 2 Checkpoint + 11 systemPatterns 协同度自我对照 + 反复模式预防 0/7 预期）
 - Phase 0 7 子段 grep 实证 ✅（§0.1 ctest baseline / §0.2 文件名冲突 / §0.3-0.4 上游素材 / §0.5 29 specs audit / §0.6 P3 候选清单 / §0.7 反复模式 #1 守门）
 
-**需要 creative 阶段的组件（B2=3 篇）：**
+**Creative 阶段产出（B2=3 篇 / 落盘完成）：**
 
-- ⏳ `memory-bank/creative/creative-mvp-A.md`（~300-400 行 / commit 2 / 基线档详细设计）
-- ⏳ `memory-bank/creative/creative-mvp-B.md`（~400-500 行 / commit 3 / 桌面 dogfood 完整档详细设计 + 4 项 gap 补全方案）
-- ⏳ `memory-bank/creative/creative-mvp-C.md`（~500-600 行 / commit 4 / 真嵌入式部署档详细设计 + 9 项 gap 补全方案）
+- ✅ `memory-bank/creative/creative-mvp-A.md`（270 行 / commit 2 `6b7a298` / 10 段 / 3 方案 + B 主推 + C 长期增量 + 9 维度对比表 + commit body Source 段标准范本 + 5 systemPatterns 协同度自检 100%）
+- ✅ `memory-bank/creative/creative-mvp-B.md`（470 行 / commit 3 `acca25a` / 11 段 / 3 方案 + C 按类型分组 + 9 维度对比表 + DomBindings R2 三连 API 设计 + 路径决策表 + dogfood 工作流完整链路图 + 7 systemPatterns 协同度自检 100%）
+- ✅ `memory-bank/creative/creative-mvp-C.md`（524 行 / commit 4 `6a41e85` / 11 段 / 3 方案 + C 分层并行 + 4 层时序图 + 9 项 gap 详细补全方案 + G1 4 Phase + G2 实施范围 + 5 项新威胁面 T9-T13 + 11 systemPatterns 协同度自检 100%）
 
-**待 finalize（commit 5）：** README + projectbrief + productContext + MB 三件套全量同步
+**Finalize 阶段产出（commit 5 - 待落盘）：**
+
+- ✅ README.md：「项目状态」段加「MVP 档对照」子段 + 路线图按 MVP-A/B/C 分层重写（短期/中期/长期主线/长期次线/超 MVP 5 段）+ ctest baseline 数字更新 1284/1091 + DevTool 4 件套表加 Phase D 行 + T1 mitigation 安全设计段 + Phase D + MVP 蓝图 2 项里程碑入表
+- ✅ projectbrief.md：加「MVP 范围参考」段（含三档对照表 + 与核心目标对应映射 + 链接到 spec + 链接到 3 篇 creative）
+- ✅ productContext.md：已实现表加「MVP 档」列对照（14 行 + DevTool A/B/C/D 4 行 = 18 行）+ 待补 gap 段（按 MVP 档分类）
+- ⏳ MB 三件套阶段「规划中」→「蓝图主交付物落盘完成」（Level 4 V2=a 蓝图变体「广义构建完成」语义 / 沿用 main.mdc Level 4 蓝图 V2=a 工作流变体段）
+
+**Build 阶段：** **跳过**（V2=a 蓝图变体）
 
 #### 11 systemPatterns 协同度自我对照
 

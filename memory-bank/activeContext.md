@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）/ VAN ✅ + Plan ✅ / spec 落盘 ~480 行 + plan 落盘 ~440 行 + Phase 0 7 子段 grep 实证 ✅ / 11/11 决策 1 次 AskQuestion all_recommended 锁定 / 等待 `/creative`（3 篇 — MVP-A/B/C 各一篇）
+**蓝图主交付物落盘完成** — TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）/ VAN ✅ + Plan ✅ + Creative ×3 ✅ + Finalize 全量同步 ✅ / spec 480 行 + plan 440 行 + creative-mvp-A 270 行 + creative-mvp-B 470 行 + creative-mvp-C 524 行 + README + projectbrief + productContext 同步 / 11/11 决策 1 次 AskQuestion all_recommended 锁定 / 等待 `/reflect` 启动反思阶段（V2=a 蓝图变体跳过 `/build`）
 
 **任务焦点：** `docs/specs/2026-05-04-mvp-scope.md` 新建（正式定义 Veloxa MVP 范围 + 验收清单 + 三档分级矩阵）+ 同步候选 `README.md` / `memory-bank/projectbrief.md` / `memory-bank/productContext.md`（取决于 V3+V5 plan 阶段决策）
 
@@ -28,12 +28,18 @@
 - plan 落盘 ✅ `docs/plans/2026-05-04-mvp-scope.md`（~440 行 / 10 段 / 5 commits 子任务分解）
 - Phase 0 7 子段 grep 实证 ✅（文件名冲突 0 / 上游素材完整 / activeContext P3 候选清单 0 omission 0 duplicate / 反复模式 #1 守门）
 
-**需要 creative 阶段的组件（3 篇）：**
-- ⏳ creative-mvp-A.md（基线档详细设计 / commit 2）
-- ⏳ creative-mvp-B.md（桌面 dogfood 完整档 + 4 项 gap 补全方案 / commit 3）
-- ⏳ creative-mvp-C.md（真嵌入式部署档 + 9 项 gap 补全方案 / commit 4）
+**Creative 阶段产出（3 篇 / commits 2/3/4）：**
+- ✅ creative-mvp-A.md（基线档详细设计 / 270 行 / commit 2 `6b7a298`）
+- ✅ creative-mvp-B.md（桌面 dogfood 完整档 + 4 项 gap 补全方案 / 470 行 / commit 3 `acca25a`）
+- ✅ creative-mvp-C.md（真嵌入式部署档 + 9 项 gap 补全方案 / 524 行 / commit 4 `6a41e85`）
 
-**下一步：** 用户调用 `/creative` 启动 creative ×3 阶段（MVP-A → MVP-B → MVP-C 串行 3 commits）
+**Finalize 阶段产出（commit 5）：**
+- ✅ README.md 加「MVP 档对照」子段 + 路线图按 MVP-A/B/C 分层重写 + ctest baseline 数字更新 1284/1091 + DevTool 4 件套表加 Phase D 行 + T1 mitigation 安全设计段
+- ✅ projectbrief.md 加「MVP 范围参考」段 + 链接到 spec + 三档 + 核心目标对应
+- ✅ productContext.md 已实现表加「MVP 档」列对照 + DevTool A/B/C/D 4 行 + 待补 gap 段（按 MVP 档分类）
+- ✅ MB 三件套阶段「规划中」→「蓝图主交付物落盘完成」(Level 4 V2=a 蓝图变体「广义构建完成」语义)
+
+**下一步：** 用户调用 `/reflect` 启动反思阶段（V2=a 蓝图变体跳过 `/build`）
 
 **上次归档闭环：** TASK-20260503-04 DevTool Phase D · Console JS REPL ✅（详见下方「上次任务（已归档闭环）」段）
 
