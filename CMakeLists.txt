@@ -14,6 +14,14 @@ option(VX_PLATFORM_SDL2 "Build SDL2 platform backend (window + input)" OFF)
 option(VX_BUILD_DEVTOOL "Build DevTool subsystem" OFF)
 set(VX_LOG_LEVEL 0 CACHE STRING "Minimum log level (0=DEBUG,1=INFO,2=WARN,3=ERROR,4=FATAL)")
 
+# Renderer backend selector (TASK-20260505-05 G1.1 / GLES blueprint plan §3.5
+# V5=A): "software" (default, B5=A) keeps SoftwareCanvas as the only canvas
+# implementation; "gles" emits VX_RENDERER_GLES=1 to enable OpenGL ES 3.0+
+# paths under #if-guards. G1.1 only lands the flag — actual GPU dep
+# (find_package + link) lives in graphics subtree and arrives with G1.2
+# GLESDisplay + Sdl2EGLDisplay (D1=A YAGNI / lazy-attach to dep).
+include(${CMAKE_SOURCE_DIR}/cmake/VxRenderer.cmake)
+
 add_compile_definitions(VX_MIN_LOG_LEVEL=${VX_LOG_LEVEL})
 
 # Apply strict warnings only to C++ — FetchContent C deps (e.g. QuickJS) are

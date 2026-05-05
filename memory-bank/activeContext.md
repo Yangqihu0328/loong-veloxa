@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划完成** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅，待 `/build`。
+**构建中** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅ + Build 进行中，按 plan §3 步骤 1-5 实施。
 
 **Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min / 极速区 ~0.5-0.8× 子档）：**
 

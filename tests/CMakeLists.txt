@@ -244,6 +244,18 @@ add_test(NAME devtool_a14_link_closure_smoke
     -DDEVTOOL_ON=${_devtool_a14_flag}
     -P ${CMAKE_SOURCE_DIR}/tests/smoke/devtool_a14_link_closure.cmake)
 
+# TASK-20260505-05 G1.1: VX_RENDERER flag validation smoke.
+# Validates cmake/VxRenderer.cmake against 4 scenarios in stub-probe sub-configs
+# (default + explicit software + explicit gles + invalid-rejected). Stub probe
+# is a 3-line CMakeLists.txt that only includes VxRenderer.cmake, so each
+# sub-config is sub-second; total smoke runtime ~1-2s. Also enforces the
+# top-level CMakeLists.txt actually includes VxRenderer.cmake (drift guard).
+add_test(NAME vx_renderer_flag_check_smoke
+  COMMAND ${CMAKE_COMMAND}
+    -DSOURCE_DIR=${CMAKE_SOURCE_DIR}
+    -DBUILD_DIR_BASE=${CMAKE_BINARY_DIR}
+    -P ${CMAKE_SOURCE_DIR}/tests/smoke/vx_renderer_flag_check.cmake)
+
 # TASK-20260502-01 A.1.8: dogfood headless smoke — attach DevTool over
 # a real C-API view path, drive one Update frame, and assert that
 # inspector_panel.js executes without error AND that
