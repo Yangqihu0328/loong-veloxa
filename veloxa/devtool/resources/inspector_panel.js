@@ -53,19 +53,15 @@ function renderDomTree() {
 }
 
 function setupTabs() {
-  // R2 (Phase A.1.8 暴露) — 当前 DomBindings 缺 Element.children
-  // 集合 / addEventListener / innerHTML setter 三件套；这些缺陷被 spec
-  // §9 R2「dogfood UI 暴露引擎缺陷」清单覆盖，将在独立 P3 任务中修复。
-  // 此处 setupTabs 临时性内联防御：只在 children/addEventListener
-  // 都可用时才挂监听，否则 silent skip，让 renderDomTree 仍能运行
-  // 完成主链路验证（vx_devtool_get_dom_json 闭环）。
+  // TASK-20260505-01: B-G1 (children) + B-G2 (click event mapping) +
+  // B-G3 (innerHTML setter) closed — the typeof / fallback defenses
+  // that previously masked these gaps have been removed. Tab switching
+  // now wires up directly via Element.children + addEventListener('click').
   var tabs = document.getElementById("devtool-tabs");
-  if (!tabs || !tabs.children) return;
+  if (!tabs) return;
   var buttons = tabs.children;
-  if (typeof buttons.length !== "number") return;
   for (var i = 0; i < buttons.length; i++) {
     (function(btn) {
-      if (typeof btn.addEventListener !== "function") return;
       btn.addEventListener("click", function() {
         var which = btn.getAttribute("data-tab");
         for (var j = 0; j < buttons.length; j++) {
