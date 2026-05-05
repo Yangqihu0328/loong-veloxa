@@ -209,15 +209,27 @@ int main() {
    * UpdateManager::SetPipelineHooks contract is single-instance, so this
    * smoke uses the C API path independently of any internal PerfOverlay
    * attachment (LoadDevtoolDocument doesn't currently install one — that
-   * wiring lands in the next subtask + R3 candidates). */
-  static int s_perf_smoke_frames = 0;
+   * wiring lands in the next subtask + R3 candidates).
+   *
+   * TASK-20260505-02 C.1 (B-G4 closure) — on_frame_end now also calls
+   * vx_view_invalidate(view) so the smoke ctest can validate true
+   * multi-frame hook firing instead of the frames=1 ABI-only smoke
+   * previously needed by the dirty_ short-circuit (TASK-20260503-03 P3
+   * #0 closure). The userdata is now a small struct carrying both the
+   * frame counter and the VxView* (C function pointers cannot capture). */
+  struct PerfSmokeUd { int frames; VxView* view; };
+  static PerfSmokeUd s_perf_ud{0, nullptr};
+  s_perf_ud.view = view;
   VxPipelineHooks perf_hooks{};
   perf_hooks.on_frame_end = [](void* ud) {
-    int* counter = static_cast<int*>(ud);
-    if (counter) (*counter)++;
+    auto* state = static_cast<PerfSmokeUd*>(ud);
+    if (state) {
+      state->frames++;
+      vx_view_invalidate(state->view);
+    }
   };
   VxResult set_hooks_rc = vx_view_set_pipeline_hooks(view, &perf_hooks,
-                                                      &s_perf_smoke_frames);
+                                                      &s_perf_ud);
   /* Hooks ARE cached even when set_hooks_rc != VX_OK; lazy-attached on
    * the next EnsureUpdateManager. After load_html/css already ran above,
    * EnsureUpdateManager has been triggered → hooks are live. */
@@ -263,13 +275,14 @@ int main() {
 
   vx_view_run(view);
 
-  /* B.3.2 — verify the perf hooks fired during the run. Auto-quit at 200ms
-   * @ 60fps target FPS = ~12 frames; we accept >=1 to keep the smoke
-   * resilient on slow CI hardware. Print a stable line that ctest can
-   * regex-match (PERF SMOKE: frames=N). */
+  /* B.3.2 — verify the perf hooks fired during the run. With the C.1
+   * vx_view_invalidate force-rearm in on_frame_end, the 300ms autoquit
+   * @ 60fps yields ~10+ frames stably (vs frames=1 in the original
+   * ABI-smoke). ctest regex matches PERF SMOKE: frames=N for N >= 2
+   * (TASK-20260505-02 D.1). */
   std::printf("PERF SMOKE: frames=%d hud_visible=%d\n",
-              s_perf_smoke_frames, vx_view_is_hud_visible(view));
-  if (s_perf_smoke_frames < 1) {
+              s_perf_ud.frames, vx_view_is_hud_visible(view));
+  if (s_perf_ud.frames < 1) {
     std::fprintf(stderr,
                  "ERROR: pipeline hooks did not fire — perf overlay broken\n");
   }

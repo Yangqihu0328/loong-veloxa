@@ -407,21 +407,22 @@ if(VX_PLATFORM_SDL2)
     # Phase B — Performance Overlay smoke (PipelineHooks 5 hooks +
     # vx_view_set_pipeline_hooks ABI smoke; TASK-20260502-02 B.3.2).
     # PASS_REGULAR_EXPRESSION asserts the stable "PERF SMOKE: frames=N"
-    # output line. Note: in dummy SDL + static CSS the
-    # UpdateManager::Update() dirty_ guard short-circuits after the
-    # first frame (transition_mgr_.HasActive() is the only rearm
-    # source), so frames=1 is the natural steady state — it validates
-    # the ABI surface end-to-end, not the multi-frame ring-buffer
-    # aggregation. Multi-frame validation tracked as a P3 candidate
-    # (TASK-20260503-03 build-阶段实测; needs vx_view_invalidate API
-    # or a CSS animation in hello_devtool).
+    # output line.
+    #
+    # TASK-20260505-02 D.1 (B-G4 closure): hello_devtool's on_frame_end
+    # hook now calls vx_view_invalidate() force-rearming dirty_ each
+    # frame, so the 300ms autoquit @ 60 fps yields 10+ frames stably
+    # (实测 frames=18 on dev box). Match >=2 frames to keep resilient
+    # on slow CI hardware while still proving multi-frame behavior
+    # (TASK-20260503-03 P3 #0 closed; previous ABI-only frames=[1-9][0-9]*
+    # smoke replaced).
     add_test(
       NAME hello_devtool_perf_smoke
       COMMAND $<TARGET_FILE:hello_devtool>
     )
     set_tests_properties(hello_devtool_perf_smoke PROPERTIES
       ENVIRONMENT "SDL_VIDEODRIVER=dummy;VX_HELLO_DEVTOOL_AUTOQUIT_MS=300"
-      PASS_REGULAR_EXPRESSION "PERF SMOKE: frames=[1-9][0-9]* hud_visible=1"
+      PASS_REGULAR_EXPRESSION "PERF SMOKE: frames=([2-9]|[1-9][0-9]+) hud_visible=1"
       TIMEOUT 10
     )
 
