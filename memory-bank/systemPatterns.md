@@ -2986,6 +2986,45 @@ TEST_F(RegisterConsoleBindingsTest, CapabilityAllowlistReverseProbe) {
 | TASK-20260504-01 commit 5 | `README.md` 「路线图」段 | **4** | ~5-10 min | 全角 `（` vs 半角 `(` / 全角 `；` vs 半角 `;` |
 | TASK-20260504-01 commit 5 | `productContext.md` 「已实现表」 | 1 | ~30 s | 全角 `；` 中部混入 |
 
+### 重复 anchor 检测协议（VAN/archive 阶段编辑 activeContext / progress 类滚动文档时**必填** / TASK-20260505-04 入库）
+
+> **TASK-20260505-03 反思 §4 #7 实证 + TASK-20260505-04 plan 阶段实测复现** ：activeContext.md / progress.md 这类多任务滚动文档，VAN 阶段从「空闲」转「初始化」时，旧任务的 `## 上次任务` 标题如未被 archive 阶段正确清理 → VAN StrReplace 后会出现 2 个 `## 上次任务` 段 → markdown 渲染异常 + 后续 StrReplace 无法精确定位。
+
+#### 强制操作
+
+VAN / archive 阶段编辑 `activeContext.md` / `progress.md` / `tasks.md` 这类多任务滚动文档**必须**先做重复 anchor 检测：
+
+```bash
+# 对每个目标文件检测重复二级标题
+rg -n "^## 上次任务|^## 当前阶段|^## 当前任务" memory-bank/activeContext.md
+rg -n "^## 上次任务|^## 当前任务" memory-bank/progress.md
+rg -n "^## 当前任务" memory-bank/tasks.md
+```
+
+#### 判读规则
+
+| 检测结果 | 处置 |
+|---|---|
+| 0 match | 文件结构干净 / 可直接 StrReplace |
+| 1 match | 正常状态 / 可 StrReplace |
+| **≥ 2 match 同一标题** | ⚠️ **重复 anchor / 必须先清理** — 在 StrReplace 前用 Read 定位每个 match → 决定保留哪个 / 移除其余（通常保留最新 / 移除/降级旧的）|
+
+#### 反模式
+
+- ❌ VAN 阶段直接 StrReplace 不做重复 anchor 检测（导致 markdown 渲染破坏）
+- ❌ archive 阶段移动旧任务到「上次任务」段未检查是否已存在「上次任务」段
+- ❌ 发现重复后用 `replace_all` 盲目替换（可能误删保留段）
+
+#### 实证
+
+- TASK-20260505-03 VAN commit `8ba512f` 后 `activeContext.md` 出现 2 个「上次任务」段 → reflect 阶段才发现 → archive 阶段补清理（应在 VAN 阶段就 grep 检测）
+- TASK-20260505-04 plan 阶段实测：进入「构建中」前 `progress.md` 已含 1 个「上次任务」段 / `activeContext.md` 已含 1 个 / 两文件均通过检测 ✅（验证协议有效）
+
+#### 交叉引用
+
+- 本段「中文文档编辑安全 audit」(母段) 强制 4 项 mitigation 适用于本子段
+- `.cursor/rules/skills/writing-plans.mdc` 「中文文档 StrReplace 字符类型 audit」段（同源沉淀）
+
 ### 与既有 systemPatterns 协同
 
 - 与 [«StrReplace hunk 隔离 path-level isolation 范式»](#已验证的模式来自-foundation-实现) 协同 — 缩小范围本质即更小 hunk
@@ -3652,6 +3691,121 @@ base 段说明工作流路径（`/van → /plan → /reflect → /archive` / 跳
 - `memory-bank/archive/archive-TASK-20260430-04.md`（first-evidence）
 - `memory-bank/archive/archive-TASK-20260504-01.md`（second-evidence）
 - `memory-bank/reflection/reflection-TASK-20260505-03.md` §3.a #4 + §3.c #4
+
+---
+
+## 视觉链路三件齐识别协议（TASK-20260505-04 入库 / P1 沉淀 — 来源 TASK-20260505-01 反思 §5 #5）
+
+> **TASK-20260505-01 实证**：DevTool dogfood UI 行为依赖 ≥ 3 个独立缺陷修复才能完整工作（Issue#1 frame counter 未递增 + Issue#2 hot reload watcher 路径错配 + Issue#3 panel CSS 未注入），plan 阶段未识别「视觉链路三件齐」性质 → 单缺陷修复 build 后 dogfood 仍不工作 → 第 2/3 个缺陷分别在 reflect 后另立任务 → 跨任务返工 + 用户体验回归延迟。
+
+### 触发条件
+
+plan 阶段涉及 **dogfood UI 行为验收**（用户可见行为 / panel UI / 渲染输出 / 视觉反馈链路）时**必填**视觉链路三件齐识别：
+
+- DevTool / 调试器 / Inspector UI 行为
+- panel JS 注入 / panel CSS 渲染
+- hot reload / live reload 视觉反馈
+- 渲染管线 dogfood（hello / overlay / pipeline hooks 类）
+
+### 强制 3 维度识别
+
+```markdown
+## §X UI 行为验收链路（dogfood 视觉链路三件齐识别）
+
+| # | 维度 | 当前状态 | 缺陷？ | 同任务修复？ |
+|:-:|---|---|:-:|:-:|
+| 1 | **数据通路**（数据源 → 视觉表达）| 是否完整？ | ❌/✅ | Y/N |
+| 2 | **触发通路**（事件源 → 数据更新）| 是否触发？ | ❌/✅ | Y/N |
+| 3 | **样式通路**（CSS / theme / panel UI 注入）| 是否注入？ | ❌/✅ | Y/N |
+```
+
+### 判读规则
+
+| 三维度状态 | plan 处置 |
+|---|---|
+| 全 ✅（无缺陷）| 仅做单维度行为扩展 / 不必视觉链路三件齐协议 |
+| 1 个 ❌ | 单缺陷任务 / 标准 plan |
+| **≥ 2 个 ❌** | ⚠️ **视觉链路三件齐 / 必须单任务集中闭环** — 不可拆分到多任务（避免跨任务返工 + 用户体验延迟）|
+
+### plan §UI 行为验收表是识别工具
+
+`plan §UI 行为验收` 段是视觉链路三件齐识别的强制工具 / 缺该段则视觉链路缺陷会逃逸到 build 阶段。
+
+### 反模式
+
+- ❌ plan 仅写「修复 frame counter 不递增」未识别还需修 hot reload + panel CSS（导致单任务 build 后 dogfood 仍不工作）
+- ❌ 视觉链路三件齐被拆分到 ≥ 2 任务（跨任务返工 / 用户体验延迟）
+- ❌ plan 缺 §UI 行为验收 段（识别工具缺失）
+- ❌ 误以为「修复主缺陷自然顺带其他」（视觉链路三维度独立 / 必须显式识别）
+
+### 实证
+
+- **TASK-20260505-01 first-evidence**：plan §0.11「视觉恢复链路」表识别 3 缺陷 → 单任务集中闭环（frame counter + hot reload + panel CSS 同任务修复）/ build 后 dogfood 一次到位 ✅
+- 范式：plan §0.11「视觉恢复链路」表是本协议范本
+
+### 交叉引用
+
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §5 #5 实证细节
+- `memory-bank/archive/archive-TASK-20260505-01.md`（first-evidence 任务归档）
+- 本文档 「跨决策协同度 100% doudec-evidence」段（同源 plan 阶段决策识别协议）
+
+---
+
+## V2=a 蓝图任务文档密度系数 1.0-1.4×（TASK-20260505-04 入库 / P2 沉淀 — 来源 TASK-20260505-03 反思 §4 #8）
+
+> **TASK-20260505-03 实证 + 累计 3 任务对照**：既有「蓝图任务规模估算公式」段中 spec/plan/creative 行数估算公式偏低 / 实际 V2=a 蓝图任务（含详细决策矩阵 + 子任务规格化 + 跨阶段协议元数据）文档密度比 base 估算高 27%~139% / 系数应升级为 1.0-1.4×。
+
+### 触发条件
+
+V2=a 蓝图任务（V2=纯蓝图 / `/van → /plan → /reflect → /archive` / 跳过 `/build`）的文档行数估算**必填**应用本系数：
+
+- spec（蓝图主交付）
+- plan（蓝图实施计划 + 子任务规格化）
+- creative ×N（V2=a 多 creative 文档）
+- archive（V2=a 任务归档）
+
+### 系数公式
+
+| 文档类型 | base 行数公式 | V2=a 系数 | 实际行数 |
+|---|---|:-:|:-:|
+| **spec** | `N 段 × 30-50 行/段 + M 附录 × 30-100 行/附录` | × 1.0-1.4 | base × 1.0-1.4 |
+| **plan** | `K 子任务 × 50-80 行/子任务 + 80-120 行框架` | × 1.0-1.4 | base × 1.0-1.4 |
+| **creative ×N** | `S 段 × 30-50 行/段 + 50-100 行方案对比表` | × 1.0-1.4 | base × 1.0-1.4 |
+| **archive** | `参考 reflection 行数 × 1.0-1.5` | × 1.0-1.4 | base × 1.0-1.4 × 1.0-1.5 |
+
+### 系数选择依据
+
+- × 1.0：base 估算（决策数 ≤ 5 / 子任务数 ≤ 3 / 跨阶段协议 ≤ 1）
+- × 1.2：中密度（决策数 6-10 / 子任务数 4-10 / 跨阶段协议 2-3）
+- **× 1.4：高密度（决策数 ≥ 11 / 子任务数 ≥ 11 / 跨阶段协议 ≥ 4 / 含 doudec-evidence 类决策矩阵协同协议）**
+
+### 实证（3 任务对照）
+
+| # | 任务 | 决策数 | 子任务数 | 跨阶段协议 | base 估算 | 实际行数 | 系数 |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| 1 | TASK-20260430-04 | 13 | 5 | 2 | ~2200 | ~2790 | **1.27** |
+| 2 | TASK-20260504-01 | 5 | 0 | 1 | ~1100 | ~1410 | **1.28** |
+| 3 | TASK-20260505-03 | 13 | 18 | 4 | ~2700 | ~3030 | **1.12**（plan §8 深浅梯度抑制后）|
+
+**平均系数：** ~1.22 / **范围：** 1.12 - 1.28 / **保守上限：** 1.4（覆盖未来更高密度 V2=a 任务）
+
+### 反模式
+
+- ❌ V2=a 蓝图任务用 base 估算（×1.0）/ 实际超出 27%-39% / plan 估时漂移
+- ❌ 系数固定 ×1.4（过度膨胀 / 适用所有 V2=a 任务 / 与「蓝图任务子任务规格化深浅梯度」协议矛盾）
+- ❌ 未与「V2=a 蓝图任务范式 triple-evidence」段协同（密度系数与范式协议解耦）
+
+### 与既有规则协同
+
+- 与本文档「蓝图任务规模估算公式」段（base 公式来源）协同 / 本系数是 V2=a 子档升级
+- 与本文档「V2=a 蓝图任务范式 triple-evidence」段协同（密度系数适用 triple-evidence 范式）
+- 与 `.cursor/rules/skills/writing-plans.mdc`「蓝图任务子任务规格化深浅梯度」段协同（深浅梯度可降低密度系数 / TASK-05-03 实证 1.12 vs 预期 1.4）
+
+### 交叉引用
+
+- 本文档「蓝图任务规模估算公式」段（base 公式）
+- 本文档「V2=a 蓝图任务范式 triple-evidence」段（V2=a 范式协议）
+- `.cursor/rules/skills/writing-plans.mdc`「蓝图任务子任务规格化深浅梯度」段（密度抑制协议）
 
 ---
 
