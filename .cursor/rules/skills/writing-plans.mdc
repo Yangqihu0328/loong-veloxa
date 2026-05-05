@@ -14,6 +14,69 @@ alwaysApply: false
 
 **保存位置：** `docs/plans/YYYY-MM-DD-[feature-name].md`
 
+## plan/spec docs 落盘即 commit P0 协议（plan 阶段产出物 commit 协议）
+
+> **TASK-20260505-01 提议 → TASK-20260505-02 部分实施 → TASK-20260505-03 首次完整实施 → triple-evidence 已达固化阈值（P0 立即固化）**
+> **TASK-20260505-04 自吃狗粮 → quad-evidence 候选升级**
+
+### 触发条件
+
+`plan` 阶段产出物**必须单 commit 落盘**：
+
+- 涉及 spec 文档创建或修改（蓝图任务 / 实施类任务）
+- 涉及 plan 文档创建（所有 Level 2+ 任务）
+- 涉及 creative ×N 文档创建（V2=a 蓝图 / 蓝图 V2=完整变体）
+- 涉及 Memory Bank 三件套同步更新（`activeContext.md` + `tasks.md` + `progress.md`）
+
+### 强制操作
+
+1. **plan + spec + creative ×N + Memory Bank 单 commit 原子落盘** — 全部 plan 阶段产出物作为单 atomic commit / 0 collateral commit
+2. **build 阶段（如有）零 collateral commit** — 不得有「补 plan 段」/「补 creative 文档」/「补 spec 段」类碎片 commit
+3. **commit body 含完整 8 段范本**（详见下方 §commit body 8 段范本）— 与 `git-workflow.mdc`「蓝图任务 commit body 范本」段对齐
+4. **工作流元任务豁免 spec 子项** — 工作流元任务（如 [TASK-20260503-02](../../memory-bank/archive/archive-TASK-20260503-02.md) + TASK-20260505-04）无独立 spec / 仅 plan + Memory Bank 单 commit / `D7=B 仅 plan` 决策标准化
+
+### commit body 8 段范本
+
+| # | 段名 | 内容 |
+|:-:|---|---|
+| 1 | 任务定位 | 任务 ID + 复杂度 + 工作流变体（V2=a 蓝图 / V2=完整 / 工作流元任务）+ 主交付概要 + 不含 build 标注（如 `[V2=a 蓝图任务 / 跳过 /build]`）|
+| 2 | 决策矩阵 | V/B/D 决策矩阵完整列表（# / 决策项 / 选择 / 理由概要）|
+| 3 | 主交付清单 | spec / plan / creative 文档 + Memory Bank 文件 + 行数 |
+| 4 | 后续实施 | 实施子任务清单 + plan ×0.6 估时 + ×1.3-1.5 buffer（如适用）|
+| 5 | 协议元数据 | 「plan/spec docs 落盘即 commit P0 协议」执行状态（哪些文件单 commit / 0 collateral 验证）|
+| 6 | plan ×0.6 实测系数 | 实测时间 vs plan ×0.6 估时 + 系数 + 子档归属（极速区 / 极致极速区 / 标准区）|
+| 7 | Source 溯源 | 双源：上游 spec / archive / reflection §X 引用 + commit hash（沿用 `git-workflow.mdc` Source 溯源协议）|
+| 8 | 下一步 | `/reflect`（蓝图 V2=a / 工作流元任务跳过 build）/ `/build`（蓝图 V2=完整 / 实施类任务）|
+
+### 反模式
+
+- ❌ 「先 commit plan，等 build 阶段补 spec」分两 commit（破坏原子性 / TASK-05-02 实测 collateral commit `feec51b` ⚠️ 自查发现）
+- ❌ 「creative 文档放到 build 阶段第 1 commit」（违反「plan 阶段产出」边界 / TASK-04-30-04 历史 反模式）
+- ❌ 「Memory Bank 三件套等 build 完再更新」（导致 reflect 阶段 MB drift）
+- ❌ 工作流元任务强制独立 spec（沿用 TASK-03-02 范式 / 工作流元任务豁免）
+- ❌ commit body 缺 Source 溯源 / 缺 plan ×0.6 实测数据（破坏跨任务可追溯性）
+
+### triple-evidence → quad-evidence 实证表
+
+| # | 任务 | 实施程度 | commit | 备注 |
+|:-:|---|---|---|---|
+| 1 | TASK-20260505-01 | 提议 P1 #6 改进建议 | 反思阶段提案 | 提出协议构想 |
+| 2 | TASK-20260505-02 | 部分实施（plan + spec + MB 1 commit / build 阶段 1 collateral commit `feec51b` ⚠️）| `4feda52` | 协议雏形落地 |
+| 3 | TASK-20260505-03 | **首次完整实施 ✅**（plan + spec + creative ×3 + MB ×3 = 8 files 单 commit / 0 collateral）| `1555cf4` | triple-evidence 达固化阈值 |
+| 4 | TASK-20260505-04（本任务）| **自吃狗粮**（plan + MB 单 commit / 工作流元任务豁免 spec）| `02dd40c` | **quad-evidence 候选升级** |
+
+### 与 brainstorm/decision matrix 配合
+
+- **brainstorm 阶段** D 决策矩阵中如涉及「commit 拆分粒度」`D1` + 「P0 协议自吃狗粮」`D8` → VAN 推荐默认指向「自吃狗粮 + 文件聚合 commit」候选（与既有 quad-evidence 协同 ✅）
+- **plan 阶段** 落盘 commit 直接执行本协议 / 不再讨论 / 反模式抑制
+
+### 交叉引用
+
+- [`memory-bank/systemPatterns.md`](../../memory-bank/systemPatterns.md) 「跨决策协同度 100% doudec-evidence」段（决策矩阵协同范式）
+- [`memory-bank/systemPatterns.md`](../../memory-bank/systemPatterns.md) 「V2=a 蓝图任务范式 triple-evidence」段（V2=a 范式协议）
+- [`.cursor/rules/skills/git-workflow.mdc`](./git-workflow.mdc) 「蓝图任务 commit body 范本」段（commit body 8 段范本同源）
+- [`.cursor/rules/skills/git-workflow.mdc`](./git-workflow.mdc) 「commit body Source 溯源 + 实测数据格式」段（Source 溯源 + plan ×0.6 数据协议）
+
 ## 范围检查
 
 如果规格覆盖了多个独立子系统，应该在头脑风暴阶段就分解为子项目规格。如果没有，建议分为多个计划——每个子系统一个。每个计划应产出独立可工作、可测试的软件。
@@ -60,6 +123,64 @@ alwaysApply: false
 **TASK-20260503-01 实证**：plan §C.4.1 设计 `vx_view_attach_devtool` + `hot_reload_dir` 参数，未识别 dogfood smoke 需要「reload 触发次数 getter」→ §C.4.2 才追加 `vx_view_hot_reload_tracked_count()` 1 行 ABI + 1 commit；如 plan 阶段三问 testability 清单则可前置到 C.4.1 同 commit。
 
 **交叉引用**：`memory-bank/systemPatterns.md`「lazy-attach C ABI 容错模式」段（同源 C ABI 设计模式）；`.cursor/rules/skills/test-driven-development.mdc`（testability 是 TDD 前置条件）。
+
+## C ABI 设计模式 — lazy-attach 默认契约（涉及新增公开 C ABI 函数时**必填**）
+
+> **quad-evidence 已成 Veloxa 公开 C ABI 默认范式**（TASK-20260502-02 first → 03-01 dual → 03-04 triple → 05-02 quad → 已固化为「全 C ABI 默认行为」）。新增 C ABI 函数时，依赖 sub-system 的 lazy-attach 容错处理是默认契约 / 不再单独决策。
+
+### 触发条件
+
+新增公开 C ABI 函数（`vx_*` / `VX_*` 前缀）/ 该函数依赖以下任一 sub-system：
+
+- `Application::update_manager_`（pipeline hooks / invalidate / 帧调度）
+- `Application::script_engine_`（QuickJS context / DOM bindings）
+- `Application::devtool_`（Inspector / Performance overlay / Console）
+- `Application::hot_reload_manager_`（CSS/HTML 热重载）
+- 任何在 `Application` 构造时**可能不被初始化**的可选子系统
+
+### 强制 lazy-attach 契约
+
+| 维度 | 要求 |
+|---|---|
+| **行为契约** | 当依赖 sub-system 未初始化时，C ABI 函数**返回 `VX_ERROR_INVALID_STATE`** 而非 crash / `assert` / `abort` |
+| **副作用契约** | 返回 `VX_ERROR_INVALID_STATE` 时**不得**有任何可观测副作用（不写日志 / 不分配内存 / 不触发回调）— 调用方可安全重试 |
+| **顺序契约** | C ABI 函数**不得**假设调用顺序（如「必须先调 attach 再调 set」）— 调用方可任意顺序调用 / 内部 lazy 处理 |
+| **idempotency** | 重复调用必须 idempotent（如 `attach` 后再 `attach` 不报错 / `detach` 后再 `detach` 不报错）|
+
+### plan 阶段强制清单（每新增 C ABI 函数填）
+
+```markdown
+| C ABI 函数 | 依赖 sub-system | 未初始化行为 | 重复调用行为 |
+|---|---|---|---|
+| vx_view_xxx | update_manager_ | VX_ERROR_INVALID_STATE | idempotent |
+```
+
+### 反模式
+
+- ❌ `assert(update_manager_ != nullptr)` 在 C ABI 内部（导致 release 模式 abort）
+- ❌ 假设「调用方保证已 attach」（违反 lazy-attach 默认契约）
+- ❌ C ABI 内部 `if (!update_manager_) LOG_ERROR(...)`（破坏副作用契约）
+- ❌ plan 写「`vx_view_xxx` 调用 `update_manager_->Y`」未声明依赖未初始化时行为
+
+### quad-evidence 实证表
+
+| # | 任务 | C ABI 函数 | 依赖 | 行为 |
+|:-:|---|---|---|---|
+| 1 | TASK-20260502-02 | `vx_view_set_pipeline_hooks` | `update_manager_` | INVALID_STATE / idempotent ✅ |
+| 2 | TASK-20260503-01 | `vx_view_attach_devtool` | `devtool_` + `hot_reload_manager_` | INVALID_STATE + WARNING_HOT_RELOAD_FAILED 双语义 ✅ |
+| 3 | TASK-20260503-04 | `vx_devtool_get_console_output` | `devtool_->console_panel_` | INVALID_STATE / 0 副作用 ✅ |
+| 4 | TASK-20260505-02 | `vx_view_invalidate` | `update_manager_` | INVALID_STATE / idempotent ✅ |
+
+### 与 veloxa_api.h 头部 doc 的协同
+
+- `veloxa/api/veloxa_api.h` 顶部 `/* */` 项目级文档块**必须含**「lazy-attach contract」节统一引用前序 ABI（参考 TASK-20260505-04 落地的头部 doc 段）— 用户首次打开头文件即见 lazy-attach 默认契约
+- C ABI 实现文件（`veloxa/api/veloxa_api.cc`）每个相关函数顶部 doc 注释必须显式标注 `// lazy-attach: VX_ERROR_INVALID_STATE if XXX uninitialized`
+
+### 交叉引用
+
+- [`memory-bank/systemPatterns.md`](../../memory-bank/systemPatterns.md)「lazy-attach C ABI 容错模式 quad-evidence」段（同源 quad-evidence 详细实证）
+- [`veloxa/api/veloxa_api.h`](../../veloxa/api/veloxa_api.h) 顶部 doc 段（lazy-attach contract 范本）
+- 本规则「公开 API testability 检查清单」段（lazy-attach 是 testability 前置 — 单测必须覆盖 INVALID_STATE 分支）
 
 ## CMake 链接方向约束分析（涉及 C/C++ 编译单元时**必填**）
 
@@ -165,6 +286,194 @@ alwaysApply: false
 6. **交叉引用**：
    - 开发环境代理地址：`memory-bank/techContext.md`「FetchContent 与代理」段
    - VAN 命令守卫：`.cursor/commands/van.md` 步骤 1「FetchContent 代理状态检查」子项
+
+## Phase 0 audit — spec vs code 一致性 + 能力假设双 audit（涉及既有 spec 数据回归类任务时**必填**）
+
+> **反复模式 #8 spec 数据回归 triple-evidence 已固化**（TASK-20260503-04 + TASK-20260505-01 + TASK-20260505-02 三次累计）。spec 标记某功能「缺失/未实现」但实际代码已实现 / spec 推荐路径「假设可行」但底层引擎能力不支持 — 这两类回归在 plan 阶段未 audit 即写代码 → build 阶段才发现冲突 → 计划返工。
+
+### 触发条件
+
+plan 的 Phase 0 audit 段**必填**以下任一情形：
+
+- 任务范围引用了既有 `docs/specs/*.md` 文件
+- VAN 阶段从 spec 中抽取了「未实现功能清单」/「待补能力清单」/「推荐实施路径」
+- 任务范围涉及既有 sub-system 能力扩展（DOM bindings / DevTool / Renderer / 等）
+- 跨任务重复使用同一 spec 文档（≥ 2 任务引用）
+
+### 强制双子条 audit
+
+#### 子条 A — spec vs code 一致性 audit（spec 标记"未实现"但实际已实现）
+
+**操作步骤：**
+
+1. **VAN/plan 阶段** 对 spec 中标记 `❌` / `⏳` / `TODO` / `未实现` / `缺失` 的功能清单逐项 grep 实证：
+   ```bash
+   # 例：spec 标 "DOM bindings 缺 textContent setter"
+   rg -n "textContent" veloxa/script/dom_bindings.cc          # 验证是否已实现
+   rg -n "set_textContent\|js_set_textContent" veloxa/script/  # 验证 setter 形式
+   ```
+
+2. **如发现 spec 标"缺失"但代码已实现** → plan 阶段强制：
+   - 在 plan §0「Phase 0 audit」段记录「spec vs code 偏差矩阵」
+   - 调整子任务范围（剔除已实现项 / 缩小工作量）
+   - 触发 spec 数据回归 `docs(specs)` commit（与本任务 plan commit 分离 / 沿用 reflect 阶段处理路径）
+
+3. **如发现 spec 标"已实现"但代码未实现** → 同样记录 + 评估是否影响本任务依赖
+
+#### 子条 B — 能力假设 audit（spec 推荐路径"假设可行"但底层引擎能力不支持）
+
+**操作步骤：**
+
+1. **VAN/plan 阶段** 对 spec 推荐的「实施路径」/「API 调用方式」/「数据通信路径」做能力假设 grep 实证：
+   ```bash
+   # 例：spec 说 "通过 QuickJS Proxy 实现自动 closure"
+   rg -n "JS_NewProxy\|JS_NewProxyTarget" _deps/quickjs-src/   # 验证 QuickJS 是否暴露 Proxy API
+   rg -n "new Proxy" examples/ tests/                          # 验证既有用法
+   ```
+
+2. **如发现底层引擎/库不支持** → plan 阶段强制：
+   - 在 plan §0 记录「能力假设偏差矩阵」+ 备选实施路径
+   - **brainstorming 阶段**主动 push-back（参考 `brainstorming.mdc`「Phase 0 grep 实证驱动的主动 push-back 模式」段）
+   - 视情况升级复杂度 / 缩减 scope / 重做 spec
+
+3. **如能力部分支持** → 评估退化路径（如 Proxy → 手工 closure / DOM walk）
+
+### 反模式
+
+- ❌ plan 仅写「按 spec §X 实施」未做 spec vs code grep 实证（最常见反模式）
+- ❌ 假设 spec 描述准确 / VAN/plan 阶段不实证（违反「证据优于断言」核心原则）
+- ❌ 发现偏差后绕过本规则继续写代码 / build 阶段才发现冲突
+- ❌ 仅 grep 子条 A（一致性）跳过子条 B（能力假设）— 两子条独立必填
+
+### triple-evidence 实证表
+
+| # | 任务 | 类型 | 偏差情况 | 后果 |
+|:-:|---|---|---|---|
+| 1 | TASK-20260503-04 | 子条 A | spec 标 console_output API 缺失 / 实际已存在 `vx_devtool_console_panel_get` | plan 阶段缩减 scope ✅ |
+| 2 | TASK-20260505-01 | 子条 A | spec 标多个 DOM bindings 缺失 / 实际全部已实现 | reflect 阶段触发 spec 数据回归 commit |
+| 3 | TASK-20260505-02 | 子条 B | spec 推荐 QuickJS Proxy 路径 / 实际 QuickJS 不暴露 JS_NewProxy 公开 API | brainstorm 阶段 push-back / 改用 explicit closure（参考 `brainstorming.mdc` Phase 0 grep push-back 段）|
+
+### 与既有规则协同
+
+- 与本规则「公开 API testability 检查清单」段配套（spec 数据回归 + testability 双 audit）
+- 与 `brainstorming.mdc`「Phase 0 grep 实证驱动的主动 push-back 模式」段协同（双子条 audit 是 push-back 的实证基础）
+- 与 `memory-bank/systemPatterns.md`「反复模式 #8 spec 数据回归 audit 协议」段协同（同源 triple-evidence 详细实证）
+
+## Phase 0 audit — JS context 归属 / host binding 注册 ctx 一致性 audit（涉及 QuickJS / panel JS / 用户脚本时**必填**）
+
+> **TASK-20260503-04 反思 §5 #1 实证**（panel JS 实际跑在 console panel 自己的 QuickJS context 而非 main page context / host binding 注册到错误 ctx 导致 panel JS 调用 binding 报 `ReferenceError`）。VAN/plan 阶段假设「panel JS 与 main page 共享 ctx」未实证 → build §C.5.2 才发现需要双 ctx 注册。
+
+### 触发条件
+
+plan 涉及以下任一情形**必填**：
+
+- DevTool panel JS 注入（console panel / inspector panel / performance panel）
+- 用户脚本注入（hot reload / script tag / `<script src=>`）
+- host binding 注册（`vx_view_register_binding` / `JS_NewCFunction` 类调用）
+- 跨 ctx 共享数据（panel JS 访问 main page 数据 / 跨 panel 通信）
+
+### 强制 audit 步骤
+
+1. **ctx 归属 grep**：每个 JS 执行点定位其 QuickJS context 归属：
+   ```bash
+   # 例：console panel JS 跑在哪个 ctx？
+   rg -n "JS_NewContext\|JS_FreeContext" veloxa/devtool/   # 找 panel ctx 创建点
+   rg -n "console_panel.*ctx\|panel_ctx_" veloxa/devtool/  # 找 panel ctx 字段
+   ```
+
+2. **binding 注册点反向 grep**：每个 host binding 验证注册到哪些 ctx：
+   ```bash
+   rg -n "JS_NewCFunction\|JS_DefinePropertyValueStr" veloxa/script/  # 找所有 binding 注册点
+   # 验证：注册到 main_ctx_ vs panel_ctx_ vs 两者
+   ```
+
+3. **跨 ctx 调用矩阵**：列出每个 JS 执行点能访问的 binding 集合：
+
+   ```markdown
+   | JS 执行点 | 归属 ctx | 可调用 binding | 缺口 |
+   |---|---|---|---|
+   | console panel JS | panel_ctx_ | console.* | ❌ document.* (main_ctx_) |
+   | hot reload script | main_ctx_ | document.* / window.* | OK |
+   ```
+
+4. **缺口补救**：如发现 JS 执行点缺 binding → plan 阶段加「双 ctx 注册」前置子任务
+
+### 反模式
+
+- ❌ 假设「panel JS 与 main page 共享 ctx」未 grep 实证
+- ❌ host binding 仅注册到 main_ctx_ / panel JS 调用报错 / build 阶段才发现
+- ❌ plan 写「panel JS 调用 console.log」未声明 console binding 注册到 panel_ctx_
+- ❌ 跨 ctx 共享对象（如 main_ctx_ JSValue 传到 panel_ctx_）未做 ctx 隔离审计
+
+### 实证
+
+- TASK-20260503-04 §C.5.2：plan 假设 console panel JS 调用 `vx_console.log()` 直接生效，build 阶段发现 panel JS ctx 缺 binding → 1 commit 补「panel_ctx_ 同步注册 console.log binding」/ 计划返工
+
+### 交叉引用
+
+- `memory-bank/techContext.md`「QuickJS context 隔离模式」段（同源 ctx 归属设计）
+- 本规则「资源类反向探针 SOP」段（comment policy / 反向探针 false positive 防御）
+
+## Phase 0 audit — 资源类反向探针 SOP（涉及 panel HTML/CSS/JS 资源反向探针时**必填**）
+
+> **TASK-20260503-04 反思 §5 #2 实证**（D.3 console_panel.html 注释里的 `<input` 字面量触发 binding 反向探针 false positive / 注释中的字符串被错认为代码使用点）。资源反向探针（如「console panel 是否使用了 `<input>` 标签」类查询）应限定到非注释区域。
+
+### 触发条件
+
+plan 涉及以下任一情形**必填**：
+
+- 反向探针 panel HTML / CSS / JS 资源文件（验证某 binding / class / API 是否被使用）
+- 验证「panel JS 是否调用了 `vx_xxx` binding」类查询
+- 验证「panel CSS 是否引用了某 class」类查询
+- 反向探针结果用于决定是否保留/移除某 binding / API
+
+### 强制 SOP
+
+#### 步骤 1 — 限定到非注释区域 grep
+
+```bash
+# 默认 rg 会 match 注释中的字符串 → 必须使用 -g 排除 / 或 awk 过滤
+# bad: rg -n "<input" veloxa/devtool/console_panel.html
+# good: 排除 HTML 注释 <!-- ... -->
+rg -n "<input" veloxa/devtool/console_panel.html | grep -v "<!--"
+
+# JS 资源排除单行注释 // 和 块注释 /* */
+rg -n "vx_console" veloxa/devtool/*.js | grep -v "^.*//.*vx_console"
+```
+
+#### 步骤 2 — 反向探针结果二次验证
+
+发现 match 后必须打开文件人工确认是否真为代码使用点（vs 注释 / 文档字符串 / 测试 fixture 中 mock 数据）：
+
+```markdown
+| 探针目标 | 文件 | 行号 | 类型（代码 / 注释 / 文档 / mock） |
+|---|---|---|---|
+| <input | console_panel.html | 42 | 注释（<!-- TODO: add <input -->）❌ false positive |
+| <input | console_panel.html | 87 | 代码 ✅ true positive |
+```
+
+#### 步骤 3 — comment policy 推荐
+
+对**新写**的 panel 资源（HTML / CSS / JS）：
+
+- ✅ 注释中**避免**写出未来可能被反向探针的字面量（如 `// TODO: add <input>` → 改为 `// TODO: add input element`）
+- ✅ 注释中如必须含字面量 → 加显式标记（如 `<!-- DEAD-CODE: <input /> 已废弃 -->`）便于反向探针自动过滤
+- ✅ panel 资源开头加 comment policy 注释引导后续维护者
+
+### 反模式
+
+- ❌ 直接 `rg -n "X" panel.html` 不加注释过滤 → false positive
+- ❌ 反向探针发现 0 match 即声明「未使用」未做注释 vs 代码区分
+- ❌ panel HTML 注释中含未来 binding 字面量（导致后续探针 false positive）
+
+### 实证
+
+- TASK-20260503-04 D.3：plan 反向探针 console_panel.html 是否使用 `<input>` 标签 → match 多处 → 实际全在注释 → 决定移除 `<input>` binding 错误（false positive 导致计划误判）
+
+### 交叉引用
+
+- 本规则「Phase 0 audit — JS context 归属」段（同源 panel JS / 资源 audit）
+- `memory-bank/systemPatterns.md`「反向探针 false positive 抑制」段（同源 comment policy）
 
 ## 测试基础设施审计（任何 Phase 包含新写测试时**必填**）
 
@@ -954,6 +1263,69 @@ echo 'unsigned f(unsigned x) { return x / 255; }' | \
 ---
 ```
 
+## 附录：LOC 估算 — 隐性附加工作类型清单 + ×1.3-1.5 buffer 范本
+
+> **TASK-20260503-02 反思 §6 #4 + TASK-20260503-04 P2 #1 同源合并**：plan 阶段估算 LOC（行数）经常仅计「核心代码」/ 漏掉同步产生的「隐性附加工作」LOC → build 阶段实际 LOC 比 plan 估算多 1.3-1.5 倍 / 估时同步漂移。
+
+### 触发条件
+
+涉及以下任一情形时**必填** ×1.3-1.5 buffer：
+
+- plan 涉及新写测试（`xxx_test.cc` + 隐性 fixture / mock setup / TEST_F 样板）
+- plan 涉及新增公开 API / C ABI（隐性 doc string + commit-friendly 注释 + Source 溯源元数据）
+- plan 涉及新增子模块（隐性 CMakeLists.txt 调整 + include 路径 + 链接配置）
+- plan 涉及反向探针（隐性 comment policy 注释 + DEAD-CODE 标记）
+- 任意 plan 估时 ≥ 30 min 的子任务（buffer 防御）
+
+### 隐性附加工作类型清单（7 类常见）
+
+| # | 类型 | 隐性 LOC 比例 | 范例 |
+|:-:|---|:-:|---|
+| 1 | **Doxygen / API doc string** | +5-15% | 公开 C ABI 函数顶部 `/** */` 块（每函数 ~5-15 行）|
+| 2 | **commit-friendly 注释扩展** | +3-8% | `// TASK-XXXXXXXX-XX: <reason>` 类元数据注释（reflect 阶段沉淀的扩展注释）|
+| 3 | **test fixture / mock setup** | +20-40% | `class FontManagerTest : public ::testing::Test { ... }` setup / teardown / 共享 mock |
+| 4 | **atomic counter / observer 接口** | +5-15% | `std::atomic<size_t> counter_; size_t counter() const { return counter_.load(); }` / friend test class |
+| 5 | **反向探针注释 / comment policy** | +1-3% | `// DEAD-CODE: <input /> 已废弃` / panel HTML 头部 comment policy |
+| 6 | **lazy-attach contract 注释** | +2-5% | C ABI 实现文件每个函数顶部 `// lazy-attach: VX_ERROR_INVALID_STATE if XXX uninitialized` |
+| 7 | **CMakeLists.txt / 构建系统调整** | +3-8% | `target_link_libraries` PUBLIC/PRIVATE 调整 + `add_test(NAME ... CONFIGURATIONS DEVTOOL_ON)` 配置 |
+
+### ×1.3-1.5 buffer 范本
+
+```markdown
+## 估时
+
+| Phase | 核心 LOC（plan 估）| 隐性 LOC（×1.3-1.5）| 实际 LOC（buffer 后）| plan ×0.6 估时 |
+|---|:-:|:-:|:-:|:-:|
+| Phase A | 200 | +60-100 | 260-300 | ~30-45 min |
+| Phase B | 150 | +45-75 | 195-225 | ~25-35 min |
+| Phase C | 80  | +25-40 | 105-120 | ~15-20 min |
+| **总计** | **430** | **+130-215** | **560-645** | **~70-100 min** |
+```
+
+**说明：**
+
+- ×1.3 = 保守 buffer（核心代码占主导 / 隐性工作可控）
+- ×1.5 = 激进 buffer（含 ≥ 3 类隐性附加工作 / 测试密集 / API 密集）
+- 选择系数依据：核心 vs 隐性比例 + 反复模式预警程度
+
+### 反模式
+
+- ❌ plan 仅写核心 LOC 估算 / 隐性附加工作"等到 build 阶段再说"（破坏估时准确性）
+- ❌ buffer 系数固定 ×1.0（忽略隐性工作 / 经验上至少 ×1.2）
+- ❌ buffer 系数固定 ×2.0（过度膨胀 / 估时失真 / 不利于反复模式 #6 提交粒度抑制）
+- ❌ 估时与 LOC 解耦（plan ×0.6 vs LOC 必须有明确换算关系）
+
+### 实证
+
+- TASK-20260503-02：plan 估 6 子项 ~250 LOC → 实际 ~340 LOC（×1.36 / 隐性 commit body 元数据 + reflect 注释）
+- TASK-20260503-04：plan 估 ~400 LOC → 实际 ~560 LOC（×1.40 / 隐性 fixture + lazy-attach contract 注释）
+
+### 交叉引用
+
+- 本规则「公开 API testability 检查清单」段（testability 接口是隐性附加工作类型 4「atomic counter / observer」常见来源）
+- 本规则「中文文档 StrReplace 字符类型 audit」段（隐性附加工作类型 5「comment policy」同源）
+- `.cursor/rules/skills/git-workflow.mdc`「commit body Source 溯源 + 实测数据格式」段（commit-friendly 注释扩展同源）
+
 ## 测试模式选择
 
 计划中的每个任务必须标注测试模式。根据代码现状选择：
@@ -964,6 +1336,94 @@ echo 'unsigned f(unsigned x) { return x / 255; }' | \
 | **覆盖补充模式** | `[覆盖补充]` | 功能已实现但缺少测试 | 写测试 → 验证通过 → 验证有效性 → 补充边界 |
 
 **判断方法：** 如果实现代码已存在（来自之前的任务或分支），测试会立即通过 → 使用覆盖补充模式。
+
+## 蓝图任务子任务规格化深浅梯度（V2=a 蓝图任务 / 含 N ≥ 3 实施子任务时**必填**）
+
+> **TASK-20260505-03 反思 §3.d #3 + §4 #5 实证**：18 实施子任务全做完整规格化 → plan 文档 ~770 行（其中 ~600 行是子任务规格）/ 但其中 ~14 个子任务实际后续会独立立项 + 重做 Phase 0 audit + brainstorm → 完整规格化部分浪费。
+
+### 触发条件
+
+蓝图任务（V2=a）含 ≥ 3 个实施子任务时**必填**：
+
+- 每个子任务标注规格化深度（🟢 完整 / 🔵 概要）
+- plan §8「实施子任务清单」段顶部必须含本规则的「深浅梯度边界明示」声明
+
+### 🟢 完整规格化（首批 1-3 子任务 / 直接基于本规格立项）
+
+**适用范围：** 首批 1-3 个最优先实施的子任务（直接进入下一个 Level 3 实施任务）
+
+**规格化深度要求：**
+
+- ✅ 完整文件结构清单（每文件职责）
+- ✅ 完整代码片段（≥ 60% 实际代码 / 含函数签名 + 核心逻辑）
+- ✅ TDD 测试用例完整列表（红绿循环逐项）
+- ✅ ctest 期望（add_test 命令 / config 矩阵）
+- ✅ commit body 完整范本（8 段全填）
+- ✅ Phase 0 audit 完整结果
+
+**LOC 占比：** 单子任务 ~100-200 行 plan 文档
+
+### 🔵 概要规格化（其余子任务 / 仍需独立立项 + Phase 0 audit + brainstorm）
+
+**适用范围：** 第 4 个及之后的实施子任务（独立 Level 3 立项 / 不直接进入实施）
+
+**规格化深度要求：**
+
+- ✅ 子任务名称 + 范围声明（一段话）
+- ✅ 主要文件清单（无完整结构 / 仅文件名）
+- ✅ 关键决策点（待独立立项时再 brainstorm）
+- ✅ 估时（plan ×0.6）
+- ❌ **不必填**完整代码片段
+- ❌ **不必填**TDD 用例完整列表
+- ❌ **不必填**commit body 范本
+- ❌ **不必填**Phase 0 audit（独立立项时再做）
+
+**LOC 占比：** 单子任务 ~15-30 行 plan 文档
+
+### plan §8 边界明示模板
+
+```markdown
+## 8. 实施子任务清单（N 个 / 深浅梯度规格化）
+
+> **规格化深度梯度：** 子任务 1-3 为 🟢 完整规格化（直接基于本规格立项）/ 子任务 4+ 为 🔵 概要规格化（独立 Level 3 立项时再 Phase 0 audit + brainstorm）
+
+### 子任务 1 [🟢 完整]
+[~100-200 行完整规格 / 含代码 + TDD + ctest + commit body]
+
+### 子任务 2 [🟢 完整]
+[~100-200 行完整规格]
+
+### 子任务 3 [🟢 完整]
+[~100-200 行完整规格]
+
+### 子任务 4 [🔵 概要]
+**范围：** [一段话声明]
+**主要文件：** [文件名清单]
+**关键决策点：** [待独立立项时 brainstorm]
+**估时（plan ×0.6）：** [N min]
+
+### 子任务 5 [🔵 概要]
+[~15-30 行概要]
+...
+```
+
+### 反模式
+
+- ❌ 全部子任务做 🟢 完整规格化（plan 膨胀 / 浪费 / 后续独立立项时还要重做 Phase 0 + brainstorm）
+- ❌ 全部子任务做 🔵 概要规格化（首批子任务无足够规格 / 实施时还要做完整 brainstorm）
+- ❌ 子任务规格化深度未声明（plan 读者不知道哪些是直接实施 / 哪些是后续独立立项）
+- ❌ 蓝图任务直接产出 N × Level 3 子任务 plan（应在 V2=a 蓝图阶段做深浅梯度 / 实施阶段独立立项）
+
+### 实证
+
+- TASK-20260505-03（first-evidence）：18 子任务（GLES 蓝图）/ 全做 🟢 完整规格化 → ~770 行 / 其中 ~14 子任务实际不会基于本规格直接立项 → 浪费 ~280 行
+- 改进：首批 1-3 完整 / 4+ 概要 → 预期 ~370 行（节省 50%）+ 后续独立立项时 Phase 0 audit 仍可做（不丢失质量）
+
+### 交叉引用
+
+- `.cursor/rules/main.mdc`「Level 4 蓝图任务 V2=a 工作流变体」段（V2=a 蓝图任务范式）
+- `memory-bank/systemPatterns.md`「V2=a 蓝图任务范式 triple-evidence」段（V2=a 范式协议）
+- `memory-bank/systemPatterns.md`「V2=a 蓝图任务文档密度系数 1.0-1.4×」段（plan 文档膨胀控制 / 与本规则深浅梯度协同）
 
 ## TDD 模式任务模板 [TDD]
 
