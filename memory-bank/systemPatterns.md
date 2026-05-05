@@ -3989,6 +3989,367 @@ N 子项数？
 
 ---
 
+## 跨决策协同度 100% 第 14 次连续命中（TASK-20260505-05 反思入库 / 第 14 次 / 累计 128/128 历史最高 streak 刷新）
+
+> **TASK-20260505-05 G1.1 CMake VX_RENDERER flag 第 14 次连续命中**：7 D 决策 1 次 AskQuestion all_recommended 锁定 / 用户跳过率 100% / 实施忠实度 100%（D1-D7 7/7 0 偏差实施）= 实施类任务首次 100% 决策矩阵忠实度纪录。
+
+### 累计统计（14 任务连续命中 / 128/128）
+
+| # | 任务 | 决策数 | 锁定方式 | 实施忠实度 |
+|:-:|---|:-:|---|:-:|
+| 1-13 | 历史 121/121 累计 | 121 | 多次 AskQuestion all_recommended | — |
+| **14** | **TASK-20260505-05 G1.1 CMake VX_RENDERER flag** | **7 (D)** | **1 次 AskQuestion** | **100%（7/7 0 偏差）** |
+
+**累计：128/128（14 任务全 ✅ / 0 决策返工 / 历史最高 streak 刷新）**
+
+### 实施忠实度新维度
+
+| 维度 | 既有 13 次 | 第 14 次（TASK-05-05）|
+|---|:-:|:-:|
+| 决策锁定 | 100% | 100% |
+| 用户跳过率 | 100% | 100% |
+| reflect 重审 0 问题 | 100% | 100% |
+| **实施忠实度（plan vs build 决策一致性）** | 未明确度量 | **100%（7/7 0 偏差实施）** ✅ |
+
+→ **新维度入库：实施忠实度** = plan 阶段锁定的决策在 build 阶段 100% 按计划实施，0 决策反悔 / 0 实施偏离。
+
+### 交叉引用
+
+- 本文档「跨决策协同度 100% 第 13 次连续命中」段（line 3918 / 累计实证基础）
+- 本文档「跨决策协同度 100% doudec-evidence」段（line 3577 / dec → endec → doudec 跳级实证）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.5（第 14 次命中详细实证）
+
+---
+
+## plan ×0.6 实测系数 ennea-evidence（TASK-20260505-05 反思入库 / 第 9 数据点 — oct → ennea-evidence 升级 / 实施类 Level 2 子档新增）
+
+> **TASK-20260505-05 全任务 ~0.42-0.85× 极速区 / Build 阶段 ~0.6-0.8×**：plan ×0.6 实测系数累计第 9 数据点 / 实施类 Level 2 任务子档首次实证 / oct → ennea-evidence 升级 / 三子档矩阵完整。
+
+### 9 数据点累计
+
+| # | 任务 | plan ×0.6 估时 | 实测 | 系数 | 子档 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1-6 | sept-evidence base 6 任务 | — | — | 平均 ~0.5× | 标准极速区 |
+| 7 | TASK-20260505-03（GLES 蓝图）| ~17-25 h | ~30-40 min | **0.02-0.04×** | **极致极速区**（V2=a 蓝图子档）|
+| 8 | TASK-20260505-04（工作流元任务）| 130-180 min | ~50-70 min（plan + build）| **0.11-0.19× Build / 0.30-0.40× 总线** | **极致极速区**（工作流元任务子档）|
+| **9** | **TASK-20260505-05（实施类 Level 2 / G1.1）** | **75-120 min** | **~50-70 min** | **0.42-0.85× 总线** | **标准极速区**（实施类 Level 2 子档 / 第 9 数据点）|
+
+### 三子档对照
+
+| 子档 | 系数范围 | 任务类型 | 实证 |
+|---|---|---|---|
+| 极致极速区 V2=a 蓝图 | 0.02-0.05× | Level 4 V2=a 蓝图任务 | TASK-05-03 |
+| 极致极速区 工作流元任务 | 0.11-0.19×（Build 阶段）| Level 2-3 工作流元任务 | TASK-05-04 |
+| **标准极速区 实施类** | **0.42-0.85× 总线** | **Level 2 实施类任务** | **TASK-05-05** |
+
+### 推论
+
+- 三子档矩阵完整（V2=a 蓝图 / 工作流元 / 实施类）/ 各有典型任务实证
+- 实施类 Level 2 子档系数偏高（0.42-0.85×）= ctest build/test 等待时间占比 + 编译重 build 损耗（vs 蓝图 0 build / 工作流元 0 ctest）
+- ctest 双 build 矩阵（DEVTOOL=ON + OFF）+ 4 矩阵全谱验证 = 实施类核心成本
+
+### 交叉引用
+
+- 本文档「plan ×0.6 实测系数 oct-evidence」段（line 3954 / 8 数据点 base）
+- 本文档「极致极速区 0.02-0.05× 子档」段（V2=a 蓝图子档）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §1.1（第 9 数据点详细实证）
+
+---
+
+## brainstorming P1.3 主动 push-back 模式 dual-evidence（TASK-20260505-05 反思入库 / TASK-04 first + TASK-05 G1.1 dual / dual-evidence 已固化）
+
+> **brainstorming P1.3 模式 dual-evidence**：TASK-04 工作流元任务落地（V0）+ TASK-05 G1.1 VAN 阶段首次实战触发（V1）= dual-evidence。3 项偏差在 plan §0.4 主动校正 / 0 build 阶段返工 / 节省 ~90-180 min 事故修正损耗。
+
+### 模式定义（重申 / 见 brainstorming.mdc P1.3 段）
+
+当 Phase 0 grep / audit 阶段发现**显著偏差**（默认值差 10³+ 倍 / 假设的能力实际不可用 / 文档与代码不一致）时，**必须主动抛出 push-back**（不靠 build 阶段事故触发）。
+
+触发条件 3/3（必须全命中）：
+1. 任务 scope 已被用户限定（brainstorm scope 锁定）
+2. Phase 0 grep / audit 阶段发现偏差
+3. 偏差**显著**（默认值差 10³+ 倍 / 能力假设证伪 / 架构假设证伪）
+
+### TASK-05 G1.1 实战日志（dual-evidence 第 1 次实战）
+
+| # | 偏差 | 触发 grep | 校正 |
+|:-:|---|---|---|
+| 1 | `find_package(OpenGLES/EGL)` 不可用 | `cmake --find-package -DNAME=OpenGLES -DMODE=EXIST` 验证 not found | D1=A 暂不引入 dep（YAGNI） |
+| 2 | `tests/cmake/*.sh` 不必要新目录 | Glob 既有 `tests/smoke/*.cmake` 范式（a14） | D3=B + D4=B 复用 a14 pattern |
+| 3 | 临时改宏反向探针弱 | grep ctest add_test 范式 | D5=A 子进程 invalid assert |
+
+### 模式参数（dual-evidence 已固化）
+
+- 触发频率：~1 次/工作流元任务（TASK-04）+ ~3 偏差/实施类首步任务（TASK-05 G1.1）
+- 抑制效果：每偏差节省 ~30-60 min build 阶段返工
+- 落地位置：plan §0.4「上游 spec/plan 偏差校正」段
+
+### 交叉引用
+
+- `.cursor/rules/skills/brainstorming.mdc` P1.3 段（规则源）
+- `docs/plans/2026-05-05-cmake-vx-renderer-flag.md` §0.4（dual-evidence 第 1 实战）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.1（dual-evidence 详细实证）
+
+---
+
+## writing-plans P1.6 spec vs code 一致性 audit dual-evidence（TASK-20260505-05 反思入库 / TASK-04 first + TASK-05 G1.1 dual）
+
+> **writing-plans P1.6 dual-evidence**：TASK-04 工作流元任务落地（V0 / writing-plans Phase 0「spec vs code 一致性 audit」+「能力假设 audit」双子条）+ TASK-05 G1.1 VAN 阶段首次实战触发（V1）= dual-evidence。
+
+### 模式定义（重申 / 见 writing-plans.mdc P1.6 段）
+
+Phase 0 audit 必须做两件事：
+1. **spec vs code 一致性 audit**：spec/plan 文本声明的 code 接口/行为是否与实际代码一致？
+2. **能力假设 audit**：spec/plan 假设的工具/库/平台能力是否实际可用？
+
+### TASK-05 G1.1 实战日志（dual-evidence 第 1 次实战）
+
+| audit 类型 | 假设 | 验证方法 | 实证 |
+|---|---|---|---|
+| 能力假设 | `find_package(OpenGLES/EGL)` 在 CMake 4.2.3 自带 | `cmake --find-package -DNAME=OpenGLES -DMODE=EXIST` | ❌ not found / 假设错 |
+| 能力假设 | `pkg-config egl glesv2` 可用 | `pkg-config --exists egl glesv2` | ✅ 可用 / 替代方案确认 |
+| spec vs code 一致性 | 既有 SDL2 双轨 find pattern | Read `veloxa/platform/sdl2/CMakeLists.txt:7-15` | ✅ 一致 / 复用 |
+
+### 与 brainstorming P1.3 关系
+
+- writing-plans P1.6 = audit **方法**（grep / verify）
+- brainstorming P1.3 = audit 后**响应**（push-back / 校正）
+
+两者是「audit → push-back」二元组合 / 缺一不可。
+
+### 交叉引用
+
+- `.cursor/rules/skills/writing-plans.mdc` P1.6 段（规则源）
+- 本文档「brainstorming P1.3 主动 push-back 模式 dual-evidence」段（响应模式）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.2（dual-evidence 详细实证）
+
+---
+
+## CMake 依赖引入时机 YAGNI 原则（TASK-20260505-05 反思入库 / first-evidence — D1=A 实证）
+
+> **TASK-05 G1.1 D1=A 实证**：G1.1 仅落地 `VX_RENDERER` flag + 编译期 compile def，**不引入** OpenGLES/EGL dep（推迟 G1.2 GLESDisplay 实施时再引入）。0 build 等待 / 0 链接失败 / dep 与实现强耦合原则确立。
+
+### 模式定义
+
+CMake 依赖（`find_package` / `pkg_check_modules` / `target_link_libraries`）应**与实际代码使用强耦合**：
+- 仅当本任务**实际编写代码使用该 dep** 时才引入
+- flag / option / 编译期分支落地阶段**不预付** dep 引入
+- dep 与实现共生关系：`#include <gles3/gl.h>` 出现在哪个任务，就在该任务引入 dep
+
+### 反例（被 push-back 校正）
+
+蓝图 plan §3.1 步骤 2：
+```cmake
+if(VX_RENDERER STREQUAL "gles")
+  find_package(OpenGLES REQUIRED)  # ❌ G1.1 不需要 / G1.2 才需要
+  find_package(EGL REQUIRED)       # ❌ G1.1 不需要 / G1.2 才需要
+  add_compile_definitions(VX_RENDERER_GLES=1)
+endif()
+```
+
+### 正例（D1=A 校正后 / cmake/VxRenderer.cmake）
+
+```cmake
+if(VX_RENDERER STREQUAL "gles")
+  add_compile_definitions(VX_RENDERER_GLES=1)
+  message(STATUS "VX_RENDERER = gles [VX_RENDERER_GLES=1] (OpenGL ES 3.0+ canvas — G1.2+ implementation)")
+else()
+  add_compile_definitions(VX_RENDERER_SOFTWARE=1)
+endif()
+# G1.2 GLESDisplay 实施时再 include FindGLES.cmake / link
+```
+
+### 适用场景
+
+| 场景 | 适用 |
+|---|:-:|
+| Flag / option 落地（无代码使用 dep）| ✅ 强适用 |
+| Module 抽象层落地（仅 #if guard / 无 #include）| ✅ 适用 |
+| 实现层落地（`#include <gles3/gl.h>` 出现）| ❌ 必须引入 dep |
+| 测试 / examples 引用 dep | ❌ 必须引入 dep |
+
+### 交叉引用
+
+- `docs/plans/2026-05-05-cmake-vx-renderer-flag.md` §0.4 偏差 #1（YAGNI 校正实证）
+- `cmake/VxRenderer.cmake`（first-evidence 实施代码）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.1 + §5.1（YAGNI 推论）
+
+---
+
+## ctest cmake -P stub probe 范式（TASK-20260505-05 反思入库 / first-evidence — 600-1200× 加速）
+
+> **TASK-05 G1.1 stub probe 范式 first-evidence**：测试 cmake module 行为时，使用 3 行 stub 项目 `cmake_minimum_required + project + include(<module>)` 比配置全项目快 **600-1200×**（~0.05s vs ~30-60s/scenario）。
+
+### 模式定义
+
+测试 cmake module（如 `cmake/VxRenderer.cmake`）应使用**最小验证表面**（stub probe），而非配置整个项目：
+
+| 设计 | 单 scenario 时间 | 4 scenarios ctest tail |
+|---|:-:|:-:|
+| ❌ 全项目 configure（plan §3 步骤 2 初版）| ~30-60 sec | ~120-240 sec |
+| ✅ stub probe（include cmake module）| **~0.05 sec** | **~1-2 sec** |
+| **加速比** | **~600-1200×** | **~60-120×** |
+
+### Stub probe 模板
+
+```cmake
+# scratch/CMakeLists.txt（3 行 + 1 注释）
+cmake_minimum_required(VERSION 3.20)
+project(<module>_probe LANGUAGES NONE)  # NONE 避免 C/CXX 编译器探测开销
+include(${SOURCE_DIR}/cmake/<module>.cmake)
+```
+
+### 关键洞察
+
+测试 cmake module 行为 ≠ 测试整个项目；前者关心 module 内部逻辑（option / validate / compile def），后者关心整体 build closure。**精确匹配测试目标 = 极速 ctest tail。**
+
+### 适用场景
+
+| 场景 | 适用 |
+|---|:-:|
+| 测试 cmake module 内部 option/validate 逻辑 | ✅ 强适用（本任务）|
+| 测试 cmake module 与项目 build 的集成 | ⚠️ 半适用（需 drift guard 静态 grep 顶层 CMakeLists.txt）|
+| 测试 link closure / binary size diff | ❌ 不适用（必须真实 artifact）|
+| 测试 ctest 集成 / target 注册 | ❌ 不适用（必须真实 add_executable）|
+
+### 漂移防护
+
+stub probe 测的是 module 而非项目；为防止「module 完美但顶层 CMakeLists.txt 不 include」的漂移，**必须**加静态 grep guard：
+
+```cmake
+file(READ "${SOURCE_DIR}/CMakeLists.txt" _top_cml_content)
+if(NOT _top_cml_content MATCHES "include.*<module>\\.cmake")
+  message(FATAL_ERROR "<module>.cmake not included in top-level CMakeLists.txt")
+endif()
+```
+
+### 交叉引用
+
+- `tests/smoke/vx_renderer_flag_check.cmake`（first-evidence 实施代码 / 含 drift guard）
+- `tests/smoke/devtool_a14_link_closure.cmake`（既有 cmake -P 范式 base）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.6 + §5.3（600-1200× 加速实测）
+
+---
+
+## REFACTOR 涌现单一真相源模式（TASK-20260505-05 反思入库 / first-evidence — plan 未规划 / build emergent design）
+
+> **TASK-05 G1.1 first-evidence**：plan §3 步骤 3 原计划「内联 ~20 行验证逻辑到顶层 CMakeLists.txt」/ build 阶段 RED 后 REFACTOR 涌现「抽到 `cmake/VxRenderer.cmake` 单一真相源」/ 0 漂移风险 / smoke 直接 include 测试生产代码。
+
+### 模式定义
+
+某些结构改进（如「单一真相源抽取」）是 **build 阶段 REFACTOR 阶段才会自然涌现**的设计，plan 阶段过度细化反而**增加规划负担 + 限制 emergent design**。
+
+### TASK-05 G1.1 实证
+
+| 维度 | plan 内联设计 | REFACTOR 抽取设计 |
+|---|---|---|
+| 顶层 CMakeLists.txt | +20 行验证逻辑内联 | **+8 行**（include + 注释）|
+| 单一真相源 | ❌ 内联 | ✅ `cmake/VxRenderer.cmake`（36 行）|
+| smoke 测试目标 | 复制粘贴重写验证逻辑 | ✅ 直接 `include(cmake/VxRenderer.cmake)` 测试**生产代码** |
+| 漂移风险 | 中（顶层 vs smoke 双副本可能漂移）| 0（单一真相源 + drift guard）|
+| 后续扩展 | 难（每加一项 option 顶层 +N 行）| 易（cmake/ 目录可扩展为多 module 共享地）|
+
+### 涌现的触发条件
+
+- **build 阶段 RED 信号** — RED 测试报「顶层 CMakeLists.txt 未 include cmake module」时，自然提示「为什么不直接抽出共享 module？」
+- **plan 阶段未充分细化结构** — plan §2 文件结构表只列了 3 个文件，emergent 第 4 个文件（cmake/VxRenderer.cmake）出现在 build 阶段
+- **非线性涌现** — REFACTOR 不是单纯「修代码格式」，而是「设计重新分层」
+
+### 模式参数
+
+- 涌现频率：~1 次/Level 2 实施类首步任务（TASK-05 G1.1 first-evidence）
+- LOC 影响：plan 总计 +20%-40%（cmake/<module>.cmake 36 行 / drift guard 12 行）→ 命中 P2.2「LOC ×1.3-1.5 buffer」
+- 落地位置：build 阶段 REFACTOR 步骤（TDD 三阶第 3 步）
+
+### writing-plans 改进建议（待 P2 累积）
+
+writing-plans「文件结构」段加 checklist：「是否需要为新 cmake module / config 抽 cmake/ 子目录？」 — 提示 plan 阶段提前思考但**不强制**列入文件清单（允许 emergent）。
+
+### 交叉引用
+
+- `cmake/VxRenderer.cmake`（first-evidence 实施代码）
+- `tests/smoke/vx_renderer_flag_check.cmake` line 35-44（drift guard 实施）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.4（涌现触发条件详述）
+
+---
+
+## P0 协议「plan/spec docs 落盘即 commit」quint-evidence（TASK-20260505-05 反思入库 / quad → quint-evidence 升级 / 实施类 Level 2 首次实证）
+
+> **TASK-05 G1.1 quint-evidence 第 5 数据点 ✅**：实施类 Level 2 任务首次实证（前 4 个均为 V2=a 蓝图或工作流元任务）/ commit `41ef50a` plan + Memory Bank ×3 单 commit 落盘 / 0 collateral / 5 数据点累计达 quint-evidence。
+
+### 5 数据点累计
+
+| # | 任务 | 任务类型 | commit hash | 文件数 | 实施情况 |
+|:-:|---|---|---|:-:|:-:|
+| 1 | TASK-20260505-01 | 实施类 Level 3 | 提议（V0）| - | 仅提议 / 未实施 |
+| 2 | TASK-20260505-02 | 实施类 Level 2 | 部分实施（V1）| - | 部分实施 |
+| 3 | TASK-20260505-03 | V2=a 蓝图 Level 4 | `1555cf4`（V2 / 完整）| 8（plan + spec + creative ×3 + MB ×3）| 首次完整 ✅ |
+| 4 | TASK-20260505-04 | 工作流元任务 Level 2-3 | `02dd40c`（V3 / 自吃狗粮）| 4（plan + MB ×3）| 自吃狗粮 ✅ |
+| **5** | **TASK-20260505-05** | **实施类 Level 2** ⭐ | **`41ef50a`（V4 / 自吃狗粮）** | **4（plan + MB ×3）** | **自吃狗粮 + 实施类首次实证 ✅** |
+
+### 适用性矩阵（quint-evidence 已确立）
+
+| 任务类型 | 适用 | 实证 |
+|---|:-:|---|
+| V2=a 蓝图任务 Level 4 | ✅ 强适用 | TASK-05-03 |
+| 工作流元任务 Level 2-3 | ✅ 强适用 | TASK-05-04 |
+| **实施类任务 Level 2** | ✅ **适用（quint-evidence 新覆盖）** | **TASK-05-05** |
+| 实施类任务 Level 1 | ⚠️ 半适用（plan 可能为空 / 跳过 P0 协议）| 待实证 |
+| Level 4 实施类（多 Phase / build 阶段拆分）| ⚠️ 部分适用（plan + MB 单 commit 可行 / build 各 Phase 单独 commit）| 待实证 |
+
+### 升级到 P0 固化（writing-plans.mdc P1.5 段）
+
+quint-evidence 已达 / **建议下次工作流元任务批量落地时升级 writing-plans.mdc P1.5 段实证表为 quint-evidence + 加实施类 Level 2 适用性子条**。
+
+### 交叉引用
+
+- `.cursor/rules/skills/writing-plans.mdc` P1.5 段（规则源 / quad-evidence 表）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §3.3（quint-evidence 详细实证）
+
+---
+
+## LOC ×1.3-1.5 buffer dual-evidence（TASK-20260505-05 反思入库 / TASK-04 first + TASK-05 dual / dual-evidence 已固化）
+
+> **LOC ×1.3-1.5 buffer dual-evidence**：TASK-04 工作流元任务实测 ×1.30-1.76（first）+ TASK-05 G1.1 实测 ×1.4（second）= dual-evidence 已固化。两次实测均**命中 buffer 上限**（×1.4-1.5 范围）/ 偏高根因可分类。
+
+### 模式定义（重申 / 见 writing-plans.mdc P2.2 段）
+
+plan 阶段 LOC 估算应附 ×1.3-1.5 buffer，覆盖以下隐性附加工作：
+1. 文档化注释（Doxygen / commit-friendly 注释）
+2. 错误信息文本（含国际化）
+3. drift guard 静态校验
+4. ctest pattern 集成
+5. **REFACTOR 涌现新文件（dual-evidence 新增）**
+6. 测试代码（如未单独估算）
+
+### 2 数据点累计
+
+| # | 任务 | plan 估 | 实测 | 比值 | 偏高根因 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1 | TASK-20260505-04 | 510-690 行 | **897 行** | **×1.30-1.76** | Doxygen + commit-friendly 注释 + lazy-attach contract 注释 |
+| **2** | **TASK-20260505-05 G1.1** | **120 行** | **168 行** | **×1.4** | **REFACTOR 涌现 cmake/VxRenderer.cmake +36 行** + smoke drift guard +12 行 |
+
+### 偏高根因分类（dual-evidence 后细化）
+
+| 根因 | 平均 LOC 影响 | 落地位置 |
+|---|:-:|---|
+| Doxygen / commit-friendly 注释 | +5-10% | 既有 |
+| ctest pattern 集成 | +5-15% | 既有 |
+| **REFACTOR 涌现新文件**（dual-evidence 新增）| +20-40% | **新增分类** |
+| **drift guard 静态校验**（dual-evidence 新增）| +5-15% | **新增分类** |
+
+### writing-plans.mdc P2.2 段升级建议
+
+**已达 dual-evidence ✅** / 建议升级 writing-plans.mdc P2.2 段：
+- 在「隐性附加工作类型清单」加 #5「REFACTOR 涌现新文件」+ #6「drift guard 静态校验」
+- 在 buffer 系数表注明「dual-evidence 已固化（TASK-04 + TASK-05）」
+
+### 交叉引用
+
+- `.cursor/rules/skills/writing-plans.mdc` P2.2 段（规则源 / single-evidence base）
+- `memory-bank/reflection/reflection-TASK-20260505-05.md` §4.4（dual-evidence 详细实证）
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持
