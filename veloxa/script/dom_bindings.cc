@@ -173,6 +173,7 @@ const char* EventTypeToString(event::EventType type) {
 
 static JSClassID s_element_class_id = 0;
 static JSClassID s_style_class_id = 0;
+static JSClassID s_children_class_id = 0;  // TASK-20260505-01 B-G1
 
 dom::Element* GetElement(JSContext* /*ctx*/, JSValueConst this_val) {
   return static_cast<dom::Element*>(
@@ -209,6 +210,32 @@ void StyleFinalizer(JSRuntime* /*rt*/, JSValueConst val) {
 JSClassDef g_style_class_def = {
     "CSSStyleDeclaration",
     StyleFinalizer,
+    nullptr,
+    nullptr,
+    nullptr,
+};
+
+// ----- HTMLCollection-like array-like proxy (B-G1, TASK-20260505-01) -----
+//
+// el.children returns a snapshot collection of immediate Element children
+// (Text/Comment skipped). Numeric index properties are populated at
+// construction via JS_SetPropertyUint32; .length comes from the opaque
+// slot's stored count. Not live — re-read el.children each access to
+// refresh. Range parallels existing Style proxy pattern (single opaque
+// JS class + prototype-installed getter).
+struct ChildrenOpaque {
+  usize length;
+};
+
+void ChildrenFinalizer(JSRuntime* /*rt*/, JSValueConst val) {
+  auto* co = static_cast<ChildrenOpaque*>(
+      JS_GetOpaque(val, s_children_class_id));
+  delete co;
+}
+
+JSClassDef g_children_class_def = {
+    "HTMLCollection",
+    ChildrenFinalizer,
     nullptr,
     nullptr,
     nullptr,
@@ -639,6 +666,39 @@ JSValue WrapElement(JSContext* ctx, dom::Element* el) {
   return obj;
 }
 
+// ----- B-G1 children getter (TASK-20260505-01) -----
+
+JSValue ChildrenGetLength(JSContext* ctx, JSValueConst this_val) {
+  auto* co = static_cast<ChildrenOpaque*>(
+      JS_GetOpaque(this_val, s_children_class_id));
+  if (!co) return JS_NewInt32(ctx, 0);
+  return JS_NewInt32(ctx, static_cast<int>(co->length));
+}
+
+JSValue ElementGetChildren(JSContext* ctx, JSValueConst this_val) {
+  auto* el = GetElement(ctx, this_val);
+  if (!el) return JS_NULL;
+
+  JSValue collection =
+      JS_NewObjectClass(ctx, static_cast<int>(s_children_class_id));
+  if (JS_IsException(collection)) return collection;
+
+  // Snapshot iterate immediate children; skip non-Element nodes (Text/Comment).
+  usize index = 0;
+  for (dom::Node* child = el->first_child(); child;
+       child = child->next_sibling()) {
+    if (!child->is_element()) continue;
+    auto* child_el = static_cast<dom::Element*>(child);
+    JSValue wrapped = WrapElement(ctx, child_el);
+    JS_SetPropertyUint32(ctx, collection, static_cast<u32>(index), wrapped);
+    ++index;
+  }
+
+  auto* co = new ChildrenOpaque{index};
+  JS_SetOpaque(collection, co);
+  return collection;
+}
+
 // ----- DOM tree traversal -----
 
 dom::Element* FindElementById(dom::Element* root, StringView id) {
@@ -696,6 +756,29 @@ void RegisterStyleClass(JSContext* ctx) {
   JS_SetClassProto(ctx, s_style_class_id, proto);
 }
 
+// TASK-20260505-01 B-G1: HTMLCollection-like proxy class registration.
+// Same lifecycle pattern as RegisterStyleClass — process-wide class id
+// (idempotent re-registration on repeated Bind within a single runtime).
+void RegisterChildrenClass(JSContext* ctx) {
+  JSRuntime* rt = JS_GetRuntime(ctx);
+  if (s_children_class_id == 0) {
+    JS_NewClassID(rt, &s_children_class_id);
+  }
+  if (!JS_IsRegisteredClass(rt, s_children_class_id)) {
+    JS_NewClass(rt, s_children_class_id, &g_children_class_def);
+  }
+
+  JSValue proto = JS_NewObject(ctx);
+  JSAtom len_atom = JS_NewAtom(ctx, "length");
+  JS_DefinePropertyGetSet(
+      ctx, proto, len_atom,
+      MakeGetter(ctx, ChildrenGetLength, "get length"),
+      JS_UNDEFINED, 0);
+  JS_FreeAtom(ctx, len_atom);
+
+  JS_SetClassProto(ctx, s_children_class_id, proto);
+}
+
 void RegisterElementClass(JSContext* ctx) {
   JSRuntime* rt = JS_GetRuntime(ctx);
   if (s_element_class_id == 0) {
@@ -748,6 +831,14 @@ void RegisterElementClass(JSContext* ctx) {
       MakeGetter(ctx, ElementGetStyle, "get style"),
       JS_UNDEFINED, 0);
   JS_FreeAtom(ctx, style_atom);
+
+  // TASK-20260505-01 B-G1: children getter — HTMLCollection-like array-like.
+  JSAtom children_atom = JS_NewAtom(ctx, "children");
+  JS_DefinePropertyGetSet(
+      ctx, proto, children_atom,
+      MakeGetter(ctx, ElementGetChildren, "get children"),
+      JS_UNDEFINED, 0);
+  JS_FreeAtom(ctx, children_atom);
 
   JS_SetClassProto(ctx, s_element_class_id, proto);
 }
@@ -842,6 +933,7 @@ void DomBindings::Bind(JSContext* ctx, dom::Document* doc,
   data_->tracked_callbacks.ctx = ctx;
 
   RegisterStyleClass(ctx);
+  RegisterChildrenClass(ctx);  // TASK-20260505-01 B-G1
   RegisterElementClass(ctx);
   RegisterDocumentObject(ctx, doc);
 }

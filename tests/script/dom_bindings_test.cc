@@ -344,6 +344,57 @@ TEST_F(DomBindingsTest, RemoveEventListenerByTypeOnlyRemovesAll) {
   EXPECT_EQ(r.value(), "0");
 }
 
+// ----- B-G1 children getter (TASK-20260505-01 Phase A.1) -----
+//
+// HTMLCollection-like array-like proxy: snapshot of immediate Element
+// children (Text/Comment skipped). Numeric index direct properties are
+// populated at construction time; .length comes from the opaque slot.
+// Not live — re-read el.children to refresh.
+
+TEST_F(DomBindingsTest, ChildrenLengthEmpty) {
+  // btn_ has only a Text child ("Click"); no Element children → length=0.
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('btn').children.length",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "0");
+}
+
+TEST_F(DomBindingsTest, ChildrenSkipsTextNodes) {
+  // div_ has only a Text child ("Hello") in SetUp — children must filter
+  // it out and report length=0.
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').children.length",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "0");
+}
+
+TEST_F(DomBindingsTest, ChildrenLengthNonEmpty) {
+  auto* nested1 = doc_.CreateElement(dom::TagId::kSpan);
+  nested1->set_id(InternedString::Intern("c1"));
+  div_->AppendChild(nested1);
+  auto* nested2 = doc_.CreateElement(dom::TagId::kSpan);
+  nested2->set_id(InternedString::Intern("c2"));
+  div_->AppendChild(nested2);
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').children.length",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "2");
+}
+
+TEST_F(DomBindingsTest, ChildrenIndexAccess) {
+  auto* nested = doc_.CreateElement(dom::TagId::kSpan);
+  nested->set_id(InternedString::Intern("nested"));
+  div_->AppendChild(nested);
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').children[0].id",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "nested");
+}
+
 // ----- Lifecycle / multi-instance regression tests (TASK-20260418-01) -----
 
 TEST(DomBindingsLifecycleTest, JSClassIdStableAcrossBindings) {
