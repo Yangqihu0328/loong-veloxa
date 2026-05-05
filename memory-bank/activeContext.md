@@ -2,388 +2,57 @@
 
 ## 当前阶段
 
-**回顾完成** — TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / **dual-evidence 第 2 实证** / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅，待 `/archive`。
+**空闲** — 等待新任务。
 
-**Reflect 阶段产出（2026-05-05 ~18:25 / 实测 ~10-15 min / 极速区 ~0.10× 子档）：**
+**最近闭环：** TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / **dual-evidence 第 2 实证** / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）✅ 已归档闭环 / 分支 `feature/TASK-20260505-04-workflow-meta-batch` 已合并 main 并删除。
 
-- **回顾文档：** [`memory-bank/reflection/reflection-TASK-20260505-04.md`](memory-bank/reflection/reflection-TASK-20260505-04.md)（10 段 / Level 2-3 详细回顾）
+**TASK-04 总产出：**
 
-- **5 个 systemPatterns 沉淀（2 新段 + 2 累计升级 + 1 既有段升级）：**
-  - **新段 1：「工作流元任务范式 dual-evidence」** — TASK-03-02 first + TASK-05-04 dual / 平均参数（10 子项 / 5 文件 / 634 行 / 40 min / 100% 反复模式抑制）+ commit 拆分决策树
-  - **新段 2：「极致 dogfooding 范式」** — 三层 dogfooding 模式（决策选择 / VAN 即时启用 / build 后即时验证）+ TASK-05-04 first-evidence
-  - **累计升级 1：「跨决策协同度 100% 第 13 次连续命中」** — dec → endec → doudec → 第 13 次 / 累计 121/121 历史最高 streak
-  - **累计升级 2：「plan ×0.6 oct-evidence」** — sept → oct（第 8 数据点）/ 双子档分化（V2=a 蓝图 0.02-0.05× + 工作流元 0.11-0.19×）
-  - **既有段升级：P0 协议 quad-evidence 实证表** — TASK-05-04 自吃狗粮入证 / quad-evidence 已固化 / writing-plans P1.5 段升级
+- **14.5 / 14.5 子项 100% 落地 ✅**（10 P1 + 4 P2 / 6 文件 / +897 行 build / +407 行 reflect / +568 行 plan / ~250 行 archive ≈ ~2122 行总产出）
+- **5 个 systemPatterns 沉淀**（2 新段 + 2 累计升级 + 1 既有段升级 / 全部已落实）
+- **5 个范式里程碑**（dual-evidence + quad-evidence + 13 次连续命中 + oct-evidence + 极致 dogfooding）
+- **跨决策协同度：** 8/8 D 决策 1 次 AskQuestion all_recommended 锁定 / 第 13 次连续命中 / 累计 121/121 历史最高 streak
+- **plan ×0.6 实测系数：** 全任务 ~0.36-0.48× 极速区（Build 阶段 0.11-0.19× 极致极速区 / 工作流元任务子档新低）
+- **反复模式抑制：** 0/8 全程 4 阶段保持（VAN + Plan + Build + Reflect）+ 累计 17 模式连续抑制 / 历史新高
+- **极致 dogfooding 三层闭环 ✅**（D8=A P0 协议自吃狗粮 + P2.3 重复 anchor VAN 即时启用 + P2.2 LOC ×1.3 buffer 实测印证）
 
-- **改进建议汇总（8 项 / P0×0 + P1×5 + P2×3）：**
-  - **P0：** 0 项（无紧急改进 / 工作流元任务范式成熟）
-  - **P1×5：** writing-plans LOC 表格密度系数 / systemPatterns 工作流元任务 dual-evidence（已落实 ✅）/ 跨决策协同度 13 次连续命中升级（已落实 ✅）/ plan ×0.6 oct-evidence（已落实 ✅）/ P0 协议 quad-evidence 段升级（已落实 ✅）
-  - **P2×3：** git-workflow 实测数据采集协议子条 / systemPatterns 极致 dogfooding 范式（已落实 ✅）/ lazy-attach quad-evidence 段加 TASK-05-04 标注
-
-- **反复模式 0/8 抑制延续 + Reflect 阶段也保持 0/8**（VAN + Plan + Build + Reflect 四阶段全程保持 / 累计 17 模式连续抑制 / 历史新高）
-
-- **回顾质量自评：** 4.6/5（计划-实际对比详尽 + 7 关键发现 + 8 改进建议 + 4 新沉淀候选）
-
-**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / Level 2-3 工作流元任务 / dual-evidence 第 2 实证 / 分支 `feature/TASK-20260505-04-workflow-meta-batch`
-
-**下一步：** `/archive` — 进入归档阶段，沉淀 dual-evidence + quad-evidence + 13 次连续命中 + oct-evidence + 极致 dogfooding 5 个范式。
-
-**Build 阶段产出（2026-05-05 ~18:10 / 实测 ~20-25 min）：**
-
-- **6 build commits 全部落地 ✅**（D1=B 6 commit / 文件 + D2=A 文件聚合顺序）：
-  - `f109933` Phase B.1 — `writing-plans.mdc` 7 子项（+460 行）
-  - `2369e23` Phase B.2 — `systemPatterns.md` 3 子项（+154 行）
-  - `374556e` Phase B.3 — `git-workflow.mdc` 2 子项（+159 行）
-  - `465b0a1` Phase B.4 — `brainstorming.mdc` 1 子项（+59 行）
-  - `c51e668` Phase B.5 — `main.mdc` 1 子项（+26 行）
-  - `4765224` Phase B.6 — `veloxa_api.h` 1 子项（+39 行）
-
-- **14.5 / 14.5 子项 100% 关键字符串 grep 入库 ✅**（验证全 ✅）
-
-- **总改动量：** +897 行 / 6 文件改动 / 0 文件创建（vs plan 估 +510-690 行 / **实际 +1.30-1.76× plan 上限** = 隐性附加工作类型 1+2+6 命中：Doxygen + commit-friendly 注释 + lazy-attach contract 注释）
-
-- **Build 阶段 plan ×0.6 实测系数：** ~20-25 min vs plan ×0.6 ~130-180 min = **~0.11-0.19× 极致极速区**（比 Plan 阶段 0.18-0.30× 还快 / 工作流元任务范式高度复用 + 文档结构清晰 + 决策 100% 锁定无返工）
-
-- **反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程保持）
-
-- **ctest baseline 0 漂移**（仅文档/规则改动 / 0 编译影响 / 沿用 TASK-03-02 工作流元任务范式 / 无需运行 ctest 验证）
-
-**8 commits 总线（VAN 1 + Plan 1 + Build 6）：**
-```
-4765224 docs(api): add lazy-attach contract documentation to veloxa_api.h
-c51e668 docs(main): upgrade Level 4 V2=a blueprint variant to triple-evidence
-465b0a1 docs(brainstorming): add P1.3 Phase 0 grep evidence-driven push-back
-374556e docs(git-workflow): batch land P1.10 + P2.1 commit body templates
-2369e23 docs(systemPatterns): batch land P1.4 + P2.3 + P2.4
-f109933 docs(writing-plans): batch land 7 P1+P2 tech debt items
-02dd40c chore(workflow): land plan + memory bank [P0 dogfood / quad-evidence 候选]
-3a1e610 chore(workflow): initialize TASK-20260505-04
-```
-
-**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / Level 2-3 工作流元任务 / 分支 `feature/TASK-20260505-04-workflow-meta-batch`
-
-**下一步：** `/reflect` — 进入回顾阶段，沉淀本次工作流元任务范式 dual-evidence + plan ×0.6 极致极速区 oct-evidence 候选 + 跨决策协同度 13 次连续命中 + P0 协议 quad-evidence 升级 + 反复模式 0/8 抑制全程。
-
-**Plan 阶段产出（2026-05-05 ~17:50 / D8=A 自吃狗粮 / P0 协议「plan/spec docs 落盘即 commit」实践）：**
-
-- **8/8 D 决策 1 次 AskQuestion all_recommended 锁定**（跨决策协同度 100% **第 13 次连续命中** / dec → endec → doudec → 第 13 次 / 累计 121/121）：
-  - **D1-B** 6 commit / 文件（同文件 batch 收益 + git bisect 精度足够 + 14 项规模适配最优）
-  - **D2-A** 文件聚合实施顺序（writing-plans 7 → systemPatterns 3 → git-workflow 2 → brainstorming 1 → main 1 → veloxa_api 1）
-  - **D3-B** P1.5 P0 协议完整段 ~80-120 行（沿用既有 writing-plans 段式范本 / triple-evidence 应配完整规范）
-  - **D4-A** 文档调整模式（沿用 TASK-03-02 / 无 ctest 验证 / grep audit + Read 结构验证）
-  - **D5-B** P1.9 + P2.2 分开（不同主题 / 单一职责）
-  - **D6-A** P1.7 veloxa_api.h 顶部 `/* */` doc 段
-  - **D7-B** 仅 plan 无独立 spec（沿用 TASK-03-02 范式 / 工作流元任务豁免 spec）
-  - **D8-A** P0 协议自吃狗粮（plan + MB 单 commit / triple → **quad-evidence** 候选升级）
-
-- **主交付物（plan + Memory Bank ×3 / D8=A 自吃狗粮单 commit）：**
-  - `docs/plans/2026-05-05-workflow-meta-batch.md`（~660 行 / 10 段全覆盖 / 7 phase + Phase 0 audit + ctest 矩阵 + 反复模式预防 + CP1+CP2）
-  - `memory-bank/activeContext.md`（更新 Plan 阶段产出）
-  - `memory-bank/tasks.md`（加 Plan 阶段产出段）
-  - `memory-bank/progress.md`（加 Plan 阶段时间线）
-
-- **8 commits 时间线规划（D1=B 6 commit/文件 + D8=A plan dogfood）：**
-  - VAN（已 commit `3a1e610`）✅
-  - **Plan 自吃狗粮（待 commit / 含本 plan + MB 三件套）**
-  - Build B.1 docs(writing-plans) — 7 子项
-  - Build B.2 docs(systemPatterns) — 3 子项
-  - Build B.3 docs(git-workflow) — 2 子项
-  - Build B.4 docs(brainstorming) — 1 子项
-  - Build B.5 docs(main) — 1 子项
-  - Build B.6 docs(api) — 1 子项（lazy-attach contract 头部 doc）
-  - Build B.7 chore(build) finalize
-
-- **Phase 0 audit 10/10 实证 ✅**（writing-plans 1079 行 + brainstorming 161 行 + git-workflow 228 行 + main 148 行 + systemPatterns 3663 行 + veloxa_api.h 431 行 + TASK-03-02 工作流元任务范式参考 + doudec-evidence + V2=a triple-evidence + 既有完整段范本 + commit `1555cf4` 8 段范本实例源）
-
-- **estimaate（plan ×0.6）：** ~130-180 min / 预期实测 ~50-80 min（极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
-
-- **反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持）
-
-**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / Level 2-3 工作流元任务 / 分支 `feature/TASK-20260505-04-workflow-meta-batch`
-
-**下一步：** `/build` — 进入构建阶段，按 Phase B.1-B.6 文件聚合顺序逐 commit 落地（共 6 build commits + 1 finalize commit）。
-
-**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / 分支 `feature/TASK-20260505-04-workflow-meta-batch`（基于 main `b085a85` ✅ 创建）
-
-**任务范围（14 项 P1 + P2 跨任务沉淀批量落地）：**
-
-- **P1 ×10 项**（来自 TASK-20260503-04 / 03-05 / 05-01 / 05-02 / 05-03 reflect 段）— 主要落实到 `.cursor/rules/skills/writing-plans.mdc`（5 子项）+ `.cursor/rules/skills/brainstorming.mdc`（1）+ `.cursor/rules/skills/git-workflow.mdc`（1）+ `.cursor/rules/main.mdc`（1）+ `memory-bank/systemPatterns.md`（1）+ `veloxa/api/veloxa_api.h`（1）
-- **P2 ×4 项**（来自 TASK-20260503-02 / 03-03 / 05-03 reflect 段）— 主要落实到 `.cursor/rules/skills/git-workflow.mdc`（1）+ `.cursor/rules/skills/writing-plans.mdc`（1）+ `memory-bank/systemPatterns.md`（2）
-
-**升级到 P0 立即固化的子项：** P1 #6（`writing-plans.mdc` 「plan/spec docs 落盘即 commit」P0 协议固化 / **triple-evidence 已达固化阈值** / TASK-20260505-01 提议 → 02 部分 → 03 完整实施）— 本任务最高优先级子项。
-
-**估时（plan ×0.6）：** ~130-180 min（14 项 / 平均 ~10-15 min/项）/ 预期实测 ~50-80 min（按 sept-evidence 极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
-
-**最近闭环：** TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（Level 4 V2=a 蓝图）✅ 已归档闭环（archive commit `ecf7b87` / 主交付 `1555cf4`）/ 分支 `feature/TASK-20260505-03-gles-renderer-blueprint` 已合并 main 并删除。**MVP-C 战略主线已启动 ✅** — G1 OpenGL ES 蓝图主交付完成 / 18 实施子任务规格化 / 用户后续基于本蓝图独立立项。
-
-**当前 ctest baseline：** DEVTOOL=ON 1302/1302 / DEVTOOL=OFF 1109/1109（保持 TASK-20260505-02 完成时数字 / 蓝图任务 0 影响）
-
-**3 个范式升级（systemPatterns.md reflect 阶段直接落地 ✅）：**
-1. **跨决策协同度 100% doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / 跨阶段协同度首次实证）
-2. **plan ×0.6 极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
-3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
-
-**P1 改进建议已迁移待处理事项（5 项）：** P1 #4 main.mdc V2=a 标注 / P1 #5 writing-plans.mdc 子任务深浅梯度 / P1 #6 git-workflow.mdc commit body 范本 / P2 #7 + P2 #8 长期沉淀（详见下方「待处理事项」段）
-
----
-
-<details>
-<summary>历史详细产出（点开展开 / 任务已归档闭环）</summary>
-
-**TASK-20260505-03 完整时间线（Level 4 V2=a 蓝图任务）：**
-
-- **VAN（2026-05-05 ~16:25）：** 5 V 决策 1 次 AskQuestion all_recommended 锁定（跨决策协同度 100% 第 11 次 / endec-evidence）/ Phase 0 audit 4 维度全 ✅
-- **Plan（2026-05-05 ~17:30）：** 8 B 决策 1 次 AskQuestion all_recommended 锁定（跨决策协同度 100% 第 12 次 / **doudec-evidence**）/ commit `1555cf4` plan + spec + creative ×3 + MB ×3 = **8 files 单 commit P0 协议首次完整实施 ✅**
-- **Reflect（2026-05-05 ~17:10）：** reflection ~430 行 / 3 个范式升级直接落地（doudec / 极致极速区 / V2=a triple-evidence）/ 8 改进建议 P0×3 + P1×3 + P2×2 / commit `8ea3f01`
-- **Archive（2026-05-05 ~17:30）：** archive ~330 行 / techContext.md 新增 GLES 技术栈预声明段 / commit `ecf7b87` + reset to idle commit / 分支合并 main + 删除
-
-**主交付（V2=a 蓝图 / 共 3376 行 / 落 2500-3550 上界 ✅）：**
-- `docs/specs/2026-05-05-gles-renderer-blueprint-design.md`（942 行 / 13 段全覆盖 / 13 决策矩阵 + 7 威胁面 + G1→G2 边界）
-- `docs/plans/2026-05-05-gles-renderer-blueprint.md`（773 行 / 18 子任务详细规格 + ctest 矩阵 + commit 范本 + 安全任务清单）
-- creative ×3：context（369 / B1）+ canvas（527 / B2）+ resources（765 / B3+B4+B6）
-
-**度量数据：** 任务数 7+18 / 100% 命中 / 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区** / commits 4（VAN + Plan + Reflect + Archive）/ 决策协同度 100%（13/13）/ 反复模式 0/8 抑制（5 任务连续）/ Phase 0 audit ROI ≈ ∞ / P0 协议三次实证（已达固化阈值）/ 范式升级 3 同时
-
-**P0 改进建议落实状态：** P0 #2 + P0 #3 ✅ reflect 直接落地（systemPatterns.md）/ P0 #1 升级到 activeContext P1 #6 待批量落地（涉及规则文件改动 / triple-evidence 已达 writing-plans.mdc 固化阈值）
-
-</details>
-
----
-
-## 上次任务（已归档闭环）
-
-### TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（Level 4 V2=a 蓝图）— ✅ 已归档（commit `ecf7b87`）
-
-**最近闭环（保留供下游任务参考）：** **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图（核心目标 #2「嵌入式硬件加速」第一刚需）/ 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 + V2=a triple）。
-
-- **归档文档：** `memory-bank/archive/archive-TASK-20260505-03.md`（~330 行 / Level 4 全面归档 / 10 段）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-03.md`（~430 行 / Level 4 全面回顾 / 9 段 / 7 关键发现 + 8 改进建议）
-- **主交付：** 4 commits / +3501 行 / 8 files 主交付单 commit / 净 +3498 行
-- **跨决策协同度：** 13/13 决策 1+1 次 AskQuestion 跨阶段全锁定 / 第 11+12 次连续命中 / 累计 113/113 / dec → endec → **doudec-evidence** 跳级
-- **plan ×0.6 比值：** ~0.02-0.04×（实测 ~30-40 min vs plan ×0.6 ~17-25 h）/ **极致极速区 0.02-0.05× 新子档** / sext → **sept-evidence** 第 7 数据点
-- **V2=a 蓝图范式：** triple-evidence / 范式稳定（3 任务平均 12.3 决策 / ~3030 行 / ~38 min）
-- **反复模式命中：** 0/8 全抑制（5 任务连续保持）
-- **P0 协议：** 「plan/spec docs 落盘即 commit」首次完整实施 ✅ / triple-evidence 已达 writing-plans.mdc 固化阈值
-- **ctest 影响：** 0（蓝图阶段不实施 / DEVTOOL=ON 1302/1302 + DEVTOOL=OFF 1109/1109 baseline 保持）
-
----
-
-<details>
-<summary>归档历史 — TASK-20260505-03 先前任务规划存档</summary>
-
-**TASK-20260505-03 规划阶段存档** — VAN + Plan 阶段总结：
-
-**Plan 阶段产出（2026-05-05 ~17:30）：**
-
-- **8/8 B 决策 1 次 AskQuestion all_recommended 锁定**（跨决策协同度 100% **第 12 次连续命中** / dec → endec → **doudec-evidence 候选** / 累计 113/113）：
-  - **B1-A** SDL_GL_CreateContext + EGL 嵌入式接口预留
-  - **B2-A** 混合（FillRect/RoundedRect = shader / FillPath = libtess2 + VBO / Stroke = Fill 转换）
-  - **B3-A** CPU 光栅化 + GPU texture atlas（GL_R8 + 复用 FreeType + GlyphCache）
-  - **B4-A** ComputeDirtyRect + glScissor + glClear（沿用既有 r3 dirty rect）
-  - **B5-A** software 默认（VX_RENDERER=software\|gles CMake flag / GLES opt-in）
-  - **B6-A** 静态嵌入 .glsl raw string literal（编译期绑定）
-  - **B7-A** 既有 BM_Replay* + 新建 BM_GLESReplay* 同 corpus 双测对照（60fps 1080p budget）
-  - **B8-A** 完整预留（ContextLost/Restore + GLESDisplay 抽象 + GpuFence 接口）
-
-- **主交付物（V2=a 蓝图 / 共 3376 行）：**
-  - `docs/specs/2026-05-05-gles-renderer-blueprint-design.md`（942 行 / 13 段全覆盖）
-  - `docs/plans/2026-05-05-gles-renderer-blueprint.md`（773 行 / 18 子任务详细规格 + ctest 矩阵 + commit 范本）
-  - `memory-bank/creative/creative-gles-context.md`（369 行 / B1 GL context 创建 / Context Lost 处理 / 版本协商）
-  - `memory-bank/creative/creative-gles-canvas.md`（527 行 / B2 Canvas trampolining / shader-based vs tessellator / Stroke = Fill 转换）
-  - `memory-bank/creative/creative-gles-resources.md`（765 行 / B3 GlyphAtlas + B4 dirty rect + B6 shader 资源 / 完整生命周期协议）
-
-- **18 个 Level 3 实施子任务拆分**（用户后续基于本蓝图独立立项 / ~68-96 h plan ×0.6 / +30% buffer = ~88-125 h）：
-  - G1.1 CMake VX_RENDERER flag (L2)
-  - G1.2 GLESDisplay + Sdl2EGLDisplay (L3)
-  - G1.3 Sdl2GLWindowSurface (L3)
-  - G1.4 GLESCanvas 骨架 (L3)
-  - G1.5 FillRect + FillRoundedRect + Solid Brush (L3)
-  - G1.6 FillPath via libtess2 (L3)
-  - G1.7 Stroke* (L3)
-  - G1.8 GlyphAtlas + DrawText (L4)
-  - G1.9 ImageTexturePool + DrawImage (L3)
-  - G1.10 PushClipRect/PopClip + PushLayer/PopLayer (L3)
-  - G1.11 dirty rect glScissor 集成 (L2)
-  - G1.12 LinearGradient / RadialGradient SDF (L3)
-  - G1.13 Application 构造分支 + fallback (L3)
-  - G1.14 Context Lost / Restore (L3)
-  - G1.15 examples/hello_sdl2 GLES smoke (L2)
-  - G1.16 DevTool dogfood GLES smoke (L3)
-  - G1.17 BM_GLESReplay* 性能基准 (L3)
-  - G1.18 G2 接口预留 audit + GpuFence 头注释占位 (L2)
-
-- **P0「plan/spec docs 落盘即 commit」协议首次完整实施 ✅**（TASK-20260505-02 首次成功 → 本任务首次完整执行 / plan + spec + creative ×3 + Memory Bank 单 commit 落盘）
-
-**VAN 阶段产出（2026-05-05 ~16:25）：**
-
-- **任务 ID：** TASK-20260505-03
-- **任务类型：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
-- **工作流变体：** `/van → /plan（含 brainstorm + creative ×N 内联）→ /reflect → /archive` — **跳过独立 `/build` 阶段**
-- **安全相关：** ⚠️ **是** — GLES context 创建涉及 GPU 驱动 / EGL display 资源生命周期 / shader 编译错误处理 / GL extension 安全枚举
-- **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
-- **5 个 V 决策已锁定**（VAN 阶段 1 次 AskQuestion all_recommended / **跨决策协同度 100% 第 11 次连续命中** / dec → **endec-evidence** 候选）：
-  - **V1-A** GLES only（OpenGL ES 3.0+ 完整蓝图 / Vulkan 仅预留接口位置）
-  - **V2-A** pure_blueprint_a（V2=a 纯蓝图 / 不含 build / 用户后续套 N 个 Level 3 子任务）
-  - **V3-A** desktop_first（桌面 SDL2+EGL/GLX 完整 + 嵌入式抽象接口预留 / DRM/KMS 详设留 G2）
-  - **V4-A** co_design_boundary（G1 定义 Renderer/Surface 抽象 / G2 独立蓝图 / 划界协同）
-  - **V5-A** vx_renderer_flag（VX_RENDERER=software\|gles CMake flag / SoftwareCanvas 作 fallback）
-- **估时（plan ×0.6）：** ~25-40 h（V1=gles_only / V3=desktop_first / V4=co_design_boundary 综合）
-- **主交付物预期：** spec（GLES 后端架构设计 / ~600-800 行）+ plan（N 个 Level 3 实施子任务拆分 / ~800-1200 行）+ creative ×3-5（GL context 创建 / Canvas trampolining / 资源生命周期 / shader 管线 / 性能基线协议）
-
-**前置验证通过 ✅（4 维度）：**
-
-| 维度 | 结果 |
-|---|---|
-| 依赖可获取性 | ✅ EGL + GLES3 dev headers + libgl1-mesa-dri 全部安装（Mesa 26.0.3）|
-| 环境就绪 | ✅ ctest DEVTOOL=ON 1302/1302 baseline / 既有 Graphics HAL 抽象（Canvas + Surface）作为蓝图基础 |
-| 已有 artifact | ✅ `docs/specs/2026-04-05-graphics-platform-hal-design.md` 既有 Canvas 纯虚 + SoftwareCanvas impl 范式可复用 |
-| 待处理事项关联 | ✅ spec §11.2 推荐 #5 / activeContext「下一推荐任务」#1（G1 OpenGL ES / L4 多 Phase / ~30-60+ h plan ×0.6）|
-
-**当前任务：** TASK-20260505-03 — `G1 OpenGL ES 硬件渲染后端蓝图` / Level 4 V2=a / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
-
-**下一步：** `/plan` — 进入规划阶段，brainstorm + creative ×N 内联（V2=a 变体 / 蓝图主交付 = spec + plan + creative ×N）。
-
-</details>
-
----
-
-## 更早归档（已闭环 / 详见 archive 文档）
-
-### TASK-20260505-02 Performance Overlay 持续 invalidate 机制（Level 2）— ✅ 已归档（commit `33ebc99`）
-
-**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。本次启动 G1 OpenGL ES 蓝图即开启 MVP-C 战略主线。
-
-- **归档文档：** `memory-bank/archive/archive-TASK-20260505-02.md`（~408 行 / Level 2 详细归档 / 10 段 / 度量数据汇总表）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 8 改进建议 P0/P1/P2 全分级）
-- **主交付：** 7 commits / +198 行 code + ~640 行 MB/docs（含 reflection 280 行 + plan 1001 行 + spec 544 行）/ 4 新单测 / DEVTOOL=ON 1298→1302 + DEVTOOL=OFF 1105→1109 / hello_devtool_perf_smoke frames=1→**18**（10x 增益）
-- **跨决策协同度：** 4/4 决策 1 次 AskQuestion 锁定 / 第 10 次连续 100% 命中 / 累计 100/100 / nona → **dec-evidence** 升级
-- **plan ×0.6 比值：** 0.26-0.32×（实测 ~30 min vs plan ×0.6 95-115 min）/ 落极速区 0.10-0.20× 续延档 / quint → **sext-evidence** 升级
-- **反向探针：** 3/3 精准有效 / 强度梯度三档全谱（A.1 NULL guard 过高 SEGFAULT / A.1 dirty_ rearm 合适 2/4 / D.1 regex 灵敏度 平衡 1/1）/ dual → **triple-evidence** 升级
-- **反复模式命中：** 0/7 全抑制（连续 4 任务保持 0 命中）+ #8 spec 数据回归第 3 次实证 dual → **triple-evidence** 升级（已达固化阈值）
-- **lazy-attach C ABI 容错模式：** 第 4 次复用 / triple → **quad-evidence** 升级 / 已成 Veloxa 默认范式
-- **ctest：** DEVTOOL=ON 1298→1302 + DEVTOOL=OFF 1105→1109（双 +4）/ dogfood smoke 3/3 PASS
-
-**8 项 P0+P1+P2 改进建议落实情况：**
-
-| # | 建议 | 优先级 | 落实位置 |
-|:-:|---|:-:|---|
-| 1 | systemPatterns「plan ×0.6 sext-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 2 | systemPatterns「跨决策协同度 dec-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 3 | systemPatterns「反向探针强度梯度三档 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 4 | systemPatterns「反复模式 #8 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 5 | systemPatterns「lazy-attach C ABI quad-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 6 | `/plan` 命令固化「plan/spec docs 落盘即 commit」步骤 | **P0 → 升级** | ✅ 沉淀范例 + 📋 待处理事项 P1 #6 |
-| 7 | systemPatterns「MVP-B 100% 闭环里程碑」段 | **P1** | ✅ reflect 阶段直接沉淀 |
-| 8 | techContext「CMake + GTest 增量加测工作流注意事项」段 | **P2** | ✅ reflect 阶段直接沉淀 |
-
-**P0 5/5 + P0 升级 1/1 reflect 阶段直接落实 ✅** + **P1 1/1 (#7) reflect 阶段直接沉淀** + **P2 1/1 (#8) techContext 沉淀**（沿用 [TASK-20260505-01 P0 4/4 全落实范式](memory-bank/archive/archive-TASK-20260505-01.md)）
-
----
-
-<details>
-<summary>历史详细产出（点开展开 / 任务已归档闭环）</summary>
-
-**Reflect 阶段产出（2026-05-05 ~16:00）：**
-
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 6 度量数据）
-- **5 个范式同时升级**（reflection 史上单任务沉淀升级数最高纪录）：
-  - **plan ×0.6 实测系数 sext-evidence**（quint → sext / 第 6 数据点 / 极速区续延档新子档）
-  - **跨决策协同度 100% dec-evidence**（nona → dec / 第 10 次连续 / 累计 100/100）
-  - **反向探针强度梯度三档 triple-evidence**（dual → triple / 第 2 任务实证）
-  - **反复模式 #8 spec 数据回归 triple-evidence**（dual → triple / 已达 writing-plans.mdc 固化阈值）
-  - **lazy-attach C ABI 容错模式 quad-evidence**（triple → quad / 已成 Veloxa 默认范式）
-- **MVP-B 100% 闭环里程碑** — TASK-01 + TASK-02 双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS
-
-**Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min）：**
-
-- **3 commits 总计 +198 lines / 6 files changed：**
-  - `a7e6bed` feat(api): vx_view_invalidate() public C ABI [B-G4] — Phase A.1 + B.1 / 4 单测 4/4 PASS / 反向探针 2/2 精准
-  - `929569a` feat(devtool): hello_devtool perf smoke multi-frame validation [B-G4] — Phase C.1 + D.1 / **frames=18** / 反向探针 1/1 精准
-  - `8d00aee` docs(spec): MVP-B 100% — B-G4 closed [TASK-20260505-02] — Phase E.1 / B-G4 ✅ + 完成度 95% → 100%
-- **ctest 实测矩阵：** DEVTOOL=ON 1298 → **1302**（+4 PASS / 100%）/ DEVTOOL=OFF 1105 → **1109**（+4 PASS / 100%）— 与 plan 预期完全一致 ✅
-- **dogfood smoke：** hello_devtool 3 件套 3/3 PASS（perf_smoke `frames=18` / inspector / hot_reload 全 regression-free）
-- **TDD 严格度：** 1 phase TDD 三阶（RED 编译 fail → GREEN 4/4 PASS → REFACTOR）+ 反向探针 3 项（A.1 NULL guard SEGFAULT 过高档 + A.1 dirty_ rearm 2/4 合适档 + D.1 ctest regex 灵敏度 1/1 平衡档）— 强度梯度三档全谱覆盖
-- **plan ×0.6 实测系数：** ~0.26-0.32×（实测 ~30 min vs plan ×0.6 95-115 min）— 落极速区 0.10-0.20× 续延档 / **sext-evidence** 候选（第 6 次命中数据点）
-- **反复模式预防：** 0/8 全抑制（含 #8 spec 数据回归 dual-evidence → triple-evidence 候选 / VAN 阶段已实证暴露 + 修正路径 b → 路径 a）
-
-**MVP-B 100% 闭环 🎉：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
-
-</details>
-
----
-
-### TASK-20260505-01 DomBindings R2 收口（Level 3）— ✅ 已归档（commit `6f924fd`）
-
-- **归档文档：** `memory-bank/archive/archive-TASK-20260505-01.md`（~340 行 / Level 3 详细归档 / 9 段 / 8 度量表）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-01.md`（~265 行 / Level 3 详细回顾 / 8 段 / 13 度量数据）
-- **主交付：** 9 commits / +2820 行 / -28 行 / 净 +2792 行（含 spec + plan + reflection + archive + systemPatterns 4 新段 + techContext 同步）
-- **跨决策协同度：** 3/3 决策 1 次 AskQuestion 锁定 / 第 9 次连续 100% 命中 / 累计 96/96 / sept → **nona-evidence** 升级
-- **plan ×0.6 比值：** 0.14-0.18×（实测 ~35 min vs plan ×0.6 190-250 min）/ 落极速区 0.07-0.20× 第 4-5 数据点 / quad → **quint-evidence** 升级
-- **反向探针：** 9/9 精准有效 / 强度梯度三档全谱（A.1 过高 4/4 UB 双重加固 / B.1 合适 2/7 文本路径 / C.1 平衡 3/3 alias 路径）
-- **反复模式命中：** 0/7 已知模式 + 1 新候选 dual-evidence **入库定型为反复模式 #8（spec 数据回归 audit 协议）**
-- **ctest：** DEVTOOL=ON 1298/1298 + DEVTOOL=OFF 1105/1105（+14/+14）/ dogfood smoke 14/14 PASS
-
-**8 项 P0+P1+P2 改进建议落实情况：**
-
-| # | 建议 | 优先级 | 落实位置 |
-|:-:|---|:-:|---|
-| 1 | systemPatterns「跨 Document arena 节点转移 — deep clone 必选范式」 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 2 | systemPatterns「Phase 0 投入 / 极速区 quint-evidence」 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 3 | systemPatterns「反复模式 #8 spec 数据回归 audit」 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 4 | systemPatterns「反向探针强度梯度三档解读」 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 5 | systemPatterns「视觉链路三件齐识别协议」 | **P1** | 📋 已迁移到「待处理事项」段 |
-| 6 | `/plan` 命令固化「plan/spec docs 落盘即 commit」步骤 | **P1** | 📋 已迁移到「待处理事项」段 |
-| 7 | writing-plans.mdc Phase 0「既有 getter/setter 语义对齐」子条 | **P2** | 📋 长期沉淀 |
-| 8 | systemPatterns「跨决策协同度 100%」升级到 nona/dec-evidence | **P2** | 📋 长期沉淀 |
-
-**P0 4/4 100% reflect 阶段直接落实 ✅** + **P1 2/2 已迁移待处理事项** + **P2 2/2 长期沉淀**（沿用 [TASK-20260504-01 P0+P1+P2×4 archive 全落实范式](memory-bank/archive/archive-TASK-20260504-01.md)）
+**ctest baseline 保持：** DEVTOOL=ON 1302/1302 + DEVTOOL=OFF 1109/1109（仅文档/规则改动 / 0 编译影响）
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + §6.2 推荐立项顺序）
 
-> 🚀 **TASK-20260505-03 G1 OpenGL ES 蓝图任务进行中**（VAN ✅ → 待 `/plan`）— 推荐序号已下移。
+> 🚀 **MVP-C 战略主线已启动** — TASK-20260505-03 G1 OpenGL ES 蓝图已完整闭环（spec + plan + creative ×3 / 18 子任务规格化）/ TASK-20260505-04 工作流元任务批量清零完成 → **可立即进入 G1 OpenGL ES 实施阶段**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
-| **进行中** | **G1 OpenGL ES 硬件渲染后端蓝图（TASK-20260505-03）** | MVP-C 核心 | **L4 V2=a 蓝图** | ~25-40 h |
-| 1 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
-| 2 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| 3 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
-| 4 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 5 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 6 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 7 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
-| **元** | **工作流元任务批量落地**（累计 8 项 P1 待处理事项 — sept-evidence 已超固化阈值）| 工作流 | L2-3 | ~1-2 h |
+| **1** | **G1.1 CMake VX_RENDERER flag**（GLES 蓝图首步实施 / 闭环架构开关）| MVP-C 核心 | **L2** | ~1-2 h |
+| 2 | G1.2 GLESDisplay + Sdl2EGLDisplay（GLES context 创建）| MVP-C 核心 | L3 | ~2-3 h |
+| 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
+| 4 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
+| 5 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
+| 6 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
+| 7 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
+| 8 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
+| 9 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| **元** | **下次工作流元任务批量落地**（累计 3 项 P1/P2 待处理事项 — 与 TASK-03-02 + TASK-05-04 范式 triple-evidence 候选）| 工作流 | L2 | ~30-60 min |
 
-**当前焦点：** 进入 G1 OpenGL ES 蓝图阶段（V1=gles_only / V2=pure_blueprint_a / V3=desktop_first / V4=co_design_boundary / V5=vx_renderer_flag）/ 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
+**当前焦点：** 进入 G1 OpenGL ES 实施阶段（建议从 G1.1 CMake VX_RENDERER flag 开始 / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3 18 子任务清单）
 
 ---
 
 ## 待处理事项 — 跨任务沉淀（按优先级）
 
-### 留下次工作流元任务批量落地（P1）
+### 留下次工作流元任务批量落地（P1 / 累计 1 项 / dual → triple-evidence 候选）
 
-> 累计 P1 改进建议待批量沉淀到 `.cursor/rules/skills/*.mdc` — 等待下次工作流/规则类技术债清理任务（沿用 [TASK-20260503-02 工作流元任务范式](memory-bank/archive/archive-TASK-20260503-02.md)）。
+> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 reflect 阶段新发现的 P1 项 — 等待下次工作流元任务批量清零（累计 ≥ 4 项时立项 / 沿用工作流元任务 dual-evidence 范式）。
 
-- **P1 #1（来自 TASK-20260503-04 reflection §5）writing-plans.mdc Phase 0 段补强「JS context 归属与 host binding 注册 ctx 一致性 audit」子条** — 反复模式 #1 第 4 个新形式（panel JS / 用户脚本 ctx 归属未实证）；本任务 plan-fact reconcile #1（C2 wiring）即此模式实证。**预估**：~10 min。
-- **P1 #2（来自 TASK-20260503-04 reflection §5）writing-plans.mdc「资源类反向探针 SOP」新子段** — 资源反向探针应限定到非注释区域 + comment policy 推荐；本任务 D.3 console_panel.html 注释里 `<input` 字面量触发反向探针 false positive。**预估**：~10 min。
-- **P1 #2（来自 TASK-20260503-05 reflection §5）brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现偏差 + (3) 偏差**显著**（默认值差 10³+ 倍）。**预估**：~10 min。
-- **P1 #5（来自 TASK-20260505-01 reflection §5 #5）systemPatterns.md 新沉淀「视觉链路三件齐识别协议」段** — 当 dogfood UI 行为依赖 ≥3 个独立缺陷修复才能完整工作时，必须**单任务集中闭环**而非分多任务拆分；plan 阶段 §UI 行为验收表是识别工具（本任务 plan §0.11「视觉恢复链路」表是范式）。**预估**：~30-40 行 systemPatterns 段 / ~10 min。
-- **P1 #6（来自 TASK-20260505-01 reflection §5 #6 → TASK-20260505-02 首次部分实施 → TASK-20260505-03 首次完整实施 ✅ / triple-evidence 已达 P0 固化阈值）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — TASK-20260505-03 commit `1555cf4` plan/spec/creative ×3 + MB ×3 单 commit 8 files 落盘 / 0 collateral / **首次完整实施 ✅** / **triple-evidence 已达 writing-plans.mdc P0 固化阈值** — 建议下次工作流元任务批量落地时立即固化协议到 `.cursor/rules/skills/writing-plans.mdc` 「plan 阶段产出物 commit 协议」段（含 8 段 commit body 范本）。**预估**：~15-20 min。
-- **P1 #7（来自 TASK-20260505-02 reflection §5 #4 → triple-evidence 升级 / 已达固化阈值）反复模式 #8 spec 数据回归 audit 协议固化到 `.cursor/rules/skills/writing-plans.mdc`** — Phase 0 audit 段「spec vs code 一致性 audit」+「能力假设 audit」双子条；TASK-20260504-01 + TASK-20260505-01 + TASK-20260505-02 三次实证累计已达固化阈值。**预估**：~15 min。
-- **P1 #8（来自 TASK-20260505-02 reflection §5 #5 → quad-evidence 升级 / 已成 Veloxa 默认范式）lazy-attach C ABI 容错模式固化** — sytemPatterns quad-evidence 已沉淀；建议下次工作流元任务批量落地时 (a) `.cursor/rules/skills/writing-plans.mdc` C ABI 设计模式段「lazy-attach 默认契约」子条 + (b) `veloxa/api/veloxa_api.h` 顶部 doc 段添加「lazy-attach contract」一节统一引用前序 ABI。**预估**：~15 min。
-- **P2 #4（来自 TASK-20260503-03 reflection §6）commit body Source 溯源 + 实测数据格式固化** — 累计 ~39 commits quad-evidence（远破 git-workflow.mdc 固化阈值 / 本任务延续协议）/ 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`。**预估**：~10-15 min。
-- **P1 #4（来自 TASK-20260505-03 reflection §4 #4）`main.mdc` Level 4 蓝图任务 V2=a 工作流变体段升级为「稳定范式 / triple-evidence」标注** — 3 任务实证（TASK-20260430-04 + TASK-20260504-01 + TASK-20260505-03 / 平均 12.3 决策 / ~3030 行 / ~38 min）/ 范式参数已稳定 / 建议加 triple-evidence 标注 + 3 任务对照表。**预估**：~10 min。
-- **P1 #5（来自 TASK-20260505-03 reflection §3.d #3 + §4 #5）`writing-plans.mdc` 新增「蓝图任务子任务规格化深浅梯度」段** — 🟢 完整规格化 vs 🔵 概要规格化 / plan §8 边界明示模板 / TASK-20260505-03 plan §3 G1.1-G1.5 完整 + G1.7-G1.18 概要 = 18 子任务规格化深浅梯度首次实证。**预估**：~15 min。
-- **P1 #6（来自 TASK-20260505-03 reflection §3.c #5 + §4 #6）`git-workflow.mdc` 新增「蓝图任务 commit body 范本」段** — 8 段固化（任务定位 / 决策矩阵 / 主交付 / 后续实施 / 协议元数据 / plan ×0.6 / Source 溯源 / 下一步）/ 实例引用 commit `1555cf4`。**预估**：~10-15 min。
+- **P1 #1（来自 TASK-20260505-04 reflection §5 #1 / 新发现）`writing-plans.mdc` 「附录：LOC 估算 — 隐性附加工作类型清单」段补「表格密度系数」子条** — plan 阶段对「commit body 范本表」+「触发条件矩阵」+「实证表」+「交叉引用清单」类结构化内容的行数 underestimate（单段 4 表格 ~30-40 行 / plan 仅按段长 base 估算未计表格行数 / TASK-05-04 P2.1 段实际 75 行 vs 估 30 行 = ×2.5 偏差）；建议加表格密度系数子条：散文段 ~30-40 行 / 单表格 ~5-15 行/表 / **多表段（≥ 4 表格）×2-2.5 base 行数**。**预估**：~10 min。
 
-### 长期沉淀（P2 — 不强制 archive）
+### 长期沉淀（P2 — 不强制 archive / 累计 2 项）
 
-- **P2 #3（来自 TASK-20260503-02 reflection）GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 短路评估易错模式 P3** — A-P1#6 audit CP2 扩展发现 tests/ 中 8 处该模式；建议 codebase guideline「测试中也用三元守卫显式化」。**预估**：~30 min audit + ~1 h codebase 修正。
-- **P2 #4（来自 TASK-20260503-02 reflection）plan §文档段落 LOC 预估系数 ×1.5-2× 修正** — 与 TASK-20260503-04 P2 #1（writing-plans LOC 估算附录加「隐性附加工作类型清单」+ ×1.3-1.5 buffer 范本）同源；建议合并落地。**预估**：~10 min。
-- **P2 #7（来自 TASK-20260505-03 reflection §4 #7）systemPatterns 新增「activeContext.md 重复 anchor 检测协议」子段** — VAN 阶段 StrReplace 前 Grep `^## 上次任务` 类标题段 / 在「中文文档 StrReplace 字符类型 audit」段加子条。**预估**：~10 min。
-- **P2 #8（来自 TASK-20260505-03 reflection §4 #8）systemPatterns 新增「V2=a 蓝图任务文档密度系数 1.0-1.4×」段** — 5 文档全偏正向 +27% ~ +139% / 既有 0.7-1.0× 系数偏低 / 实证 3 任务对照（TASK-20260430-04 + 20260504-01 + 20260505-03）。**预估**：~10 min。
+- **P2 #1（来自 TASK-20260505-04 reflection §5 #2 / 新发现）`git-workflow.mdc` 「commit body Source 溯源 + 实测数据格式」段补「实测数据采集协议」子条** — TASK-05-04 Phase B.6 commit body 写「+44 行」/ 实际 git 显示 +39 行 / -5 行偏差，根因 commit body 写在 add 之前 / 凭目测估算 / 未做 `git diff --cached --stat` 二次确认；建议加「实测数据采集协议」子条：commit 前必须运行 `git diff --cached --stat` 实测后再写 commit body 数据。**预估**：~10 min。
+- **P2 #2（来自 TASK-20260505-04 reflection §8.2 / 新发现）systemPatterns 「lazy-attach C ABI 容错模式 quad-evidence」段加 TASK-05-04 头部 doc 落地标注** — TASK-05-04 P1.7-half 在 `veloxa/api/veloxa_api.h` 顶部 doc 段追加「lazy-attach contract」节统一引用 4 个 quad-evidence ABI（vx_view_set_pipeline_hooks / vx_view_attach_devtool / vx_devtool_get_console_output / vx_view_invalidate）；建议在 systemPatterns quad-evidence 段加「头部 doc 已落地」标注 + 引用 commit `4765224`。**预估**：~5 min。
 
 ---
 
@@ -392,16 +61,6 @@ f109933 docs(writing-plans): batch land 7 P1+P2 tech debt items
 ### 来自 TASK-20260504-01 spec §11.2 + 各历史任务 — 与上方「下一推荐任务」表对应
 
 详见上方「下一推荐任务」段 + `docs/specs/2026-05-04-mvp-scope.md` §11.2。
-
-### R2 P3 候选 — 来自 TASK-20260502-01 dogfood 暴露（3 项 — ✅ TASK-20260505-01 已完整闭环）
-
-| # | 缺陷 | 文件位置 | 闭环状态 |
-|:-:|---|---|:-:|
-| 1 | DomBindings 缺 `Element.children` 集合 getter（HTMLCollection 风格）| `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `6c36dc7` |
-| 2 | DomBindings 缺 `element.addEventListener` 事件别名 | `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `fb88288`（audit + 4 alias）|
-| 3 | DomBindings 缺 `element.innerHTML` setter | `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `986e978`（deep-clone）|
-
-**闭环成果：** 单 Level 3 任务一次性闭环 ✅ / 14 单测全 PASS / dogfood smoke 14/14 PASS / inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**。
 
 ### 8 项 P3 触发型候选（codebase review R1 已分析）
 
@@ -414,11 +73,17 @@ f109933 docs(writing-plans): batch land 7 P1+P2 tech debt items
 - TASK-20260419-08（`string.h` 剩余 memcpy noinline 化）
 - TASK-20260419-12（DrawText 真路径优化，K7 隐式闭环待评估）
 
+### 来自 TASK-20260503-02 reflection（codebase guideline 候选）
+
+- **GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 短路评估易错模式 P3** — A-P1#6 audit CP2 扩展发现 tests/ 中 8 处该模式；建议 codebase guideline「测试中也用三元守卫显式化」。**预估**：~30 min audit + ~1 h codebase 修正。
+
 ---
 
 ## 收尾清理（可选）
 
-- ✅ `feature/TASK-20260505-01-dombindings-r2-closure` 分支已合并 + 删除（archive 阶段完成）
+- ✅ `feature/TASK-20260505-04-workflow-meta-batch` 分支已合并 + 删除（archive 阶段完成）
+- ✅ `feature/TASK-20260505-03-gles-renderer-blueprint` 分支已合并 + 删除
+- ✅ `feature/TASK-20260505-01-dombindings-r2-closure` 分支已合并 + 删除
 - ✅ `feature/TASK-20260504-01-mvp-scope-doc` 分支已合并 + 删除
 - 早期 feature 分支（TASK-20260430-* / TASK-20260502-* / TASK-20260503-*）如未删除可批量清理
 
@@ -426,12 +91,15 @@ f109933 docs(writing-plans): batch land 7 P1+P2 tech debt items
 
 ## 最近归档（速查，详细见 archive 文档）
 
-- `archive-TASK-20260505-01.md`（**DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit Level 3，2026-05-05**）— **本批最新 / MVP-B 完成度 90% → 95% / dogfood 视觉自动恢复链路三件齐 ✅ / 协议三件套里程碑（Phase 0 极速区 quint-evidence + 跨决策协同度 nona-evidence + 反向探针强度梯度三档 dual-evidence）/ 反复模式 #8 入库定型 / P0×4 reflect 全落实**
+- `archive-TASK-20260505-04.md`（**工作流元任务批量落地 — 14.5 项 P1+P2 跨任务沉淀清零 Level 2-3，2026-05-05**）— **本批最新 / 工作流元任务 dual-evidence 第 2 实证 ✅ / 跨决策协同度 100% 第 13 次连续命中（累计 121/121 历史最高）/ 极致 dogfooding 三层闭环 first-evidence ✅ / plan ×0.6 oct-evidence + 双子档分化（V2=a 蓝图 0.02-0.05× + 工作流元 0.11-0.19×）/ P0 协议 quad-evidence 已固化 / 5 个范式里程碑 + 5 个 systemPatterns 沉淀 + 6/8 改进建议已落实 / 反复模式 0/8 4 阶段全程抑制（累计 17 模式连续抑制 / 历史新高）**
+- `archive-TASK-20260505-03.md`（**G1 OpenGL ES 硬件渲染后端蓝图 Level 4 V2=a，2026-05-05**）— **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图（核心目标 #2「嵌入式硬件加速」第一刚需）/ 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 0.02-0.05× + V2=a triple-evidence）/ Level 4 V2=a 蓝图 / 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区**
+- `archive-TASK-20260505-02.md`（Performance Overlay 持续 invalidate 机制 Level 2，2026-05-05）— 🎉 **MVP-B 100% 闭环里程碑达成** / B-G4 / 5 个范式同时升级（plan ×0.6 sext + 跨决策协同度 dec + 反向探针 triple + 反复模式 #8 triple + lazy-attach quad）
+- `archive-TASK-20260505-01.md`（**DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit Level 3，2026-05-05**）— MVP-B 完成度 90% → 95% / dogfood 视觉自动恢复链路三件齐 ✅ / 协议三件套里程碑（Phase 0 极速区 quint-evidence + 跨决策协同度 nona-evidence + 反向探针强度梯度三档 dual-evidence）/ 反复模式 #8 入库定型 / P0×4 reflect 全落实
 - `archive-TASK-20260504-01.md`（MVP-scope 文档蓝图 Level 4 V2=a 完整变体，2026-05-04）— DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 路线图按 MVP 档分层重写 / 核心目标 #1+#2 路径量化 / P0+P1+P2×4 archive 全落实 / 跨决策协同度 100% 第 8 次连续命中 / plan ×0.6 矩阵第 4 蓝图数据点 0.25-0.38× 入库
 - `archive-TASK-20260503-04.md`（DevTool Phase D · Console JS REPL Level 3 [安全相关]，2026-05-04）— DevTool 4 件套全部完整闭环 ✅ / spec §11.1 完整闭环 ✅ / T1 5 维度首次完整暴露 ✅ / plan ×0.6 0.07-0.10× 创历史新低 / Phase 0 sept-evidence / P0×3 archive 阶段全落实
 - `archive-TASK-20260503-05.md`（QuickJS Interrupt Handler + SetEvalInterruptBudget API Level 2 [安全相关]，2026-05-03）
 - `archive-TASK-20260503-03.md`（DevTool 三件套主线收官 — 4 项 P3 候选批量清零 Level 2，2026-05-03）
-- `archive-TASK-20260503-02.md`（工作流/规则类技术债批量清理 Level 2，2026-05-03）
+- `archive-TASK-20260503-02.md`（**工作流/规则类技术债批量清理 Level 2，2026-05-03**）— **工作流元任务范式 first-evidence**
 - `archive-TASK-20260503-01.md`（DevTool Phase C · Hot Reload Level 3，2026-05-03）
 - `archive-TASK-20260502-02.md`（DevTool Phase B · Performance Overlay Level 3，2026-05-03）
 - `archive-TASK-20260502-01.md`（DevTool Phase A · Inspector 实施 Level 4，2026-05-02）
