@@ -2,9 +2,25 @@
 
 ## 当前任务
 
-### TASK-20260505-03 — G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
+> 🔓 **空闲** — 等待新任务启动。最近闭环 TASK-20260505-03 详细产出已迁移到 [archive-TASK-20260505-03.md](archive/archive-TASK-20260505-03.md)。
 
-**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Reflect ✅ → 待 `/archive`）/ Level 4 V2=a 蓝图 / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260505-03 闭环摘要（2026-05-05 ~17:30 已归档）
+
+> **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图（核心目标 #2「嵌入式硬件加速」第一刚需）/ 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 0.02-0.05× + V2=a triple-evidence）/ Level 4 V2=a 蓝图任务 / 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区**。
+
+详细产出已迁移到 [archive-TASK-20260505-03.md](archive/archive-TASK-20260505-03.md)（~330 行 / Level 4 全面归档 / 10 段）+ [reflection-TASK-20260505-03.md](reflection/reflection-TASK-20260505-03.md)（~430 行 / Level 4 全面回顾 / 9 段 / 7 关键发现）。
+
+---
+
+<!-- TASK-20260505-03 详细里程碑（含 VAN/Plan/Reflect/Archive 全阶段时间线 + 实测耗时 + 13 决策矩阵 + 18 实施子任务 + 反复模式 0/8 + 3 个范式同时升级（doudec / sept-evidence 极致极速区 / V2=a triple）+ P0×3 reflect 落实 + P1×3 迁移 + P2×2 长期沉淀）已迁移到 archive 文档（见 archive-TASK-20260505-03.md §3 文件变更 + §5 经验教训 + §7 度量数据汇总 + §8 后续路径）
+
+### TASK-20260505-03 — G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标 / Level 4 V2=a 蓝图）
+
+**当前阶段：** 🟢 **已归档闭环**（VAN ✅ + Plan ✅ + Reflect ✅ + Archive ✅）/ Level 4 V2=a 蓝图 / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint` 已合并 main `ecf7b87` + 删除
 
 #### Reflect 阶段产出（2026-05-05 ~17:10）
 
@@ -61,9 +77,11 @@
 
 **下一步：** `/plan` — 进入规划阶段，brainstorm B1-B8 + creative ×N 内联。
 
+-->
+
 ---
 
-## 上次任务（已归档闭环）
+## 更早归档（已闭环 / 详见 archive 文档）
 
 ### TASK-20260505-02 闭环摘要（2026-05-05 ~16:15 已归档）
 

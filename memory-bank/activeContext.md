@@ -2,25 +2,66 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / Level 4 V2=a 蓝图任务）VAN ✅ + Plan ✅ + Reflect ✅，待 `/archive`。
+**空闲** — 等待新任务启动。
 
-**Reflect 阶段产出（2026-05-05 ~17:10）：**
+**最近闭环：** TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（Level 4 V2=a 蓝图）✅ 已归档闭环（archive commit `ecf7b87` / 主交付 `1555cf4`）/ 分支 `feature/TASK-20260505-03-gles-renderer-blueprint` 已合并 main 并删除。**MVP-C 战略主线已启动 ✅** — G1 OpenGL ES 蓝图主交付完成 / 18 实施子任务规格化 / 用户后续基于本蓝图独立立项。
 
-- **回顾文档**：`memory-bank/reflection/reflection-TASK-20260505-03.md`（~430 行 / 9 段全覆盖）
-- **3 个范式升级直接落地（systemPatterns.md 新沉淀 3 段）：**
-  1. **跨决策协同度 100% doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / **跨阶段协同度首次实证**）
-  2. **plan ×0.6 极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
-  3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
-- **8 项改进建议（P0×3 + P1×3 + P2×2）：**
-  - P0 #1 `writing-plans.mdc` 新增「plan/spec docs 落盘即 commit」协议段（triple-evidence 已达固化阈值）
-  - P0 #2 + P0 #3 systemPatterns.md ✅ reflect 阶段直接落地
-  - P1 #4 `main.mdc` Level 4 蓝图任务 V2=a 升级为「稳定范式 / triple-evidence」标注
-  - P1 #5 `writing-plans.mdc` 新增「蓝图任务子任务规格化深浅梯度」段（🟢/🔵 标记）
-  - P1 #6 `git-workflow.mdc` 新增「蓝图任务 commit body 范本」段（8 段固化）
-  - P2 #7 + P2 #8 长期沉淀
-- **关键发现（7 项）：** 详见 reflection §8
+**当前 ctest baseline：** DEVTOOL=ON 1302/1302 / DEVTOOL=OFF 1109/1109（保持 TASK-20260505-02 完成时数字 / 蓝图任务 0 影响）
 
-**规划完成存档** — VAN + Plan 阶段总结：
+**3 个范式升级（systemPatterns.md reflect 阶段直接落地 ✅）：**
+1. **跨决策协同度 100% doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / 跨阶段协同度首次实证）
+2. **plan ×0.6 极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
+3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
+
+**P1 改进建议已迁移待处理事项（5 项）：** P1 #4 main.mdc V2=a 标注 / P1 #5 writing-plans.mdc 子任务深浅梯度 / P1 #6 git-workflow.mdc commit body 范本 / P2 #7 + P2 #8 长期沉淀（详见下方「待处理事项」段）
+
+---
+
+<details>
+<summary>历史详细产出（点开展开 / 任务已归档闭环）</summary>
+
+**TASK-20260505-03 完整时间线（Level 4 V2=a 蓝图任务）：**
+
+- **VAN（2026-05-05 ~16:25）：** 5 V 决策 1 次 AskQuestion all_recommended 锁定（跨决策协同度 100% 第 11 次 / endec-evidence）/ Phase 0 audit 4 维度全 ✅
+- **Plan（2026-05-05 ~17:30）：** 8 B 决策 1 次 AskQuestion all_recommended 锁定（跨决策协同度 100% 第 12 次 / **doudec-evidence**）/ commit `1555cf4` plan + spec + creative ×3 + MB ×3 = **8 files 单 commit P0 协议首次完整实施 ✅**
+- **Reflect（2026-05-05 ~17:10）：** reflection ~430 行 / 3 个范式升级直接落地（doudec / 极致极速区 / V2=a triple-evidence）/ 8 改进建议 P0×3 + P1×3 + P2×2 / commit `8ea3f01`
+- **Archive（2026-05-05 ~17:30）：** archive ~330 行 / techContext.md 新增 GLES 技术栈预声明段 / commit `ecf7b87` + reset to idle commit / 分支合并 main + 删除
+
+**主交付（V2=a 蓝图 / 共 3376 行 / 落 2500-3550 上界 ✅）：**
+- `docs/specs/2026-05-05-gles-renderer-blueprint-design.md`（942 行 / 13 段全覆盖 / 13 决策矩阵 + 7 威胁面 + G1→G2 边界）
+- `docs/plans/2026-05-05-gles-renderer-blueprint.md`（773 行 / 18 子任务详细规格 + ctest 矩阵 + commit 范本 + 安全任务清单）
+- creative ×3：context（369 / B1）+ canvas（527 / B2）+ resources（765 / B3+B4+B6）
+
+**度量数据：** 任务数 7+18 / 100% 命中 / 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区** / commits 4（VAN + Plan + Reflect + Archive）/ 决策协同度 100%（13/13）/ 反复模式 0/8 抑制（5 任务连续）/ Phase 0 audit ROI ≈ ∞ / P0 协议三次实证（已达固化阈值）/ 范式升级 3 同时
+
+**P0 改进建议落实状态：** P0 #2 + P0 #3 ✅ reflect 直接落地（systemPatterns.md）/ P0 #1 升级到 activeContext P1 #6 待批量落地（涉及规则文件改动 / triple-evidence 已达 writing-plans.mdc 固化阈值）
+
+</details>
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（Level 4 V2=a 蓝图）— ✅ 已归档（commit `ecf7b87`）
+
+**最近闭环（保留供下游任务参考）：** **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图（核心目标 #2「嵌入式硬件加速」第一刚需）/ 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 + V2=a triple）。
+
+- **归档文档：** `memory-bank/archive/archive-TASK-20260505-03.md`（~330 行 / Level 4 全面归档 / 10 段）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-03.md`（~430 行 / Level 4 全面回顾 / 9 段 / 7 关键发现 + 8 改进建议）
+- **主交付：** 4 commits / +3501 行 / 8 files 主交付单 commit / 净 +3498 行
+- **跨决策协同度：** 13/13 决策 1+1 次 AskQuestion 跨阶段全锁定 / 第 11+12 次连续命中 / 累计 113/113 / dec → endec → **doudec-evidence** 跳级
+- **plan ×0.6 比值：** ~0.02-0.04×（实测 ~30-40 min vs plan ×0.6 ~17-25 h）/ **极致极速区 0.02-0.05× 新子档** / sext → **sept-evidence** 第 7 数据点
+- **V2=a 蓝图范式：** triple-evidence / 范式稳定（3 任务平均 12.3 决策 / ~3030 行 / ~38 min）
+- **反复模式命中：** 0/8 全抑制（5 任务连续保持）
+- **P0 协议：** 「plan/spec docs 落盘即 commit」首次完整实施 ✅ / triple-evidence 已达 writing-plans.mdc 固化阈值
+- **ctest 影响：** 0（蓝图阶段不实施 / DEVTOOL=ON 1302/1302 + DEVTOOL=OFF 1109/1109 baseline 保持）
+
+---
+
+<details>
+<summary>归档历史 — TASK-20260505-03 先前任务规划存档</summary>
+
+**TASK-20260505-03 规划阶段存档** — VAN + Plan 阶段总结：
 
 **Plan 阶段产出（2026-05-05 ~17:30）：**
 
@@ -92,9 +133,11 @@
 
 **下一步：** `/plan` — 进入规划阶段，brainstorm + creative ×N 内联（V2=a 变体 / 蓝图主交付 = spec + plan + creative ×N）。
 
+</details>
+
 ---
 
-## 上次任务（已归档闭环）
+## 更早归档（已闭环 / 详见 archive 文档）
 
 ### TASK-20260505-02 Performance Overlay 持续 invalidate 机制（Level 2）— ✅ 已归档（commit `33ebc99`）
 
@@ -155,25 +198,9 @@
 
 **MVP-B 100% 闭环 🎉：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
 
-**当前任务：** TASK-20260505-02 — `vx_view_invalidate()` 公开 C ABI / Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba`）
-
-**下一步：** `/reflect` — 进入回顾阶段，整理 Build 阶段成功/挑战/经验沉淀（dec-evidence + sext-evidence + triple-evidence 升级 + 蓝图任务节奏档案）。
-
----
-
-## 上次任务（已归档闭环）
-
-### TASK-20260505-01 DomBindings R2 收口（B-G1 children + B-G3 innerHTML + B-G2 audit）— ✅ 已归档（commit `6f924fd`）
-
-**最近闭环（保留供下游任务参考）：** **MVP-B 完成度 90% → 95%** ✅ + dogfood 视觉自动恢复链路三件齐 ✅ + Veloxa JS API surface 显著扩张（children getter + innerHTML setter + 4 mouse alias）+ `CloneNodeInto` helper 就位（未来 cloneNode/Range/Fragment 复用基础）+ 协议三件套里程碑（Phase 0 极速区 **quint-evidence** 5 数据点 / 跨决策协同度 **nona-evidence** 第 9 次连续 100% / 反向探针强度梯度 **dual-evidence** 三档全谱）+ 反复模式 **#8 spec 数据回归 dual-evidence 入库定型** ✅。
-
-**MVP-B 即将收口** — 仅剩 B-G4 Performance Overlay 持续 invalidate 机制（~30 min-2 h plan ×0.6 / Level 1-3 任务）。
-
----
-
 </details>
 
-## 更早任务（详细归档信息）
+---
 
 ### TASK-20260505-01 DomBindings R2 收口（Level 3）— ✅ 已归档（commit `6f924fd`）
 

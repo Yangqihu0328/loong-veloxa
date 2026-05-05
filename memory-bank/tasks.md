@@ -2,9 +2,17 @@
 
 ## 当前任务
 
-### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
+> 🔓 **空闲** — 等待新任务启动。最近闭环：TASK-20260505-03（archive commit `ecf7b87`）。详 [activeContext.md](activeContext.md) 「下一推荐任务」段。
 
-- **当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Reflect ✅ → 待 `/archive`）
+---
+
+<!--
+
+## 已归档（保留供审计 / 不影响当前阶段）
+
+### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）— ✅ 已归档（commit `ecf7b87`）
+
+- **当前阶段：** 🟢 **已归档闭环**（VAN ✅ → Plan ✅ → Reflect ✅ → Archive ✅）
 - **复杂度级别：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
@@ -140,7 +148,29 @@
   - P2 #7/#8 → 长期沉淀
 - **关键发现（7 项）：** 详见 reflection §8 / **MVP-C 战略主线启动 ✅** — G1 OpenGL ES 蓝图主交付完成 / 18 实施子任务规格化 / 用户后续基于本蓝图独立立项
 
+#### Archive 阶段产出（2026-05-05 ~17:30）
+
+- **归档文档：** `memory-bank/archive/archive-TASK-20260505-03.md`（~330 行 / Level 4 全面归档 / 10 段）
+- **techContext.md 新增 GLES 技术栈预声明段** — 10 项技术决策（B1-B8 + 系统依赖 + 安全相关）/ 7 系统依赖审计 / 6 安全相关技术决策 / ctest 矩阵预规划 / 性能验收基线
+- **分支处理：** `feature/TASK-20260505-03-gles-renderer-blueprint` ✅ fast-forward 合并 main + 删除（沿用 TASK-04-01 + TASK-05-02 蓝图任务范式）
+- **commit `ecf7b87`** docs(archive): add archive for TASK-20260505-03
+
 ---
+
+### 任务历史快照（2026-05-05 闭环）
+
+- 任务 ID: TASK-20260505-03
+- 复杂度: Level 4 V2=a 蓝图任务（triple-evidence 范式稳定）
+- 状态: ✅ 已完成
+- 总投入: ~30-40 min（plan ×0.6 ~17-25 h / 实测 0.02-0.04× 极致极速区）
+- commits: 4（VAN `8ba512f` + Plan `1555cf4` + Reflect `8ea3f01` + Archive `ecf7b87`）
+- 主交付: 3376 行（spec 942 + plan 773 + creative ×3 1661）
+- 决策: 13/13 100% 锁定 / doudec-evidence 跳级
+- 反复模式: 0/8 抑制（5 任务连续）
+- ctest 影响: 0（蓝图阶段不实施）
+- 范式升级: 3 同时（doudec-evidence + 极致极速区 0.02-0.05× + V2=a triple-evidence）
+
+-->
 
 <!--
 
