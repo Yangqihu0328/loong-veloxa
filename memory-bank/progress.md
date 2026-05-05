@@ -2,7 +2,57 @@
 
 ## 当前任务
 
-> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：**TASK-20260504-01 MVP-scope 文档**（Level 4 蓝图 V2=a 完整变体）✅ — DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 详细见下方「任务历史」段。
+### TASK-20260505-01 — DomBindings R2 收口（B-G1 children + B-G3 innerHTML setter + B-G2 audit）
+
+**当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）/ Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure`
+
+#### VAN 阶段产出（2026-05-05 ~13:10）
+
+- 用户消歧 `mvp_b_closure`（MVP-B 收口推荐 #1）+ `scope_b_two_plus_audit`（方案 b 二连 + audit）
+- 前置验证发现 spec §3.2.1 数据回归 — B-G2 addEventListener 实际已实现 → 任务范围由「三连」收缩为「二连 + audit」
+- Phase 0 grep 实证 VAN 阶段先跑（addEventListener 实现位置 + inspector_panel.js 临时防御位置 + commit 历史）
+
+#### Plan 阶段产出（2026-05-05 ~13:30）
+
+- **设计文档：** `docs/specs/2026-05-05-dombindings-r2-closure-design.md`（11 段 / 完整设计 + D1+D2+D3 决策 + 风险登记 5 项）
+- **实现计划：** `docs/plans/2026-05-05-dombindings-r2-closure.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段）
+- **跨决策协同度 100% 第 9 次连续命中**：1 次 AskQuestion 锁定 D1-B + D2-C + D3-full 三决策（累计 96/96）
+- **关键 Phase 0 audit 发现：** Document::~Document 节点生命周期 + Element::AppendChild 不 detach → D2-C 初版（transplant）改为 D2-C-deep-clone（CloneNodeInto helper + 子节点深拷贝到 target Document arena）
+- **B-G2 audit 关键 bug 揭示：** MapJsEventName 缺 `click` / `mousedown` / `mouseup` / `mousemove` — inspector_panel.js setupTabs `btn.addEventListener("click", ...)` silent fail 是 inspector tab 切换不工作的真实根因（即使 children 修复后仍坏）
+
+#### Build 阶段产出（2026-05-05 ~14:00-14:35 / 实测 ~35 min / plan ×0.6 ×0.14-0.18 → 落「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」子档命中）
+
+| Phase | commit | 实测耗时 | 结果 |
+|---|---|:-:|---|
+| Phase A.1 — B-G1 children getter | `6c36dc7` | ~5 min | 4/4 PASS / 反向探针 4 测全 FAIL（超预期：is_element gate UB 双层加固）|
+| Phase B.1 — B-G3 innerHTML setter（D2-C-deep-clone）| `986e978` | ~12 min | 7/7 PASS / 反向探针 2/7 精准 FAIL 在文本路径 |
+| Phase C.1 — B-G2 audit MapJsEventName 4 alias | `fb88288` | ~5 min | 3/3 PASS / 反向探针 3 测精准 FAIL 在 alias 路径 |
+| Phase D.1 — inspector_panel.js typeof 4 处清理 | `02d96b2` | ~3 min | 14/14 dogfood smoke PASS / reverse audit 零余留 |
+| Phase D.2 — MVP-scope spec §3.2.1 状态同步 | `2759f22` | ~2 min | B-G1+G2+G3 全 ✅ / 完成度 90%→95% |
+| Phase E.1 — full ctest 双 config 验证 | — | ~12 min | DEVTOOL=ON 1298/1298 + DEVTOOL=OFF 1105/1105 |
+| **总计 build 阶段** | **5 commits** | **~35 min** | **+14 单测全 PASS / +0 退化** |
+
+**ctest 实测矩阵：** DEVTOOL=ON 1284 → **1298**（+14 PASS / 100%）/ DEVTOOL=OFF 1091 → **1105**（+14 PASS / 100%）— 与 plan 预期完全一致 ✅
+
+**TDD 严格度：** 5 phase TDD 三阶（RED → GREEN → REFACTOR）+ 反向探针每 phase 必跑（A.1 / B.1 / C.1 各 1 次）— 反向探针总 9 测全部精准 FAIL 后恢复（A.1 4 / B.1 2/7 / C.1 3 — 「2/7 精准命中文本路径」是工程极有效的反向探针）
+
+**dogfood 视觉自动恢复链路三件齐 ✅：** B-G1（children）+ B-G3（innerHTML）+ B-G2 audit（click alias）三件齐 → inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**（manual SDL2 验证将在 reflect 阶段完成）
+
+#### 反复模式预防清单核对（7 项）
+
+| # | 已知反复模式 | 本任务命中状态 | 抑制证据 |
+|---|---|:-:|---|
+| #1 | 前置依赖/环境/API 能力未验证 | ✅ 抑制 | Phase 0 grep 实证 + Document::~Document 节点生命周期 audit 锁 D2-C-deep-clone 决策（避免初版 transplant 实施 → 必崩） |
+| #2 | spec 数据回归（实现 vs 文档不一致）| ✅ **暴露 + 修正** | VAN 阶段 audit 发现 spec §3.2.1 B-G2 addEventListener 标记错误 / `scope_b_two_plus_audit` 适配范围 / Phase D.2 spec 与代码对齐到 ✅ 闭环 |
+| #3 | TDD 顺序倒置 | ✅ 抑制 | A.1 + B.1 + C.1 三 phase 严格 RED → GREEN 每次 build & 跑测验证 RED 后再实现 |
+| #4 | 反向探针缺失或弱 | ✅ 抑制 | 3 phase 全实施反向探针 / A.1 4 测全 FAIL（is_element gate 双重加固）/ B.1 2/7 精准 FAIL 文本路径 / C.1 3/3 精准 FAIL alias 路径 — 全有效 |
+| #5 | 中文文档 StrReplace 字符类型 audit | ✅ 抑制 | Phase D.2 spec 修改 1 次成功（无重试 / strikethrough 标记 + 链接 + 紧凑改动避免大 block 错配）|
+| #6 | commit body Source 溯源缺失 | ✅ 抑制 | 5 commits 全含 `Source: docs/plans/2026-05-05-dombindings-r2-closure.md §X.Y`（quad-evidence 累计 ~39 commits）|
+| #7 | 双 config ctest 单次测验证盲区 | ✅ 抑制 | E.1 双 config 完整跑 DEVTOOL=ON 1298 + DEVTOOL=OFF 1105 / 实测与 plan 预期完全一致 |
+
+**新候选反复模式定型（reflect 阶段考虑）：** N/A — 本次未触发新反复模式定型条件（所有已知模式全抑制 + 无新失败模式暴露）。
+
+**plan ×0.6 实测系数：** **~0.14-0.18×**（实测 ~35 min vs plan ×0.6 190-250 min）— 落「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」子档（systemPatterns 入库后第 4 次命中数据点）。
 
 <!-- TASK-20260504-01 详细里程碑（含 VAN/Plan/Creative ×3/Finalize/Reflect/Archive 全阶段时间线 + plan-fact reconcile 0 + 反复模式 0/7 + 1 新候选定型 + P0+P1+P2×4 全 archive 阶段直接落实）已迁移到 archive 文档（见 archive-TASK-20260504-01.md §3 文件变更 + §7 长期影响 + §8 度量数据）-->
 
