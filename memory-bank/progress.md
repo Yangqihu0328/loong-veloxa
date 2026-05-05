@@ -4,7 +4,7 @@
 
 ### TASK-20260505-06 — G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
 
-**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）/ Level 3 / 分支 `feature/TASK-20260505-06-gles-display-sdl2-egl`
+**当前阶段：** 🟡 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）/ Level 3 / 分支 `feature/TASK-20260505-06-gles-display-sdl2-egl`
 
 #### VAN 阶段产出（2026-05-05 ~20:15）
 
@@ -63,6 +63,25 @@
 ~4-6 h（GLES 蓝图 plan §3.2 / Level 3 实施类）/ 预期实测 ~1.5-3 h（实施类 Level 3 子档 / 标准极速区 0.4-0.6× / 含 ~3 偏差校正 + headless GL 测试 setup）
 
 **下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（候选议题：testing fixture 策略 / context lost 测试覆盖度 / GLES extension 查询 cache 策略 / 反向探针实施方式 / 偏差点处理 / commit 粒度 / P0 协议复用）。
+
+#### Plan 阶段产出（2026-05-05 ~20:25 / 实测 ~25-35 min / 标准区 ~1.0× 子档）
+
+- **8/8 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% **第 15 次连续命中** / 累计 **136/136 历史最高 streak 续刷**）：
+  - D1=A SDL_VIDEODRIVER=offscreen / D2=B 含 RestoreContext / D3=B eager std::unordered_set / D4=C inline test 反向探针 / D5=A plan §0.4 详细校正 / D6=A sdl2/ 局部 dep / D7=A 单 feat commit / D8=A P0 协议（quint → sext-evidence 候选）
+
+- **plan §3.2 偏差校正（brainstorming P1.3 主动 push-back triple-evidence 候选）：** 3 处偏差（CMake 修改位置 / 测试路径 / headless fixture）→ plan §0.4 详细校正
+
+- **D8=A 自吃狗粮：** P0 协议「plan/spec docs 落盘即 commit」单 commit 落盘（plan + Memory Bank ×3 / quint → **sext-evidence 第 6 数据点候选** / 实施类 Level 3 首次实证 / 适用性矩阵新增 Level 3 子档）
+
+- **主交付：** `docs/plans/2026-05-05-gles-display-sdl2-egl.md`（~600 行 / 11 段全覆盖 / 含 D1-D8 决策矩阵 + plan §0.4 详细校正 + 8 TEST_F 步骤 1-5 完整代码片段 + 三 build 矩阵 ctest + 7 反思候选）
+
+- **不进入 `/creative`：** Level 3 实施类 / 8 决策已 lock / spec §3.3.2 已规格化 / 0 创意阶段需求
+
+- **反复模式预审 0/8 命中**（VAN + Plan 两阶段全程 / 累计 19 模式连续抑制 / 历史新高继续刷新）
+
+- **沉淀候选（reflect 阶段 / 7 项 P1）：** 跨决策协同度 15 次 / plan ×0.6 dec-evidence / brainstorming P1.3 triple / writing-plans P1.6 triple / P0 协议 sext / D3=B eager ext cache first-evidence / D4=C inline test 反向探针 first-evidence
+
+**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-6 实施（TDD RED → 抽象 → impl GREEN → ctest 注册 → 三 build 矩阵 → D7=A 单 feat commit）。
 
 ---
 

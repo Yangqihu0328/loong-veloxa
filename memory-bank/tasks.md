@@ -4,7 +4,7 @@
 
 ### TASK-20260505-06：G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
 
-- **当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+- **当前阶段：** 🟡 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）
 - **复杂度级别：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-06-gles-display-sdl2-egl`（基于 main `ee2569d` ✅ 创建 / G1.1 已合并）
@@ -39,9 +39,40 @@
 | 已有 artifact | ✅ G1.2 目标 4 文件全不存在 / 0 冲突 |
 | 待处理事项关联 | ✅ G1.1 D1=A 推迟点（引入 EGL/GLES dep）正式落地节点 |
 
-**反复模式 0/8 抑制延续**（VAN 阶段预审）/ 第 7 任务连续保持反复模式 0 命中 / 累计 19 模式连续抑制 / 历史新高继续刷新
+**反复模式 0/8 抑制延续**（VAN + Plan 阶段预审 / 第 7 任务连续保持 / 累计 19 模式连续抑制 / 历史新高继续刷新）
 
-**下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（候选议题：testing fixture 策略 / context lost 测试覆盖度 / GLES extension 查询 cache 策略 / 反向探针实施方式 / 偏差点处理 / commit 粒度 / P0 协议复用）。
+**Plan 阶段产出（2026-05-05 ~20:25 / 实测 ~25-35 min / 标准区 ~1.0× 子档）：**
+
+- **8/8 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% **第 15 次连续命中** / 累计 **136/136 历史最高 streak 续刷**）：
+  - D1=A SDL_VIDEODRIVER=offscreen
+  - D2=B 含 RestoreContext 路径覆盖
+  - D3=B Initialize 后 eager std::unordered_set extension cache
+  - D4=C inline test SDL_GL_SetAttribute(MAJOR_VERSION=99) 反向探针
+  - D5=A plan §0.4 3 偏差详细校正
+  - D6=A sdl2/CMakeLists.txt 局部 EGL/GLES dep
+  - D7=A 单 feat commit
+  - D8=A plan + MB 单 commit 自吃狗粮（quint → sext-evidence 候选）
+
+- **plan §3.2 偏差校正（brainstorming P1.3 主动 push-back triple-evidence 候选）：** 3 处偏差（CMake 修改位置 / 测试路径 / headless fixture）→ plan §0.4 详细校正
+
+- **主交付：**
+  - `docs/plans/2026-05-05-gles-display-sdl2-egl.md`（~600 行 / 11 段全覆盖）
+  - Memory Bank ×3 更新
+
+**估时（plan ×0.6）：** ~110-180 min 总线 / vs GLES 蓝图 plan §3.2 估时 ~240-360 min = **预期总线极速区 0.46-0.50×**
+
+**沉淀候选（reflect 阶段 / 7 项 P1）：**
+1. systemPatterns 升级「跨决策协同度 100% 第 15 次连续命中」（136/136 历史最高 streak）
+2. systemPatterns 升级「plan ×0.6 dec-evidence 第 10 数据点」（实施类 Level 3 子档新增）
+3. systemPatterns 升级「brainstorming P1.3 主动 push-back triple-evidence」
+4. systemPatterns 升级「writing-plans P1.6 spec vs code audit triple-evidence」
+5. systemPatterns 升级「P0 协议 sext-evidence 第 6 数据点」（quint → sext / 实施类 Level 3 首次实证）
+6. systemPatterns 新段「D3=B eager extension cache 范式 first-evidence」
+7. systemPatterns 新段「D4=C inline test 反向探针范式 first-evidence」
+
+**不进入 `/creative`：** Level 3 实施类 / 8 决策已 lock / 设计 spec §3.3.2 已规格化 / 0 创意阶段需求
+
+**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-6 实施（TDD RED → 抽象 → impl GREEN → ctest 注册 → 三 build 矩阵 → D7=A 单 feat commit）。
 
 ---
 
