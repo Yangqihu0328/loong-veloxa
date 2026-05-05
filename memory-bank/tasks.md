@@ -4,7 +4,7 @@
 
 ### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项）
 
-- **当前阶段：** 🟡 **规划完成**（VAN ✅ → Plan ✅ → 待 `/build`）
+- **当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）
 - **复杂度级别：** Level 2
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba` ✅ 创建）
@@ -98,6 +98,29 @@
 **预期实测 plan ×0.6 系数：** ~0.20-0.31×（落极速区 0.10-0.20× 续延候选 / quint → sext-evidence 候选 / Phase 0 audit 11 子段先跑 + 范式高度复用）
 
 **反复模式预防 8 项**（含 #8 spec 数据回归 audit / TASK-20260505-01 入库）：全 8 项预防策略已固化 / 期望 0/8 全抑制
+
+#### Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min / plan ×0.6 实测 ~0.26-0.32×）
+
+**3 commits 总计 +198 lines / 6 files changed：**
+
+| Phase | commit | 实测耗时 | 结果 |
+|---|---|:-:|---|
+| A.1 + B.1 — vx_view_invalidate API + 4 单测 + CMake 注册 | `a7e6bed` | ~10 min | 4/4 PASS / 反向探针 2/2 精准（NULL SEGFAULT + dirty_ rearm 2/4 FAIL）|
+| C.1 + D.1 — hello_devtool on_frame_end 注入 + ctest regex 升级 | `929569a` | ~5 min | frames=1 → **frames=18** / 反向探针 1/1 精准（regex 灵敏度 FAIL）|
+| D.2 — full ctest 双 config 验证 | — | ~10 min | DEVTOOL=ON 1302/1302 + DEVTOOL=OFF 1109/1109 / 与 plan 完全一致 ✅ |
+| E.1 — MVP-scope spec §3.2.1 B-G4 闭环 | `8d00aee` | ~5 min | B-G4 ✅ + 完成度 95% → **100%** + 短期路线图 #2 ✅ |
+
+**ctest 实测矩阵：** DEVTOOL=ON 1298 → **1302**（+4 PASS / 100%）/ DEVTOOL=OFF 1105 → **1109**（+4 PASS / 100%）— 与 plan 预期完全一致 ✅
+
+**dogfood smoke 验证：** hello_devtool 3 件套 3/3 PASS（perf_smoke `frames=18` / inspector / hot_reload 全 regression-free）
+
+**TDD 严格度：** 1 phase TDD 三阶（RED 编译 fail → GREEN 4/4 PASS → REFACTOR）+ 反向探针 3 项强度梯度三档全谱（A.1 NULL guard SEGFAULT 过高档 / A.1 dirty_ rearm 2/4 合适档 / D.1 ctest regex 灵敏度 1/1 平衡档）
+
+**plan ×0.6 实测系数：** **~0.26-0.32×**（实测 ~30 min vs plan ×0.6 95-115 min）— 落极速区 0.10-0.20× 续延档 / **sext-evidence** 候选（第 6 次命中数据点）
+
+**反复模式预防：** 0/8 全抑制（含 #8 spec 数据回归 dual-evidence → triple-evidence 候选 / VAN 阶段已实证暴露 + 修正路径 b → 路径 a）
+
+**MVP-B 100% 闭环 🎉：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
 
 ---
 

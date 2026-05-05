@@ -2,33 +2,25 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Plan ✅，待 `/build`。
+**构建完成** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Build ✅，待 `/reflect`。
 
-**Plan 阶段产出（2026-05-05 ~15:15）：**
+**Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min）：**
 
-- **设计文档：** `docs/specs/2026-05-05-perf-overlay-invalidate-api-design.md`（11 段 / 完整设计 + D1+D2+D3+D4 决策完整定义 + 4 风险登记）
-- **实现计划：** `docs/plans/2026-05-05-perf-overlay-invalidate-api.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段 / 4 单测 TDD 设计 / commit 范本）
-- **跨决策协同度 100% 第 10 次连续命中** — 1 次 AskQuestion 锁定 D1-A + D2-A + D3-A + D4-A 四决策（累计 100/100 跨决策一次锁定纪录 / nona → **dec-evidence** 升级）
-- **决策矩阵：**
-  - **D1-A** 仅 target update_manager_ 路由（DevTool 独立状态机 / 实现最简）
-  - **D2-A** main thread only（与 LoadHTML/InjectInput 一致 / Doxygen 明示）
-  - **D3-A** hello_devtool on_frame_end hook 调 vx_view_invalidate（PerfSmokeUd struct + userdata 通道 / 0 新机制）
-  - **D4-A** 完整 4 单测（null / fresh INVALID_STATE / 正常路径 / idempotent）
-- **关键 Phase 0 audit 发现（11 子段）：**
-  1. CSS animation 不可行（引擎不支持 `@keyframes`）→ 决定路径 (a)
-  2. UpdateManager::Invalidate 已就绪（update_manager.cc:14）/ Application 仅缺 `Invalidate()` 公开方法
-  3. on_frame_end hook 时序严格安全（dirty_=false reset → transition rearm → on_frame_end fire）→ hook 内调 invalidate 不依赖中间状态变更
-  4. A14 守门不受影响（公开 ABI / 不属 DevTool subsystem）
-  5. 既有 hello_devtool_perf_smoke regex `[1-9][0-9]*` ≥1 帧 → 升级到 `([2-9]|[1-9][0-9]+)` ≥2 帧
+- **3 commits 总计 +198 lines / 6 files changed：**
+  - `a7e6bed` feat(api): vx_view_invalidate() public C ABI [B-G4] — Phase A.1 + B.1 / 4 单测 4/4 PASS / 反向探针 2/2 精准
+  - `929569a` feat(devtool): hello_devtool perf smoke multi-frame validation [B-G4] — Phase C.1 + D.1 / **frames=18** / 反向探针 1/1 精准
+  - `8d00aee` docs(spec): MVP-B 100% — B-G4 closed [TASK-20260505-02] — Phase E.1 / B-G4 ✅ + 完成度 95% → 100%
+- **ctest 实测矩阵：** DEVTOOL=ON 1298 → **1302**（+4 PASS / 100%）/ DEVTOOL=OFF 1105 → **1109**（+4 PASS / 100%）— 与 plan 预期完全一致 ✅
+- **dogfood smoke：** hello_devtool 3 件套 3/3 PASS（perf_smoke `frames=18` / inspector / hot_reload 全 regression-free）
+- **TDD 严格度：** 1 phase TDD 三阶（RED 编译 fail → GREEN 4/4 PASS → REFACTOR）+ 反向探针 3 项（A.1 NULL guard SEGFAULT 过高档 + A.1 dirty_ rearm 2/4 合适档 + D.1 ctest regex 灵敏度 1/1 平衡档）— 强度梯度三档全谱覆盖
+- **plan ×0.6 实测系数：** ~0.26-0.32×（实测 ~30 min vs plan ×0.6 95-115 min）— 落极速区 0.10-0.20× 续延档 / **sext-evidence** 候选（第 6 次命中数据点）
+- **反复模式预防：** 0/8 全抑制（含 #8 spec 数据回归 dual-evidence → triple-evidence 候选 / VAN 阶段已实证暴露 + 修正路径 b → 路径 a）
+
+**MVP-B 100% 闭环 🎉：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
 
 **当前任务：** TASK-20260505-02 — `vx_view_invalidate()` 公开 C ABI / Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba`）
 
-**预期：**
-- ctest 期望 DEVTOOL=ON 1298 → 1302（+4）/ DEVTOOL=OFF 1105 → 1109（+4）
-- plan ×0.6 实测期待 ~0.20-0.31×（落极速区 0.10-0.20× 续延候选 / quint → sext-evidence 候选）
-- 反复模式预期 0/8 全抑制
-
-**下一步：** `/build` — 进入构建阶段，按 Phase A → B → C → D → E 5 个 phase 严格 TDD 实施。
+**下一步：** `/reflect` — 进入回顾阶段，整理 Build 阶段成功/挑战/经验沉淀（dec-evidence + sext-evidence + triple-evidence 升级 + 蓝图任务节奏档案）。
 
 ---
 

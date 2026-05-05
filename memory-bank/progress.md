@@ -4,7 +4,44 @@
 
 ### TASK-20260505-02 — Performance Overlay 持续 invalidate 机制（vx_view_invalidate() 公开 C ABI / B-G4 — MVP-B 收口最后一项）
 
-**当前阶段：** 🟡 **规划完成**（VAN ✅ → Plan ✅ → 待 `/build`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+**当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+
+#### Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min / plan ×0.6 实测 ~0.26-0.32× — 落极速区 0.10-0.20× 续延档）
+
+| Phase | commit | 实测耗时 | 结果 |
+|---|---|:-:|---|
+| Phase A.1 + B.1 — vx_view_invalidate API + 4 单测 + CMake 注册 | `a7e6bed` | ~10 min | 4/4 PASS / 反向探针 2/2 精准（NULL SEGFAULT + dirty_ rearm 2/4 FAIL）|
+| Phase C.1 + D.1 — hello_devtool on_frame_end 注入 + ctest regex 升级 | `929569a` | ~5 min | frames=1 → **frames=18** / 反向探针 1/1 精准（regex 灵敏度 FAIL）|
+| Phase D.2 — full ctest 双 config 验证 | — | ~10 min | DEVTOOL=ON 1302/1302 + DEVTOOL=OFF 1109/1109 / 与 plan 完全一致 ✅ |
+| Phase E.1 — MVP-scope spec §3.2.1 B-G4 闭环 | `8d00aee` | ~5 min | B-G4 ✅ + 完成度 95% → **100%** + 短期路线图 #2 ✅ |
+| **总计 build 阶段** | **3 commits** | **~30 min** | **+4 新单测全 PASS / +0 退化 / dogfood smoke 3/3 PASS** |
+
+**ctest 实测矩阵：** DEVTOOL=ON 1298 → **1302**（+4 PASS / 100%）/ DEVTOOL=OFF 1105 → **1109**（+4 PASS / 100%）— 与 plan 预期完全一致 ✅
+
+**TDD 严格度：** 1 phase TDD 三阶（RED 编译 fail → GREEN 4/4 PASS → REFACTOR）+ 反向探针 3 项（A.1: NULL guard + dirty_ rearm / D.1: ctest regex 灵敏度）— 反向探针总 3 测全部精准 FAIL 后恢复（强度梯度三档全谱：A.1-1 过高 SEGFAULT / A.1-2 合适 2/4 / D.1 平衡 1/1）
+
+**MVP-B 100% 闭环 ✅：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
+
+#### 反复模式预防清单核对（8 项 — 含 #8 spec 数据回归 / TASK-20260505-01 入库）
+
+| # | 已知反复模式 | 本任务命中状态 | 抑制证据 |
+|---|---|:-:|---|
+| #1 | 前置依赖/环境/API 能力未验证 | ✅ 抑制 | Phase 0 audit 11 子段先跑（VAN）/ UpdateManager::Invalidate 既有实现 + Application::update_manager 可访问性 + on_frame_end hook 时序均预证 |
+| #2 | spec 数据回归（实现 vs 文档不一致）| ✅ **暴露 + 修正** | VAN 阶段 audit 发现 spec/archive 列出的「路径 (b) CSS animation」**实际不可行**（引擎不支持 `@keyframes`）→ 用户改选路径 (a) / Phase E.1 spec §3.2.1 B-G4 闭环到 ✅ |
+| #3 | TDD 顺序倒置 | ✅ 抑制 | Phase A.1 严格 RED（编译 fail）→ GREEN（4/4 PASS）→ REFACTOR / 反向探针每子段必跑 |
+| #4 | 反向探针缺失或弱 | ✅ 抑制 | 3 phase 全实施反向探针 / A.1 NULL guard SEGFAULT 过高档 / A.1 dirty_ rearm 2/4 合适档 / D.1 regex 灵敏度 1/1 平衡档 — 强度梯度三档全谱覆盖 |
+| #5 | 中文文档 StrReplace 字符类型 audit | ✅ 抑制 | Phase E.1 spec 修改 1 次成功（无重试 / 半角符号一致 / strikethrough 标记 + 链接）|
+| #6 | commit body Source 溯源缺失 | ✅ 抑制 | 4 commits 全含 `Source: docs/plans/2026-05-05-perf-overlay-invalidate-api.md §X.Y`（quad-evidence 累计 ~43 commits）|
+| #7 | 双 config ctest 单次测验证盲区 | ✅ 抑制 | Phase D.2 双 config 完整跑 DEVTOOL=ON 1302 + DEVTOOL=OFF 1109 / 实测与 plan 预期完全一致 |
+| #8 | spec 数据回归 audit 协议 | ✅ **第 2 次实证** | VAN 阶段已对 spec/archive 路径 (b) 数据回归核对（CSS animation 不可行）→ 修正决策为路径 (a) / **dual-evidence → triple-evidence 升级候选**（TASK-20260505-01 入库 + 本任务实证）|
+
+**新候选反复模式定型（reflect 阶段考虑）：** N/A — 本次未触发新反复模式定型条件（所有已知模式全抑制 + 无新失败模式暴露）。
+
+**plan ×0.6 实测系数：** **~0.26-0.32×**（实测 ~30 min vs plan ×0.6 95-115 min）— 落极速区 0.10-0.20× 续延档（quint → **sext-evidence** 候选 / 第 6 次命中数据点 / 略微高于纯极速区因含 cmake reconfigure 等待 + ctest 全跑等待 ~10 min）。
+
+---
+
+
 
 #### VAN 阶段产出（2026-05-05 ~14:55）
 
