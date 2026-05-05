@@ -4,7 +4,7 @@
 
 ### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
 
-- **当前阶段：** 🟢 **规划完成**（VAN ✅ + Plan ✅ → 待 `/reflect`）
+- **当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Reflect ✅ → 待 `/archive`）
 - **复杂度级别：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
@@ -125,6 +125,20 @@
 - ✅ #1 前置依赖 / 环境 / API 能力未验证：VAN + Plan Phase 0 grep 10/10 PASS
 - ✅ #8 spec 数据回归 audit：本任务无既有 spec 数据回归（C-G1 是新设计 / 不依赖既有功能现状）
 - ✅ 中文文档 StrReplace 字符类型 audit：本任务编辑 6 处中文文档 / 0 重试（全部 Read 后 StrReplace）
+
+#### Reflect 阶段产出（2026-05-05 ~17:10）
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-03.md`（~430 行 / 9 段全覆盖）
+- **3 个范式升级直接落地（systemPatterns.md 新沉淀 3 段）：**
+  1. 跨决策协同度 100% **doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / **跨阶段协同度首次实证**）
+  2. plan ×0.6 **极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
+  3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
+- **8 项改进建议（P0×3 + P1×3 + P2×2）：**
+  - P0 #1 `writing-plans.mdc` 新增「plan/spec docs 落盘即 commit」协议段（triple-evidence 已达固化阈值）→ 升级到 activeContext P1 #6 待批量落地
+  - P0 #2 + P0 #3 systemPatterns.md ✅ reflect 阶段直接落地
+  - P1 #4/#5/#6 → activeContext「待处理事项」
+  - P2 #7/#8 → 长期沉淀
+- **关键发现（7 项）：** 详见 reflection §8 / **MVP-C 战略主线启动 ✅** — G1 OpenGL ES 蓝图主交付完成 / 18 实施子任务规格化 / 用户后续基于本蓝图独立立项
 
 ---
 

@@ -3535,6 +3535,126 @@ rg "AnimationManager|@-keyframes-rule" veloxa/core/  # 查证子系统是否存�
 
 ---
 
+## 跨决策协同度 100% doudec-evidence（TASK-20260505-03 反思入库 / 第 11 + 12 次连续命中 / dec → endec → doudec-evidence 跳级升级 / 跨阶段协同度首次实证）
+
+**升级背景：** [跨决策协同度 100% dec-evidence](#跨决策协同度-100-dec-evidencetask-20260505-02-反思入库--第-10-次连续命中--sept--oct--nona--dec-evidence-跳级升级) 段累计 dec-evidence（10 次）+ TASK-20260505-03 VAN（第 11 次 / 5 V 决策 / endec-evidence）+ TASK-20260505-03 plan（第 12 次 / 8 B 决策 / **doudec-evidence**）。本任务**单任务跨阶段两次 AskQuestion 全 100% 锁定**（首次实证 / 既有 dec-evidence 全为单任务单 AskQuestion）。
+
+**累计实证数据（12 任务连续命中）：**
+
+| # | 任务 | 决策数 | 累计 |
+|:-:|---|:-:|:-:|
+| 1-10 | TASK-20260430-04 → TASK-20260505-02（详 dec-evidence 段）| 11+12+12+10+13+12+12+11+3+4 | 100/100 |
+| 11 | **TASK-20260505-03 VAN（5 V 决策）** | **5** | **105/105** |
+| 12 | **TASK-20260505-03 plan（8 B 决策）** | **8** | **113/113** |
+
+**doudec-evidence 里程碑意义：**
+
+- **范式神圣化** — 12 次连续 100% 命中 / 累计 113/113 跨决策一次锁定纪录 / 0 反悔 / 0 调整
+- **跨阶段协同度首次实证** — 单任务 VAN（5 V）+ plan（8 B）两次 AskQuestion 跨阶段全 100% 锁定 / 既有 dec-evidence 全为单任务单 AskQuestion / 跨阶段维度首次入库
+- **预测精度极致化** — VAN/plan 决策时间从范式前 ~30-60 min → 当前 ~2-3 min（**~10-30× 加速**）
+- **decision matrix 已成 Veloxa 标准产出物** — 13 决策矩阵段在 spec / plan / activeContext / tasks / progress 五处一致呈现
+- **all_recommended fallback 模式确认不必要** — 12 任务全 100% 推荐方案锁定 / 单选选项 fallback 从未触发 / 候选 B/C 保留是为 audit 透明度而非 fallback 必需
+
+**新维度沉淀**：
+
+「**单任务跨阶段协同度**」— V/B 决策矩阵跨 VAN（确定方向 / 范围 / 平台覆盖）+ plan（确定算法 / 资源 / 性能验收）两阶段时，候选选项的协同度标注必须在两阶段间一致（V3=desktop_first → B1 必须含「桌面 + 嵌入式接口预留」候选 / V4=co_design_boundary → B8 必须含「完整接口预留」候选）。**前置条件：** 任务复杂度 ≥ Level 4 蓝图 + 决策数 ≥ 10 + 跨阶段决策依赖图非平凡。
+
+**交叉引用：**
+- [跨决策协同度 100% dec-evidence](#跨决策协同度-100-dec-evidencetask-20260505-02-反思入库--第-10-次连续命中--sept--oct--nona--dec-evidence-跳级升级)（base 段）
+- [Checkpoint 推荐默认 + 隐式批准协议](#checkpoint-推荐默认--隐式批准协议task-30-03-反思44--新模式)（同源协议）
+- `memory-bank/reflection/reflection-TASK-20260505-03.md` §3.c #1
+- `.cursor/rules/skills/brainstorming.mdc` 「跨决策协同度」段（base 协议）
+
+---
+
+## plan ×0.6 实测系数 sept-evidence — 极致极速区 0.02-0.05× 子档（TASK-20260505-03 反思入库 / 第 7 次命中 / 6 触发条件）
+
+**升级背景：** [plan ×0.6 估时按任务类型分桶系数矩阵](#plan-06-估时按任务类型分桶系数矩阵task-30-03-反思43--元模式升级) 段累计 sext-evidence（6 次）+ TASK-20260505-03（第 7 次 / **sept-evidence**）。本任务实测 ~0.02-0.04× 远破既有「极速区 0.10-0.20×」+「极速区续延档 0.20-0.35×」+「纯文档/规则极速区 0.15-0.25×」三档下限 / 触发**新子档「极致极速区 0.02-0.05×」**。
+
+**累计实证数据（7 任务命中）：**
+
+| # | 任务 | 比值 | 子档 |
+|:-:|---|:-:|---|
+| 1 | TASK-20260503-05（QuickJS Interrupt）| 0.16× | 最小代码改动极速区 |
+| 2 | TASK-20260503-04（DevTool Phase D）| 0.07-0.10× | creative 全锁死 + 范式 100% 复用 |
+| 3 | TASK-20260504-01（MVP-scope 蓝图）| 0.21× | 纯文档/规则极速区 |
+| 4 | TASK-20260505-01（DomBindings R2 收口）| 0.14-0.18× | 最小代码改动极速区 |
+| 5 | TASK-20260505-02（vx_view_invalidate ABI）| 0.26-0.32× | 极速区续延档（D.2 ctest 等待主导）|
+| 6 | TASK-20260505-03 VAN（5 V）| ~0.50-1.0× | 标准 brainstorm 范围 |
+| 7 | **TASK-20260505-03 蓝图主交付（spec + plan + creative ×3）** | **~0.02-0.04×** | **极致极速区新子档** |
+
+**「极致极速区 0.02-0.05×」子档触发条件（6 项全成立）：**
+
+1. ✅ **V2=a 纯蓝图任务**（无 build / 无 ctest 等待 / 仅文档撰写）
+2. ✅ **决策预 lock**（V/B 决策矩阵 1+1 次 AskQuestion 全锁定 / 0 中途回溯）
+3. ✅ **既有架构对替换零阻碍**（Phase 0 audit 10/10 实证 / 抽象层到位）
+4. ✅ **既有任务范式 100% 复用**（V2=a 蓝图范式 + commit 协议 + 文档结构 / 沿用 TASK-20260430-04 + TASK-20260504-01）
+5. ✅ **单 commit P0 协议落盘**（plan/spec docs 落盘即 commit / 无 collateral commit / 无 build 阶段返工）
+6. ✅ **AI agent 极致专注**（30-40 min 连续撰写 / 无中断 / 无 user intervention）
+
+**子档矩阵完整对照（4 档）：**
+
+| 子档 | 比值范围 | 触发场景 | 实证数据点 |
+|---|:-:|---|:-:|
+| 极致极速区（**新**）| **0.02-0.05×** | V2=a 纯蓝图 + 范式 100% 复用 + 单 commit P0 + AI 极致专注 | 1（TASK-20260505-03）|
+| 极速区 | 0.07-0.20× | 最小代码改动 + creative 全锁死 + Phase 0 高度预跑 | 4（TASK-03-04 / 20260505-01）|
+| 极速区续延档 | 0.20-0.35× | D.2/D.3 等不可压缩 ctest 等待时间主导 | 1（TASK-20260505-02）|
+| 纯文档/规则极速区 | 0.15-0.25× | 工作流元任务 / 无 build / 仅 reflection 沉淀 | 1（TASK-20260503-02 / 20260504-01）|
+
+**反模式：** 用「极致极速区」估实施类任务 / 用「极速区续延档」估纯蓝图 V2=a 任务 — 子档之间不可跨档外推。
+
+**交叉引用：**
+- [plan ×0.6 估时按任务类型分桶系数矩阵](#plan-06-估时按任务类型分桶系数矩阵task-30-03-反思43--元模式升级)（base 段）
+- `memory-bank/reflection/reflection-TASK-20260505-03.md` §1.2 + §3.c #2
+
+---
+
+## V2=a 蓝图任务范式 triple-evidence（TASK-20260505-03 反思入库 / 第 3 次实证 / 范式稳定）
+
+**升级背景：** Level 4 V2=a 蓝图任务工作流变体（`/van → /plan（含 brainstorm + creative ×N）→ /reflect → /archive` / **跳过独立 `/build` 阶段**）已第 3 次实证 / 范式稳定。
+
+**累计实证数据（3 任务）：**
+
+| # | 任务 | 决策数 | 主交付行数 | plan ×0.6 实测 |
+|:-:|---|:-:|:-:|:-:|
+| 1 | TASK-20260430-04（DevTool 蓝图）| 13 | ~2410 | ~30-50 min |
+| 2 | TASK-20260504-01（MVP-scope 蓝图）| 11 | ~3300 | ~45 min |
+| 3 | **TASK-20260505-03（GLES 蓝图）** | **13** | **3376** | **~30-40 min** |
+
+**range 平均：12.3 决策 / ~3030 行 / ~38 min 蓝图主交付**
+
+**triple-evidence 范式稳定要素：**
+
+1. **决策矩阵集中锁定** — V 系列（VAN）+ B/C 系列（plan brainstorm 内联）/ 12.3 决策 1+1 次 AskQuestion 全 all_recommended 锁定
+2. **3 件套主交付** — spec（架构设计 / V/B 决策矩阵 / 风险）+ plan（实施子任务规格化 / commit 范本 / ctest 矩阵）+ creative ×N（设计权衡 / 算法详细 / 反向探针候选）
+3. **N 个 Level 3 实施子任务规格化** — 用户后续基于本蓝图独立立项 / 含 🟢 完整规格化 + 🔵 概要规格化 深浅梯度
+4. **单 commit P0 协议落盘** — plan/spec/creative + Memory Bank 单 commit 落盘 / 0 collateral commit
+5. **跳过独立 /build 阶段** — `main.mdc` Level 4 蓝图变体段 / `/reflect` 前置条件灵活解读「构建中 = 文档产出中」
+
+**适用任务类型：**
+
+- ✅ **战略长期目标蓝图**（如 GLES / Vulkan / DRM/KMS / Web 兼容子集 / 嵌入式 HAL）
+- ✅ **多子任务规模拆分蓝图**（如 DevTool Phase E/F/G / CSS 高级特性集 / 图像扩展集）
+- ✅ **MVP scope 重定义蓝图**（如 MVP-A/B/C 三档分级 / spec §11.2 立项推荐顺序）
+- ❌ **不适用**：单 Level 1-2 简单任务 / Bug 修复 / 紧急 hotfix（不需要蓝图深度规划）
+
+**与既有「`main.mdc` Level 4 蓝图任务 V2=a 工作流变体」段协同：**
+
+base 段说明工作流路径（`/van → /plan → /reflect → /archive` / 跳过 `/build`），本段补充：
+
+- 决策数 / 行数 / 时长基线（12.3 决策 / ~3030 行 / ~38 min）
+- 单 commit P0 协议要求（plan/spec docs 落盘即 commit）
+- 子任务深浅梯度规则（🟢/🔵）
+- 跨阶段协同度要求（V → B/C 决策矩阵协同度 100%）
+
+**交叉引用：**
+- `.cursor/rules/main.mdc` 「Level 4 蓝图任务 V2=a 工作流变体」段（base 段）
+- `memory-bank/archive/archive-TASK-20260430-04.md`（first-evidence）
+- `memory-bank/archive/archive-TASK-20260504-01.md`（second-evidence）
+- `memory-bank/reflection/reflection-TASK-20260505-03.md` §3.a #4 + §3.c #4
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

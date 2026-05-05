@@ -2,7 +2,25 @@
 
 ## 当前阶段
 
-**规划完成** — TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / Level 4 V2=a 蓝图任务）VAN ✅ + Plan ✅，待 `/reflect`。
+**回顾中** — TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / Level 4 V2=a 蓝图任务）VAN ✅ + Plan ✅ + Reflect ✅，待 `/archive`。
+
+**Reflect 阶段产出（2026-05-05 ~17:10）：**
+
+- **回顾文档**：`memory-bank/reflection/reflection-TASK-20260505-03.md`（~430 行 / 9 段全覆盖）
+- **3 个范式升级直接落地（systemPatterns.md 新沉淀 3 段）：**
+  1. **跨决策协同度 100% doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / **跨阶段协同度首次实证**）
+  2. **plan ×0.6 极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
+  3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
+- **8 项改进建议（P0×3 + P1×3 + P2×2）：**
+  - P0 #1 `writing-plans.mdc` 新增「plan/spec docs 落盘即 commit」协议段（triple-evidence 已达固化阈值）
+  - P0 #2 + P0 #3 systemPatterns.md ✅ reflect 阶段直接落地
+  - P1 #4 `main.mdc` Level 4 蓝图任务 V2=a 升级为「稳定范式 / triple-evidence」标注
+  - P1 #5 `writing-plans.mdc` 新增「蓝图任务子任务规格化深浅梯度」段（🟢/🔵 标记）
+  - P1 #6 `git-workflow.mdc` 新增「蓝图任务 commit body 范本」段（8 段固化）
+  - P2 #7 + P2 #8 长期沉淀
+- **关键发现（7 项）：** 详见 reflection §8
+
+**规划完成存档** — VAN + Plan 阶段总结：
 
 **Plan 阶段产出（2026-05-05 ~17:30）：**
 
@@ -215,15 +233,20 @@
 - **P1 #2（来自 TASK-20260503-04 reflection §5）writing-plans.mdc「资源类反向探针 SOP」新子段** — 资源反向探针应限定到非注释区域 + comment policy 推荐；本任务 D.3 console_panel.html 注释里 `<input` 字面量触发反向探针 false positive。**预估**：~10 min。
 - **P1 #2（来自 TASK-20260503-05 reflection §5）brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现偏差 + (3) 偏差**显著**（默认值差 10³+ 倍）。**预估**：~10 min。
 - **P1 #5（来自 TASK-20260505-01 reflection §5 #5）systemPatterns.md 新沉淀「视觉链路三件齐识别协议」段** — 当 dogfood UI 行为依赖 ≥3 个独立缺陷修复才能完整工作时，必须**单任务集中闭环**而非分多任务拆分；plan 阶段 §UI 行为验收表是识别工具（本任务 plan §0.11「视觉恢复链路」表是范式）。**预估**：~30-40 行 systemPatterns 段 / ~10 min。
-- **P1 #6（来自 TASK-20260505-01 reflection §5 #6 → TASK-20260505-02 首次成功实施 ✅）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — TASK-20260505-02 `/plan` 阶段 commit `4feda52` 即 plan + spec + MB 更新合并提交 / build 阶段 0 collateral commit / **首次成功实施 ✅**；建议升级到 P0 立即固化协议到 `.cursor/rules/skills/writing-plans.mdc` 或 `.cursor/commands/plan`。**预估**：~10 min。
+- **P1 #6（来自 TASK-20260505-01 reflection §5 #6 → TASK-20260505-02 首次部分实施 → TASK-20260505-03 首次完整实施 ✅ / triple-evidence 已达 P0 固化阈值）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — TASK-20260505-03 commit `1555cf4` plan/spec/creative ×3 + MB ×3 单 commit 8 files 落盘 / 0 collateral / **首次完整实施 ✅** / **triple-evidence 已达 writing-plans.mdc P0 固化阈值** — 建议下次工作流元任务批量落地时立即固化协议到 `.cursor/rules/skills/writing-plans.mdc` 「plan 阶段产出物 commit 协议」段（含 8 段 commit body 范本）。**预估**：~15-20 min。
 - **P1 #7（来自 TASK-20260505-02 reflection §5 #4 → triple-evidence 升级 / 已达固化阈值）反复模式 #8 spec 数据回归 audit 协议固化到 `.cursor/rules/skills/writing-plans.mdc`** — Phase 0 audit 段「spec vs code 一致性 audit」+「能力假设 audit」双子条；TASK-20260504-01 + TASK-20260505-01 + TASK-20260505-02 三次实证累计已达固化阈值。**预估**：~15 min。
 - **P1 #8（来自 TASK-20260505-02 reflection §5 #5 → quad-evidence 升级 / 已成 Veloxa 默认范式）lazy-attach C ABI 容错模式固化** — sytemPatterns quad-evidence 已沉淀；建议下次工作流元任务批量落地时 (a) `.cursor/rules/skills/writing-plans.mdc` C ABI 设计模式段「lazy-attach 默认契约」子条 + (b) `veloxa/api/veloxa_api.h` 顶部 doc 段添加「lazy-attach contract」一节统一引用前序 ABI。**预估**：~15 min。
 - **P2 #4（来自 TASK-20260503-03 reflection §6）commit body Source 溯源 + 实测数据格式固化** — 累计 ~39 commits quad-evidence（远破 git-workflow.mdc 固化阈值 / 本任务延续协议）/ 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`。**预估**：~10-15 min。
+- **P1 #4（来自 TASK-20260505-03 reflection §4 #4）`main.mdc` Level 4 蓝图任务 V2=a 工作流变体段升级为「稳定范式 / triple-evidence」标注** — 3 任务实证（TASK-20260430-04 + TASK-20260504-01 + TASK-20260505-03 / 平均 12.3 决策 / ~3030 行 / ~38 min）/ 范式参数已稳定 / 建议加 triple-evidence 标注 + 3 任务对照表。**预估**：~10 min。
+- **P1 #5（来自 TASK-20260505-03 reflection §3.d #3 + §4 #5）`writing-plans.mdc` 新增「蓝图任务子任务规格化深浅梯度」段** — 🟢 完整规格化 vs 🔵 概要规格化 / plan §8 边界明示模板 / TASK-20260505-03 plan §3 G1.1-G1.5 完整 + G1.7-G1.18 概要 = 18 子任务规格化深浅梯度首次实证。**预估**：~15 min。
+- **P1 #6（来自 TASK-20260505-03 reflection §3.c #5 + §4 #6）`git-workflow.mdc` 新增「蓝图任务 commit body 范本」段** — 8 段固化（任务定位 / 决策矩阵 / 主交付 / 后续实施 / 协议元数据 / plan ×0.6 / Source 溯源 / 下一步）/ 实例引用 commit `1555cf4`。**预估**：~10-15 min。
 
 ### 长期沉淀（P2 — 不强制 archive）
 
 - **P2 #3（来自 TASK-20260503-02 reflection）GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 短路评估易错模式 P3** — A-P1#6 audit CP2 扩展发现 tests/ 中 8 处该模式；建议 codebase guideline「测试中也用三元守卫显式化」。**预估**：~30 min audit + ~1 h codebase 修正。
 - **P2 #4（来自 TASK-20260503-02 reflection）plan §文档段落 LOC 预估系数 ×1.5-2× 修正** — 与 TASK-20260503-04 P2 #1（writing-plans LOC 估算附录加「隐性附加工作类型清单」+ ×1.3-1.5 buffer 范本）同源；建议合并落地。**预估**：~10 min。
+- **P2 #7（来自 TASK-20260505-03 reflection §4 #7）systemPatterns 新增「activeContext.md 重复 anchor 检测协议」子段** — VAN 阶段 StrReplace 前 Grep `^## 上次任务` 类标题段 / 在「中文文档 StrReplace 字符类型 audit」段加子条。**预估**：~10 min。
+- **P2 #8（来自 TASK-20260505-03 reflection §4 #8）systemPatterns 新增「V2=a 蓝图任务文档密度系数 1.0-1.4×」段** — 5 文档全偏正向 +27% ~ +139% / 既有 0.7-1.0× 系数偏低 / 实证 3 任务对照（TASK-20260430-04 + 20260504-01 + 20260505-03）。**预估**：~10 min。
 
 ---
 

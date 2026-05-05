@@ -4,7 +4,23 @@
 
 ### TASK-20260505-03 — G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
 
-**当前阶段：** 🟢 **规划完成**（VAN ✅ + Plan ✅ → 待 `/reflect`）/ Level 4 V2=a 蓝图 / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
+**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Reflect ✅ → 待 `/archive`）/ Level 4 V2=a 蓝图 / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
+
+#### Reflect 阶段产出（2026-05-05 ~17:10）
+
+- **回顾文档：** [reflection-TASK-20260505-03.md](reflection/reflection-TASK-20260505-03.md)（~430 行 / 9 段全覆盖）
+- **3 个范式升级直接落地（systemPatterns.md 新沉淀 3 段）：**
+  1. **跨决策协同度 100% doudec-evidence**（dec → endec → doudec-evidence 跳级 / 12 次连续命中 / 累计 113/113 / **跨阶段协同度首次实证**）
+  2. **plan ×0.6 极致极速区 0.02-0.05× 子档**（sept-evidence 第 7 次命中 / 6 触发条件 / 4 子档矩阵完整对照）
+  3. **V2=a 蓝图任务范式 triple-evidence**（3 任务平均 12.3 决策 / ~3030 行 / ~38 min 蓝图主交付 / 范式稳定）
+- **8 项改进建议（P0×3 + P1×3 + P2×2）：**
+  - P0 #1 `writing-plans.mdc` 新增「plan/spec docs 落盘即 commit」协议段（triple-evidence 已达固化阈值）→ 升级到 activeContext P1 #6 待批量落地
+  - P0 #2 + P0 #3 systemPatterns.md ✅ reflect 阶段直接落地
+  - P1 #4/#5/#6 → activeContext「待处理事项」批量落地
+  - P2 #7/#8 → systemPatterns 长期沉淀
+- **关键发现（7 项）：** 详见 reflection §8
+
+
 
 #### Plan 阶段产出（2026-05-05 ~17:30）
 
