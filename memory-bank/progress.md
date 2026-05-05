@@ -2,7 +2,38 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。上次任务 TASK-20260505-01 已归档闭环（详见 `memory-bank/archive/archive-TASK-20260505-01.md`）。
+### TASK-20260505-02 — Performance Overlay 持续 invalidate 机制（vx_view_invalidate() 公开 C ABI / B-G4 — MVP-B 收口最后一项）
+
+**当前阶段：** 🟡 **规划完成**（VAN ✅ → Plan ✅ → 待 `/build`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+
+#### VAN 阶段产出（2026-05-05 ~14:55）
+
+- 用户消歧 `path_a_full`（路径 (a) 完整版 / 新增公开 vx_view_invalidate() C ABI）— 拒绝 spec/archive 列出的路径 (b) CSS animation（Phase 0 audit 暴露引擎不支持）
+- Phase 0 audit VAN 阶段已先跑（11 子段 / 引擎不支持 CSS animation 暴露 / UpdateManager::Invalidate 已就绪 / A14 守门不受影响 / 既有 perf smoke ctest 范本就绪）
+- 反复模式 #8 spec 数据回归命中（CSS animation 不可行）+ 修正决策为路径 (a) → 已纳入本任务范围（Phase E.1 同步 spec §3.2.1 B-G4 闭环）
+
+#### Plan 阶段产出（2026-05-05 ~15:15）
+
+- **设计文档：** `docs/specs/2026-05-05-perf-overlay-invalidate-api-design.md`（11 段 / 完整设计 + D1+D2+D3+D4 决策完整定义 + 5 风险登记）
+- **实现计划：** `docs/plans/2026-05-05-perf-overlay-invalidate-api.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段 / 4 单测 TDD 设计 / 反复模式预防 8 项核对 / commit 范本）
+- **跨决策协同度 100% 第 10 次连续命中**：1 次 AskQuestion 锁定 D1-A + D2-A + D3-A + D4-A 四决策（累计 100/100 / nona → **dec-evidence** 升级）
+- **关键设计决策：**
+  - **D1-A** 仅 target update_manager_ 路由（DevTool 独立状态机不受影响）
+  - **D2-A** main thread only（Doxygen 明示 / 与 LoadHTML/InjectInput 一致）
+  - **D3-A** hello_devtool on_frame_end hook 调 vx_view_invalidate（PerfSmokeUd struct + userdata 通道）
+  - **D4-A** 完整 4 单测（含反向探针锚定 4 项）
+- **关键 Phase 0 audit 发现：**
+  - CSS animation 不可行 → 决定路径 (a)
+  - on_frame_end hook 时序严格安全（dirty_=false reset → transition rearm → on_frame_end fire）
+  - A14 守门不受影响（公开 ABI 不属 DevTool subsystem）
+- **预期实测 plan ×0.6 系数：** ~0.20-0.31×（落极速区 0.10-0.20× 续延候选 / quint → sext-evidence 候选）
+- **预期反复模式：** 0/8 全抑制（含 #8 spec 数据回归已在 VAN 阶段命中并修正）
+
+**下一步：** `/build` — 进入构建阶段，按 Phase A → B → C → D → E 5 个 phase 严格 TDD 实施。
+
+---
+
+
 
 <!-- TASK-20260505-01 详细里程碑（含 VAN/Plan/Build A.1+B.1+C.1+D.1+D.2/E.1+E.2+E.3/Reflect/Archive 全阶段时间线 + 实测耗时 + 反向探针 9/9 精准 FAIL 全谱 + 反复模式 0/7 + 1 新候选 #8 入库定型 + P0×4 reflect 全落实 + P1×2 迁移 + P2×2 长期沉淀）已迁移到 archive 文档（见 archive-TASK-20260505-01.md §3 文件变更 + §6 长期影响 + §8 度量数据汇总）
 

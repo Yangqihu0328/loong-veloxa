@@ -2,7 +2,102 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。上次任务 TASK-20260505-01 已归档闭环（2026-05-05 ~14:50）。
+### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项）
+
+- **当前阶段：** 🟡 **规划完成**（VAN ✅ → Plan ✅ → 待 `/build`）
+- **复杂度级别：** Level 2
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba` ✅ 创建）
+- **来源：** [TASK-20260504-01 MVP-scope spec §3.2.1 B-G4](docs/specs/2026-05-04-mvp-scope.md) + [TASK-20260503-03 archive §9 P3 候选 #0](memory-bank/archive/archive-TASK-20260503-03.md) + 用户 `/van Performance Overlay 持续 invalidate 机制` 拍板 → `path_a_full` 决策（embedder 通用 + dogfood smoke 多帧）
+- **安全相关：** ❌ 否（公开 ABI 扩展 / 仅暴露既有 UpdateManager::Invalidate / 无新威胁面）
+- **估时：** plan ×0.6 ~95-115 min（5 Phase / 8 任务 / 落极速区 0.20-0.31× 候选）
+- **设计文档：** `docs/specs/2026-05-05-perf-overlay-invalidate-api-design.md`（11 段 / 544 行）
+- **实现计划：** `docs/plans/2026-05-05-perf-overlay-invalidate-api.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段 / 4 单测 TDD 设计）
+
+#### VAN 阶段产出（2026-05-05 ~14:55）
+
+**用户决策：** AskQuestion `perf_invalidate_path` = `path_a_full`（路径 (a) 完整版 / 新增公开 vx_view_invalidate() C ABI）— 拒绝 spec/archive 列出的路径 (b) CSS animation（Phase 0 audit 暴露引擎不支持）+ 路径 (c) 输入注入（仅 dogfood）+ 路径 (d) transition（仅 dogfood）+ defer（搁置）
+
+**关键 Phase 0 audit 发现：**
+
+1. **CSS animation 不可行** — `grep veloxa/ @keyframes/animation:` 0 命中 / 引擎不支持 → spec 路径 (b) 实际不可行 → 用户改选 (a)
+2. **既有 Invalidate 实现就绪** — `UpdateManager::Invalidate()`（update_manager.cc:14 / 1 行 `dirty_ = true;`）+ `Application::update_manager()`（application.h:71-73 公开访问）/ 仅缺 C ABI 桥接
+3. **A14 守门不受影响** — A14 黑名单（tests/smoke/devtool_a14_link_closure.cmake L45-50）仅守 DevTool subsystem / 新增公开 ABI 不属于守门范围
+4. **既有 perf smoke ctest 范本就绪** — `hello_devtool_perf_smoke`（tests/CMakeLists.txt:412-420 / `PASS_REGULAR_EXPRESSION "PERF SMOKE: frames=[1-9][0-9]* hud_visible=1"`）/ 仅需 hello_devtool.cc 在 hook 回调中调用 `vx_view_invalidate()` 即可升级到真多帧
+5. **双 update_manager 路由待 plan 决策** — Application 持有 `update_manager_`（target）+ `devtool_update_manager_`（DevTool）/ `vx_view_invalidate()` 应只作用于 target 还是双 invalidate？— **待 plan 阶段 D1 决策**
+
+#### 任务范围（VAN 锁定）
+
+| # | 子项 | 文件 | 估时 plan ×0.6 |
+|:-:|---|---|:-:|
+| **API.1** | `vx_view_invalidate(VxView*)` C ABI 声明 + Doxygen 文档 | `veloxa/api/veloxa_api.h` (+10-15) | ~10 min |
+| **API.2** | `vx_view_invalidate` 实现（VxView* → vx::Application* → update_manager()->Invalidate()）| `veloxa/api/veloxa_api.cc` (+15-25) | ~10-15 min |
+| **TDD.1** | API 单测（null view / 正常路径 / 双 update_manager 路由验证）| `tests/api/*` (+50-100) | ~20-30 min |
+| **DOG.1** | hello_devtool.cc on_frame_end hook 中调用 vx_view_invalidate() | `examples/hello_devtool.cc` (+5-10) | ~5-10 min |
+| **DOG.2** | hello_devtool_perf_smoke ctest 升级 PASS_REGULAR_EXPRESSION 到 `frames=([2-9]\|[1-9][0-9]+)` | `tests/CMakeLists.txt` (±5) | ~5-10 min |
+| **DOC.1** | spec §3.2.1 B-G4 状态从 ⚠️ 部分 → ✅ 闭环 | `docs/specs/2026-05-04-mvp-scope.md` (±10) | ~5-10 min |
+| **DOC.2** | README 可选更新（embedder API 列表） | `README.md` (±5) | ~5 min（可选） |
+| 双 config full ctest 验证 | DEVTOOL=ON + DEVTOOL=OFF | — | ~10-15 min |
+
+**总估时：** ~70-110 min plan ×0.6（落「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」候选 / 待 plan 阶段精确化）
+
+#### VAN 前置验证清单（4 维度全通过）
+
+- ✅ **依赖可获取性：** `UpdateManager::Invalidate` 既有实现 / `Application::update_manager()` 公开访问 / SDL2 + DEVTOOL build config 就绪
+- ✅ **环境就绪：** ctest 1298/1298 baseline ✅（TASK-20260505-01 收口）/ 测试基础设施完备
+- ✅ **已有 artifact：** `hello_devtool_perf_smoke` ctest 已就位 / 仅需升级 PASS_REGULAR_EXPRESSION + hello_devtool.cc 注入 invalidate 调用
+- ✅ **待处理事项关联：** 与 activeContext P3 候选 #0（来自 TASK-20260503-03 build P1 失败拆细化）+ MVP-scope spec B-G4 闭环 — 本任务即此候选立项
+
+#### 待 plan 阶段决策项
+
+1. **D1: 双 update_manager 路由** — `vx_view_invalidate()` 是否同时 invalidate target + DevTool update_manager？候选：(A) 仅 target / (B) 双 invalidate / (C) 增加 `which` 参数
+2. **D2: 线程安全语义** — 是否声明 thread-safe？候选：(A) main thread only / (B) atomic dirty_（需评估开销）
+3. **D3: hello_devtool 注入位置** — `on_frame_end` hook 末调用？或 SDL2 event loop？或独立 timer？— **预倾向 on_frame_end**（最简单 + 利用既有 hook 范式）
+4. **D4: API ctest 与 dogfood smoke 比例** — API 单测应包含哪些场景？null view / 未 init / 正常 / 双 update_manager 路由分别测？
+
+#### 需要创意阶段的组件
+
+**❌ 不需要 `/creative` 阶段。** 路径 (a) 已锁定 / 仅有 4 个微观决策（D1-D4 上述）/ 无新组件需 UI 设计 / 无新算法。决策 brainstorming 在 `/plan` 内联即可。直接进入 `/plan`。
+
+#### Plan 阶段产出（2026-05-05 ~15:15）
+
+**设计决策矩阵（D1+D2+D3+D4 跨决策协同度 100% 第 10 次连续命中 — 1 次 AskQuestion 全锁定 / dec-evidence 升级）：**
+
+| # | 决策 | 选择 | 理由 |
+|:-:|---|---|---|
+| **D1** | 双 update_manager 路由 | **D1-A** 仅 target update_manager_ | VxView 单一 view 抽象 / DevTool 独立状态机 / 实现最简 |
+| **D2** | 线程安全语义 | **D2-A** main thread only | 与 LoadHTML/InjectInput 一致 / dirty_ 非 atomic / atomic 改造低 ROI |
+| **D3** | hello_devtool 注入位置 | **D3-A** on_frame_end hook | 利用既有 perf_hooks 范式 / userdata 通道传 VxView* / 0 新机制 / 时序严格安全 |
+| **D4** | API 单测覆盖范围 | **D4-A** 完整 4 单测 | null / fresh INVALID_STATE / 正常路径 / idempotent — 含反向探针锚定 4 项 |
+
+**关键 Phase 0 audit 发现（11 子段）：**
+
+1. **CSS animation 不可行** — Veloxa 引擎不支持 `@keyframes`（grep `veloxa/` 0 命中）→ 决定路径 (a)
+2. **UpdateManager::Invalidate 既有实现** — update_manager.cc:14 / `dirty_=true` 1 行 / 0 引擎层改造
+3. **Application::update_manager() 仅 const getter** → 需新增 `Application::Invalidate()` 公开方法
+4. **lazy attach 范式可复用** — null update_manager → INVALID_STATE 模式与 vx_view_set_pipeline_hooks 一致
+5. **on_frame_end hook 时序严格安全** — dirty_=false reset → transition rearm → on_frame_end fire / hook 内调 invalidate 不依赖中间状态
+6. **A14 守门不受影响** — 公开 ABI / 不属 DevTool subsystem 守门范围
+7. **既有 perf smoke ctest regex** `[1-9][0-9]*` ≥1 帧 → 升级到 `([2-9]\|[1-9][0-9]+)` ≥2 帧
+
+**5 Phase / 8 任务执行计划：**
+
+| Phase | 任务 | 文件 | plan ×0.6 |
+|:-:|---|---|:-:|
+| Phase A.1 | API 声明 + Application::Invalidate + vx_view_invalidate + 4 单测 TDD | `application.h/cc` + `veloxa_api.h/cc` + 新建 `tests/api/invalidate_api_test.cc` | ~30-45 min |
+| Phase B.1 | tests/CMakeLists.txt 注册 invalidate_api_test | `tests/CMakeLists.txt` (+5) | ~10 min |
+| Phase C.1 | hello_devtool.cc 注入 vx_view_invalidate（PerfSmokeUd struct）| `examples/hello_devtool.cc` (+10/-3) | ~15 min |
+| Phase D.1 | hello_devtool_perf_smoke regex 升级（≥2 帧）| `tests/CMakeLists.txt` (±5) | ~10 min |
+| Phase D.2 | full ctest 双 config 验证 | — | ~10-15 min |
+| Phase E.1 | MVP-scope spec §3.2.1 B-G4 闭环 | `docs/specs/2026-05-04-mvp-scope.md` (±15) | ~10 min |
+| Phase E.2 | progress.md 实施记录 + 反复模式预防核对 | `progress.md` | ~5 min |
+| Phase E.3 | activeContext.md 阶段更新 | `activeContext.md` | ~5 min |
+
+**ctest 期望矩阵：** DEVTOOL=ON 1298 → **1302**（+4 PASS）/ DEVTOOL=OFF 1105 → **1109**（+4 PASS）
+
+**预期实测 plan ×0.6 系数：** ~0.20-0.31×（落极速区 0.10-0.20× 续延候选 / quint → sext-evidence 候选 / Phase 0 audit 11 子段先跑 + 范式高度复用）
+
+**反复模式预防 8 项**（含 #8 spec 数据回归 audit / TASK-20260505-01 入库）：全 8 项预防策略已固化 / 期望 0/8 全抑制
 
 ---
 

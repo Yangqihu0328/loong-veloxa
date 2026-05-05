@@ -2,7 +2,33 @@
 
 ## 当前阶段
 
-**空闲** — 等待新任务。
+**规划中** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Plan ✅，待 `/build`。
+
+**Plan 阶段产出（2026-05-05 ~15:15）：**
+
+- **设计文档：** `docs/specs/2026-05-05-perf-overlay-invalidate-api-design.md`（11 段 / 完整设计 + D1+D2+D3+D4 决策完整定义 + 4 风险登记）
+- **实现计划：** `docs/plans/2026-05-05-perf-overlay-invalidate-api.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段 / 4 单测 TDD 设计 / commit 范本）
+- **跨决策协同度 100% 第 10 次连续命中** — 1 次 AskQuestion 锁定 D1-A + D2-A + D3-A + D4-A 四决策（累计 100/100 跨决策一次锁定纪录 / nona → **dec-evidence** 升级）
+- **决策矩阵：**
+  - **D1-A** 仅 target update_manager_ 路由（DevTool 独立状态机 / 实现最简）
+  - **D2-A** main thread only（与 LoadHTML/InjectInput 一致 / Doxygen 明示）
+  - **D3-A** hello_devtool on_frame_end hook 调 vx_view_invalidate（PerfSmokeUd struct + userdata 通道 / 0 新机制）
+  - **D4-A** 完整 4 单测（null / fresh INVALID_STATE / 正常路径 / idempotent）
+- **关键 Phase 0 audit 发现（11 子段）：**
+  1. CSS animation 不可行（引擎不支持 `@keyframes`）→ 决定路径 (a)
+  2. UpdateManager::Invalidate 已就绪（update_manager.cc:14）/ Application 仅缺 `Invalidate()` 公开方法
+  3. on_frame_end hook 时序严格安全（dirty_=false reset → transition rearm → on_frame_end fire）→ hook 内调 invalidate 不依赖中间状态变更
+  4. A14 守门不受影响（公开 ABI / 不属 DevTool subsystem）
+  5. 既有 hello_devtool_perf_smoke regex `[1-9][0-9]*` ≥1 帧 → 升级到 `([2-9]|[1-9][0-9]+)` ≥2 帧
+
+**当前任务：** TASK-20260505-02 — `vx_view_invalidate()` 公开 C ABI / Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba`）
+
+**预期：**
+- ctest 期望 DEVTOOL=ON 1298 → 1302（+4）/ DEVTOOL=OFF 1105 → 1109（+4）
+- plan ×0.6 实测期待 ~0.20-0.31×（落极速区 0.10-0.20× 续延候选 / quint → sext-evidence 候选）
+- 反复模式预期 0/8 全抑制
+
+**下一步：** `/build` — 进入构建阶段，按 Phase A → B → C → D → E 5 个 phase 严格 TDD 实施。
 
 ---
 
