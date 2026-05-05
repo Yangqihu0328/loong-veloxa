@@ -58,6 +58,17 @@
 
 **下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（B1 find_package vs pkg-config / B2 校验位置 / B3 双 build 矩阵 ctest 实施 / B4 反向探针策略 / B5 commit 粒度 / B6 P0 协议落地策略 / 等）。
 
+#### Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min / 极速区 ~0.5-0.8× 子档）
+
+- **7/7 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% 第 14 次连续命中 / 累计 128/128 历史最高 streak 刷新）
+- **蓝图 plan §3.1 偏差校正（brainstorming P1.3 主动 push-back 首次实战 ✅）：** 3 处偏差（find_package / .sh 脚本 / 临时宏反向探针）→ plan §0.4 详细校正
+- **D7=A 自吃狗粮：** P0 协议「plan/spec docs 落盘即 commit」单 commit 落盘（plan + Memory Bank ×3 / quad → **quint-evidence 第 5 数据点**候选升级）
+- **主交付：** `docs/plans/2026-05-05-cmake-vx-renderer-flag.md`（~400 行 / 11 段全覆盖 / 含步骤 1-5 完整代码片段 + 双 build 矩阵 ctest + 4 沉淀候选）
+- **Phase 0 audit 7/7 实证 ✅** + **反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持 / 累计 19 模式连续 / 历史新高继续刷新）
+- **沉淀候选（4 项 P1）：** CMake 依赖引入时机 YAGNI / brainstorming P1.3 dual-evidence / writing-plans P1.6 dual-evidence / P0 协议 quint-evidence
+
+**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施。
+
 ---
 
 ## 上次任务（已归档闭环）

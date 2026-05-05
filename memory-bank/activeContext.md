@@ -2,9 +2,45 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅，待 `/plan`。
+**规划完成** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅，待 `/build`。
+
+**Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min / 极速区 ~0.5-0.8× 子档）：**
+
+- **7/7 D 决策 1 次 AskQuestion all_recommended 锁定** — **跨决策协同度 100% 第 14 次连续命中** / dec → endec → doudec → 第 13 次 → **第 14 次** / 累计 121 → **128/128 历史最高 streak 刷新 ✅**
+  - **D1=A** 暂不引入 GLES dep（YAGNI / 推迟 G1.2）
+  - **D2=A** 顶层 CMakeLists.txt 校验
+  - **D3=B** cmake -P 脚本（与 a14 一致）
+  - **D4=B** tests/smoke/ 路径
+  - **D5=A** 子进程 invalid assert（自动化 + 集成 ctest）
+  - **D6=A** 仅 plan（引用 GLES 蓝图 spec / Level 2 实施类豁免）
+  - **D7=A** P0 协议单 commit（quad → quint-evidence 候选 / 第 5 数据点）
+
+- **蓝图 plan §3.1 偏差校正（brainstorming P1.3 主动 push-back 模式首次实战 ✅）：**
+  - 偏差 #1：`find_package(OpenGLES/EGL REQUIRED)` → D1=A 暂不引入 dep（CMake 4.2.3 未自带 Find 模块）
+  - 偏差 #2：`tests/cmake/*.sh` → D3=B + D4=B `tests/smoke/*.cmake`（与既有 a14 pattern 一致）
+  - 偏差 #3：临时改宏反向探针 → D5=A 自动化子进程 invalid assert
+
+- **主交付物（plan + Memory Bank ×3 / D7=A 自吃狗粮单 commit）：**
+  - `docs/plans/2026-05-05-cmake-vx-renderer-flag.md`（~400 行 / 11 段全覆盖 / 含步骤 1-5 完整代码片段 + 双 build 矩阵 ctest + 4 沉淀候选）
+  - `memory-bank/activeContext.md`（更新 Plan 阶段产出）
+  - `memory-bank/tasks.md`（加 Plan 阶段决策矩阵 + 估时）
+  - `memory-bank/progress.md`（加 Plan 阶段时间线）
+
+- **Phase 0 audit 7/7 实证 ✅**（既有 option pattern + add_compile_definitions 范式 + SDL2 双轨 find pattern + EGL/GLES dev headers + find_package 不可用偏差 + pkg-config 替代 + a14 cmake -P 集成 pattern）
+
+- **estimaate（plan ×0.6）：** ~65-100 min 总线（plan ~20-30 + build ~30-45 + reflect ~10-15 + archive ~5-10）/ vs GLES 蓝图 plan §4 估时 ~120-180 min = **预期总线极速区 0.36-0.55×**
+
+- **反复模式预审 0/8 命中**（VAN + Plan 两阶段全程保持 / 累计 19 模式连续抑制 / 历史新高继续刷新）
+
+- **沉淀候选（reflect 阶段处理 / 4 项 P1）：**
+  - systemPatterns 新段「CMake 依赖引入时机 YAGNI 原则」（D1=A 实证）
+  - systemPatterns 升级「brainstorming P1.3 主动 push-back 模式 dual-evidence」（TASK-04 落地 + TASK-05 首次实战）
+  - systemPatterns 升级「writing-plans P1.6 spec vs code 一致性 audit dual-evidence」
+  - writing-plans P1.5 段 P0 协议 quint-evidence 实证表升级（quad → quint / 第 5 数据点）
 
 **当前任务：** TASK-20260505-05 — `G1.1 CMake VX_RENDERER flag` / Level 2 / 分支 `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
+
+**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施（步骤 1 Phase 0 audit 已完成 ✅ → 步骤 2 编写 cmake -P 脚本 → 步骤 3 实现顶层 CMakeLists flag → 步骤 4 双 build 矩阵 ctest 验证 → 步骤 5 single commit）。
 
 **任务范围（来自 [GLES 蓝图 plan §3.1](docs/plans/2026-05-05-gles-renderer-blueprint.md)）：**
 
