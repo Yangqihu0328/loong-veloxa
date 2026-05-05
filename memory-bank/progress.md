@@ -4,7 +4,44 @@
 
 ### TASK-20260505-02 — Performance Overlay 持续 invalidate 机制（vx_view_invalidate() 公开 C ABI / B-G4 — MVP-B 收口最后一项）
 
-**当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+**当前阶段：** 🔵 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+
+#### Reflect 阶段产出（2026-05-05 ~16:00 / 实测 ~30 min）
+
+**回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 6 度量数据 / 8 改进建议 P0/P1/P2 全分级）
+
+**5 个范式同时升级（reflection 史上单任务沉淀升级数最高纪录）：**
+
+| 范式 | 升级前 | 升级后 | 评估 |
+|---|:-:|:-:|---|
+| plan ×0.6 实测系数 | quint-evidence | **sext-evidence** | 第 6 数据点 / 极速区续延档新子档 0.20-0.35× |
+| 跨决策协同度 100% | nona-evidence | **dec-evidence** | 第 10 次连续 / 累计 100/100 / 范式成熟度顶峰 |
+| 反向探针强度梯度三档 | dual-evidence | **triple-evidence** | 第 2 任务实证 / 三档全谱稳定可复现 |
+| 反复模式 #8 spec 数据回归 | dual-evidence | **triple-evidence** | 已达 writing-plans.mdc 固化阈值（P1 #7 沉淀）|
+| lazy-attach C ABI 容错模式 | triple-evidence | **quad-evidence** | 已成 Veloxa 默认范式（P1 #8 沉淀）|
+
+**8 项 P0+P1+P2 改进建议落实情况：**
+
+| # | 建议 | 优先级 | 落实位置 |
+|:-:|---|:-:|---|
+| 1 | systemPatterns「plan ×0.6 sext-evidence — 极速区续延档」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 2 | systemPatterns「跨决策协同度 dec-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 3 | systemPatterns「反向探针强度梯度三档 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 4 | systemPatterns「反复模式 #8 spec 数据回归 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 5 | systemPatterns「lazy-attach C ABI 容错模式 quad-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 6 | `/plan` 命令固化「plan/spec docs 落盘即 commit」步骤（TASK-01 P1 #6 升级 / 首次成功实施 ✅）| **P0 → 升级** | ✅ reflect 阶段沉淀范例数据点 + 📋 已迁移待处理 P1 #6 |
+| 7 | techContext「CMake + GTest 增量加测工作流注意事项」段 | **P1 → P2** | ✅ reflect 阶段沉淀 |
+| 8 | systemPatterns「MVP-B 100% 闭环里程碑」段 | **P1** | ✅ reflect 阶段直接沉淀 |
+
+**P0 5/5 reflect 阶段直接落实 ✅** + **P0+P1 升级版 1/1 (#6) 沉淀范例 + 待处理事项更新** + **P1 1/1 (#8) reflect 阶段直接沉淀** + **P2 1/1 (#7) techContext 沉淀**（沿用 TASK-20260505-01 P0 4/4 全落实范式）
+
+**MVP-B 100% 闭环里程碑：** TASK-01 + TASK-02 双任务连击实证 / 4/4 gap 全闭环（B-G1+G2+G3+G4）/ dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS
+
+**双任务总投入：** ~65 min（TASK-01 ~35 min + TASK-02 ~30 min）/ plan ×0.6 估时 ~285-365 min / 实测 0.18-0.23× 落极速区 0.10-0.20× 续延档
+
+---
+
+#### Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min / plan ×0.6 实测 ~0.26-0.32× — 落极速区 0.10-0.20× 续延档）
 
 #### Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min / plan ×0.6 实测 ~0.26-0.32× — 落极速区 0.10-0.20× 续延档）
 

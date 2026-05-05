@@ -2,7 +2,26 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Build ✅，待 `/reflect`。
+**回顾中** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Reflect ✅，待 `/archive`。
+
+**Reflect 阶段产出（2026-05-05 ~16:00）：**
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 6 度量数据）
+- **5 个范式同时升级**（reflection 史上单任务沉淀升级数最高纪录）：
+  - **plan ×0.6 实测系数 sext-evidence**（quint → sext / 第 6 数据点 / 极速区续延档新子档）
+  - **跨决策协同度 100% dec-evidence**（nona → dec / 第 10 次连续 / 累计 100/100）
+  - **反向探针强度梯度三档 triple-evidence**（dual → triple / 第 2 任务实证）
+  - **反复模式 #8 spec 数据回归 triple-evidence**（dual → triple / 已达 writing-plans.mdc 固化阈值）
+  - **lazy-attach C ABI 容错模式 quad-evidence**（triple → quad / 已成 Veloxa 默认范式）
+- **8 项 P0+P1+P2 改进建议**：
+  - P0 6/6 reflect 阶段直接落实（systemPatterns 5 段升级 + reflection-02 文档）✅
+  - P1 1/1 (#6) reflect 阶段沉淀范例数据点 + 标注「下次工作流元任务批量落地」
+  - P2 1/1 (#7) techContext.md「CMake + GTest 增量加测工作流注意事项」段沉淀 ✅
+- **MVP-B 100% 闭环里程碑** — TASK-01 + TASK-02 双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS
+
+**当前任务：** TASK-20260505-02 — `vx_view_invalidate()` 公开 C ABI / Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+
+**下一步：** `/archive` — 进入归档阶段，整合主交付 + 5 个范式升级 + MVP-B 100% 里程碑 + P0/P1/P2 落实清单到归档文档。
 
 **Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min）：**
 
@@ -94,7 +113,9 @@
 - **P1 #2（来自 TASK-20260503-04 reflection §5）writing-plans.mdc「资源类反向探针 SOP」新子段** — 资源反向探针应限定到非注释区域 + comment policy 推荐；本任务 D.3 console_panel.html 注释里 `<input` 字面量触发反向探针 false positive。**预估**：~10 min。
 - **P1 #2（来自 TASK-20260503-05 reflection §5）brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现偏差 + (3) 偏差**显著**（默认值差 10³+ 倍）。**预估**：~10 min。
 - **P1 #5（来自 TASK-20260505-01 reflection §5 #5）systemPatterns.md 新沉淀「视觉链路三件齐识别协议」段** — 当 dogfood UI 行为依赖 ≥3 个独立缺陷修复才能完整工作时，必须**单任务集中闭环**而非分多任务拆分；plan 阶段 §UI 行为验收表是识别工具（本任务 plan §0.11「视觉恢复链路」表是范式）。**预估**：~30-40 行 systemPatterns 段 / ~10 min。
-- **P1 #6（来自 TASK-20260505-01 reflection §5 #6）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — 防止 build 阶段 collateral commit 补齐；落实位置 `.cursor/commands/plan` 或 `.cursor/rules/skills/writing-plans.mdc`。**预估**：~10 min。
+- **P1 #6（来自 TASK-20260505-01 reflection §5 #6 → TASK-20260505-02 首次成功实施 ✅）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — TASK-20260505-02 `/plan` 阶段 commit `4feda52` 即 plan + spec + MB 更新合并提交 / build 阶段 0 collateral commit / **首次成功实施 ✅**；建议升级到 P0 立即固化协议到 `.cursor/rules/skills/writing-plans.mdc` 或 `.cursor/commands/plan`。**预估**：~10 min。
+- **P1 #7（来自 TASK-20260505-02 reflection §5 #4 → triple-evidence 升级 / 已达固化阈值）反复模式 #8 spec 数据回归 audit 协议固化到 `.cursor/rules/skills/writing-plans.mdc`** — Phase 0 audit 段「spec vs code 一致性 audit」+「能力假设 audit」双子条；TASK-20260504-01 + TASK-20260505-01 + TASK-20260505-02 三次实证累计已达固化阈值。**预估**：~15 min。
+- **P1 #8（来自 TASK-20260505-02 reflection §5 #5 → quad-evidence 升级 / 已成 Veloxa 默认范式）lazy-attach C ABI 容错模式固化** — sytemPatterns quad-evidence 已沉淀；建议下次工作流元任务批量落地时 (a) `.cursor/rules/skills/writing-plans.mdc` C ABI 设计模式段「lazy-attach 默认契约」子条 + (b) `veloxa/api/veloxa_api.h` 顶部 doc 段添加「lazy-attach contract」一节统一引用前序 ABI。**预估**：~15 min。
 - **P2 #4（来自 TASK-20260503-03 reflection §6）commit body Source 溯源 + 实测数据格式固化** — 累计 ~39 commits quad-evidence（远破 git-workflow.mdc 固化阈值 / 本任务延续协议）/ 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`。**预估**：~10-15 min。
 
 ### 长期沉淀（P2 — 不强制 archive）

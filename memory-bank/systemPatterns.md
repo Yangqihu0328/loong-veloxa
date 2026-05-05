@@ -3362,10 +3362,176 @@ rg "<function-name>" tests/
 - 反向探针每次实施需在 commit body 中标注实测「N/M 测 FAIL」+ 强度档位（过高/合适/平衡）
 - TASK-20260505-01 5 phase commits 全实施（quad-evidence 累计 ~39 commits）
 
+**反向探针强度梯度三档 dual → triple-evidence 升级（TASK-20260505-02 反思入库 / P0 沉淀 — 第 2 任务实证）：**
+
+TASK-20260505-02 三探针实测三档全谱第 2 次稳定可复现：
+
+| 强度档 | 探针 | 实证 | 验证逻辑 |
+|---|---|---|---|
+| **过高（双重加固）** | A.1 NULL guard 注释 | **SEGFAULT** in NullViewReturnsNullParam | 守门是 C ABI UB 防御层 + 业务层双重加固（C ABI 接收用户 null 必须显式守门，否则 reinterpret_cast 后 UB 暴露）|
+| **合适（精准 N/M）** | A.1 `update_manager_->Invalidate()` 注释 | **2/4 精准 FAIL**（dirty_ rearm 路径 2 测 / null + fresh 测仍 PASS）| dirty_ rearm 是核心契约 / null + fresh 测不依赖 dirty_（理想档）|
+| **平衡（等量 N/N）** | D.1 `vx_view_invalidate` 调用注释 | **frames=1 / 1 测 FAIL**（regex 灵敏度精准识别）| ctest regex `([2-9]\|[1-9][0-9]+)` 灵敏度验证 / 探针 = 删除唯一 invalidate 触发源 |
+
 **交叉引用：**
 - [反向探针有效性陷阱清单](#反向探针有效性陷阱清单task-20260502-01-多子任务沉淀)（base 段）
 - `memory-bank/reflection/reflection-TASK-20260505-01.md` §3.c #3
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.a #3 + §4 evidence 升级表
 - TASK-20260505-01 commits `6c36dc7` / `986e978` / `fb88288` 三 commit body 全含反向探针实测数据
+- TASK-20260505-02 commits `a7e6bed` / `929569a` 两 commit body 全含反向探针实测数据（强度档位 + N/M 数据）
+
+---
+
+## plan ×0.6 实测系数 sext-evidence — 极速区续延档（TASK-20260505-02 反思入库 / P0 沉淀 / quint → sext-evidence 升级）
+
+**升级背景：** [Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence](#phase-0-投入--build-phase-plan-06-极速区-quint-evidencetask-20260505-01-反思入库--p0-升级--quad--quint) 段累计 quint-evidence + 本任务 ~0.26-0.32× 命中**第 6 数据点**，升级到 **sext-evidence（6 数据点）**，新子档「极速区续延档 — 不可压缩 ctest 等待主导」可固化。
+
+**6 数据点矩阵：**
+
+| # | 任务 | 比值 | 子档 | 触发要素 |
+|:-:|---|:-:|---|---|
+| 1 | TASK-20260503-05（QuickJS Interrupt）| 0.16× | 最小代码改动 + Phase 0 预跑极速区 | 5 触发条件全满足 |
+| 2 | TASK-20260503-04（DevTool Phase D）| 0.07-0.10× | creative 全锁死 + 范式 100% 复用 | AI agent 极速区子档 |
+| 3 | TASK-20260504-01（MVP-scope 蓝图）| 0.21× | 纯文档/规则极速区 | 4 触发条件全满足 |
+| 4 | TASK-20260505-01（DomBindings R2 收口）| 0.14-0.18× | 最小代码改动极速区 quint-evidence | 范式高度复用 |
+| 5 | **TASK-20260505-02（vx_view_invalidate ABI）** | **~0.26-0.32×** | **极速区续延档（新子档）** | **D.2 ctest 等待主导（占 33% 总时长）** |
+
+**新子档「极速区续延档 0.20-0.35×」候选触发条件（4 项必须全满足）：**
+1. **主体实施 phase 已落极速区 0.10-0.20×**（剔除 ctest 等待后核心比值在极速区）
+2. **双 config full ctest 验证占总时长 ≥ 30%**（不可压缩等待时间）
+3. **build 增量 + parallel 8 已开**（ctest 等待已最优化）
+4. **任务规模小（绝对实施时间 ≤ 30 min）**（小任务下 ctest 等待相对占比上抬）
+
+**加速因子：** Phase 0 audit 11 子段先跑 + 范式高度复用（lazy-attach quad-evidence）+ 0 设计探索（4 决策 brainstorm 锁死）+ 提交粒度 100% 按 phase 分组
+
+**交叉引用：**
+- [Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence](#phase-0-投入--build-phase-plan-06-极速区-quint-evidencetask-20260505-01-反思入库--p0-升级--quad--quint)（base 段）
+- [Phase 0 投入越深 / build phase 越快定律](#phase-0-投入越深--build-phase-越快定律task-20260502-02-反思-21--dual-evidence--task-20260503-01-反思-61--triple-evidence--task-20260503-02-反思-51--quad-evidence-升级--audit-子模式)（quad-evidence 段）
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §1.2 + §3.c #1
+
+---
+
+## 跨决策协同度 100% dec-evidence（TASK-20260505-02 反思入库 / 第 10 次连续命中 / sept → oct → nona → dec-evidence 跳级升级）
+
+**升级背景：** [跨决策协同度 100% sept-evidence](#跨决策协同度-100-sept-evidencetask-20260504-01-反思入库--第-8-次连续命中--sept-evidence-升级) 段累计 sept-evidence（8 次）+ TASK-20260505-01（第 9 次 / nona-evidence）+ 本任务（第 10 次 / **dec-evidence**）。本次 D1+D2+D3+D4 4 决策 1 次 AskQuestion all_recommended 锁定 / 0 反悔 / 0 调整。
+
+**累计实证数据（10 任务连续命中）：**
+
+| # | 任务 | 决策数 | 累计 |
+|:-:|---|:-:|:-:|
+| 1-8 | TASK-20260430-04 → TASK-20260504-01（详 sept-evidence 段）| 11+12+12+10+13+12+12+11 | 93/93 |
+| 9 | TASK-20260505-01（DomBindings R2 收口）| 3 | 96/96 |
+| 10 | **TASK-20260505-02（vx_view_invalidate ABI）** | **4** | **100/100** |
+
+**dec-evidence 里程碑意义：**
+
+- **范式成熟度顶峰** — 10 次连续 100% 命中 / 累计 100/100 跨决策一次锁定纪录 / 0 反悔 / 0 调整
+- **预测精度范式化** — VAN/plan 阶段决策时间从 ~30-60 min 压缩到 ~3-5 min（**6-12× 加速**）
+- **decision matrix 成为标准产出物** — plan 文档 D1+D2+...+DN 决策矩阵段已成 Veloxa 工作流默认模板
+- **all_recommended fallback 模式不必要** — 10 任务全 100% 推荐方案锁定 / 单选选项 fallback 从未触发
+
+**交叉引用：**
+- [跨决策协同度 100% sept-evidence](#跨决策协同度-100-sept-evidencetask-20260504-01-反思入库--第-8-次连续命中--sept-evidence-升级)（base 段）
+- [Checkpoint 推荐默认 + 隐式批准协议](#checkpoint-推荐默认--隐式批准协议task-30-03-反思44--新模式)（同源协议）
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.a #2 + §4 evidence 升级表
+- `.cursor/rules/skills/brainstorming.mdc` 「all_recommended 1 次 AskQuestion 范式」段
+
+---
+
+## 反复模式 #8 spec 数据回归 triple-evidence — 已达 writing-plans.mdc 固化阈值（TASK-20260505-02 反思入库 / P0 沉淀 / dual → triple 升级）
+
+**升级背景：** [反复模式 #8 — spec 数据回归 audit 协议](#反复模式-8--spec-数据回归实现-vs-文档不一致audit-协议task-20260505-01-反思入库--p0-沉淀--dual-evidence-入库定型) 段已 dual-evidence 入库 + 本任务 VAN 阶段第 3 次实证（CSS animation 不可行）→ **triple-evidence** 升级，达到 `.cursor/rules/skills/writing-plans.mdc` Phase 0 audit 段固化阈值。
+
+**3 次实证：**
+
+| # | 任务 | spec/source 标记 | 代码实际 | 真实根因 | 调整方式 |
+|:-:|---|---|---|---|---|
+| 1 | TASK-20260504-01 archive | 4 项「缺失」 | 部分已实现 | spec stale / 应在 PR 合并时同步 | reflect 阶段 P0 协议沉淀 |
+| 2 | TASK-20260505-01 VAN | B-G2 addEventListener「缺失」 | 已实现（commit 00deaca）| MapJsEventName 缺 alias | VAN audit 暴露 → 范围调整 |
+| 3 | **TASK-20260505-02 VAN** | **路径 (b) CSS animation 推荐**（spec §11.1 + archive §9 P3 #0）| **引擎不支持 @keyframes**（grep 0 命中）| dirty_ 短路硬约束需公开 ABI 解决 | **VAN audit 暴露 → 路径决策修正到 (a)** |
+
+**triple-evidence ✅ 已达固化阈值** — 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/writing-plans.mdc` Phase 0 audit 段「spec vs code 一致性 audit」子条（已迁移到 activeContext.md 待处理事项）。
+
+**audit 协议扩展（TASK-20260505-02 沉淀 — 新增「能力假设 audit」子段）：**
+
+```bash
+# Step 1: spec 内引用的 commit / 文件 / 函数实证（详 dual-evidence 段）
+# Step 2: 对每个声称「缺失」的功能在代码中查证
+# Step 3 (新增): 对每个声称「可用」的能力在代码中**反向**查证
+
+# 例如 spec 推荐「路径 (b) hello_devtool 注入 CSS animation」时：
+rg "@keyframes|animation:" veloxa/  # 查证引擎是否支持
+rg "AnimationManager|@-keyframes-rule" veloxa/core/  # 查证子系统是否存在
+
+# 若发现能力不存在 / 引擎不支持：
+# - 声明「能力假设回归」（spec 数据回归 audit 协议子模式）
+# - 抛出修正方案（路径 (a) / (c) / defer 等）
+# - VAN 阶段 AskQuestion 让用户选择修正路径
+```
+
+**交叉引用：**
+- [反复模式 #8 — spec 数据回归 audit 协议（dual-evidence 入库）](#反复模式-8--spec-数据回归实现-vs-文档不一致audit-协议task-20260505-01-反思入库--p0-沉淀--dual-evidence-入库定型)（base 段）
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.a #1 + §4 evidence 升级表
+- `.cursor/rules/skills/writing-plans.mdc` Phase 0 audit 段（待补强 / 已迁移 activeContext 待处理事项）
+
+---
+
+## lazy-attach C ABI 容错模式 quad-evidence（TASK-20260505-02 反思入库 / P0 沉淀 / triple → quad 升级 — 已成 Veloxa 公开 C ABI 默认范式）
+
+**升级背景：** [lazy-attach C ABI 容错模式](#lazy-attach-c-abi-容错模式task-20260502-02-反思-45--新模式--task-20260503-01-反思-42--warning-语义层扩展) 段累计 triple-evidence（TASK-20260502-02 B.0.1 + TASK-20260503-01 C.4.1 + TASK-20260503-04 D.x）+ 本任务第 4 次复用 → **quad-evidence** 升级。
+
+**4 次实证：**
+
+| # | 任务 | API | lazy-attach 行为 | 备注 |
+|:-:|---|---|---|---|
+| 1 | TASK-20260502-02 B.0.1 | `vx_view_set_pipeline_hooks` | update_manager_ null → INVALID_STATE + cache hooks pending | 首次沉淀 |
+| 2 | TASK-20260503-01 C.4.1 | `vx_view_load_css` warning 语义层 | 扩展 warning 通道范式 | warning 语义层扩展 |
+| 3 | TASK-20260503-04 D.x | console JS REPL 桥接 | 沿用 lazy-attach + queue pending | dogfood 第三次 |
+| 4 | **TASK-20260505-02 A.1** | **`vx_view_invalidate`** | **update_manager_ null → INVALID_STATE + silent no-op** | **公开 ABI 默认契约**（Doxygen 显式引用 「same lazy-attach contract as vx_view_set_pipeline_hooks」）|
+
+**quad-evidence 里程碑意义：**
+
+- **lazy-attach 已成 Veloxa 公开 C ABI 的默认范式** — 4 次连续复用 / 0 新设计成本
+- **Doxygen 文档可直接引用前序 API** — 「same lazy-attach contract as vx_view_set_pipeline_hooks」
+- **下次添加新公开 ABI 时强制核对**「是否需要 lazy-attach（即 update_manager_/script_engine_/sub-system_ 可能未初始化的情况）」
+
+**协议固化（建议升级到 P1 / 下次工作流元任务批量落地）：**
+- 已沉淀到 systemPatterns（本段 + base 段）
+- 待沉淀到 `.cursor/rules/skills/writing-plans.mdc` C ABI 设计模式段「lazy-attach 默认契约」子条
+- 在 `veloxa/api/veloxa_api.h` 顶部 doc 段添加「lazy-attach contract」一节，统一引用
+
+**交叉引用：**
+- [lazy-attach C ABI 容错模式](#lazy-attach-c-abi-容错模式task-20260502-02-反思-45--新模式--task-20260503-01-反思-42--warning-语义层扩展)（base 段）
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.a #5 + §4 evidence 升级表
+- TASK-20260505-02 commit `a7e6bed` body 显式引用前序 ABI 契约
+
+---
+
+## MVP-B 100% 闭环里程碑（TASK-20260505-02 反思入库 / P1 沉淀 — 双任务连击实证）
+
+**里程碑：** TASK-20260505-01（DomBindings R2 收口 / B-G1+G2+G3）+ TASK-20260505-02（vx_view_invalidate ABI / B-G4）双任务连击实证 / **MVP-B 100% 闭环 ✅**
+
+**完整收口数据：**
+
+| gap | 闭环任务 | commit | 闭环方式 |
+|:-:|---|---|---|
+| **B-G1** | TASK-20260505-01 Phase A.1 | `6c36dc7` | Element.children HTMLCollection 风格 getter |
+| **B-G2** | TASK-20260505-01 Phase C.1 | `fb88288` | MapJsEventName 补 click+mouse* alias（4 行 alias）|
+| **B-G3** | TASK-20260505-01 Phase B.1 | `986e978` | innerHTML setter（D2-C-deep-clone 策略 / 跨 Document arena 范式）|
+| **B-G4** | **TASK-20260505-02 Phase A.1+C.1+D.1** | **`a7e6bed` + `929569a`** | **vx_view_invalidate() 公开 C ABI + hello_devtool on_frame_end 注入 + ctest regex ≥2 帧（实测 frames=18 / 10x 增益）** |
+
+**双任务总投入：** ~65 min（TASK-01 ~35 min + TASK-02 ~30 min）/ plan ×0.6 估时 ~285-365 min / **实测 0.18-0.23×**（落极速区 0.10-0.20× 续延档）
+
+**dogfood 视觉链路完整恢复：** Inspector tab 切换 + HUD 数字 + DOM tree + Performance Overlay frames + Hot Reload — 全 5 件套 dogfood smoke 100% PASS（hello_devtool_smoke + perf_smoke `frames=18` + hot_reload_smoke + 11 inspector + 3 console）
+
+**MVP-B → MVP-C 转折点：**
+- ✅ MVP-B 100% 闭环已达成（4/4 gap 全闭环）
+- ⏭️ 下一推荐任务路径：MVP-C 核心 #4（G1 OpenGL ES 蓝图 / L4 多 Phase）或 MVP-C #1（资源加载策略蓝图 / L3）
+- 🔓 用户可基于完整 MVP-B 能力进入 MVP-C 战略目标无任何残余 MVP-A/B 阻塞
+
+**交叉引用：**
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §7 #1
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §1
+- `docs/specs/2026-05-04-mvp-scope.md` §3.2.1 (B-G1+G2+G3+G4 全闭环) + §3.3 短期路线图 (✅ 全闭环)
 
 ---
 

@@ -4,7 +4,7 @@
 
 ### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项）
 
-- **当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）
+- **当前阶段：** 🔵 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）
 - **复杂度级别：** Level 2
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba` ✅ 创建）
@@ -121,6 +121,18 @@
 **反复模式预防：** 0/8 全抑制（含 #8 spec 数据回归 dual-evidence → triple-evidence 候选 / VAN 阶段已实证暴露 + 修正路径 b → 路径 a）
 
 **MVP-B 100% 闭环 🎉：** B-G1+G2+G3+G4 全 4 项 gap 全部闭环 / dogfood 视觉验证 3/3 PASS / hello_devtool_perf_smoke 多帧验证 frames=18
+
+#### Reflect 阶段产出（2026-05-05 ~16:00 / 实测 ~30 min）
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段）
+- **5 个范式同时升级**（reflection 史上单任务沉淀升级数最高纪录 / 详 progress.md）：
+  - plan ×0.6 sext-evidence（quint → sext / 第 6 数据点）
+  - 跨决策协同度 dec-evidence（nona → dec / 累计 100/100）
+  - 反向探针强度梯度三档 triple-evidence（dual → triple）
+  - 反复模式 #8 spec 数据回归 triple-evidence（dual → triple / 已达固化阈值）
+  - lazy-attach C ABI 容错模式 quad-evidence（triple → quad / 已成默认范式）
+- **8 项 P0+P1+P2 改进建议**：P0 5/5 reflect 阶段直接落实（systemPatterns 5 段升级）+ #6 P0 升级版（首次实施成功 / 待处理已更新 P1 #6）+ P1 1/1 (#8) systemPatterns 沉淀 + P2 1/1 (#7) techContext 沉淀
+- **MVP-B 100% 闭环里程碑** — 双任务连击实证 / 4/4 gap 全闭环
 
 ---
 

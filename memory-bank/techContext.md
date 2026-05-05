@@ -1095,3 +1095,44 @@ void UpdateManager::Update() {
 - `.cursor/rules/skills/writing-plans.mdc`「调参/调阈值/调时间常量类子任务前置 baseline smoke 实证（必填）」段
 - `memory-bank/activeContext.md`「P3 候选 — 来自 TASK-20260503-03 build 阶段 P1 实施失败拆细化」段（候选 #0 Performance Overlay 持续 invalidate 机制）
 
+---
+
+## CMake + GTest 增量加测工作流注意事项（TASK-20260505-02 反思入库 / P2 长期沉淀）
+
+### 现象
+
+新加 `vx_add_test(...)` 注册一个测试目标后，cmake reconfigure（`cmake -B build`）+ ctest 列表查询直接跑可能返回 `No tests were found!!!`，即使 `gtest_discover_tests` 已声明在 vx_add_test 函数内。
+
+### 根因
+
+`gtest_discover_tests` 通过 **POST_BUILD 阶段实际执行测试 binary** 来发现 GTest 测试点（行为类似 `--gtest_list_tests`）。仅 cmake reconfigure 不会触发 POST_BUILD，因此 ctest 列表中**新测试 binary 的子测试点不会出现**，直到执行 `cmake --build <target>` 实际链接出 binary 并触发 POST_BUILD discover。
+
+### 工作流推荐
+
+新增 ctest 测试时，正确的命令序列是**一气呵成**：
+
+```bash
+# 错误：分步会造成 ctest 列表暂时不同步
+cmake -B build              # reconfigure / 不发现测试
+cd build && ctest -R MyTest # → No tests were found!!!（假象）
+
+# 正确：一气呵成
+cmake -B build && cmake --build build --target my_test_binary
+cd build && ctest -R MyTest # → 显示 N 个 GTest 测试点（按类名 MyTestClass.* 命名）
+```
+
+### 隐含约束
+
+1. **gtest_discover_tests 命名约定** — 测试 ID 是「TestClass.TestCase」（即 GTest fixture class 名），不是 vx_add_test 的目标名（target name）。`ctest -R invalidate_api`（vx_add_test 名）不命中；`ctest -R InvalidateApi`（fixture 类名前缀）才命中 — 大小写敏感。
+
+2. **DEVTOOL=ON / OFF 双 config 都需要重新 build target** — 公开 ABI 测试需要在 `build/` 和 `build-no-devtool/` 双 config 都执行 `cmake --build` 而非仅 `cmake -B`。
+
+### 数据点
+
+- TASK-20260505-02 build 阶段 Phase A.1 实测：cmake -B build → ctest -R invalidate_api 返回 0 tests（假象 ~2 min debug） → cmake --build build --target invalidate_api_test → ctest -R Invalidate（注意大小写）→ 8/8 PASS（含 4 既有 UpdateManagerTest + 4 新 InvalidateApiTest）
+
+### 交叉引用
+
+- `tests/CMakeLists.txt` `function(vx_add_test ...)` 第 3-7 行（`gtest_discover_tests` 调用位置）
+- `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.b #1
+
