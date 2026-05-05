@@ -129,6 +129,69 @@ alwaysApply: false
 - ❌ 用户跳过 AskQuestion 隐式批准时，VAN 推荐指向「与已锁定决策矛盾」的候选
 - ❌ brainstorming 阶段决策依赖图未前置（导致后续决策时回溯修订早期决策）
 
+## Phase 0 grep 实证驱动的主动 push-back 模式（来自 TASK-20260503-05 反思 §5 #2）
+
+> **TASK-20260503-05 D8b 实证**：DOM bindings R2 蓝图 brainstorm scope 已被用户限定为 `core_only`（不含 Proxy / 不含 closure），但 Phase 0 grep 阶段发现既有 creative 文档「10⁷ 检查点」字面值 → 该值会在实施时导致 100-1000s 死循环灾难（数量级偏差 10³+）→ VAN 必须主动 push-back，即使违反用户已限定的 scope。
+
+### 触发条件
+
+VAN/brainstorm 阶段同时满足以下 **3 条件**时**强制** push-back（即使违反用户已限定 scope）：
+
+1. **scope 已被用户限定** — brainstorm 范围已通过 V/D 决策锁定（如 `core_only` / `pure_blueprint_a` / 仅 N 项）
+2. **Phase 0 grep / audit 阶段发现偏差** — 既有 spec / creative / archive / 代码中存在与 scope 矛盾或灾难性的设计点
+3. **偏差显著** — 默认值差 10³+ 倍 / 性能/正确性差 N 个数量级 / 安全风险差 critical 级别
+
+### 强制 push-back 操作
+
+发现 3 条件全成立后，**不得**继续 brainstorm / **必须**：
+
+1. **暂停 brainstorm**（不进入 D 决策矩阵）
+2. **抛出 AskQuestion** 包含：
+   - 偏差描述（grep 实证截图 / 行号引用）
+   - 影响评估（10³+ 倍 / 灾难级 / 安全级）
+   - 处置选项（A 修正 scope / B 接受偏差 / C 终止任务）
+3. **等待用户决策** 后再继续
+
+### push-back AskQuestion 模板
+
+```markdown
+⚠️ Phase 0 grep 发现偏差：<偏差名称>
+
+**已锁定 scope：** <scope 决策 / 决策编号>
+**Phase 0 实证发现：** <grep 结果 + 行号 + 文件路径>
+**偏差量级：** <10³+ 倍 / N 个数量级>
+**潜在影响：** <死循环 / 性能崩溃 / 安全漏洞 / 等>
+
+**处置选项：**
+- A. 修正 scope（推荐：扩大 / 缩小 / 调整 scope 决策）
+- B. 接受偏差（明知偏差仍按当前 scope 实施 / 风险自担）
+- C. 终止本任务 / 重新立项
+```
+
+### 反模式
+
+- ❌ Phase 0 grep 发现偏差但不 push-back（按已限定 scope 继续 / 实施时灾难）
+- ❌ push-back 时仅说「有偏差」不给量级 + 处置选项（用户无法决策）
+- ❌ 偏差量级 < 10³ 倍但触发 push-back（过度敏感 / 应通过常规 D 决策处理）
+- ❌ push-back 后未等用户决策直接修正 scope（违反用户主权）
+
+### 与既有决策协同
+
+- 与本规则「跨决策协同度」段协同（push-back 触发后的 scope 修正必须重新审视已锁定决策的协同度）
+- 与本规则「决策跳过率监控」段协同（push-back 是「不应跳过」的决策类型 / 必须用户显式选择）
+- 与 `.cursor/rules/skills/writing-plans.mdc` 「Phase 0 audit — spec vs code 一致性 + 能力假设」段协同（spec 数据回归 audit 是 push-back 的实证基础）
+
+### 实证
+
+- **TASK-20260503-05 first-evidence**：DOM bindings R2 brainstorm scope = `core_only` 限定后，Phase 0 grep 发现既有 creative 文档「检查点 10⁷」字面值 → 该值会在 R2 实施时导致 100-1000s 死循环 → VAN 主动 push-back → 用户选择修正 creative 文档 → R2 plan 顺利推进 ✅
+- **范式：** push-back 时间成本 ~5 min / 避免实施阶段 ~100-1000s 死循环灾难 / ROI ≈ ∞
+
+### 适用前置
+
+- 任务复杂度 ≥ Level 3（决策数 ≥ 5 / scope 限定值得重新审视）
+- VAN/brainstorm 阶段含 Phase 0 grep / audit 步骤（实证基础）
+- 既有 spec / creative / archive / 代码可被 grep 触达（实证可获得）
+
 ## 决策跳过率监控（来自 TASK-20260430-04 反思 §5 P2 #9）
 
 「Checkpoint 推荐默认 + 隐式批准协议」（systemPatterns 段）允许用户跳过 AskQuestion 隐式批准 VAN 推荐。但当决策跳过率过高时，需要警觉：
