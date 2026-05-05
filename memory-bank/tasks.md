@@ -2,9 +2,19 @@
 
 ## 当前任务
 
-### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项）
+**空闲** — 准备接受新任务。
 
-- **当前阶段：** 🔵 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）
+**最近闭环（详 任务历史 §最新）：** 🎉 **MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3）+ TASK-20260505-02（B-G4）双任务连击实证 / 4/4 gap 全闭环。
+
+---
+
+<!--
+
+## 已归档（保留供审计 / 不影响当前阶段）
+
+### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项）— ✅ 已归档（commit `33ebc99`）
+
+- **当前阶段：** 🟢 **已归档闭环**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → Archive ✅）
 - **复杂度级别：** Level 2
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-02-perf-overlay-invalidate-api`（基于 main `8caa9ba` ✅ 创建）
@@ -134,9 +144,38 @@
 - **8 项 P0+P1+P2 改进建议**：P0 5/5 reflect 阶段直接落实（systemPatterns 5 段升级）+ #6 P0 升级版（首次实施成功 / 待处理已更新 P1 #6）+ P1 1/1 (#8) systemPatterns 沉淀 + P2 1/1 (#7) techContext 沉淀
 - **MVP-B 100% 闭环里程碑** — 双任务连击实证 / 4/4 gap 全闭环
 
+-->
+
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项 / Level 2）— ✅ 已归档（2026-05-05 ~16:15）
+
+> **本任务已归档闭环。详细执行记录已迁移到 [`memory-bank/archive/archive-TASK-20260505-02.md`](archive/archive-TASK-20260505-02.md)（10 段 ~408 行）。**
+
+- **当前阶段：** ✅ **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+- **复杂度级别：** Level 2
+- **完成日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-02-perf-overlay-invalidate-api` → 已合并 main `33ebc99`（fast-forward / 7 commits）
+- **主交付：** `vx_view_invalidate()` 公开 C ABI / `Application::Invalidate()` C++ 内部公开方法 / hello_devtool on_frame_end 注入 / ctest regex 升级到 ≥2 帧（实测 frames=18 / 10x 增益）
+- **🎉 MVP-B 100% 闭环里程碑** — TASK-01（B-G1+G2+G3）+ TASK-02（B-G4）双任务连击 / 4/4 gap 全闭环
+- **5 个范式同时升级（reflection 史上单任务沉淀升级数最高纪录）：**
+  - plan ×0.6 sext-evidence（quint → sext / 第 6 数据点 / 极速区续延档新子档 0.20-0.35×）
+  - 跨决策协同度 100% dec-evidence（nona → dec / 第 10 次连续 / 累计 100/100）
+  - 反向探针强度梯度三档 triple-evidence（dual → triple）
+  - 反复模式 #8 spec 数据回归 triple-evidence（dual → triple / 已达 writing-plans.mdc 固化阈值）
+  - lazy-attach C ABI 容错模式 quad-evidence（triple → quad / 已成 Veloxa 默认范式）
+- **关键发现：**
+  - VAN 阶段反复模式 #8 第 3 次实证（spec 推荐路径 (b) CSS animation 实际不可行 → 修正路径决策为 (a)）
+  - 「plan/spec docs 落盘即 commit」首次成功实施 ✅（TASK-20260505-01 P1 #6 闭环）
+  - 反向探针强度梯度三档全谱第 2 任务实证（过高 SEGFAULT + 合适 2/4 + 平衡 1/1）
+- **plan ×0.6 比值：** 0.26-0.32×（实测 ~30 min vs plan ×0.6 95-115 min）/ 落极速区续延档（D.2 ctest 等待主导）
+- **ctest：** DEVTOOL=ON 1298→1302（+4）+ DEVTOOL=OFF 1105→1109（+4）+ dogfood smoke 3/3 PASS
+- **反复模式：** 0/7 全抑制（连续 4 任务保持 0 命中纪录）
+- **8 项 P0+P1+P2 改进建议落实：** P0 5/5 reflect 阶段直接落实（systemPatterns 5 段升级）+ P0 升级 1/1 (#6 首次实施成功)+ P1 1/1 (#7) systemPatterns 沉淀 + P2 1/1 (#8) techContext 沉淀
+
+---
 
 ### TASK-20260505-01：DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit（MVP-B 收口推进 Level 3）— ✅ 已归档（2026-05-05 ~14:50）
 

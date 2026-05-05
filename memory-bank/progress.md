@@ -2,9 +2,19 @@
 
 ## 当前任务
 
+**空闲** — 准备接受新任务。
+
+**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / 双任务总投入 ~65 min vs plan ×0.6 ~285-365 min = 实测 0.18-0.23× 落极速区续延档 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。
+
+详细产出已迁移到 [archive-TASK-20260505-02.md](archive/archive-TASK-20260505-02.md)（408 行 / Level 2 详细归档 / 10 段）+ [reflection-TASK-20260505-02.md](reflection/reflection-TASK-20260505-02.md)（280 行 / Level 2 详细回顾）。
+
+---
+
+<!-- TASK-20260505-02 详细里程碑（含 VAN/Plan/Build/Reflect/Archive 全阶段时间线 + 实测耗时 + 反向探针 3/3 精准全谱 + 反复模式 0/7 + 5 个范式同时升级（sext + dec + triple + triple + quad）+ MVP-B 100% 闭环 + P0×6 reflect 全落实 + P1×3 迁移 + P2×1 长期沉淀）已迁移到 archive 文档（见 archive-TASK-20260505-02.md §3 文件变更 + §5 经验教训 + §8 度量数据汇总）
+
 ### TASK-20260505-02 — Performance Overlay 持续 invalidate 机制（vx_view_invalidate() 公开 C ABI / B-G4 — MVP-B 收口最后一项）
 
-**当前阶段：** 🔵 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
+**当前阶段：** 🟢 **已归档闭环**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → Archive ✅）/ Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api` 已合并 main `33ebc99` + 删除
 
 #### Reflect 阶段产出（2026-05-05 ~16:00 / 实测 ~30 min）
 
@@ -105,9 +115,7 @@
 
 **下一步：** `/build` — 进入构建阶段，按 Phase A → B → C → D → E 5 个 phase 严格 TDD 实施。
 
----
-
-
+-->
 
 <!-- TASK-20260505-01 详细里程碑（含 VAN/Plan/Build A.1+B.1+C.1+D.1+D.2/E.1+E.2+E.3/Reflect/Archive 全阶段时间线 + 实测耗时 + 反向探针 9/9 精准 FAIL 全谱 + 反复模式 0/7 + 1 新候选 #8 入库定型 + P0×4 reflect 全落实 + P1×2 迁移 + P2×2 长期沉淀）已迁移到 archive 文档（见 archive-TASK-20260505-01.md §3 文件变更 + §6 长期影响 + §8 度量数据汇总）
 

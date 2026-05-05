@@ -2,7 +2,45 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260505-02 Performance Overlay 持续 invalidate 机制（B-G4 — MVP-B 收口最后一项）Reflect ✅，待 `/archive`。
+**空闲** — 准备接受新任务。
+
+**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。下一步推荐进入 MVP-C 战略目标（详 spec §11.2 推荐 G1 OpenGL ES 蓝图 / L4）或工作流元任务批量落地（累计 8 项 P1 待处理事项）。
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260505-02 Performance Overlay 持续 invalidate 机制（Level 2）— ✅ 已归档（commit `33ebc99`）
+
+- **归档文档：** `memory-bank/archive/archive-TASK-20260505-02.md`（~408 行 / Level 2 详细归档 / 10 段 / 度量数据汇总表）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 8 改进建议 P0/P1/P2 全分级）
+- **主交付：** 7 commits / +198 行 code + ~640 行 MB/docs（含 reflection 280 行 + plan 1001 行 + spec 544 行）/ 4 新单测 / DEVTOOL=ON 1298→1302 + DEVTOOL=OFF 1105→1109 / hello_devtool_perf_smoke frames=1→**18**（10x 增益）
+- **跨决策协同度：** 4/4 决策 1 次 AskQuestion 锁定 / 第 10 次连续 100% 命中 / 累计 100/100 / nona → **dec-evidence** 升级
+- **plan ×0.6 比值：** 0.26-0.32×（实测 ~30 min vs plan ×0.6 95-115 min）/ 落极速区 0.10-0.20× 续延档 / quint → **sext-evidence** 升级
+- **反向探针：** 3/3 精准有效 / 强度梯度三档全谱（A.1 NULL guard 过高 SEGFAULT / A.1 dirty_ rearm 合适 2/4 / D.1 regex 灵敏度 平衡 1/1）/ dual → **triple-evidence** 升级
+- **反复模式命中：** 0/7 全抑制（连续 4 任务保持 0 命中）+ #8 spec 数据回归第 3 次实证 dual → **triple-evidence** 升级（已达固化阈值）
+- **lazy-attach C ABI 容错模式：** 第 4 次复用 / triple → **quad-evidence** 升级 / 已成 Veloxa 默认范式
+- **ctest：** DEVTOOL=ON 1298→1302 + DEVTOOL=OFF 1105→1109（双 +4）/ dogfood smoke 3/3 PASS
+
+**8 项 P0+P1+P2 改进建议落实情况：**
+
+| # | 建议 | 优先级 | 落实位置 |
+|:-:|---|:-:|---|
+| 1 | systemPatterns「plan ×0.6 sext-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 2 | systemPatterns「跨决策协同度 dec-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 3 | systemPatterns「反向探针强度梯度三档 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 4 | systemPatterns「反复模式 #8 triple-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 5 | systemPatterns「lazy-attach C ABI quad-evidence」段 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 6 | `/plan` 命令固化「plan/spec docs 落盘即 commit」步骤 | **P0 → 升级** | ✅ 沉淀范例 + 📋 待处理事项 P1 #6 |
+| 7 | systemPatterns「MVP-B 100% 闭环里程碑」段 | **P1** | ✅ reflect 阶段直接沉淀 |
+| 8 | techContext「CMake + GTest 增量加测工作流注意事项」段 | **P2** | ✅ reflect 阶段直接沉淀 |
+
+**P0 5/5 + P0 升级 1/1 reflect 阶段直接落实 ✅** + **P1 1/1 (#7) reflect 阶段直接沉淀** + **P2 1/1 (#8) techContext 沉淀**（沿用 [TASK-20260505-01 P0 4/4 全落实范式](memory-bank/archive/archive-TASK-20260505-01.md)）
+
+---
+
+<details>
+<summary>历史详细产出（点开展开 / 任务已归档闭环）</summary>
 
 **Reflect 阶段产出（2026-05-05 ~16:00）：**
 
@@ -13,15 +51,7 @@
   - **反向探针强度梯度三档 triple-evidence**（dual → triple / 第 2 任务实证）
   - **反复模式 #8 spec 数据回归 triple-evidence**（dual → triple / 已达 writing-plans.mdc 固化阈值）
   - **lazy-attach C ABI 容错模式 quad-evidence**（triple → quad / 已成 Veloxa 默认范式）
-- **8 项 P0+P1+P2 改进建议**：
-  - P0 6/6 reflect 阶段直接落实（systemPatterns 5 段升级 + reflection-02 文档）✅
-  - P1 1/1 (#6) reflect 阶段沉淀范例数据点 + 标注「下次工作流元任务批量落地」
-  - P2 1/1 (#7) techContext.md「CMake + GTest 增量加测工作流注意事项」段沉淀 ✅
 - **MVP-B 100% 闭环里程碑** — TASK-01 + TASK-02 双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS
-
-**当前任务：** TASK-20260505-02 — `vx_view_invalidate()` 公开 C ABI / Level 2 / 分支 `feature/TASK-20260505-02-perf-overlay-invalidate-api`
-
-**下一步：** `/archive` — 进入归档阶段，整合主交付 + 5 个范式升级 + MVP-B 100% 里程碑 + P0/P1/P2 落实清单到归档文档。
 
 **Build 阶段产出（2026-05-05 ~15:30 / 实测 ~30 min）：**
 
@@ -53,7 +83,9 @@
 
 ---
 
-## 上次任务（详细归档信息）
+</details>
+
+## 更早任务（详细归档信息）
 
 ### TASK-20260505-01 DomBindings R2 收口（Level 3）— ✅ 已归档（commit `6f924fd`）
 
@@ -85,21 +117,21 @@
 
 ## 下一推荐任务（基于 spec §11.2 + §6.2 推荐立项顺序）
 
-> ✅ **TASK-20260505-01「DomBindings R2 三连补全」已闭环**（commit `6f924fd` / B-G1+G2+G3 全 ✅ / MVP-B 90% → 95%）— 推荐序号已下移。
+> 🎉 **MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3）+ TASK-20260505-02（B-G4）双任务连击 / 4/4 gap 全闭环 / 用户已可基于完整 MVP-B 能力进入 MVP-C 战略目标。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
-| **1** | **Performance Overlay 持续 invalidate 机制（B-G4）— MVP-B 收口最后一项** | MVP-B 收口 | L1-3 | ~30 min-2 h |
+| **1** | **G1 OpenGL ES 硬件渲染后端蓝图**（核心目标 #2 嵌入式硬件加速主线 P0 第一刚需）| MVP-C 核心 | **L4 多 Phase 蓝图** | ~30-60+ h |
 | 2 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
 | 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| **4** | **G1 OpenGL ES 硬件渲染后端蓝图**（核心目标 #2 嵌入式硬件加速主线 P0 第一刚需）| MVP-C 核心 | **L4 多 Phase 蓝图** | ~30-60+ h |
-| 5 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
-| 6 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 7 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 8 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 9 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| 4 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
+| 5 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
+| 6 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
+| 7 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
+| 8 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| **元** | **工作流元任务批量落地**（累计 8 项 P1 待处理事项 — sept-evidence 已超固化阈值）| 工作流 | L2-3 | ~1-2 h |
 
-**用户决策点：** 下一任务建议从 #1（MVP-B 完整收口 / 估时小）或 #4（MVP-C 核心 P0 第一刚需 / 战略长期目标）启动 / 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
+**用户决策点：** 下一任务建议从 #1（MVP-C 核心 P0 第一刚需 / 战略长期目标 / G1 OpenGL ES 蓝图）或 **元任务**（累计 8 项 P1 改进批量沉淀 / lazy-attach quad-evidence + 反复模式 #8 triple-evidence + plan/spec 落盘即 commit P0 升级 已达固化阈值）启动 / 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
 
 ---
 
