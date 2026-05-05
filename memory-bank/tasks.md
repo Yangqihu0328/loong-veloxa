@@ -4,7 +4,7 @@
 
 ### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
 
-- **当前阶段：** 🟡 **初始化完成**（VAN ✅ → 待 `/plan`）
+- **当前阶段：** 🟢 **规划完成**（VAN ✅ + Plan ✅ → 待 `/reflect`）
 - **复杂度级别：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
@@ -61,6 +61,70 @@
 #### 需要创意阶段的组件
 
 **✅ 需要 `/creative` 阶段**（蓝图任务 V2=a 内联 creative ×N） — 至少 3 个 creative 设计文档（CR.1-CR.3 强制 / CR.4-CR.5 可选 / 在 plan 内 brainstorm 阶段决定）。
+
+#### Plan 阶段产出（2026-05-05 ~17:30）
+
+**8/8 B 决策 1 次 AskQuestion all_recommended 锁定（跨决策协同度 100% 第 12 次连续命中 / dec → endec → doudec-evidence 候选 / 累计 113/113）：**
+
+| # | 决策 | 选择 | 含义 |
+|:-:|---|---|---|
+| **B1** | GL context 创建路径 | **B1-A** SDL_GL_CreateContext + EGL 嵌入式接口预留 | 桌面 SDL2 复用 + 嵌入式 EGL 直接 |
+| **B2** | Canvas 翻译策略 | **B2-A** 混合 | FillRect/RoundedRect = shader / FillPath = libtess2 + VBO / Stroke = Fill 转换 |
+| **B3** | glyph 渲染 | **B3-A** CPU 光栅化 + GPU texture atlas | 复用 FreeType + GlyphCache / GL_R8 atlas |
+| **B4** | dirty rect GPU 化 | **B4-A** ComputeDirtyRect + glScissor + glClear | 沿用既有 r3 dirty rect / 最小破坏 |
+| **B5** | VX_RENDERER 默认值 | **B5-A** software | 兼容性优先 / GLES opt-in / 与 1302 ctest baseline 协同 |
+| **B6** | shader 资源管理 | **B6-A** 静态嵌入 .glsl raw string literal | 编译期绑定 / 与 inspector_panel inline_resources 协同 |
+| **B7** | 性能验收基线 | **B7-A** dual BM 同 corpus 对照 | BM_Replay* + BM_GLESReplay* / 60fps 1080p budget |
+| **B8** | G2 边界预留 | **B8-A** 完整预留 | ContextLost/Restore + GLESDisplay 抽象 + GpuFence 接口 / G2 DRM/KMS 零 rework |
+
+#### 主交付物（V2=a 蓝图 / 共 3376 行）
+
+- ✅ `docs/specs/2026-05-05-gles-renderer-blueprint-design.md`（942 行 / 13 段全覆盖）
+- ✅ `docs/plans/2026-05-05-gles-renderer-blueprint.md`（773 行 / 18 子任务详细规格 + ctest 矩阵 + commit 范本）
+- ✅ `memory-bank/creative/creative-gles-context.md`（369 行 / B1 GL context 创建 / Context Lost 处理 / 版本协商）
+- ✅ `memory-bank/creative/creative-gles-canvas.md`（527 行 / B2 Canvas trampolining / shader-based vs tessellator / Stroke = Fill 转换）
+- ✅ `memory-bank/creative/creative-gles-resources.md`（765 行 / B3 GlyphAtlas + B4 dirty rect + B6 shader 资源 / 完整生命周期协议）
+
+#### 18 个 Level 3 实施子任务（用户后续独立立项依据）
+
+| Sub-Task | 名称 | Level | plan ×0.6 |
+|:-:|---|:-:|:-:|
+| G1.1 | CMake VX_RENDERER flag | L2 | ~2-3 h |
+| G1.2 | GLESDisplay + Sdl2EGLDisplay | L3 | ~4-6 h |
+| G1.3 | Sdl2GLWindowSurface | L3 | ~3-4 h |
+| G1.4 | GLESCanvas 骨架 | L3 | ~3-4 h |
+| G1.5 | FillRect + FillRoundedRect + Solid Brush | L3 | ~5-7 h |
+| G1.6 | FillPath via libtess2 | L3 | ~6-8 h |
+| G1.7 | Stroke* | L3 | ~3-4 h |
+| G1.8 | GlyphAtlas + DrawText | L4 | ~8-10 h |
+| G1.9 | ImageTexturePool + DrawImage | L3 | ~4-6 h |
+| G1.10 | PushClipRect/PopClip + PushLayer/PopLayer | L3 | ~5-7 h |
+| G1.11 | dirty rect glScissor 集成 | L2 | ~2-3 h |
+| G1.12 | LinearGradient / RadialGradient SDF | L3 | ~4-6 h |
+| G1.13 | Application 构造分支 + fallback | L3 | ~3-4 h |
+| G1.14 | Context Lost / Restore | L3 | ~5-7 h |
+| G1.15 | examples/hello_sdl2 GLES smoke | L2 | ~2-3 h |
+| G1.16 | DevTool dogfood GLES smoke | L3 | ~4-6 h |
+| G1.17 | BM_GLESReplay* 性能基准 | L3 | ~4-6 h |
+| G1.18 | G2 接口预留 audit + GpuFence 头注释占位 | L2 | ~1-2 h |
+| **小计** | | | **~68-96 h plan ×0.6** |
+| +30% buffer（GLES 新领域 + libtess2 + Mesa headless）| | | **~88-125 h plan ×0.6** |
+
+#### P0 协议首次完整实施 ✅
+
+- 「plan/spec docs 落盘即 commit」P0 协议（TASK-20260505-02 首次成功 → 本任务**首次完整执行**）
+- plan + spec + creative ×3 + Memory Bank 单 commit 落盘
+- build 阶段 0 collateral commit（V2=a 不含 build）
+
+#### 待 reflect 阶段重审清单
+
+13/13 决策（V1-V5 + B1-B8）合理性重审 — 沿用 TASK-20260430-04 + TASK-20260504-01 范式（13/13 决策跳过 0 重审 → 协议有效）。
+
+#### 反复模式预防 audit
+
+- ✅ #1 前置依赖 / 环境 / API 能力未验证：VAN + Plan Phase 0 grep 10/10 PASS
+- ✅ #8 spec 数据回归 audit：本任务无既有 spec 数据回归（C-G1 是新设计 / 不依赖既有功能现状）
+- ✅ 中文文档 StrReplace 字符类型 audit：本任务编辑 6 处中文文档 / 0 重试（全部 Read 后 StrReplace）
 
 ---
 
