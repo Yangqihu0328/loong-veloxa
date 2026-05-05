@@ -1136,3 +1136,75 @@ cd build && ctest -R MyTest # → 显示 N 个 GTest 测试点（按类名 MyTes
 - `tests/CMakeLists.txt` `function(vx_add_test ...)` 第 3-7 行（`gtest_discover_tests` 调用位置）
 - `memory-bank/reflection/reflection-TASK-20260505-02.md` §3.b #1
 
+---
+
+## GLES 硬件渲染后端蓝图 — 技术栈预声明（TASK-20260505-03 archive 入库 / 蓝图阶段 / 实施待启动）
+
+### 状态
+
+⚠️ **本段为蓝图技术栈预声明** — 设计已锁定（13 决策 / 详 [archive-TASK-20260505-03.md](archive/archive-TASK-20260505-03.md)）/ **实施由后续 18 个 Level 3 子任务（G1.1-G1.18）逐步引入**
+
+### 技术栈选型（B1-B8 决策）
+
+| 维度 | 决策 | 引入子任务 | 当前状态 |
+|---|---|:-:|:-:|
+| **GL Context 创建（桌面）** | SDL_GL_CreateContext + SDL2 GL attrs | G1.2 + G1.3 | 📋 蓝图 |
+| **GL Context 创建（嵌入式）** | EGL 直接接口（DRM/KMS）/ G1 仅预留 GLESDisplay 抽象 | G2 蓝图 | 📋 G1 接口预留完成 |
+| **GLES 版本** | OpenGL ES 3.0+ / 桌面通过 EGL/GLX context profile 协商 | G1.2 | 📋 蓝图 |
+| **Canvas trampolining 算法** | 混合（shader + libtess2 CPU tess + Stroke=Fill）| G1.5-G1.7 | 📋 蓝图 |
+| **CPU tessellation 库** | libtess2（MPL2 license / 与项目兼容）| G1.6 | 📋 蓝图 / 引入 |
+| **glyph 渲染** | CPU 光栅化（FreeType 复用）+ GL_R8 texture atlas | G1.8 | 📋 蓝图 |
+| **dirty rect GPU** | glScissor + glClear（沿用既有 ComputeDirtyRect）| G1.11 | 📋 蓝图 |
+| **shader 资源管理** | 静态嵌入 .glsl raw string literal（编译期绑定）| G1.4-G1.5 | 📋 蓝图 |
+| **CMake flag** | `VX_RENDERER=software\|gles`（默认 software）| G1.1 | 📋 蓝图 |
+| **G2 边界预留** | Surface::ContextLost/Restore + GLESDisplay + GpuFence | G1.13-G1.14 | 📋 蓝图 |
+
+### 系统依赖（蓝图阶段已 audit / 实施时无需安装）
+
+| 依赖 | 版本 | 用途 | 当前状态 |
+|---|---|---|:-:|
+| EGL | Khronos 1.5+ | display / context 管理 | ✅ system 已装 |
+| GLES3 | OpenGL ES 3.0+ | 渲染 API | ✅ system 已装 |
+| Mesa | 26.0.3+ | 桌面驱动（开发环境）| ✅ 已安装 |
+| libgl1-mesa-dri | 26.0.3+ | DRI driver | ✅ 已安装 |
+| libtess2 | 1.0.2+ | CPU polygon tessellation | 📋 G1.6 引入（CMake FetchContent / 或 vendored）|
+| FreeType | 2.10+ | 字体光栅化（已用于 SoftwareCanvas）| ✅ 既有依赖 |
+| SDL2 | 2.0.20+ | 桌面 GL context（既有依赖）| ✅ 既有依赖 |
+
+### 安全相关技术决策
+
+| 维度 | 决策 | 落实 |
+|---|---|:-:|
+| **shader 注入防御** | 静态嵌入 raw string literal / CodeQL audit `glShaderSource` 输入仅 constexpr | 📋 G1.4 + G1.5 P0 |
+| **GL extension 安全枚举** | 仅查询 `GL_EXTENSIONS` / 不动态加载 / 不解析用户输入选 extension | 📋 G1.2 |
+| **多线程 GL 调用 lock-down** | 全部 GL 调用限定主线程（lazy-attach quad-evidence 范式延续）| 📋 G1.4 |
+| **context lost 资源泄露** | OnContextLost 必须释放所有 GL 资源（VAO/VBO/texture/FBO/shader）| 📋 G1.14 P0 |
+| **EGL display 句柄 RAII** | `Sdl2EGLDisplay::~` 调 `eglDestroyContext` + `eglTerminate` / 反向析构序 9 步 | 📋 G1.2 |
+| **GLSL 编译失败 fallback** | shader 编译失败 → fallback 到 SoftwareCanvas + log 记录 / 不向用户暴露 GL 错误细节 | 📋 G1.4 + G1.13 |
+
+### Build / ctest 矩阵预规划（plan §6）
+
+```
+ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完成时)
+
+实施完成后预期（18 子任务全实施 / G1.1-G1.18）：
+  DEVTOOL=ON  + VX_RENDERER=software : 1302 → ~1450（保持 baseline）
+  DEVTOOL=ON  + VX_RENDERER=gles     : ~1450（GLES 等价 spec）
+  DEVTOOL=OFF + VX_RENDERER=software : 1109 → ~1250
+  DEVTOOL=OFF + VX_RENDERER=gles     : ~1250（GLES 等价 spec）
+```
+
+### 性能验收基线
+
+- **目标：** 1080p ≥ 60fps（嵌入式 ARM Mali / Adreno baseline）
+- **算法：** 既有 `BM_Replay*` benchmarks + 新建 `BM_GLESReplay*`（同 corpus 双测对照）
+- **场景：** 嵌入式 GPU 至少 5x SoftwareCanvas（path-heavy 场景）/ 至少 10x（image-heavy 场景）
+- **回归保护：** ctest 矩阵 4-档全绿是合并门槛 / 性能 benchmark 是 release 候选门槛
+
+### 交叉引用
+
+- 主蓝图设计：[`docs/specs/2026-05-05-gles-renderer-blueprint-design.md`](../docs/specs/2026-05-05-gles-renderer-blueprint-design.md)
+- 实施计划：[`docs/plans/2026-05-05-gles-renderer-blueprint.md`](../docs/plans/2026-05-05-gles-renderer-blueprint.md)
+- creative ×3：context / canvas / resources（详 archive 文档）
+- 归档：[`memory-bank/archive/archive-TASK-20260505-03.md`](archive/archive-TASK-20260505-03.md)
+
