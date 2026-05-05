@@ -19,6 +19,7 @@ alwaysApply: false
 > **TASK-20260505-01 提议 → TASK-20260505-02 部分实施 → TASK-20260505-03 首次完整实施 → triple-evidence 已达固化阈值（P0 立即固化）**
 > **TASK-20260505-04 自吃狗粮 → quad-evidence 已固化**
 > **TASK-20260505-05 实施类 Level 2 自吃狗粮 → quint-evidence 已固化（实施类任务首次实证 / 5 数据点累计）**
+> **TASK-20260505-06 实施类 Level 3 自吃狗粮 → sext-evidence 已固化（实施类 Level 3 首次实证 / 6 数据点累计 / 适用性矩阵 6 类全覆盖 ✅）**
 
 ### 触发条件
 
@@ -57,7 +58,7 @@ alwaysApply: false
 - ❌ 工作流元任务强制独立 spec（沿用 TASK-03-02 范式 / 工作流元任务豁免）
 - ❌ commit body 缺 Source 溯源 / 缺 plan ×0.6 实测数据（破坏跨任务可追溯性）
 
-### triple-evidence → quad-evidence → quint-evidence 实证表
+### triple-evidence → quad-evidence → quint-evidence → sext-evidence 实证表
 
 | # | 任务 | 任务类型 | 实施程度 | commit | 备注 |
 |:-:|---|---|---|---|---|
@@ -65,17 +66,19 @@ alwaysApply: false
 | 2 | TASK-20260505-02 | 实施类 Level 2 | 部分实施（plan + spec + MB 1 commit / build 阶段 1 collateral commit `feec51b` ⚠️）| `4feda52` | 协议雏形落地 |
 | 3 | TASK-20260505-03 | V2=a 蓝图 Level 4 | **首次完整实施 ✅**（plan + spec + creative ×3 + MB ×3 = 8 files 单 commit / 0 collateral）| `1555cf4` | triple-evidence 达固化阈值 |
 | 4 | TASK-20260505-04 | 工作流元任务 Level 2-3 | **自吃狗粮 ✅ + reflect 验证**（plan + MB 单 commit / 工作流元任务豁免 spec / 9 commits 全部按 plan）| `02dd40c` + `7160c38` finalize | **quad-evidence 已固化 / P0 协议成熟期** |
-| **5** | **TASK-20260505-05** ⭐ | **实施类 Level 2** | **自吃狗粮 ✅ + 实施类首次实证**（plan + MB ×3 单 commit / 实施类任务首次完整实施 / 4 commits 全部按 plan）| **`41ef50a` + `63208ac` finalize** | **quint-evidence 已固化 / 适用性矩阵全覆盖（V2=a 蓝图 + 工作流元 + 实施类）** |
+| 5 | TASK-20260505-05 | 实施类 Level 2 | **自吃狗粮 ✅ + 实施类首次实证**（plan + MB ×3 单 commit / 实施类任务首次完整实施 / 4 commits 全部按 plan）| `41ef50a` + `63208ac` finalize | **quint-evidence 已固化 / 适用性矩阵全覆盖** |
+| **6** | **TASK-20260505-06** ⭐ | **实施类 Level 3** | **自吃狗粮 ✅ + 实施类 Level 3 首次实证**（plan + MB ×3 单 commit / 实施类 Level 3 任务首次完整实施 / 4 commits 全部按 plan）| **`39d2981` + `5bc70a0` finalize** | **sext-evidence 已固化 / 适用性矩阵 6 类全覆盖 ✅** |
 
-### 适用性矩阵（quint-evidence 已确立）
+### 适用性矩阵（sext-evidence 已确立 / 6 类全覆盖 ✅）
 
 | 任务类型 | 适用 | 实证 | 备注 |
 |---|:-:|---|---|
 | V2=a 蓝图任务 Level 4 | ✅ 强适用 | TASK-05-03 | 8 files 单 commit / triple-evidence base |
 | 工作流元任务 Level 2-3 | ✅ 强适用 | TASK-05-04 | 4 files 单 commit / 工作流元任务豁免 spec |
-| **实施类任务 Level 2** | ✅ **适用（quint-evidence 新覆盖）** | **TASK-05-05** | **4 files 单 commit / D6=A 仅 plan / 引用上游 spec** |
-| 实施类任务 Level 1 | ⚠️ 半适用 | 待实证 | plan 可能为空 / 跳过 P0 协议 |
-| Level 4 实施类（多 Phase）| ⚠️ 部分适用 | 待实证 | plan + MB 单 commit 可行 / build 各 Phase 单独 commit |
+| 实施类任务 Level 2 | ✅ 适用 | TASK-05-05 | 4 files 单 commit / D6=A 仅 plan / 引用上游 spec |
+| **实施类任务 Level 3** | ✅ **适用（sext-evidence 新覆盖）** | **TASK-05-06** | **4 files 单 commit / D8=A 仅 plan / 引用 GLES 蓝图 plan §3.2** |
+| 实施类任务 Level 1 | ⚠️ 半适用 | TASK-05-01 | plan 可能为空 / 跳过 P0 协议 |
+| Level 4 实施类（多 Phase）| ⚠️ 部分适用 | TASK-05-02 | plan + MB 单 commit 可行 / build 各 Phase 单独 commit |
 
 ### 与 brainstorm/decision matrix 配合
 

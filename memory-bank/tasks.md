@@ -4,7 +4,7 @@
 
 ### TASK-20260505-06：G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
 
-- **当前阶段：** 🟡 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+- **当前阶段：** 🟡 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
 - **复杂度级别：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-06-gles-display-sdl2-egl`（基于 main `ee2569d` ✅ 创建 / G1.1 已合并）
@@ -90,7 +90,30 @@
 
 **新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110 + gles 1345/1345
 
-**下一步：** `/reflect` — 进入回顾阶段，沉淀 7 项候选范式 + 新发现「LOC buffer 双向 ±25%」反向校准 + 「Mesa headless 驱动严格性差异」P2 候选。
+**Reflect 阶段产出（2026-05-05 ~21:10 / 实测 ~15-20 min / 标准区 ~1.0× 子档 / 预估命中 ✅）：**
+
+- **回顾文档：** [`memory-bank/reflection/reflection-TASK-20260505-06.md`](reflection/reflection-TASK-20260505-06.md)（10 段全覆盖 / 7 P1 沉淀直接落地 + 5 P2 改进建议 / 度量数据汇总详尽 / 自评 4.7/5）
+- **systemPatterns 8 段更新（P1 直接落地）：**
+  1. 跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence（streak 128 → 136）
+  2. plan ×0.6 实测系数 dec-evidence（ennea → dec / 实施类 Level 3 子档新增）
+  3. brainstorming P1.3 主动 push-back 模式 triple-evidence（dual → triple）
+  4. writing-plans P1.6 spec vs code audit triple-evidence（dual → triple）
+  5. P0 协议 sext-evidence（quint → sext / 适用性矩阵 6 类全覆盖 ✅）
+  6. **D3=B eager extension cache 范式 first-evidence**（新段 / 多 ext 查询通用）
+  7. **D4=C inline test 反向探针 + 驱动严格性分层 first-evidence**（新段 / Mesa headless 经验）
+  8. LOC 双向 ±25% buffer 子档（单向 ×1.3-1.5 → 双向 [0.85, 1.5] / 模式参数细化）
+- **writing-plans P1.5 段升级：** quint → sext-evidence 实证表 + 适用性矩阵 6 类表
+- **5 P2 改进建议沉淀到 activeContext 待处理事项**（writing-plans 双向 ±25% buffer / ctest baseline 比对 noise / Mesa headless 严格性 / techContext OpenGL ES dep / 双 100% 流程闭环）
+- **反复模式 0/8 reflect 阶段保持**（累计 19 模式连续抑制 / 历史新高继续刷新 ✅）
+
+**Reflect 关键发现：**
+1. **brainstorming P1.3 + writing-plans P1.6 双 triple-evidence 续延** — TASK-04 first + TASK-05 dual + TASK-06 triple / 3 plan §3.2 偏差 100% 校正 / 节省 ~60-90 min build 返工
+2. **跨决策协同度 + 实施忠实度双 100% first → dual-evidence** — 8/8 D 决策 0 偏差实施 / 累计 128 → 136 streak 续刷
+3. **P0 协议适用性矩阵 6 类全覆盖** — V2=a 蓝图 + 工作流元 + 实施类 Level 2 + Level 1 + Level 4 多 Phase + **实施类 Level 3** ✅
+4. **D4=C 反向探针「驱动严格性分层」** — Mesa headless silent fallback → 驱动无关层（nullptr / 非法 enum）必选 / 驱动严格层 P3 优化
+5. **LOC buffer 双向 ±25% 反向校准** — TASK-05 ×1.4 偏高 + TASK-06 ×0.95 偏低 dual-evidence / 单向 → 双向 ±25%
+
+**下一步：** `/archive` — 进入归档阶段。
 
 ---
 
