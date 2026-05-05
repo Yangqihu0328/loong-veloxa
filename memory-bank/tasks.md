@@ -4,7 +4,7 @@
 
 ### TASK-20260505-06：G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
 
-- **当前阶段：** 🟡 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）
+- **当前阶段：** 🟡 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
 - **复杂度级别：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-06-gles-display-sdl2-egl`（基于 main `ee2569d` ✅ 创建 / G1.1 已合并）
@@ -72,7 +72,25 @@
 
 **不进入 `/creative`：** Level 3 实施类 / 8 决策已 lock / 设计 spec §3.3.2 已规格化 / 0 创意阶段需求
 
-**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-6 实施（TDD RED → 抽象 → impl GREEN → ctest 注册 → 三 build 矩阵 → D7=A 单 feat commit）。
+**Build 阶段产出（2026-05-05 ~20:55 / 实测 ~25-35 min / 极速区 ~0.4-0.6×）：**
+
+- **TDD 三阶完整 ✅**（RED 缺 .h 编译失败 / GREEN 8/8 PASS ~150ms / REFACTOR T8 反向探针从 MAJOR_VERSION=99 改为 nullptr window 驱动无关）
+- **3 commits 总计 +495 行 / 6 文件改动**：
+  - `4b095c4` feat(platform): add GLESDisplay abstract + Sdl2EGLDisplay impl — 主交付 +495 行
+  - `39d2981` chore(plan): land plan + memory bank（P0 sext-evidence 候选）
+  - `545fa1f` chore(workflow): initialize VAN
+- **ctest 三 build 矩阵全 PASS ✅：**
+  - Matrix A (DEVTOOL=ON / software default): 1303 → **1303** ✅（不退化）
+  - Matrix B (DEVTOOL=OFF / software): 1110 → **1110** ✅（不退化）
+  - Matrix C (DEVTOOL=ON / gles): **1345 PASS** ✅（含 +8 sdl2_egl_display_test）
+- **LOC 实测 ×0.95**（plan 520 → 实际 495 / 反向偏低 / **命中 P2.2「LOC ×1.3-1.5 buffer」反例 → reflect 候选「单向 → 双向 ±25% buffer 子档」**）
+- **0 lint errors** + **8/8 D 决策 0 偏差实施 ✅**（实施忠实度 G1.1 first + G1.2 dual ✅）
+- **plan §3.2 偏差校正 3/3 实施成功** + **反复模式 0/8 抑制延续**（累计 19 模式连续 / 历史新高继续刷新）
+- **build 中发现 1 处反向探针不可靠**（Mesa silent fallback）→ T8 调整为驱动无关 nullptr window 路径
+
+**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110 + gles 1345/1345
+
+**下一步：** `/reflect` — 进入回顾阶段，沉淀 7 项候选范式 + 新发现「LOC buffer 双向 ±25%」反向校准 + 「Mesa headless 驱动严格性差异」P2 候选。
 
 ---
 

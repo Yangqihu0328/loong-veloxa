@@ -4,7 +4,7 @@
 
 ### TASK-20260505-06 — G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
 
-**当前阶段：** 🟡 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）/ Level 3 / 分支 `feature/TASK-20260505-06-gles-display-sdl2-egl`
+**当前阶段：** 🟡 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）/ Level 3 / 分支 `feature/TASK-20260505-06-gles-display-sdl2-egl`
 
 #### VAN 阶段产出（2026-05-05 ~20:15）
 
@@ -82,6 +82,41 @@
 - **沉淀候选（reflect 阶段 / 7 项 P1）：** 跨决策协同度 15 次 / plan ×0.6 dec-evidence / brainstorming P1.3 triple / writing-plans P1.6 triple / P0 协议 sext / D3=B eager ext cache first-evidence / D4=C inline test 反向探针 first-evidence
 
 **下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-6 实施（TDD RED → 抽象 → impl GREEN → ctest 注册 → 三 build 矩阵 → D7=A 单 feat commit）。
+
+#### Build 阶段产出（2026-05-05 ~20:55 / 实测 ~25-35 min / 极速区 ~0.4-0.6× 子档）
+
+- **TDD 三阶完整 ✅**：
+  - RED：`sdl2_egl_display.h: No such file or directory` 编译失败 ✅
+  - GREEN：8/8 TEST_F PASS（~150ms 总时长 / Mesa swrast / SDL_VIDEODRIVER=offscreen）✅
+  - REFACTOR：T8 反向探针 `MAJOR_VERSION=99`（Mesa silent fallback / 不可靠）→ `nullptr` window（驱动无关 / 100% 可重现）✅
+
+- **3 commits 总计 +495 行 / 6 文件改动**：
+  - `4b095c4` feat(platform): add GLESDisplay abstract + Sdl2EGLDisplay impl — 主交付 +495 行
+  - `39d2981` chore(plan): land plan + memory bank（P0 sext-evidence 候选）
+  - `545fa1f` chore(workflow): initialize VAN
+
+- **ctest 三 build 矩阵全 PASS ✅：**
+  - Matrix A (DEVTOOL=ON / software default): 1303 → **1303** ✅（不退化 / sdl2_egl_display_test 仅 gles 编译）
+  - Matrix B (DEVTOOL=OFF / software): 1110 → **1110** ✅（不退化）
+  - Matrix C (DEVTOOL=ON / gles): **1345 PASS** ✅（含 +8 sdl2_egl_display_test Test #1191-1198）
+
+- **LOC 实测 ×0.95**（plan 520 → 实际 495 / **反向偏低 / 命中 P2.2「LOC ×1.3-1.5 buffer」反例 → reflect 候选：单向 → 双向 ±25% buffer 子档**）：
+  - gles_display.h: 70 (×0.875) / sdl2_egl_display.h: 65 (×1.30) / sdl2_egl_display.cc: 146 (×0.97) / test: 189 (×0.86) / sdl2/CMake: +13 (×1.30) / tests/CMake: +12 (×1.20)
+
+- **0 lint errors**（6 改动文件 ReadLints 全 ✅）
+
+- **plan §3.2 偏差校正 3/3 实施成功** + **8/8 D 决策 0 偏差实施 ✅**（实施忠实度 G1.1 first + G1.2 dual-evidence ✅）
+
+- **build 中发现意外 1 处 / 反向探针调整 ✅：**
+  - 发现：Mesa swrast 不严格 enforce SDL_GL_CONTEXT_MAJOR_VERSION（silent fallback）/ 原 T8 设计不可靠
+  - 调整：T8 改为 `Sdl2EGLDisplay(nullptr).Initialize()` → expect kInvalidArgument（驱动无关）
+  - 这是 D4=C「inline test 反向探针范式」的健壮性细化 — reflect 阶段 P2 候选「Mesa headless 驱动严格性 vs 真实 GPU 行为差异」
+
+- **反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程 / 累计 19 模式连续 / 历史新高继续刷新）
+
+**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110 + gles 1345/1345
+
+**下一步：** `/reflect` — 进入回顾阶段，沉淀 7 项候选范式 + 新发现「LOC buffer 双向 ±25%」反向校准 + 「Mesa headless 驱动严格性差异」P2 候选 + REFACTOR T8 反向探针调整经验。
 
 ---
 
