@@ -2,7 +2,18 @@
 
 ## 当前阶段
 
-**空闲** — 等待新任务启动。
+**初始化** — TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）VAN ✅，待 `/plan`。
+
+**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / 分支 `feature/TASK-20260505-04-workflow-meta-batch`（基于 main `b085a85` ✅ 创建）
+
+**任务范围（14 项 P1 + P2 跨任务沉淀批量落地）：**
+
+- **P1 ×10 项**（来自 TASK-20260503-04 / 03-05 / 05-01 / 05-02 / 05-03 reflect 段）— 主要落实到 `.cursor/rules/skills/writing-plans.mdc`（5 子项）+ `.cursor/rules/skills/brainstorming.mdc`（1）+ `.cursor/rules/skills/git-workflow.mdc`（1）+ `.cursor/rules/main.mdc`（1）+ `memory-bank/systemPatterns.md`（1）+ `veloxa/api/veloxa_api.h`（1）
+- **P2 ×4 项**（来自 TASK-20260503-02 / 03-03 / 05-03 reflect 段）— 主要落实到 `.cursor/rules/skills/git-workflow.mdc`（1）+ `.cursor/rules/skills/writing-plans.mdc`（1）+ `memory-bank/systemPatterns.md`（2）
+
+**升级到 P0 立即固化的子项：** P1 #6（`writing-plans.mdc` 「plan/spec docs 落盘即 commit」P0 协议固化 / **triple-evidence 已达固化阈值** / TASK-20260505-01 提议 → 02 部分 → 03 完整实施）— 本任务最高优先级子项。
+
+**估时（plan ×0.6）：** ~130-180 min（14 项 / 平均 ~10-15 min/项）/ 预期实测 ~50-80 min（按 sept-evidence 极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
 
 **最近闭环：** TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（Level 4 V2=a 蓝图）✅ 已归档闭环（archive commit `ecf7b87` / 主交付 `1555cf4`）/ 分支 `feature/TASK-20260505-03-gles-renderer-blueprint` 已合并 main 并删除。**MVP-C 战略主线已启动 ✅** — G1 OpenGL ES 蓝图主交付完成 / 18 实施子任务规格化 / 用户后续基于本蓝图独立立项。
 

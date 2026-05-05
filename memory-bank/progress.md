@@ -2,7 +2,41 @@
 
 ## 当前任务
 
-> 🔓 **空闲** — 等待新任务启动。最近闭环 TASK-20260505-03 详细产出已迁移到 [archive-TASK-20260505-03.md](archive/archive-TASK-20260505-03.md)。
+### TASK-20260505-04 — 工作流元任务批量落地（P1×10 + P2×4 跨任务沉淀批量固化）
+
+**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）/ Level 2-3 工作流元任务 / 分支 `feature/TASK-20260505-04-workflow-meta-batch`
+
+#### VAN 阶段产出（2026-05-05 ~17:37）
+
+- **任务类型：** Level 2-3 工作流元任务（沿用 [TASK-20260503-02 工作流元任务批量清理范式](archive/archive-TASK-20260503-02.md)）
+- **任务范围：** 14 项 P1+P2 跨任务沉淀批量落地
+  - P1×10 项（来自 TASK-03-04 / 03-05 / 05-01 / 05-02 / 05-03 reflect 段累计）
+  - P2×4 项（来自 TASK-03-02 / 03-03 / 05-03 reflect 段累计）
+- **升级到 P0 的子项：** P1.5 `writing-plans.mdc`「plan/spec docs 落盘即 commit」P0 协议固化（**triple-evidence 已达 writing-plans.mdc 固化阈值** / TASK-20260505-01 提议 → 02 部分 → 03 完整实施）
+- **文件影响：** 6 个文件 / 14.5 子项分布
+  - `.cursor/rules/skills/writing-plans.mdc` ×7
+  - `.cursor/rules/skills/brainstorming.mdc` ×1
+  - `.cursor/rules/skills/git-workflow.mdc` ×2
+  - `.cursor/rules/main.mdc` ×1
+  - `memory-bank/systemPatterns.md` ×3
+  - `veloxa/api/veloxa_api.h` ×0.5
+
+#### VAN 前置验证清单（4 维度全通过）
+
+- ✅ 依赖可获取性：仅文档/规则改动 / 0 第三方库 / 0 模型文件
+- ✅ 环境就绪：.cursor/rules/skills/ 10 个 mdc 文件 + main.mdc + systemPatterns.md 全在位
+- ✅ 已有 artifact：6 个目标文件全部存在（待修改而非新建）
+- ✅ 待处理事项关联：activeContext「待处理事项」段 14 项明确 / 累计 P1 sept-evidence 已超固化阈值
+
+#### 反复模式预防（VAN 阶段预审 0/8 命中）
+
+- ✅ #1 前置依赖未验证：4 维度全通过
+- ✅ #8 spec 数据回归 audit：本任务无 spec 数据回归（仅规则改动）
+- ✅ 中文文档 StrReplace 字符类型 audit：编辑 6 处文档 / 已应用「重复 anchor 检测协议」（来自 TASK-05-03 P2 #7）
+
+**估时（plan ×0.6）：** ~130-180 min（14 项 / 平均 ~10-15 min/项）/ 预期实测 ~50-80 min（极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm 14 子项分组策略 + commit 拆分粒度 + 实施顺序。
 
 ---
 
