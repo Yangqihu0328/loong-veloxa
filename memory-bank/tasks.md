@@ -4,7 +4,13 @@
 
 ### TASK-20260505-01：DomBindings R2 收口 — 二连补全 + B-G2 audit（MVP-B 收口推进）
 
-- **当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）
+- **当前阶段：** 🟢 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-01.md`（8 段 / 度量 13 项 / 改进建议 P0×4 + P1×2 + P2×2）
+- **P0 4/4 reflect 阶段直接落实** ✅（systemPatterns.md 新增 4 段）：
+  - 跨 Document arena 节点转移 — deep clone 必选范式
+  - Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence
+  - 反复模式 #8 — spec 数据回归 audit 协议（dual-evidence 入库定型）
+  - 反向探针强度梯度三档解读（过高/合适/平衡）
 - **复杂度级别：** Level 3
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-01-dombindings-r2-closure`（基于 main `5bac6f6` ✅ 创建 / 6 commits 已推 6c36dc7→14f3745）

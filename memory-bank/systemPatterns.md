@@ -3163,6 +3163,212 @@ TEST_F(RegisterConsoleBindingsTest, CapabilityAllowlistReverseProbe) {
 
 ---
 
+## 跨 Document arena 节点转移 — deep clone 必选范式（TASK-20260505-01 反思入库 / P0 沉淀）
+
+**模式：** 在多 `dom::Document` 实例间转移节点（如 innerHTML setter 把 parser 临时 Document 的解析结果搬入 target Document）时，**禁止 transplant（直接转移指针），必须 deep clone**。
+
+**根因：** `dom::Document::~Document` 生命周期是 arena-owned（document.h:19-23）：
+
+```cpp
+~Document() override {
+  for (auto* node : owned_nodes_) {
+    node->~Node();
+  }
+}
+```
+
+`owned_nodes_` 在 `CreateElement/CreateText/CreateComment` 时 push（node.cc:76-95），析构时**所有 owned 节点全部调用 `~Node()`**，无论是否被 detach 或转移到外部树 — 这是设计上的「arena 整体释放」语义，与 STL 容器的「依据所有权的析构」不同。
+
+**反范式（必崩）：**
+
+```cpp
+// transplant 跨 Document — 必崩
+auto* temp_doc = vx::html::Parser::Parse(html);
+for (Node* child = temp_doc->first_child(); child; ) {
+  Node* next = child->next_sibling();
+  temp_doc->RemoveChild(child);
+  el->AppendChild(child);  // child 仍在 temp_doc->owned_nodes_ 里
+  child = next;
+}
+delete temp_doc;
+// → temp_doc 析构时调用 child 的 ~Node()，但 child 已挂在 target tree，
+//   后续访问 use-after-free
+```
+
+**正范式（deep clone）：**
+
+```cpp
+// CloneNodeInto helper（dom_bindings.cc:705-748）
+dom::Node* CloneNodeInto(dom::Node* src, dom::Document* target_doc) {
+  if (src->is_element()) {
+    auto* src_el = static_cast<dom::Element*>(src);
+    dom::Element* clone = target_doc->CreateElement(src_el->tag_id());
+    if (!src_el->id().empty()) clone->set_id(src_el->id());
+    for (const auto& attr : src_el->attributes())
+      clone->SetAttribute(attr.name, String(attr.value.view()));
+    for (const auto& cls : src_el->classes())
+      clone->AddClass(cls);
+    if (auto* decls = src_el->inline_declarations())
+      for (const auto& decl : *decls)
+        clone->SetInlineDeclaration(decl.property, decl.value);
+    for (Node* child = src_el->first_child(); child; child = child->next_sibling()) {
+      Node* child_clone = CloneNodeInto(child, target_doc);
+      if (child_clone) clone->AppendChild(child_clone);
+    }
+    return clone;
+  }
+  if (src->is_text()) {
+    auto* src_text = static_cast<dom::Text*>(src);
+    return target_doc->CreateText(String(src_text->data().view()));
+  }
+  return nullptr;  // Comment / unknown — drop silently
+}
+```
+
+调用方将 clone 挂入 target tree 后 `delete temp_doc` 安全 — temp_doc 析构其 own 节点（不含 clone）。
+
+**适用范围（已就位 helper 可复用）：**
+- ✅ `Element.innerHTML` setter（本任务实施）
+- 🔜 `Node.cloneNode(deep)` API（DOM Level 3）
+- 🔜 `Range.cloneContents()` / `Range.extractContents()`
+- 🔜 `DocumentFragment` 跨 doc 移动
+- 🔜 `Element.outerHTML` setter（含 self 替换）
+
+**实证：**
+- TASK-20260505-01 Phase 0 audit 子段「Document::~Document 节点生命周期」锁定 D2-C-deep-clone 决策（plan 阶段）
+- TASK-20260505-01 Phase B.1 7 单测一次 PASS（无 ASan / 无 leak / 无 crash）
+- TASK-20260505-01 反向探针：禁用子节点 recursion → 2/7 精准 FAIL 在文本路径，证明 deep recursion 是关键
+
+**交叉引用：**
+- `veloxa/script/dom_bindings.cc:705-748` — CloneNodeInto helper 实现
+- `veloxa/core/dom/document.h:19-23` — `~Document` arena-owned 生命周期
+- `veloxa/core/dom/node.cc:12-40` — `Element::AppendChild/RemoveChild` 不影响 owned_nodes_
+- `docs/specs/2026-05-05-dombindings-r2-closure-design.md` §5 R3
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §3.c #2
+
+---
+
+## Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence（TASK-20260505-01 反思入库 / P0 升级 — quad → quint）
+
+**升级背景：** 「[Phase 0 投入越深 / build phase 越快定律](#phase-0-投入越深--build-phase-越快定律task-20260502-02-反思-21--dual-evidence--task-20260503-01-反思-61--triple-evidence--task-20260503-02-反思-51--quad-evidence-升级--audit-子模式)」段累计 quad-evidence + 本任务 ~0.14-0.18× 命中**第 5 数据点**，升级到 **quint-evidence（5 数据点）**，子档「最小代码改动 + Phase 0 高度预跑极速区 0.07-0.20×」可固化。
+
+**5 数据点矩阵：**
+
+| # | 任务 | plan ×0.6 实测 | Phase 0 audit 子段数 | 范式复用度 | 单测数 / 同质率 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1 | TASK-20260502-02 Phase B.2.2 | ~0.10× | ~6 | ~70% | 8 / 高 |
+| 2 | TASK-20260503-01 Phase C.3.1 | ~0.08× | ~7 | ~80% | 6 / 高 |
+| 3 | TASK-20260503-02 Phase Z.1 | ~0.10× | ~8 | ~85% | 5 / 极高 |
+| 4 | TASK-20260503-04 build phase | **~0.07-0.10×（创历史新低）** | ~10 | ~90% | 12 / 极高 |
+| 5 | **TASK-20260505-01 build phase** | **~0.14-0.18×** | **~11** | **~95%（Style proxy + parser API + EventType mapping table 三层复用）** | **14 / 极高（fixture 复用 + EvalGlobal 模板）** |
+
+**全 5 数据点落入区间：** **0.07-0.18×**（极速区 0.07-0.20× 子档**完全契合**）
+
+**触发条件 5 项 SOP（命中 ≥4/5 即可预测落入极速区）：**
+
+1. **Phase 0 audit ≥10 子段 grep 实证**（VAN 或 plan 阶段先跑）— 实证：本任务 11 子段 / TASK-30-04 ~10 子段
+2. **既有范式高度复用 ≥80%**（Style proxy / parser API / EventType mapping table 同质化）— 实证：本任务 ~95% 三层复用
+3. **单测重复率 ≥80%**（fixture 复用 / 同 EvalGlobal 模板 / 仅 setup + assert 数据变化）— 实证：本任务 14 测全在 `DomBindingsTest` fixture 复用 + 同 `engine_.EvalGlobal(...)` 模板
+4. **0 创意/算法新设计**（决策已 plan 阶段全锁定）— 实证：本任务 D1+D2+D3 1 次 AskQuestion 全锁定 / 跳过 `/creative`
+5. **范围明确无歧义**（VAN 阶段 audit 已暴露并修正所有 spec/scope ambiguity）— 实证：本任务 VAN audit 揭示 spec §3.2.1 数据回归 + 范围由「三连」收缩为「二连 + audit」
+
+**未来识别命中：** 任务进入 build 阶段前若 ≥4/5 触发条件命中 → **预测落入极速区 0.07-0.20×**，可作为更准确的子档系数应用到 plan ×0.6 baseline。
+
+**与 base ×0.6 系数的关系：**
+- base 0.5-0.7×：单 AI 标准节奏（含问题排查 + 调试 + 范式建立）
+- 极速区 0.07-0.20×：Phase 0 高度预跑 + 范式高度复用 + 决策全锁定 + 单测高同质 + 范围无歧义
+
+**交叉引用：**
+- [Phase 0 投入越深 / build phase 越快定律 quad-evidence 段](#phase-0-投入越深--build-phase-越快定律task-20260502-02-反思-21--dual-evidence--task-20260503-01-反思-61--triple-evidence--task-20260503-02-反思-51--quad-evidence-升级--audit-子模式)（base 段）
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §3.c #4 + §1.2
+
+---
+
+## 反复模式 #8 — spec 数据回归（实现 vs 文档不一致）audit 协议（TASK-20260505-01 反思入库 / P0 沉淀 — dual-evidence 入库定型）
+
+**模式定义：** 当任务声称「补全缺失功能」（B-G2 / R2 / P3 candidate 等）时，spec 文档标记的「缺失」状态可能与代码实际状态**已不一致**（实现已存在 / 部分实现 / 已 refactored）。直接按 spec 启动 build 会导致：
+- 重做已实现的功能（浪费 ~30-60 min/任务）
+- 错过真实根因（spec 标记错误项掩盖真实 bug）
+- spec 信任度下降（后续任务难以判断 spec 是否可信）
+
+**两次实证：**
+
+| # | 任务 | spec 标记 | 代码实际 | 真实根因 | 调整方式 |
+|:-:|---|---|---|---|---|
+| 1 | TASK-20260504-01 P0（archive 阶段发现）| 4 项「缺失」 | 部分已实现 | spec stale / 应在每个 PR 合并时同步 | reflect 阶段 P0 沉淀「中文文档 StrReplace audit」相关协议 |
+| 2 | **TASK-20260505-01 VAN audit** | **B-G2 addEventListener「缺失」** | **已实现（commit 00deaca + #47 + #50）** | **MapJsEventName 缺 click/mouse* alias** | **VAN 阶段 audit 暴露 → 范围调整 → 真实根因揭示 → C.1 4 行 alias 修复** |
+
+**dual-evidence 已达入库阈值** — 升级到正式反复模式 #8。
+
+**audit 协议（VAN 阶段必跑 / 适用「补全缺失功能」类任务）：**
+
+```bash
+# Step 1: spec 内引用的 commit / 文件 / 函数实证
+rg "commit\s+([a-f0-9]+)" docs/specs/<spec-file>.md  # 提取所有 commit refs
+git log --oneline | head -50  # 对比是否在历史中
+
+# Step 2: 对每个声称「缺失」的功能在代码中查证
+# - 函数定义是否存在？
+rg "^(JSValue\s+)?<function-name>" veloxa/script/<binding-file>.cc
+# - 是否被注册/导出？
+rg "JS_NewCFunction.*<function-name>|<function-name>.*Register" veloxa/script/<binding-file>.cc
+# - 单测是否存在？
+rg "<function-name>" tests/
+
+# Step 3: 若发现 spec 与代码不一致：
+# - 声明「spec 数据回归」并在 VAN 阶段输出修正建议
+# - 调整任务范围（e.g.「三连补全」→「二连 + audit」）
+# - audit 子段需进入 plan §0
+```
+
+**协议固化建议（reflect 阶段 P0 沉淀的延续）：**
+- 已沉淀到 systemPatterns（本段）
+- 待沉淀到 `.cursor/rules/skills/writing-plans.mdc` Phase 0 audit 段「spec vs code 一致性 audit」子条（P1，迁移到 activeContext.md 待处理事项）
+
+**交叉引用：**
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §4 「新候选 #A」+ §3.c #1
+- `memory-bank/reflection/reflection-TASK-20260504-01.md` §5 P0 沉淀
+- `.cursor/rules/skills/writing-plans.mdc` Phase 0 audit 段（待补强）
+
+---
+
+## 反向探针强度梯度三档解读（TASK-20260505-01 反思入库 / P0 沉淀 — 反向探针有效性陷阱清单子段扩展）
+
+**背景：** [反向探针有效性陷阱清单](#反向探针有效性陷阱清单task-20260502-01-多子任务沉淀)段定义「探针让既有测崩 + 不让 RED 测崩 = false-positive」陷阱。本段补充「探针强度梯度」维度 — 同一探针动作可能因实现内部依赖结构造成不同失败规模。
+
+**三档强度梯度（TASK-20260505-01 三 phase 实证）：**
+
+| 强度 | 表现 | 实证 | 解读 |
+|---|---|---|---|
+| **过高（双重加固 / UB 暴露）** | 全 N/N 测 FAIL（含与该探针**无直接关联**的测试）| **A.1 探针：** 注释 `if (!child->is_element()) continue;` → **4/4 全 FAIL** | `static_cast<Element*>(text_node)` 是 UB → `WrapElement` 拿到无效指针 → 后续 `[0].id` access garbage 链式失效。**即使非 SkipsTextNodes 测也崩** —`is_element` gate 同时是 UB 防御层 + 业务过滤层 |
+| **合适（精准 N/M 失败）** | 部分 N/M 测 FAIL（仅与该探针直接关联的测）| **B.1 探针：** 注释 CloneNodeInto child recursion → **2/7 精准 FAIL 在文本路径**（其他 5 测仍 PASS）| 探针仅破坏「文本内容嵌入」路径，其他 5 测（length / index / attributes / reentrant / cleanup）仍走 top-level shell 路径正常工作。**理想探针强度** |
+| **平衡（等量 N/N 失败）** | 该 phase 所有 N 测 FAIL，其他 phase 测无影响 | **C.1 探针：** 注释 4 alias rows → **3/3 alias 测全 FAIL**（其他 phase 测无影响）| 探针仅删除 alias mapping 表，业务路径完全等价于 alias 不存在 / 其他 phase 测试不依赖 alias |
+
+**强度过高的解读规则（A.1 类）：**
+1. **依然是有效探针** — 它证明 gate 是必需的，但**保护层数 ≥2**（业务层 + UB 防御层）
+2. 在 reflection 中需明确标注「双重加固」，避免读者误以为是「探针逻辑错误」
+3. 后续若需精准探针，可考虑分两步：(a) 注释 gate（验证 UB 防御）→ 恢复后 (b) 改 gate 为更宽松条件（验证业务过滤）
+
+**强度合适（B.1 类）是最理想形态：**
+- 反向探针的「卓越」标志 — 精确指出 N 个测中 M 个被探针影响，其他 (N-M) 个仍 PASS
+- 实证「该实现路径是 M 测的唯一关键依赖 / 其他测走独立路径」
+- 协助识别「测试覆盖路径正交性」
+
+**强度平衡（C.1 类）：**
+- 适用于「数据驱动」类实现（如 alias mapping table / lookup table）
+- 探针 = 注释表行，等价于该数据缺失，影响范围 = 该数据所对应的全部测
+
+**协议固化：**
+- 反向探针每次实施需在 commit body 中标注实测「N/M 测 FAIL」+ 强度档位（过高/合适/平衡）
+- TASK-20260505-01 5 phase commits 全实施（quad-evidence 累计 ~39 commits）
+
+**交叉引用：**
+- [反向探针有效性陷阱清单](#反向探针有效性陷阱清单task-20260502-01-多子任务沉淀)（base 段）
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §3.c #3
+- TASK-20260505-01 commits `6c36dc7` / `986e978` / `fb88288` 三 commit body 全含反向探针实测数据
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

@@ -2,7 +2,18 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260505-01 DomBindings R2 收口（二连补全 + B-G2 audit）Build ✅，待 `/reflect`。
+**回顾中** — TASK-20260505-01 DomBindings R2 收口（二连补全 + B-G2 audit）Reflect ✅，待 `/archive`。
+
+**Reflect 阶段产出（2026-05-05 ~14:30 / Level 3 详细回顾）：**
+
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-01.md`（8 段 / 度量数据 13 项 / 改进建议 8 项 P0×4 + P1×2 + P2×2）
+- **P0 4/4 reflect 阶段直接落实** ✅（systemPatterns.md 4 新段）：
+  1. 「跨 Document arena 节点转移 — deep clone 必选范式」段（含 CloneNodeInto helper 实证 + 适用范围 5 项预留）
+  2. 「Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence」段（5 数据点矩阵 + 触发条件 5 项 SOP）
+  3. 「反复模式 #8 — spec 数据回归 audit 协议」段（dual-evidence 入库定型 + audit 协议 3 步法）
+  4. 「反向探针强度梯度三档解读」段（过高/合适/平衡 + 三 phase 实证）
+- **P1 2/2 → 已迁移到本文档「待处理事项」段**（archive 阶段考虑直接落实）
+- **P2 2/2 → 长期沉淀**（archive 阶段直接落实可选，否则随后续相关任务自然沉淀）
 
 **当前任务：** TASK-20260505-01 — MVP-B 收口推进 / B-G1 children + B-G3 innerHTML setter + B-G2 audit / Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure`（基于 main `5bac6f6`）
 
@@ -92,7 +103,9 @@
 - **P1 #1（来自 TASK-20260503-04 reflection §5）writing-plans.mdc Phase 0 段补强「JS context 归属与 host binding 注册 ctx 一致性 audit」子条** — 反复模式 #1 第 4 个新形式（panel JS / 用户脚本 ctx 归属未实证）；本任务 plan-fact reconcile #1（C2 wiring）即此模式实证。**预估**：~10 min。
 - **P1 #2（来自 TASK-20260503-04 reflection §5）writing-plans.mdc「资源类反向探针 SOP」新子段** — 资源反向探针应限定到非注释区域 + comment policy 推荐；本任务 D.3 console_panel.html 注释里 `<input` 字面量触发反向探针 false positive。**预估**：~10 min。
 - **P1 #2（来自 TASK-20260503-05 reflection §5）brainstorming.mdc 加新段「Phase 0 grep 实证驱动的主动 push-back 模式」** — D8b 实证（brainstorm scope 已被 core_only 限定后，Phase 0 grep 发现 creative 文档 10⁷ 检查点字面值会导致 100-1000s 死循环灾难）→ 必须**主动**抛出而非等用户问到；触发条件清单：(1) brainstorm scope 已被用户限定 + (2) Phase 0 grep / audit 阶段发现偏差 + (3) 偏差**显著**（默认值差 10³+ 倍）。**预估**：~10 min。
-- **P2 #4（来自 TASK-20260503-03 reflection §6）commit body Source 溯源 + 实测数据格式固化** — 累计 ~34-35 commits quad-evidence（远破 git-workflow.mdc 固化阈值）/ 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`。**预估**：~10-15 min。
+- **P1 #5（来自 TASK-20260505-01 reflection §5 #5）systemPatterns.md 新沉淀「视觉链路三件齐识别协议」段** — 当 dogfood UI 行为依赖 ≥3 个独立缺陷修复才能完整工作时，必须**单任务集中闭环**而非分多任务拆分；plan 阶段 §UI 行为验收表是识别工具（本任务 plan §0.11「视觉恢复链路」表是范式）。**预估**：~30-40 行 systemPatterns 段 / ~10 min。
+- **P1 #6（来自 TASK-20260505-01 reflection §5 #6）`/plan` 命令固化「plan/spec docs 落盘即 commit」步骤** — 防止 build 阶段 collateral commit 补齐；落实位置 `.cursor/commands/plan` 或 `.cursor/rules/skills/writing-plans.mdc`。**预估**：~10 min。
+- **P2 #4（来自 TASK-20260503-03 reflection §6）commit body Source 溯源 + 实测数据格式固化** — 累计 ~39 commits quad-evidence（远破 git-workflow.mdc 固化阈值 / 本任务延续协议）/ 建议下次工作流元任务批量落地时同步固化到 `.cursor/rules/skills/git-workflow.mdc`。**预估**：~10-15 min。
 
 ### 长期沉淀（P2 — 不强制 archive）
 
