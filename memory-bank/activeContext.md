@@ -2,15 +2,44 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260504-01 已归档闭环 ✅。等待用户启动新任务（`/van`）或恢复 P3 候选清单中的下游任务。
+**构建完成** — TASK-20260505-01 DomBindings R2 收口（二连补全 + B-G2 audit）Build ✅，待 `/reflect`。
 
-**最近闭环：** TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— 三档分级 MVP-A/B/C 体系建立 ✅ + 路线图按 MVP 档分层重写 ✅ + DevTool Phase E/F/G「超 MVP plus」标识范式确立 ✅ + 核心目标 #1+#2 路径量化（C-G1 OpenGL ES ~30-60+ h + C-G2 DRM/KMS ~10-20 h）✅ + P0×1 reflect 阶段立即沉淀 + P1+P2×4 archive 阶段全部落实 ✅（详见下方「上次任务」段）。
+**当前任务：** TASK-20260505-01 — MVP-B 收口推进 / B-G1 children + B-G3 innerHTML setter + B-G2 audit / Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure`（基于 main `5bac6f6`）
+
+**Build 阶段闭环结果（2026-05-05 ~14:00-14:35 / 实测 ~35 min / plan ×0.6 实测 0.14-0.18×）：**
+
+- **5 commits（不含 E.2）：** `6c36dc7`（A.1 children）→ `986e978`（B.1 innerHTML deep-clone）→ `fb88288`（C.1 click/mouse* alias）→ `02d96b2`（D.1 typeof 清理）→ `2759f22`（D.2 spec 同步）→ `14f3745`（E.2 progress.md）
+- **14 新单测全 PASS：** A.1 4 / B.1 7 / C.1 3 — dom_bindings_test 31 → 45 / 反向探针每 phase 1 次（A.1 4/4 全 FAIL 超预期 / B.1 2/7 精准 FAIL 文本路径 / C.1 3/3 精准 FAIL alias 路径）
+- **双 config full ctest 全 PASS：** DEVTOOL=ON **1298/1298 PASS**（baseline 1284 → +14 / 100%）/ DEVTOOL=OFF **1105/1105 PASS**（baseline 1091 → +14 / 100%）— 与 plan 预期完全一致 ✅
+- **dogfood smoke 14/14 PASS：** DevtoolDogfoodSmokeTest + DevtoolConsoleDogfoodSmokeTest + InspectorPanelHtmlSmoke
+- **反复模式预防 7/7 全抑制：** Phase 0 grep 实证 + spec 数据回归 audit 暴露+修正 + TDD 严格序 + 反向探针 9 测精准 + 中文文档 1 次成功 + commit Source 溯源 + 双 config 验证
+- **B-G1+G2+G3 全 ✅ 闭环：** MVP-B 完成度 90% → **95%**（剩 B-G4 / 估时 ~30 min-2 h）
+
+**关键里程碑：dogfood 视觉自动恢复链路三件齐 ✅** — B-G1 children + B-G3 innerHTML + B-G2 click alias 三件齐 → inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**（manual SDL2 验证将在 reflect 阶段完成）
+
+**关键 Plan 产出回顾：**
+
+- **设计文档：** `docs/specs/2026-05-05-dombindings-r2-closure-design.md`（11 段 / D1+D2+D3 决策完整定义 + 5 风险登记）
+- **实现计划：** `docs/plans/2026-05-05-dombindings-r2-closure.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段）
+- **跨决策协同度 100% 第 9 次连续命中** — 1 次 AskQuestion 锁定 D1-B + D2-C + D3-full 三决策（累计 96/96 跨决策一次锁定纪录）
+- **关键 Phase 0 audit 发现（设计修正 1 次）：** Document::~Document 节点生命周期 → D2-C 初版（transplant）改为 D2-C-deep-clone — 避免 use-after-free（build 阶段实证此决策正确：deep clone 实现一次成功 / 无运行时 crash）
+- **B-G2 audit 关键 bug 实证：** MapJsEventName 缺 click + mouse* alias — inspector_panel.js setupTabs silent fail 真实根因 / Phase C.1 4 alias 修复后 ClickFiresOnPointerUp 测一次成功
+
+**下一步：** `/reflect` — 进入回顾阶段，识别成就、挑战、改进项，准备归档。
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— ✅ 已归档（commit `4e35cea`）
+
+**最近闭环（保留供下游任务参考）：** 三档分级 MVP-A/B/C 体系建立 ✅ + 路线图按 MVP 档分层重写 ✅ + DevTool Phase E/F/G「超 MVP plus」标识范式确立 ✅ + 核心目标 #1+#2 路径量化（C-G1 OpenGL ES ~30-60+ h + C-G2 DRM/KMS ~10-20 h）✅ + P0×1 reflect 阶段立即沉淀 + P1+P2×4 archive 阶段全部落实 ✅。
 
 **DevTool 4 件套主线收官 🎉** — Phase A Inspector + Phase B Performance Overlay + Phase C Hot Reload + Phase D Console JS REPL 已全部完整闭环 / Phase E/F/G 标识为「超 MVP plus」由用户需求驱动决定立项时机。
 
 ---
 
-## 上次任务（已归档闭环）
+## 上次任务（详细归档信息）
 
 ### TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— ✅ 已归档（commit `4e35cea`）
 

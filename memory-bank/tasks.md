@@ -2,7 +2,95 @@
 
 ## 当前任务
 
-> **空闲** — 等待用户启动新任务（`/van`）。最近闭环：**TASK-20260504-01 MVP-scope 文档**（Level 4 蓝图 V2=a 完整变体）✅ — DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 详细见下方「任务历史」段。
+### TASK-20260505-01：DomBindings R2 收口 — 二连补全 + B-G2 audit（MVP-B 收口推进）
+
+- **当前阶段：** 🟢 **构建完成**（VAN ✅ → Plan ✅ → Build ✅ → 待 `/reflect`）
+- **复杂度级别：** Level 3
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-01-dombindings-r2-closure`（基于 main `5bac6f6` ✅ 创建 / 6 commits 已推 6c36dc7→14f3745）
+- **Build 闭环（2026-05-05 ~14:00-14:35 / ~35 min / plan ×0.6 实测 0.14-0.18× — 第 4 次「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」命中）：**
+  - **5 phase commits：** `6c36dc7`（A.1）→ `986e978`（B.1）→ `fb88288`（C.1）→ `02d96b2`（D.1）→ `2759f22`（D.2）→ `14f3745`（E.2）
+  - **14 新单测全 PASS：** dom_bindings_test 31 → 45（A.1 4 / B.1 7 / C.1 3）
+  - **双 config ctest：** DEVTOOL=ON 1298/1298 + DEVTOOL=OFF 1105/1105 — 与 plan 预期完全一致 ✅
+  - **dogfood smoke 14/14 PASS** + **B-G1+G2+G3 全 ✅ 闭环**（MVP-B 90% → 95%）
+  - **反向探针 9/9 精准有效**（A.1 4/4 全 FAIL 超预期 / B.1 2/7 文本路径 / C.1 3/3 alias 路径）
+  - **反复模式 7/7 全抑制**（spec 数据回归 #2 暴露+修正 — VAN audit 锁定 + Phase D.2 spec 同步）
+- **来源：** [TASK-20260504-01 MVP-scope spec §11.2 推荐立项 #1](docs/specs/2026-05-04-mvp-scope.md) + 用户 `/van 开始mvp` 拍板 → mvp_b_closure 决策（推动 MVP-B 收口）
+- **安全相关：** ❌ 否（DOM 绑定扩展 / 继承 vx::html::Parser 既有安全护栏 / 无新威胁面）
+- **设计文档：** `docs/specs/2026-05-05-dombindings-r2-closure-design.md`（11 段）
+- **实现计划：** `docs/plans/2026-05-05-dombindings-r2-closure.md`（5 Phase / 8 任务 / 14 单测）
+
+#### VAN 阶段消歧产出
+
+| 决策维度 | 选择 | 理由 |
+|---|---|---|
+| MVP 目标档 | **MVP-B 收口**（spec §11.2 推荐 #1）| 当前 MVP-A 100% / MVP-B ~90% / 4 项 gap 中 B-G1+G2+G3 三连最高优先级 |
+| 范围调整 | **方案 b：二连补全 + B-G2 audit** | VAN 前置验证发现 spec §3.2.1 数据回归（B-G2 addEventListener 已实现）→ 三连 → 二连 + audit |
+
+#### 任务范围（VAN 锁定）
+
+| # | 子项 | 文件 | 估时 plan ×0.6 |
+|:-:|---|---|:-:|
+| **B-G1** | Element.children 集合 getter（HTMLCollection 风格 array-like proxy）| `dom_bindings.cc` (+30-50) + `dom_bindings.h` | ~30-45 min |
+| **B-G3** | element.innerHTML setter（解析 HTML 字符串 + 替换子节点）| `dom_bindings.cc` (+40-60) + `dom_bindings.h` | ~45-75 min |
+| **B-G2 audit** | addEventListener 完整性单测补充 + inspector_panel.js typeof 防御清理 + spec/inspector 注释同步 | `dom_bindings_test.cc` + `inspector_panel.js` + spec 文档 | ~30-45 min |
+| TDD 单测覆盖 | 各子项 ≥3 单测 | `dom_bindings_test.cc` (+150-250) | ~30-45 min（包含在上述子项中）|
+| DevTool dogfood 视觉自动恢复验证 | inspector_panel.js typeof 防御清理后 dogfood smoke | smoke ctest | ~15-20 min |
+
+**总估时：** ~2-3 h plan ×0.6（archive §6 校准 -30% 后基线）
+
+#### VAN 前置验证清单（4 维度全通过 + 1 偏差识别）
+
+- ✅ **依赖可获取性：** dom_bindings.cc / QuickJS 已就位 / HTMLCollection 风格 array-like proxy 范式可参考既有实现
+- ✅ **环境就绪：** ctest 1284/1284 baseline / 测试基础设施完备
+- ✅ **已有 artifact：** addEventListener 已实现（B-G2 退化为 audit）/ children + innerHTML setter 确认未实现 / inspector_panel.js 临时防御代码 4 处待清理
+- ✅ **待处理事项关联：** 与 activeContext P1 #1（writing-plans.mdc Phase 0 audit 子条）同源 — 本任务 B-G2 audit 即此模式实证 / reflect 阶段触发该 P1 沉淀
+- ⚠️ **偏差识别：** spec §3.2.1 标注 B-G2 状态过期（addEventListener 早在 commit `00deaca` 落地 / 未做反向探针 grep 验证）— 改进建议候选 A：spec/plan 创建反向探针 SOP 强制要求；候选 B：MVP-scope spec 加「最后状态 audit 日期」字段 → 留 reflect 阶段沉淀
+
+#### Phase 0 grep 实证（VAN 阶段已先跑）
+
+- `addEventListener` 实现位置：`dom_bindings.cc:444-497`（实现）+ `:717-718`（原型注册）— 完整且经 `#47` `#50` 多轮优化
+- inspector_panel.js typeof 防御位置：`inspector_panel.js:63-68`（4 处 / `tabs.children` + `addEventListener` typeof + 注释 56-69 行）
+- commit 历史：`00deaca` (init) → `ed5d455` (#47 ListenerToken) → `d105c36` (#50 unbind ordering)
+
+#### Plan 阶段产出（2026-05-05 ~13:30）
+
+**设计决策矩阵（D1+D2+D3 跨决策协同度 100% 第 9 次连续命中 — 1 次 AskQuestion 全锁定）：**
+
+| # | 决策 | 选择 | 理由 |
+|:-:|---|---|---|
+| **D1** | B-G1 children 实现方式 | **D1-B** HTMLCollection-like 单次构造 array-like proxy（`length` getter + numeric index direct properties）| 与 Style proxy 范式一致 / 平衡 spec 兼容 + 简单度 |
+| **D2** | B-G3 innerHTML setter 实现方式 | **D2-C-deep-clone** 复用 `vx::html::Parser` + 深拷贝到 target Document arena | Phase 0 audit 锁定（Document::~Document arena 整体释放语义 + AppendChild 不 detach → transplant 不安全 → deep clone 必选）/ 自动继承 Parser 安全护栏 |
+| **D3** | B-G2 audit 范围 | **D3-full** MapJsEventName 加 4 alias mapping + 单测 + inspector_panel.js typeof 清理 + spec 同步 | 揭示 inspector tab 切换不工作的真实根因（缺 click event mapping）/ dogfood 完整自动恢复 |
+
+**关键 Phase 0 audit 发现（5 项）：**
+
+1. **MapJsEventName 缺 click 事件 alias** — inspector_panel.js setupTabs `btn.addEventListener("click", ...)` silent fail 是 inspector tab 切换不工作的真实根因（即使 children 修复后仍坏）
+2. **Document 节点生命周期 audit** — `Document::~Document` 对 owned_nodes_ Vector 内**所有节点**调用 `~Node()` + arena 整体释放 / `Element::AppendChild` 不 detach 原 parent 链接 → transplant 跨 Document 的节点不安全 → 必须 deep clone
+3. **dom_bindings_test 无 DEVTOOL guard** — DEVTOOL=ON + DEVTOOL=OFF 双 config 同步增加 +14 测
+4. **vx_script PRIVATE link vx_core 已就绪** — 新增 vx::html::Parser 调用无新链接方向变更
+5. **EventType enum 单一 pointer 模型** — click 别名到 kPointerUp（W3C release 语义）/ mousedown* 直接别名
+
+**5 Phase / 8 任务执行计划：**
+
+| Phase | 任务 | 文件 | plan ×0.6 |
+|:-:|---|---|:-:|
+| Phase A.1 | B-G1 children class + getter + 4 单测 | `dom_bindings.cc` (+50-70) + `dom_bindings_test.cc` (+60-80) | ~45-60 min |
+| Phase B.1 | B-G3 CloneNodeInto + innerHTML setter + 7 单测 | `dom_bindings.cc` (+90-120) + test (+120-180) | ~75-90 min |
+| Phase C.1 | B-G2 audit MapJsEventName 4 alias + 3 单测 | `dom_bindings.cc` (+15-20) + test (+50-70) | ~30-40 min |
+| Phase D.1 | inspector_panel.js typeof 防御 4 处清理 | `inspector_panel.js` (±15) | ~15-20 min |
+| Phase D.2 | MVP-scope spec §3.2.1 状态同步 ✅ | `2026-05-04-mvp-scope.md` (±10) | ~5-10 min |
+| Phase E.1 | full ctest 双 config 验证 | — | ~10-15 min |
+| Phase E.2 | progress.md 实施记录 + 反复模式预防核对 | `progress.md` | ~5-10 min |
+| Phase E.3 | activeContext.md 阶段更新 | `activeContext.md` | ~5 min |
+
+**ctest 期望矩阵：** DEVTOOL=ON 1284 → 1298（+14 PASS）/ DEVTOOL=OFF 1091 → 1105（+14 PASS）/ A14 link closure 0 byte 增长（dom_bindings 通用扩展 / 不属 vx_devtool 子系统 link closure 守门范围）
+
+**预期实测 plan ×0.6 系数：** ~0.13-0.22×（落「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」子档）— Phase 0 grep 实证已先跑 + dom_bindings.cc 范式高度复用 + 14 单测高重复率
+
+#### 需要创意阶段的组件
+
+**❌ 不需要 `/creative` 阶段。** 设计决策 D1+D2+D3 已在 plan brainstorming 阶段全部锁定 / 无新组件需 UI 设计 / 无新算法需设计。直接进入 `/build`。
 
 <!-- TASK-20260504-01 详细执行记录已迁移到 archive 文档（见下方「任务历史」段简述 + memory-bank/archive/archive-TASK-20260504-01.md）-->
 
