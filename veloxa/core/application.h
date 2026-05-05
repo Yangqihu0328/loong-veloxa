@@ -59,6 +59,19 @@ class Application {
   void Quit();
   void Update();
 
+  // TASK-20260505-02 — Force the next Update() to run a full pass even
+  // when dirty_ would have short-circuited. Returns false when
+  // update_manager_ is not yet initialized (no LoadHTML/LoadCSS run);
+  // the call is a silent no-op in that case (consistent with
+  // SetPipelineHooks lazy attach pattern). Routing target: target
+  // update_manager_ only — DevTool's UpdateManager runs an independent
+  // state machine (D1-A decision in design spec).
+  //
+  // Thread-safety: main thread only (consistent with LoadHTML/LoadCSS/
+  // InjectInput). Idempotent: calling N times before the next Update is
+  // equivalent to a single call.
+  bool Invalidate();
+
   // Dual Document slot (DevTool 三件套 I1 改造，TASK-20260502-01 A.0.1)：
   // - target_document_：业务页面 DOM（重命名 from document_）
   // - devtool_document_：DevTool UI DOM（nullable；attach DevTool 时设置；

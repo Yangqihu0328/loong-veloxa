@@ -211,6 +211,17 @@ void Application::Quit() {
   }
 }
 
+bool Application::Invalidate() {
+  // TASK-20260505-02 A.1 — public entry-point for embedders to force-rearm
+  // dirty_ on the target UpdateManager. update_manager_ may be null on a
+  // fresh view (no LoadHTML yet) → silent no-op + INVALID_STATE return.
+  // DevTool's UpdateManager is intentionally NOT touched (D1-A routing
+  // decision: DevTool runs an independent state machine).
+  if (!update_manager_) return false;
+  update_manager_->Invalidate();
+  return true;
+}
+
 void Application::Update() {
 #ifdef VX_BUILD_DEVTOOL
   // C.4.1 — drain queued FileWatcher events on the main thread BEFORE

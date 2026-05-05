@@ -213,6 +213,12 @@ vx_add_test(perf_hooks_api_test api/perf_hooks_api_test.cc)
 target_link_libraries(perf_hooks_api_test
   PRIVATE vx_foundation vx_api vx_platform)
 
+# TASK-20260505-02 A.1 — vx_view_invalidate public C ABI test (B-G4 closure).
+# Compiled in BOTH ON and OFF builds (public ABI is independent of DevTool).
+vx_add_test(invalidate_api_test api/invalidate_api_test.cc)
+target_link_libraries(invalidate_api_test
+  PRIVATE vx_foundation vx_api vx_platform)
+
 vx_add_test(devtool_redaction_policy_test api/devtool_redaction_policy_test.cc)
 target_link_libraries(devtool_redaction_policy_test
   PRIVATE vx_foundation vx_api vx_platform)

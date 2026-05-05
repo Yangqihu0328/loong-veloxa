@@ -129,6 +129,38 @@ VxResult vx_view_update(VxView* view);
 VxResult vx_view_run(VxView* view);
 VxResult vx_view_quit(VxView* view);
 
+/* TASK-20260505-02 (B-G4 closure) — Force the next vx_view_update /
+ * vx_view_run frame to do a full style-resolve-layout-render pass even
+ * when nothing else triggered an invalidation. Useful for embedders that:
+ *   - install pipeline hooks (vx_view_set_pipeline_hooks) and need to
+ *     force per-frame work for profiling / tracing,
+ *   - drive an animation timeline outside the engine and want to keep
+ *     the view repainting every frame,
+ *   - run smoke tests that need to validate multi-frame behavior in
+ *     a static-DOM scenario (the engine's dirty_ short-circuit otherwise
+ *     no-ops Update() after frame 1 — see techContext.md ≈L1035).
+ *
+ * Internally calls UpdateManager::Invalidate() (sets dirty_=true for
+ * the next frame). Routing target: target Document only — DevTool's
+ * UpdateManager runs an independent state machine and is NOT affected
+ * by this call.
+ *
+ * Thread-safety: main thread only (consistent with vx_view_load_*,
+ * vx_view_inject_input). dirty_ is a plain bool, not std::atomic.
+ *
+ * Idempotent — calling N times before the next Update is equivalent to
+ * a single call (single dirty_=true assignment).
+ *
+ * Returns:
+ *   VX_OK on success.
+ *   VX_ERROR_NULL_PARAM when view is NULL.
+ *   VX_ERROR_INVALID_STATE when no Document has been loaded yet (no
+ *     vx_view_load_html / vx_view_load_css). The call is a silent no-op
+ *     in that case; the next vx_view_update will still no-op the same
+ *     way. Same lazy-attach contract as vx_view_set_pipeline_hooks.
+ */
+VxResult vx_view_invalidate(VxView* view);
+
 /* ── DevTool Inspector C API (TASK-20260502-01 A.0.6) ─────────────
  *
  * Public thin wrapper over vx::devtool::SerializeDocument (D7=C 第二层).

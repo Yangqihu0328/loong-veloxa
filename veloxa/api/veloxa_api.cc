@@ -204,6 +204,17 @@ VxResult vx_view_update(VxView* view) {
   return VX_OK;
 }
 
+VxResult vx_view_invalidate(VxView* view) {
+  /* TASK-20260505-02 A.1 (B-G4 closure) — thin C wrapper. NULL-guard
+   * first; INVALID_STATE when update_manager_ is not yet initialized
+   * (fresh view / no LoadHTML run) — caller can safely call before
+   * LoadHTML and the contract is identical to vx_view_set_pipeline_hooks
+   * lazy-attach pattern. */
+  if (!view) return VX_ERROR_NULL_PARAM;
+  auto* app = reinterpret_cast<vx::Application*>(view);
+  return app->Invalidate() ? VX_OK : VX_ERROR_INVALID_STATE;
+}
+
 VxResult vx_view_run(VxView* view) {
   if (!view) return VX_ERROR_NULL_PARAM;
   auto* app = reinterpret_cast<vx::Application*>(view);
