@@ -2,7 +2,49 @@
 
 ## 当前阶段
 
-**空闲** — 等待新任务。
+**初始化** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅，待 `/plan`。
+
+**当前任务：** TASK-20260505-05 — `G1.1 CMake VX_RENDERER flag` / Level 2 / 分支 `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
+
+**任务范围（来自 [GLES 蓝图 plan §3.1](docs/plans/2026-05-05-gles-renderer-blueprint.md)）：**
+
+- **目标：** 落地 `VX_RENDERER=software|gles` CMake flag / 编译期分支 / `VX_RENDERER_GLES=1` / `VX_RENDERER_SOFTWARE=1` 宏 / 双 build 矩阵 ctest 验证
+- **文件影响：** 2 修改 + 1 创建
+  - 修改：`CMakeLists.txt`（顶层 / +~30 行 / option + 校验 + compile definitions）
+  - 修改：`veloxa/graphics/CMakeLists.txt`（+~20 行 / VX_RENDERER 分支 / pkg_check_modules egl + glesv2）
+  - 创建：`tests/cmake/vx_renderer_flag_test.sh`（CMake flag 验证脚本 / 双 build 矩阵）
+- **B5 默认行为：** `VX_RENDERER=software`（不退化既有 ctest 1302/1109 baseline）
+- **B6 嵌入策略：** 暂不实施（仅 flag 落地 / shader 静态嵌入留 G1.4）
+
+**Phase 0 audit 预跑（VAN 阶段 7/7 实证 + 1 plan 偏差点发现 ✅）：**
+
+| # | 项 | 结果 |
+|:-:|---|:-:|
+| 1 | 既有 `option()` flag pattern | ✅ 5 项 / 模式一致 |
+| 2 | 既有 `add_compile_definitions()` 范式 | ✅ 顶层 line 17 |
+| 3 | 既有 `pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)` pattern | ✅ graphics line 3 |
+| 4 | EGL/GLES dev headers 可用性 | ✅ libegl-dev 1.7 + libgles-dev 1.7 |
+| 5 | `find_package(OpenGLES/EGL)` Find 模块可用性 | ⚠️ **不可用** / **蓝图 plan §3.1 步骤 2 代码示例偏差** |
+| 6 | `pkg-config egl glesv2` 替代方案 | ✅ 可用 / 与既有 HARFBUZZ pattern 一致 |
+| 7 | `tests/cmake/` 目录 | ❌ 不存在 / 需 plan 阶段创建 |
+
+**plan 阶段需处理的偏差点（来自 P1.3 brainstorming 主动 push-back 模式 / 刚 TASK-05-04 落地）：**
+
+- ⚠️ **plan §3.1 步骤 2 代码示例偏差：** `find_package(OpenGLES REQUIRED)` + `find_package(EGL REQUIRED)` 在 CMake 4.2.3 **未自带 Find 模块**；建议 /plan 阶段切换到 `pkg_check_modules(GLESv2 REQUIRED glesv2)` + `pkg_check_modules(EGL REQUIRED egl)`，与既有 HARFBUZZ pattern 一致。
+- 偏差度评估：**显著但限定范围**（仅影响实施代码片段 / 不动整体架构 / 0 倒退既有 build）→ /plan 阶段处理（修正实施代码示例 + 加 systemPatterns 沉淀「CMake Find 模块 vs pkg-config 选择规约」候选）。
+
+**估时（plan ×0.6）：** ~2-3 h（来自 GLES 蓝图 plan §4 估时表 G1.1）/ 预期实测 ~30-60 min（极速区 0.2-0.4× 系数 / Level 2 + 单一目标 + 既有 pattern 复用）
+
+**前置验证通过 ✅（4 维度）：**
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ EGL 1.7 + GLES3 + pkg-config egl/glesv2 全在 |
+| 环境就绪 | ✅ CMake 4.2.3 + GCC 14+ + ctest 1302/1109 baseline |
+| 已有 artifact | ✅ 2 CMakeLists 已存在（待修改）/ tests/cmake/ 待创建（plan 阶段确认）|
+| 待处理事项关联 | ✅ activeContext「下一推荐任务」#1 + GLES 蓝图 plan §3.1 完整规格化 |
+
+**安全相关：** ❌ 否（仅构建系统 flag / 0 输入处理 / 0 新威胁面）
 
 **最近闭环：** TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / **dual-evidence 第 2 实证** / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）✅ 已归档闭环 / 分支 `feature/TASK-20260505-04-workflow-meta-batch` 已合并 main 并删除。
 

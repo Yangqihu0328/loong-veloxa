@@ -2,11 +2,47 @@
 
 ## 当前任务
 
-**🟢 空闲** — 等待新任务。
+### TASK-20260505-05：G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
 
-最近闭环：[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档（详见 archive-TASK-20260505-04.md）。
+- **当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+- **复杂度级别：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
+- **来源：** [GLES 蓝图 plan §3.1](../docs/plans/2026-05-05-gles-renderer-blueprint.md) + 用户 `/van G1.1 CMake VX_RENDERER flag 开始` 拍板
+- **安全相关：** ❌ 否（仅构建系统 flag / 0 输入处理 / 0 新威胁面）
+- **估时（plan ×0.6）：** ~2-3 h（GLES 蓝图 plan §4 估时表）/ 预期实测 ~30-60 min（极速区 0.2-0.4× / Level 2 + 既有 pattern 复用）
 
-下次推荐任务：见 [activeContext.md](activeContext.md) 「下一推荐任务」段（建议从 G1.1 CMake VX_RENDERER flag 开始 / 进入 G1 OpenGL ES 实施阶段）。
+**任务范围（来自 GLES 蓝图 plan §3.1）：**
+
+- **目标：** 落地 `VX_RENDERER=software|gles` CMake flag / 编译期分支 / `VX_RENDERER_GLES=1` 宏 / 双 build 矩阵 ctest 验证
+- **文件影响：** 2 修改 + 1 创建
+  - 修改：`CMakeLists.txt`（顶层 / +~30 行）
+  - 修改：`veloxa/graphics/CMakeLists.txt`（+~20 行）
+  - 创建：`tests/cmake/vx_renderer_flag_test.sh`（CMake flag 验证脚本）
+- **B5 默认行为：** `VX_RENDERER=software`（不退化既有 ctest 1302/1109 baseline）
+
+**Phase 0 audit 预跑（VAN 阶段 7/7 实证 + 1 plan 偏差点发现）：**
+
+详见 [activeContext.md Phase 0 audit 表](activeContext.md)。**关键偏差：** plan §3.1 步骤 2 `find_package(OpenGLES/EGL REQUIRED)` 在 CMake 4.2.3 未自带 Find 模块 → /plan 阶段切换到 `pkg_check_modules(GLESv2/EGL REQUIRED ...)` 与既有 HARFBUZZ pattern 一致。
+
+**前置验证通过 ✅（4 维度）：**
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ EGL 1.7 + GLES3 + pkg-config egl/glesv2 全在 |
+| 环境就绪 | ✅ CMake 4.2.3 + GCC 14+ + ctest 1302/1109 baseline |
+| 已有 artifact | ✅ 2 CMakeLists 已存在（待修改）|
+| 待处理事项关联 | ✅ activeContext「下一推荐任务」#1 + GLES 蓝图 plan §3.1 完整规格化 |
+
+**反复模式 0/8 抑制延续**（VAN 阶段预审）+ **第 5 任务连续保持反复模式 0 命中**
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm + 决策矩阵（B1 find_package vs pkg-config / B2 校验位置 / B3 双 build 矩阵 ctest 实施 / B4 反向探针策略 / B5 commit 粒度 / B6 P0 协议落地策略）。
+
+---
+
+## 上次任务（已归档闭环）
+
+[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档（详见 archive-TASK-20260505-04.md）。
 
 ---
 

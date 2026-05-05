@@ -2,11 +2,67 @@
 
 ## 当前任务
 
-**🟢 空闲** — 等待新任务。
+### TASK-20260505-05 — G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
 
-最近闭环：[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档。
+**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）/ Level 2 / 分支 `feature/TASK-20260505-05-cmake-vx-renderer-flag`
 
-下次推荐任务：见 [activeContext.md](activeContext.md) 「下一推荐任务」段。
+#### VAN 阶段产出（2026-05-05 ~18:45）
+
+- **任务类型：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
+- **任务范围：** 2 文件修改 + 1 文件创建
+  - 修改：`CMakeLists.txt`（顶层）
+  - 修改：`veloxa/graphics/CMakeLists.txt`
+  - 创建：`tests/cmake/vx_renderer_flag_test.sh`
+- **目标：** `VX_RENDERER=software|gles` CMake flag + 编译期分支 + 双 build 矩阵 ctest 验证
+
+#### VAN 前置验证清单（4 维度全通过 ✅）
+
+- ✅ 依赖可获取性：libegl-dev 1.7 + libgles-dev 1.7 + pkg-config egl/glesv2 全可用
+- ✅ 环境就绪：CMake 4.2.3 + GCC 14+ + ctest 1302/1109 baseline
+- ✅ 已有 artifact：2 CMakeLists 已存在（待修改）+ tests/cmake/ 待创建
+- ✅ 待处理事项关联：activeContext「下一推荐任务」#1 + GLES 蓝图 plan §3.1 完整规格化
+
+#### Phase 0 audit 预跑（7 项实证 / 1 plan 偏差点发现 ✅）
+
+| # | 项 | 结果 |
+|:-:|---|:-:|
+| 1 | 既有 `option()` flag pattern（5 项一致 / VX_BUILD_TESTS / VX_PLATFORM_SDL2 / VX_BUILD_DEVTOOL / etc）| ✅ |
+| 2 | 既有 `add_compile_definitions()` 范式（顶层 line 17）| ✅ |
+| 3 | 既有 `pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)` pattern（graphics line 3）| ✅ |
+| 4 | EGL/GLES dev headers 可用性（libegl-dev 1.7 + libgles-dev 1.7）| ✅ |
+| 5 | `find_package(OpenGLES/EGL)` Find 模块可用性（CMake 4.2.3 未自带）| ⚠️ **不可用 / 蓝图 plan §3.1 偏差** |
+| 6 | `pkg-config egl glesv2` 替代方案（与既有 HARFBUZZ pattern 一致）| ✅ |
+| 7 | `tests/cmake/` 目录（不存在 / 需创建）| ❌ → plan 阶段处理 |
+
+#### 偏差点（来自 brainstorming P1.3 主动 push-back 模式 / TASK-04 刚落地）
+
+**plan §3.1 步骤 2 代码示例需校正：**
+
+- **原 plan 推荐：** `find_package(OpenGLES REQUIRED)` + `find_package(EGL REQUIRED)`
+- **实际可行：** `pkg_check_modules(GLESv2 REQUIRED glesv2)` + `pkg_check_modules(EGL REQUIRED egl)`
+- **理由：** CMake 4.2.3 未自带 FindOpenGLES.cmake / FindEGL.cmake；既有 `pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)` 已是项目 pattern
+- **偏差度：** 显著但限定范围（仅影响实施代码片段 / 0 倒退既有 build / plan 整体架构不动）
+
+**触发模式：brainstorming.mdc P1.3 「Phase 0 grep 实证驱动主动 push-back 模式」**：(1) 蓝图 scope 已限定到 G1 ✅ (2) Phase 0 grep 发现偏差 ✅ (3) 偏差显著（找不到 Find 模块 vs 已有 pkg-config pattern 完全可用）✅ → **必须主动抛出 push-back ✅**
+
+#### 反复模式预防（VAN 阶段预审 0/8 命中）
+
+- ✅ #1 前置依赖未验证：4 维度全通过
+- ✅ #2 既有 pattern 不复用：识别出 HARFBUZZ pattern 可复用
+- ✅ #3 spec/plan 信息回归：发现 plan §3.1 偏差 + 提前在 VAN 标注 / 不靠 build 阶段事故触发
+- ✅ #8 spec 数据回归 audit：本任务无 spec 数据
+
+#### 估时（plan ×0.6）
+
+~2-3 h（GLES 蓝图 plan §4 估时表 G1.1）/ 预期实测 ~30-60 min（极速区 0.2-0.4× / Level 2 + 既有 pattern 复用 + 单一目标）
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（B1 find_package vs pkg-config / B2 校验位置 / B3 双 build 矩阵 ctest 实施 / B4 反向探针策略 / B5 commit 粒度 / B6 P0 协议落地策略 / 等）。
+
+---
+
+## 上次任务（已归档闭环）
+
+[TASK-20260505-04 工作流元任务批量落地](archive/archive-TASK-20260505-04.md) ✅ 已归档。详细产出见 archive-TASK-20260505-04.md。
 
 ---
 
