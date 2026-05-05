@@ -4,7 +4,7 @@
 
 ### TASK-20260505-04：工作流元任务批量落地（P1×10 + P2×4 跨任务沉淀批量固化）
 
-- **当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+- **当前阶段：** 🟢 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）
 - **复杂度级别：** Level 2-3 工作流元任务（沿用 [TASK-20260503-02 工作流元任务范式](memory-bank/archive/archive-TASK-20260503-02.md)）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-04-workflow-meta-batch`（基于 main `b085a85` ✅ 创建）
@@ -76,7 +76,46 @@
 /van（本阶段 ✅）→ /plan（规划 14 子项分组 + 优先级 + commit 策略）→ /build（实施 14 子项）→ /reflect → /archive
 ```
 
-**下一步：** `/plan` — 进入规划阶段，brainstorm 14 子项分组策略 + commit 拆分粒度 + 实施顺序。
+**下一步：** `/build` — 进入构建阶段，按 Phase B.1-B.6 文件聚合顺序逐 commit 落地（共 6 build commits + 1 finalize commit / 沿用 TASK-03-02 工作流元任务范式）。
+
+#### Plan 阶段产出（2026-05-05 ~17:50 / D8=A 自吃狗粮 / P0 协议「plan/spec docs 落盘即 commit」实践 / triple → quad-evidence 候选升级）
+
+**8/8 D 决策 1 次 AskQuestion all_recommended 锁定**（跨决策协同度 100% **第 13 次连续命中** / 累计 121/121）：
+
+| # | 决策项 | 选择 | 理由概要 |
+|:-:|---|---|---|
+| **D1** | commit 拆分粒度 | **B 6 commit / 文件** | 同文件 batch 收益 + git bisect 精度足够 + 14 项规模适配最优 |
+| **D2** | 实施顺序 | **A 文件聚合**（writing-plans 7 → systemPatterns 3 → git-workflow 2 → brainstorming 1 → main 1 → veloxa_api 1）| 与 D1=B 协同 ✅ / 沿用 TASK-03-02 范式 |
+| **D3** | P1.5 P0 协议文本形态 | **B 完整段 ~80-120 行** | 沿用既有 writing-plans 段式范本 / triple-evidence 应配完整规范 |
+| **D4** | TDD 适用性 | **A 文档调整模式** | 沿用 TASK-03-02 工作流元任务范式 / 无 ctest 验证 |
+| **D5** | P1.9 + P2.2 合并 | **B 分开** | 不同主题（粒度 vs LOC）/ DRY/单一职责 |
+| **D6** | P1.7 veloxa_api.h 位置 | **A 顶部 doc 段** | 与 P1.7 描述「头部 doc 段」一致 |
+| **D7** | 独立 spec | **B 仅 plan** | 沿用 TASK-03-02 范式 / 工作流元任务豁免 spec |
+| **D8** | P0 协议自吃狗粮 | **A 自吃狗粮** | plan + MB 单 commit / triple → quad-evidence 候选升级 |
+
+**主交付物（plan + Memory Bank ×3 / D8=A 自吃狗粮单 commit）：**
+
+- [`docs/plans/2026-05-05-workflow-meta-batch.md`](../docs/plans/2026-05-05-workflow-meta-batch.md) ~660 行 / 10 段全覆盖 / 7 phase + Phase 0 audit + ctest 矩阵 + 反复模式预防 + CP1+CP2
+
+**8 commits 时间线规划：**
+
+| # | type | 阶段 | 内容 |
+|:-:|---|---|---|
+| 0 | `chore(workflow)` | VAN（已 commit `3a1e610`）✅ | initialize TASK-20260505-04 |
+| 1 | `chore(workflow)` | **Plan 自吃狗粮（待 commit）** | plan + activeContext + tasks + progress 单 commit 落盘 |
+| 2 | `docs(writing-plans)` | Build B.1 | writing-plans.mdc 7 子项 |
+| 3 | `docs(systemPatterns)` | Build B.2 | systemPatterns.md 3 子项 |
+| 4 | `docs(git-workflow)` | Build B.3 | git-workflow.mdc 2 子项 |
+| 5 | `docs(brainstorming)` | Build B.4 | brainstorming.mdc 1 子项 |
+| 6 | `docs(main)` | Build B.5 | main.mdc 1 子项 |
+| 7 | `docs(api)` | Build B.6 | veloxa_api.h 1 子项 |
+| 8 | `chore(build)` | Build finalize | finalize MB state |
+
+**Phase 0 audit 实证（10/10 通过 ✅）：** writing-plans 1079 行 + brainstorming 161 行 + git-workflow 228 行 + main 148 行 + systemPatterns 3663 行 + veloxa_api.h 431 行 + TASK-03-02 工作流元任务范式参考 + doudec-evidence + V2=a triple-evidence + 既有完整段范本 + commit `1555cf4` 8 段范本实例源
+
+**反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持）
+
+**估时校准：** plan ×0.6 130-180 min → 实际 plan 阶段 ~30-40 min（含 brainstorm + 决策 + plan 文档 660 行 + MB 三件套）= 极速区 0.18-0.30× 系数（**比预期更快** / 工作流元任务范式高度复用 + 14 项 P1+P2 已成熟 / 决策矩阵 1 次锁定）
 
 ---
 

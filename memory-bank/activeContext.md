@@ -2,7 +2,46 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）VAN ✅，待 `/plan`。
+**规划完成** — TASK-20260505-04 工作流元任务批量落地（Level 2-3 工作流元任务 / 沿用 [TASK-20260503-02 范式](memory-bank/archive/archive-TASK-20260503-02.md)）VAN ✅ + Plan ✅，待 `/build`。
+
+**Plan 阶段产出（2026-05-05 ~17:50 / D8=A 自吃狗粮 / P0 协议「plan/spec docs 落盘即 commit」实践）：**
+
+- **8/8 D 决策 1 次 AskQuestion all_recommended 锁定**（跨决策协同度 100% **第 13 次连续命中** / dec → endec → doudec → 第 13 次 / 累计 121/121）：
+  - **D1-B** 6 commit / 文件（同文件 batch 收益 + git bisect 精度足够 + 14 项规模适配最优）
+  - **D2-A** 文件聚合实施顺序（writing-plans 7 → systemPatterns 3 → git-workflow 2 → brainstorming 1 → main 1 → veloxa_api 1）
+  - **D3-B** P1.5 P0 协议完整段 ~80-120 行（沿用既有 writing-plans 段式范本 / triple-evidence 应配完整规范）
+  - **D4-A** 文档调整模式（沿用 TASK-03-02 / 无 ctest 验证 / grep audit + Read 结构验证）
+  - **D5-B** P1.9 + P2.2 分开（不同主题 / 单一职责）
+  - **D6-A** P1.7 veloxa_api.h 顶部 `/* */` doc 段
+  - **D7-B** 仅 plan 无独立 spec（沿用 TASK-03-02 范式 / 工作流元任务豁免 spec）
+  - **D8-A** P0 协议自吃狗粮（plan + MB 单 commit / triple → **quad-evidence** 候选升级）
+
+- **主交付物（plan + Memory Bank ×3 / D8=A 自吃狗粮单 commit）：**
+  - `docs/plans/2026-05-05-workflow-meta-batch.md`（~660 行 / 10 段全覆盖 / 7 phase + Phase 0 audit + ctest 矩阵 + 反复模式预防 + CP1+CP2）
+  - `memory-bank/activeContext.md`（更新 Plan 阶段产出）
+  - `memory-bank/tasks.md`（加 Plan 阶段产出段）
+  - `memory-bank/progress.md`（加 Plan 阶段时间线）
+
+- **8 commits 时间线规划（D1=B 6 commit/文件 + D8=A plan dogfood）：**
+  - VAN（已 commit `3a1e610`）✅
+  - **Plan 自吃狗粮（待 commit / 含本 plan + MB 三件套）**
+  - Build B.1 docs(writing-plans) — 7 子项
+  - Build B.2 docs(systemPatterns) — 3 子项
+  - Build B.3 docs(git-workflow) — 2 子项
+  - Build B.4 docs(brainstorming) — 1 子项
+  - Build B.5 docs(main) — 1 子项
+  - Build B.6 docs(api) — 1 子项（lazy-attach contract 头部 doc）
+  - Build B.7 chore(build) finalize
+
+- **Phase 0 audit 10/10 实证 ✅**（writing-plans 1079 行 + brainstorming 161 行 + git-workflow 228 行 + main 148 行 + systemPatterns 3663 行 + veloxa_api.h 431 行 + TASK-03-02 工作流元任务范式参考 + doudec-evidence + V2=a triple-evidence + 既有完整段范本 + commit `1555cf4` 8 段范本实例源）
+
+- **estimaate（plan ×0.6）：** ~130-180 min / 预期实测 ~50-80 min（极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
+
+- **反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持）
+
+**当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / Level 2-3 工作流元任务 / 分支 `feature/TASK-20260505-04-workflow-meta-batch`
+
+**下一步：** `/build` — 进入构建阶段，按 Phase B.1-B.6 文件聚合顺序逐 commit 落地（共 6 build commits + 1 finalize commit）。
 
 **当前任务：** TASK-20260505-04 — `工作流元任务批量落地` / 分支 `feature/TASK-20260505-04-workflow-meta-batch`（基于 main `b085a85` ✅ 创建）
 
