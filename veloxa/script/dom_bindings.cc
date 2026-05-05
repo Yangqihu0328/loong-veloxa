@@ -10,7 +10,9 @@ extern "C" {
 #include "veloxa/core/css/enum_serialization.h"
 #include "veloxa/core/css/parser.h"
 #include "veloxa/core/css/property.h"
+#include "veloxa/core/dom/comment.h"
 #include "veloxa/core/dom/text.h"
+#include "veloxa/core/html/parser.h"
 #include "veloxa/foundation/strings/interned_string.h"
 #include "veloxa/foundation/strings/string.h"
 
@@ -466,6 +468,89 @@ JSValue ElementSetTextContent(JSContext* ctx, JSValueConst this_val,
   return JS_UNDEFINED;
 }
 
+// ----- B-G3 innerHTML setter (TASK-20260505-01 Phase B.1) -----
+//
+// Deep-clones `src` and its descendants into `target_doc`'s arena and
+// returns the cloned root. Comments are skipped (mirrors the children
+// getter — DevTool dogfood is the consumer). Returns nullptr if `src`
+// is neither Element nor Text (i.e. unsupported node type).
+//
+// Why deep clone (D2-C-deep-clone): Document::~Document destructs every
+// node in owned_nodes_ regardless of whether it was orphaned, so simply
+// transplanting nodes from a temporary parser Document into the target
+// would cause use-after-free when the parser doc destructs. See
+// docs/specs/2026-05-05-dombindings-r2-closure-design.md §5 R3.
+dom::Node* CloneNodeInto(dom::Node* src, dom::Document* target_doc) {
+  if (src->is_element()) {
+    auto* src_el = static_cast<dom::Element*>(src);
+    dom::Element* clone = target_doc->CreateElement(src_el->tag_id());
+    if (!src_el->id().empty()) {
+      clone->set_id(src_el->id());
+    }
+    for (const auto& attr : src_el->attributes()) {
+      clone->SetAttribute(attr.name, String(attr.value.view()));
+    }
+    for (const auto& cls : src_el->classes()) {
+      clone->AddClass(cls);
+    }
+    if (auto* decls = src_el->inline_declarations()) {
+      for (const auto& decl : *decls) {
+        clone->SetInlineDeclaration(decl.property, decl.value);
+      }
+    }
+    for (dom::Node* child = src_el->first_child(); child;
+         child = child->next_sibling()) {
+      dom::Node* child_clone = CloneNodeInto(child, target_doc);
+      if (child_clone) clone->AppendChild(child_clone);
+    }
+    return clone;
+  }
+  if (src->is_text()) {
+    auto* src_text = static_cast<dom::Text*>(src);
+    return target_doc->CreateText(String(src_text->data().view()));
+  }
+  // Comment / unknown — drop silently.
+  return nullptr;
+}
+
+JSValue ElementSetInnerHTML(JSContext* ctx, JSValueConst this_val,
+                            JSValueConst val) {
+  auto* el = GetElement(ctx, this_val);
+  if (!el) return JS_UNDEFINED;
+
+  auto* data = GetData(ctx);
+  if (!data || !data->doc) return JS_UNDEFINED;
+
+  const char* str = JS_ToCString(ctx, val);
+  if (!str) return JS_UNDEFINED;
+
+  // 1. Detach all current children of `el`. Their backing memory remains in
+  //    target_doc's arena (and will be reaped at Document destruction); we
+  //    only break the parent/sibling links so the new content takes over.
+  while (dom::Node* child = el->first_child()) {
+    el->RemoveChild(child);
+  }
+
+  // 2. Parse fragment into a throwaway Document. Inherits all of
+  //    vx::html::Parser's safety rails (kInlineStyleMaxValueLength,
+  //    blacklist keyword filtering, etc.).
+  dom::Document* temp_doc = vx::html::Parser::Parse(StringView(str));
+  JS_FreeCString(ctx, str);
+  if (!temp_doc) return JS_UNDEFINED;
+
+  // 3. Deep-clone each top-level child of temp_doc into target_doc and
+  //    append under `el`. Cloning happens *before* temp_doc is deleted so
+  //    we read from valid memory; the clones are wholly owned by target_doc.
+  for (dom::Node* child = temp_doc->first_child(); child;
+       child = child->next_sibling()) {
+    dom::Node* clone = CloneNodeInto(child, data->doc);
+    if (clone) el->AppendChild(clone);
+  }
+
+  delete temp_doc;
+  return JS_UNDEFINED;
+}
+
 // ----- addEventListener / removeEventListener -----
 
 JSValue ElementAddEventListener(JSContext* ctx, JSValueConst this_val, int argc,
@@ -824,6 +909,14 @@ void RegisterElementClass(JSContext* ctx) {
       MakeGetter(ctx, ElementGetTextContent, "get textContent"),
       MakeSetter(ctx, ElementSetTextContent, "set textContent"), 0);
   JS_FreeAtom(ctx, tc_atom);
+
+  // TASK-20260505-01 B-G3: innerHTML setter only (no getter MVP-B scope).
+  JSAtom inner_html_atom = JS_NewAtom(ctx, "innerHTML");
+  JS_DefinePropertyGetSet(
+      ctx, proto, inner_html_atom,
+      JS_UNDEFINED,
+      MakeSetter(ctx, ElementSetInnerHTML, "set innerHTML"), 0);
+  JS_FreeAtom(ctx, inner_html_atom);
 
   JSAtom style_atom = JS_NewAtom(ctx, "style");
   JS_DefinePropertyGetSet(

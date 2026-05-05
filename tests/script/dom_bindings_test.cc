@@ -395,6 +395,107 @@ TEST_F(DomBindingsTest, ChildrenIndexAccess) {
   EXPECT_EQ(r.value(), "nested");
 }
 
+// ----- B-G3 innerHTML setter (TASK-20260505-01 Phase B.1) -----
+//
+// Setter parses the HTML fragment via vx::html::Parser, then deep-clones the
+// parsed nodes into the target element's owning Document arena (D2-C-deep-
+// clone — required because Document::~Document destructs all owned_nodes_,
+// so transplanting nodes between arenas would cause use-after-free).
+
+TEST_F(DomBindingsTest, InnerHTMLSetReplacesContent) {
+  auto setup = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = '<span id=\"x\">ok</span>';"
+      "document.getElementById('box').children.length",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+  EXPECT_EQ(setup.value(), "1");
+
+  auto check = engine_.EvalGlobal(
+      "document.getElementById('x').tagName", "t.js");
+  ASSERT_TRUE(check.ok());
+  EXPECT_EQ(check.value(), "span");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetMultipleElements) {
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = "
+      "'<span id=\"a\"></span><span id=\"b\"></span><span id=\"c\"></span>';"
+      "document.getElementById('box').children.length",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "3");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetWithTextNodes) {
+  // Text content must persist as the cloned span's child Text node;
+  // textContent should round-trip.
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = '<span>hello</span>';"
+      "document.getElementById('box').children[0].textContent",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "hello");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetEmptyString) {
+  // box has 1 Text child from SetUp; setting empty must wipe everything.
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = '';"
+      "document.getElementById('box').children.length",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "0");
+
+  auto tc = engine_.EvalGlobal(
+      "document.getElementById('box').textContent", "t.js");
+  ASSERT_TRUE(tc.ok());
+  EXPECT_EQ(tc.value(), "");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetWithAttributes) {
+  // Attributes on cloned elements must round-trip via getAttribute.
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = "
+      "'<span id=\"y\" class=\"k\"></span>';"
+      "document.getElementById('y').getAttribute('class')",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "k");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetReentrant) {
+  // Two consecutive sets — second must wipe first and not leak nodes.
+  auto r = engine_.EvalGlobal(
+      "var box = document.getElementById('box');"
+      "box.innerHTML = '<span id=\"first\"></span>';"
+      "box.innerHTML = '<span id=\"second\"></span>';"
+      "box.children.length + ':' + box.children[0].id",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "1:second");
+}
+
+TEST_F(DomBindingsTest, InnerHTMLSetCleansOldChildren) {
+  // After set, the old "Hello" Text child must be gone. Engine's
+  // textContent getter returns the first DIRECT Text child only, so
+  // we assert via the new structure — children[0].textContent — and
+  // confirm the orphaned Text no longer surfaces (textContent returns
+  // "" because the first direct child is now the span, not a Text).
+  auto setup = engine_.EvalGlobal(
+      "document.getElementById('box').textContent",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+  EXPECT_EQ(setup.value(), "Hello");
+
+  auto r = engine_.EvalGlobal(
+      "document.getElementById('box').innerHTML = '<span>new</span>';"
+      "document.getElementById('box').children[0].textContent +"
+      "':' + document.getElementById('box').textContent",
+      "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "new:");
+}
+
 // ----- Lifecycle / multi-instance regression tests (TASK-20260418-01) -----
 
 TEST(DomBindingsLifecycleTest, JSClassIdStableAcrossBindings) {
