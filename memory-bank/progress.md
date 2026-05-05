@@ -2,118 +2,59 @@
 
 ## 当前任务
 
-### TASK-20260505-05 — G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
+**空闲** — 等待新任务。
 
-**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）/ Level 2 / 分支 `feature/TASK-20260505-05-cmake-vx-renderer-flag`
+---
 
-#### VAN 阶段产出（2026-05-05 ~18:45）
+## 上次任务（已归档闭环）
 
-- **任务类型：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
-- **任务范围：** 2 文件修改 + 1 文件创建
-  - 修改：`CMakeLists.txt`（顶层）
-  - 修改：`veloxa/graphics/CMakeLists.txt`
-  - 创建：`tests/cmake/vx_renderer_flag_test.sh`
-- **目标：** `VX_RENDERER=software|gles` CMake flag + 编译期分支 + 双 build 矩阵 ctest 验证
+### TASK-20260505-05 闭环摘要（2026-05-05 ~20:10 已归档）
 
-#### VAN 前置验证清单（4 维度全通过 ✅）
+**任务定位：** **G1.1 CMake `VX_RENDERER` flag** / Level 2 多文件构建系统改动 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**
 
-- ✅ 依赖可获取性：libegl-dev 1.7 + libgles-dev 1.7 + pkg-config egl/glesv2 全可用
-- ✅ 环境就绪：CMake 4.2.3 + GCC 14+ + ctest 1302/1109 baseline
-- ✅ 已有 artifact：2 CMakeLists 已存在（待修改）+ tests/cmake/ 待创建
-- ✅ 待处理事项关联：activeContext「下一推荐任务」#1 + GLES 蓝图 plan §3.1 完整规格化
+**总产出：**
 
-#### Phase 0 audit 预跑（7 项实证 / 1 plan 偏差点发现 ✅）
-
-| # | 项 | 结果 |
-|:-:|---|:-:|
-| 1 | 既有 `option()` flag pattern（5 项一致 / VX_BUILD_TESTS / VX_PLATFORM_SDL2 / VX_BUILD_DEVTOOL / etc）| ✅ |
-| 2 | 既有 `add_compile_definitions()` 范式（顶层 line 17）| ✅ |
-| 3 | 既有 `pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)` pattern（graphics line 3）| ✅ |
-| 4 | EGL/GLES dev headers 可用性（libegl-dev 1.7 + libgles-dev 1.7）| ✅ |
-| 5 | `find_package(OpenGLES/EGL)` Find 模块可用性（CMake 4.2.3 未自带）| ⚠️ **不可用 / 蓝图 plan §3.1 偏差** |
-| 6 | `pkg-config egl glesv2` 替代方案（与既有 HARFBUZZ pattern 一致）| ✅ |
-| 7 | `tests/cmake/` 目录（不存在 / 需创建）| ❌ → plan 阶段处理 |
-
-#### 偏差点（来自 brainstorming P1.3 主动 push-back 模式 / TASK-04 刚落地）
-
-**plan §3.1 步骤 2 代码示例需校正：**
-
-- **原 plan 推荐：** `find_package(OpenGLES REQUIRED)` + `find_package(EGL REQUIRED)`
-- **实际可行：** `pkg_check_modules(GLESv2 REQUIRED glesv2)` + `pkg_check_modules(EGL REQUIRED egl)`
-- **理由：** CMake 4.2.3 未自带 FindOpenGLES.cmake / FindEGL.cmake；既有 `pkg_check_modules(HARFBUZZ REQUIRED harfbuzz)` 已是项目 pattern
-- **偏差度：** 显著但限定范围（仅影响实施代码片段 / 0 倒退既有 build / plan 整体架构不动）
-
-**触发模式：brainstorming.mdc P1.3 「Phase 0 grep 实证驱动主动 push-back 模式」**：(1) 蓝图 scope 已限定到 G1 ✅ (2) Phase 0 grep 发现偏差 ✅ (3) 偏差显著（找不到 Find 模块 vs 已有 pkg-config pattern 完全可用）✅ → **必须主动抛出 push-back ✅**
-
-#### 反复模式预防（VAN 阶段预审 0/8 命中）
-
-- ✅ #1 前置依赖未验证：4 维度全通过
-- ✅ #2 既有 pattern 不复用：识别出 HARFBUZZ pattern 可复用
-- ✅ #3 spec/plan 信息回归：发现 plan §3.1 偏差 + 提前在 VAN 标注 / 不靠 build 阶段事故触发
-- ✅ #8 spec 数据回归 audit：本任务无 spec 数据
-
-#### 估时（plan ×0.6）
-
-~2-3 h（GLES 蓝图 plan §4 估时表 G1.1）/ 预期实测 ~30-60 min（极速区 0.2-0.4× / Level 2 + 既有 pattern 复用 + 单一目标）
-
-**下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（B1 find_package vs pkg-config / B2 校验位置 / B3 双 build 矩阵 ctest 实施 / B4 反向探针策略 / B5 commit 粒度 / B6 P0 协议落地策略 / 等）。
-
-#### Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min / 极速区 ~0.5-0.8× 子档）
-
-- **7/7 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% 第 14 次连续命中 / 累计 128/128 历史最高 streak 刷新）
-- **蓝图 plan §3.1 偏差校正（brainstorming P1.3 主动 push-back 首次实战 ✅）：** 3 处偏差（find_package / .sh 脚本 / 临时宏反向探针）→ plan §0.4 详细校正
-- **D7=A 自吃狗粮：** P0 协议「plan/spec docs 落盘即 commit」单 commit 落盘（plan + Memory Bank ×3 / quad → **quint-evidence 第 5 数据点**候选升级）
-- **主交付：** `docs/plans/2026-05-05-cmake-vx-renderer-flag.md`（~400 行 / 11 段全覆盖 / 含步骤 1-5 完整代码片段 + 双 build 矩阵 ctest + 4 沉淀候选）
-- **Phase 0 audit 7/7 实证 ✅** + **反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持 / 累计 19 模式连续 / 历史新高继续刷新）
-- **沉淀候选（4 项 P1）：** CMake 依赖引入时机 YAGNI / brainstorming P1.3 dual-evidence / writing-plans P1.6 dual-evidence / P0 协议 quint-evidence
-
-**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施。
-
-#### Build 阶段产出（2026-05-05 ~19:50 / 实测 ~25-35 min / 极速区 ~0.6-0.8× 子档）
-
-- **TDD 三阶完整 ✅**（RED 缺 include 失败 / GREEN 4/4 PASS ~0.2s / REFACTOR 抽单一真相源）
-- **3 commits 总计 +169 行 / 5 文件改动**：
-  - `bfe3127` feat(build): introduce VX_RENDERER flag with software default — 主交付 +169 行 / 4 文件
-  - `41ef50a` chore(plan): land plan + memory bank（P0 quint-evidence）
-  - `7642cae` chore(workflow): initialize VAN
-- **ctest 双 build 矩阵全 PASS ✅：**
-  - Matrix A (DEVTOOL=ON / software default): 1302 → **1303** ✅（+1 / 0 退化）
-  - Matrix B (DEVTOOL=OFF / software default): 1109 → **1110** ✅（+1 / 0 退化）
-  - Matrix C (DEVTOOL=ON / gles): configure + build + ctest **1303 PASS** ✅（D1=A 0 GLES dep）
-  - Matrix D (invalid): **FATAL_ERROR + rc=1** ✅（D5=A 自动化反向探针）
-- **REFACTOR 涌现亮点：** 验证逻辑抽到 `cmake/VxRenderer.cmake` 单一真相源（plan 未规划 / build 涌现 / 0 漂移风险 / smoke 直接 include 测试生产代码）
-- **LOC 实测 ×1.4**（plan 120 → 实际 168 / 命中 P2.2「LOC ×1.3-1.5 buffer」上限 ✅ / **自吃狗粮第 2 次实证 / dual-evidence 候选**）
-- **0 lint errors**（4 改动文件 ReadLints 全 ✅）
-- **反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程 / 累计 19 模式连续抑制 / 历史新高继续刷新）
-
-**Build 阶段 plan ×0.6 实测系数：** ~25-35 min vs plan ×0.6 ~30-45 min = **~0.6-0.8× 极速区**（含 build-gles 一次性 FetchContent 配置 ~3.5 min）
-
-**全任务总线（VAN + Plan + Build / 3 commits）：** ~50-70 min vs plan ×0.6 ~75-120 min = **~0.42-0.93× 极速区**（任务级）
-
-**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110
-
-**下一步：** `/reflect` — 进入回顾阶段，沉淀 4 项候选范式 + REFACTOR 涌现新模式。
-
-#### Reflect 阶段产出（2026-05-05 ~20:05 / 实测 ~10-15 min / 极速区 ~0.7-1.0× 子档）
-
-- **回顾文档：** [reflection-TASK-20260505-05.md](reflection/reflection-TASK-20260505-05.md)（~470 行 / Level 2 详细回顾 / 10 段 / 7 关键发现 + 12 改进建议）
-- **9 个 systemPatterns 沉淀全部已 reflect 阶段直接落地 ✅**（reflection 史上 systemPatterns 单任务沉淀数次高纪录 / 仅次于 TASK-05-04 的 5 段升级 + 2 段新增 + 1 段升级 = 8 项）：
-  - 跨决策协同度 100% **第 14 次连续命中**（128/128 streak 刷新 + 实施忠实度新维度）
-  - plan ×0.6 实测系数 **ennea-evidence**（第 9 数据点 + 三子档矩阵完整）
-  - brainstorming P1.3 主动 push-back **dual-evidence**（TASK-04 first + TASK-05 dual）
-  - writing-plans P1.6 spec vs code audit **dual-evidence**（TASK-04 first + TASK-05 dual）
+- **6 commits / +169 行代码 / 4 文件改动 / +1226 行文档** = **~1395 行总产出**（plan ~484 + reflect ~301 + sysPattern ~361 + writing-plans ~30 + MB ~50）
+- **9 个 systemPatterns 沉淀全部 reflect 阶段直接落地 ✅**（reflection 史上单任务沉淀次高纪录）：
+  - 跨决策协同度 100% 第 14 次连续命中（128/128 历史最高 streak / 实施忠实度新维度入库）
+  - plan ×0.6 ennea-evidence（第 9 数据点 + 实施类 Level 2 子档新增）
+  - brainstorming P1.3 主动 push-back dual-evidence（首次实战 / 3 偏差校正）
+  - writing-plans P1.6 spec vs code audit dual-evidence
   - **CMake 依赖引入时机 YAGNI 原则 first-evidence**（D1=A 实证）
-  - **ctest cmake -P stub probe 范式 first-evidence**（600-1200× 加速）
+  - **ctest cmake -P stub probe 范式 first-evidence**（600-1200× 加速 / 最小验证表面）
   - **REFACTOR 涌现单一真相源模式 first-evidence**（cmake/VxRenderer.cmake / plan 未规划 / build emergent）
-  - P0 协议「plan/spec docs 落盘即 commit」**quint-evidence**（quad → quint / 实施类任务首次实证 / 适用性矩阵 5 类全覆盖）
-  - LOC ×1.3-1.5 buffer **dual-evidence**（TASK-04 first ×1.30-1.76 + TASK-05 dual ×1.4 / 偏高根因细化）
-- **writing-plans.mdc P1.5 段升级 ✅**（quad-evidence 实证表 → quint-evidence 实证表 + 适用性矩阵）
-- **改进建议：** 12 项（P0×0 + P1×9 reflect 阶段全落地 + P2×3 累积下次工作流元任务）
-- **反复模式 0/8 抑制延续**（VAN + Plan + Build + Reflect 四阶段全程保持 / 累计 19 模式连续抑制 / 历史新高继续刷新）
+  - P0 协议 quint-evidence（quad → quint / 实施类首次实证 / 适用性矩阵 5 类全覆盖）
+  - LOC ×1.3-1.5 buffer dual-evidence（×1.4 命中 buffer 上限）
+- **writing-plans.mdc P1.5 段升级 ✅** — quad → quint-evidence 实证表 + 适用性矩阵
+- **7 范式里程碑：** quint-evidence + 14 次连续命中 + 128/128 streak + ennea-evidence + 实施忠实度新维度 + REFACTOR 涌现单一真相源 first-evidence + cmake -P stub probe 600-1200× 加速 first-evidence
 
-**全任务总线（含 Reflect）：** ~60-85 min vs plan ×0.6 ~75-120 min = **~0.5-0.85× 极速区**（含 Reflect / Level 2 实施类任务）
+**度量数据：**
 
-**下一步：** `/archive` — 进入归档阶段，沉淀 9 个范式 + 多个新里程碑（quint-evidence + 14 次连续命中 + ennea-evidence + 实施忠实度新维度 + REFACTOR 涌现单一真相源新模式）。
+| 阶段 | 估时（plan ×0.6）| 实测 | 系数 | 子档 |
+|---|:-:|:-:|:-:|---|
+| VAN | ~10-15 min | ~10 min | ~0.7-1.0× | 极速区 |
+| Plan | ~20-30 min | ~15-25 min | ~0.5-0.8× | 极速区 |
+| Build | ~30-45 min | ~25-35 min | ~0.6-0.8× | 极速区 |
+| Reflect | ~10-15 min | ~10-15 min | ~1.0× | 标准 |
+| Archive | ~5-10 min | ~10-15 min | ~1.0-1.5× | 标准 |
+| **总线** | **~75-120 min** | **~75-100 min** | **~0.6-1.0×** | **实施类 Level 2 子档 / ennea-evidence 第 9 数据点** |
+
+**ctest 双 build 矩阵全 PASS ✅：**
+- Matrix A (DEVTOOL=ON / software default): 1302 → **1303** ✅
+- Matrix B (DEVTOOL=OFF / software default): 1109 → **1110** ✅
+- Matrix C (DEVTOOL=ON / gles): configure + build + ctest **1303 PASS** ✅（D1=A 0 GLES dep）
+- Matrix D (invalid): **FATAL_ERROR + rc=1** ✅（D5=A 自动化反向探针）
+
+**新 ctest baseline 生效（main 分支）：**
+- DEVTOOL=ON / VX_RENDERER=software：**1303/1303**
+- DEVTOOL=OFF / VX_RENDERER=software：**1110/1110**
+- DEVTOOL=ON / VX_RENDERER=gles：**1303/1303**
+
+**反复模式抑制：** 0/8 全程 4 阶段保持（VAN + Plan + Build + Reflect）+ 累计 19 模式连续抑制 / 历史新高继续刷新
+
+**改进建议落实：** 12 项（P0×0 + P1×9 + P2×3）/ P1×9 reflect 阶段全直接落地 ✅ / P2×3 累积下次工作流元任务（累计 6 项 ≥ 4 阈值 ✅）
+
+**详见：** [archive-TASK-20260505-05.md](archive/archive-TASK-20260505-05.md)
 
 ---
 

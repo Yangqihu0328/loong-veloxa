@@ -2,97 +2,13 @@
 
 ## 当前任务
 
-### TASK-20260505-05：G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
-
-- **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
-- **归档文档：** [`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
-- **复杂度级别：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
-- **创建日期：** 2026-05-05
-- **分支：** `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
-- **来源：** [GLES 蓝图 plan §3.1](../docs/plans/2026-05-05-gles-renderer-blueprint.md) + 用户 `/van G1.1 CMake VX_RENDERER flag 开始` 拍板
-- **安全相关：** ❌ 否（仅构建系统 flag / 0 输入处理 / 0 新威胁面）
-- **估时（plan ×0.6）：** ~2-3 h（GLES 蓝图 plan §4 估时表）/ 预期实测 ~30-60 min（极速区 0.2-0.4× / Level 2 + 既有 pattern 复用）
-
-**任务范围（来自 GLES 蓝图 plan §3.1）：**
-
-- **目标：** 落地 `VX_RENDERER=software|gles` CMake flag / 编译期分支 / `VX_RENDERER_GLES=1` 宏 / 双 build 矩阵 ctest 验证
-- **文件影响：** 2 修改 + 1 创建
-  - 修改：`CMakeLists.txt`（顶层 / +~30 行）
-  - 修改：`veloxa/graphics/CMakeLists.txt`（+~20 行）
-  - 创建：`tests/cmake/vx_renderer_flag_test.sh`（CMake flag 验证脚本）
-- **B5 默认行为：** `VX_RENDERER=software`（不退化既有 ctest 1302/1109 baseline）
-
-**Phase 0 audit 预跑（VAN 阶段 7/7 实证 + 1 plan 偏差点发现）：**
-
-详见 [activeContext.md Phase 0 audit 表](activeContext.md)。**关键偏差：** plan §3.1 步骤 2 `find_package(OpenGLES/EGL REQUIRED)` 在 CMake 4.2.3 未自带 Find 模块 → /plan 阶段切换到 `pkg_check_modules(GLESv2/EGL REQUIRED ...)` 与既有 HARFBUZZ pattern 一致。
-
-**前置验证通过 ✅（4 维度）：**
-
-| 维度 | 结果 |
-|---|---|
-| 依赖可获取性 | ✅ EGL 1.7 + GLES3 + pkg-config egl/glesv2 全在 |
-| 环境就绪 | ✅ CMake 4.2.3 + GCC 14+ + ctest 1302/1109 baseline |
-| 已有 artifact | ✅ 2 CMakeLists 已存在（待修改）|
-| 待处理事项关联 | ✅ activeContext「下一推荐任务」#1 + GLES 蓝图 plan §3.1 完整规格化 |
-
-**反复模式 0/8 抑制延续**（VAN + Plan 阶段预审）+ **第 6 任务连续保持反复模式 0 命中** / 累计 19 模式连续抑制 / 历史新高继续刷新
-
-**Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min）：**
-
-- **7/7 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% **第 14 次连续命中** / 累计 128/128 历史最高 streak 刷新）：
-  - D1=A 暂不引入 GLES dep（YAGNI / G1.2 引入）
-  - D2=A 顶层 CMakeLists.txt 校验
-  - D3=B cmake -P 脚本（与 a14 一致）
-  - D4=B tests/smoke/ 路径
-  - D5=A 子进程 invalid assert 反向探针
-  - D6=A 仅 plan / 引用 GLES 蓝图 spec
-  - D7=A P0 协议单 commit（quint-evidence 第 5 数据点候选）
-
-- **蓝图 plan §3.1 偏差校正（brainstorming P1.3 主动 push-back 首次实战）：** 3 处偏差（find_package / .sh 脚本 / 临时宏反向探针）→ plan §0.4 详细校正
-
-- **主交付：**
-  - `docs/plans/2026-05-05-cmake-vx-renderer-flag.md`（~400 行 / 11 段全覆盖）
-  - Memory Bank ×3 更新
-
-**估时（plan ×0.6）：** ~65-100 min 总线（plan ~20-30 + build ~30-45 + reflect ~10-15 + archive ~5-10）= **预期总线极速区 0.36-0.55×**
-
-**沉淀候选（reflect 阶段 / 4 项 P1）：**
-1. systemPatterns 新段「CMake 依赖引入时机 YAGNI 原则」
-2. systemPatterns 升级「brainstorming P1.3 主动 push-back dual-evidence」
-3. systemPatterns 升级「writing-plans P1.6 spec vs code audit dual-evidence」
-4. P0 协议 quint-evidence 第 5 数据点（quad → quint 升级）
-
-**下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施。
-
-**Build 阶段产出（2026-05-05 ~19:50 / 实测 ~25-35 min）：**
-
-- **TDD 三阶完整 ✅**（RED 缺 include 失败 / GREEN 4/4 PASS / REFACTOR 抽 cmake/VxRenderer.cmake 单一真相源）
-- **3 commits 总计 +169 行 / 5 文件改动**（feat(build) bfe3127 主交付 / chore(plan) 41ef50a P0 / chore(workflow) 7642cae VAN）
-- **ctest 双 build 矩阵全 PASS：** Matrix A 1303/1303 / Matrix B 1110/1110 / Matrix C gles 1303 PASS / Matrix D invalid FATAL_ERROR
-- **REFACTOR 涌现：** `cmake/VxRenderer.cmake` 单一真相源（plan 未规划 / smoke 直接 include 测试生产代码 / 0 漂移风险）
-- **LOC 实测 ×1.4**（plan 120 → 实际 168 / 命中 P2.2 buffer ✅）
-- **0 lint errors** + **反复模式 0/8 抑制延续**（累计 19 模式连续 / 历史新高继续刷新）
-
-**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110
-
-**下一步：** `/reflect` — 进入回顾阶段，沉淀 4 项候选范式 + REFACTOR 涌现新模式。
-
-**Reflect 阶段产出（2026-05-05 ~20:05 / 实测 ~10-15 min）：**
-
-- **回顾文档：** [reflection-TASK-20260505-05.md](reflection/reflection-TASK-20260505-05.md)（10 段 / Level 2 详细回顾 / 7 关键发现）
-- **9 个 systemPatterns 沉淀全部已落地 ✅**（跨决策协同度 14 次 / plan ×0.6 ennea-evidence / brainstorming P1.3 dual / writing-plans P1.6 dual / CMake YAGNI / cmake -P stub probe / REFACTOR 涌现单一真相源 / P0 协议 quint / LOC ×1.3-1.5 dual）
-- **writing-plans.mdc P1.5 段升级 ✅**（quad → quint-evidence + 适用性矩阵）
-- **改进建议：** 12 项（P0×0 + P1×9 reflect 阶段全落地 + P2×3 累积下次工作流元任务）
-- **反复模式 0/8 抑制延续**（VAN + Plan + Build + Reflect 四阶段全程 / 累计 19 模式连续 / 历史新高继续刷新）
-- **回顾质量自评：** 4.7/5
-
-**下一步：** `/archive` — 进入归档阶段，沉淀 9 个范式 + 多个新里程碑。
+**空闲** — 等待新任务。
 
 ---
 
 ## 上次任务（已归档闭环）
 
-[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档（详见 archive-TASK-20260505-04.md）。
+[TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务 / 9 systemPatterns 沉淀 / 7 范式里程碑 / Level 2）](archive/archive-TASK-20260505-05.md) ✅ 已归档（详见 archive-TASK-20260505-05.md）。
 
 ---
 
