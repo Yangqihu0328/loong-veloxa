@@ -2,9 +2,65 @@
 
 ## 当前任务
 
-**空闲** — 准备接受新任务。
+### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
 
-**最近闭环（详 任务历史 §最新）：** 🎉 **MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3）+ TASK-20260505-02（B-G4）双任务连击实证 / 4/4 gap 全闭环。
+- **当前阶段：** 🟡 **初始化完成**（VAN ✅ → 待 `/plan`）
+- **复杂度级别：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
+- **来源：** [TASK-20260504-01 MVP-scope spec §3.3 + §11.2 #5](docs/specs/2026-05-04-mvp-scope.md) + 用户 `/van #1 MVP-C 核心 G1 OpenGL ES 蓝图 / 战略长期目标` 拍板
+- **安全相关：** ⚠️ **是** [安全相关] — GLES context 创建涉及 GPU 驱动 / EGL display 资源生命周期 / shader 编译错误处理 / GL extension 安全枚举
+- **工作流变体：** `/van → /plan（含 brainstorm + creative ×N 内联）→ /reflect → /archive` — **跳过独立 `/build` 阶段**（main.mdc Level 4 蓝图 V2=a 变体段）
+- **估时（plan ×0.6）：** ~25-40 h（V1=gles_only / V3=desktop_first / V4=co_design_boundary 综合）
+
+#### VAN 阶段产出（2026-05-05 ~16:25）
+
+**用户决策（5 个 V 决策 1 次 AskQuestion 全锁定 / 跨决策协同度 100% 第 11 次连续命中 / dec → endec-evidence 候选）：**
+
+| # | 决策 | 选择 | 含义 |
+|:-:|---|---|---|
+| **V1** | 范围设定 | **V1-A** GLES only | OpenGL ES 3.0+ 完整蓝图 / Vulkan 仅预留接口位置 |
+| **V2** | 蓝图深度 | **V2-A** pure_blueprint_a | V2=a 纯蓝图 / 不含 build / 用户后续套 N 个 Level 3 子任务 |
+| **V3** | 平台覆盖 | **V3-A** desktop_first | 桌面 SDL2+EGL/GLX 完整 + 嵌入式抽象接口预留（DRM/KMS 详设留 G2）|
+| **V4** | G2 DRM/KMS 关联 | **V4-A** co_design_boundary | G1 定义 Renderer/Surface 抽象 / G2 独立蓝图 / 划界协同 |
+| **V5** | SoftwareCanvas 共存 | **V5-A** vx_renderer_flag | VX_RENDERER=software\|gles CMake flag / SoftwareCanvas 作 fallback |
+
+#### 任务范围（VAN 锁定）
+
+| # | 子项 | 文件 | 估时 plan ×0.6 |
+|:-:|---|---|:-:|
+| **SPEC.1** | GLES 后端架构设计 spec（Renderer/Surface 抽象 / GLES Canvas trampolining / 资源生命周期 / shader 管线 / VX_RENDERER flag）| `docs/specs/2026-05-05-gles-renderer-blueprint-design.md`（~600-800 行）| ~5-8 h |
+| **PLAN.1** | 实施计划 plan（N 个 Level 3 实施子任务拆分 / Phase 0 audit / commit 范本 / ctest 矩阵）| `docs/plans/2026-05-05-gles-renderer-blueprint.md`（~800-1200 行）| ~3-5 h |
+| **CR.1** | creative-1（GL context 创建策略 / EGL/GLX/SDL2 三路径权衡 / context lost 处理）| `memory-bank/creative/creative-gles-context.md`（~200-300 行）| ~3-4 h |
+| **CR.2** | creative-2（GLES Canvas trampolining / Path 离屏 + tessellator / shader-based fill/stroke）| `memory-bank/creative/creative-gles-canvas.md`（~300-400 行）| ~5-7 h |
+| **CR.3** | creative-3（资源生命周期 / texture/buffer pool / context-lost recovery / glyph atlas GPU 化）| `memory-bank/creative/creative-gles-resources.md`（~250-350 行）| ~4-6 h |
+| **CR.4**（可选）| creative-4（VX_RENDERER flag CMake 设计 / dual-build CI 矩阵）| `memory-bank/creative/creative-gles-build-flag.md`（~150-200 行）| ~2-3 h |
+| **CR.5**（可选）| creative-5（性能基线协议 — GLES vs SoftwareCanvas / 60fps 验收 / dirty rect GPU 化）| `memory-bank/creative/creative-gles-perf.md`（~200-300 行）| ~3-4 h |
+| spec 同步 + Memory Bank 更新 | mvp-scope spec §C.2 + activeContext + progress + tasks | — | ~1-2 h |
+
+**总估时：** ~26-40 h plan ×0.6（蓝图主交付：spec ~600-800 行 + plan ~800-1200 行 + creative ×3-5 ~1100-1550 行 = ~2500-3550 行总文档）
+
+#### VAN 前置验证清单（4 维度全通过）
+
+- ✅ **依赖可获取性：** EGL + GLES3 dev headers + libgl1-mesa-dri 全部安装（Mesa 26.0.3 / `/usr/include/EGL/egl.h` + `/usr/include/GLES3/gl3.h`）
+- ✅ **环境就绪：** ctest DEVTOOL=ON 1302/1302 baseline / 既有 Graphics HAL 抽象（Canvas + Surface）作为蓝图基础
+- ✅ **已有 artifact：** `docs/specs/2026-04-05-graphics-platform-hal-design.md` 既有 Canvas 纯虚 + SoftwareCanvas impl 范式可复用 / TASK-20260430-04 DevTool 蓝图 + TASK-20260504-01 MVP-scope 蓝图 V2=a 范式可复用
+- ✅ **待处理事项关联：** spec §11.2 推荐 #5 / activeContext「下一推荐任务」#1（G1 OpenGL ES / L4 多 Phase / ~30-60+ h plan ×0.6）— 本任务即此候选立项
+
+#### 待 plan 阶段决策项（B 系列 / 在 brainstorm 内联）
+
+1. **B1: GL context 创建路径主推** — SDL2_GL_CreateContext / EGL 直接 / GLX 兼容 / 三路径同时支持？
+2. **B2: GLES Canvas 翻译策略** — 全 shader-based（SDF + tessellator）/ stencil buffer based / 混合（FillRect=shader + FillPath=tess）？
+3. **B3: glyph 渲染策略** — CPU 光栅化 + GPU 上传（沿用现有 GlyphCache）/ GPU SDF / FreeType 直接到 GL texture？
+4. **B4: dirty rect GPU 化** — 沿用 SoftwareCanvas 的 dirty rect / scissor + clear / framebuffer-based PartialPaint？
+5. **B5: VX_RENDERER 默认值** — software（兼容）/ gles（性能优先）/ auto（runtime 选择）？
+6. **B6: shader 资源管理** — 静态嵌入 .glsl 字符串 / SPIR-V 预编译 / 运行时 ShaderProgram cache？
+7. **B7: 性能验收基线** — 沿用既有 BM_Replay* benchmark / 新建 BM_GLESReplay* 对照 / 60fps frame budget 验收？
+8. **B8: G2 边界 audit** — Renderer/Surface 抽象需要哪些虚接口位置预留 DRM/KMS？
+
+#### 需要创意阶段的组件
+
+**✅ 需要 `/creative` 阶段**（蓝图任务 V2=a 内联 creative ×N） — 至少 3 个 creative 设计文档（CR.1-CR.3 强制 / CR.4-CR.5 可选 / 在 plan 内 brainstorm 阶段决定）。
 
 ---
 

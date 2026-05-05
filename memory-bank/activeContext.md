@@ -2,15 +2,44 @@
 
 ## 当前阶段
 
-**空闲** — 准备接受新任务。
+**初始化** — TASK-20260505-03 G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / Level 4 V2=a 蓝图任务）VAN ✅，待 `/plan`。
 
-**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。下一步推荐进入 MVP-C 战略目标（详 spec §11.2 推荐 G1 OpenGL ES 蓝图 / L4）或工作流元任务批量落地（累计 8 项 P1 待处理事项）。
+**VAN 阶段产出（2026-05-05 ~16:25）：**
+
+- **任务 ID：** TASK-20260505-03
+- **任务类型：** Level 4 V2=a 蓝图任务（沿用 [TASK-20260430-04 DevTool 蓝图](memory-bank/archive/archive-TASK-20260430-04.md) + [TASK-20260504-01 MVP-scope 蓝图](memory-bank/archive/archive-TASK-20260504-01.md) 范式）
+- **工作流变体：** `/van → /plan（含 brainstorm + creative ×N 内联）→ /reflect → /archive` — **跳过独立 `/build` 阶段**
+- **安全相关：** ⚠️ **是** — GLES context 创建涉及 GPU 驱动 / EGL display 资源生命周期 / shader 编译错误处理 / GL extension 安全枚举
+- **分支：** `feature/TASK-20260505-03-gles-renderer-blueprint`（基于 main `35e0486` ✅ 创建）
+- **5 个 V 决策已锁定**（VAN 阶段 1 次 AskQuestion all_recommended / **跨决策协同度 100% 第 11 次连续命中** / dec → **endec-evidence** 候选）：
+  - **V1-A** GLES only（OpenGL ES 3.0+ 完整蓝图 / Vulkan 仅预留接口位置）
+  - **V2-A** pure_blueprint_a（V2=a 纯蓝图 / 不含 build / 用户后续套 N 个 Level 3 子任务）
+  - **V3-A** desktop_first（桌面 SDL2+EGL/GLX 完整 + 嵌入式抽象接口预留 / DRM/KMS 详设留 G2）
+  - **V4-A** co_design_boundary（G1 定义 Renderer/Surface 抽象 / G2 独立蓝图 / 划界协同）
+  - **V5-A** vx_renderer_flag（VX_RENDERER=software\|gles CMake flag / SoftwareCanvas 作 fallback）
+- **估时（plan ×0.6）：** ~25-40 h（V1=gles_only / V3=desktop_first / V4=co_design_boundary 综合）
+- **主交付物预期：** spec（GLES 后端架构设计 / ~600-800 行）+ plan（N 个 Level 3 实施子任务拆分 / ~800-1200 行）+ creative ×3-5（GL context 创建 / Canvas trampolining / 资源生命周期 / shader 管线 / 性能基线协议）
+
+**前置验证通过 ✅（4 维度）：**
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ EGL + GLES3 dev headers + libgl1-mesa-dri 全部安装（Mesa 26.0.3）|
+| 环境就绪 | ✅ ctest DEVTOOL=ON 1302/1302 baseline / 既有 Graphics HAL 抽象（Canvas + Surface）作为蓝图基础 |
+| 已有 artifact | ✅ `docs/specs/2026-04-05-graphics-platform-hal-design.md` 既有 Canvas 纯虚 + SoftwareCanvas impl 范式可复用 |
+| 待处理事项关联 | ✅ spec §11.2 推荐 #5 / activeContext「下一推荐任务」#1（G1 OpenGL ES / L4 多 Phase / ~30-60+ h plan ×0.6）|
+
+**当前任务：** TASK-20260505-03 — `G1 OpenGL ES 硬件渲染后端蓝图` / Level 4 V2=a / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm + creative ×N 内联（V2=a 变体 / 蓝图主交付 = spec + plan + creative ×N）。
 
 ---
 
 ## 上次任务（已归档闭环）
 
 ### TASK-20260505-02 Performance Overlay 持续 invalidate 机制（Level 2）— ✅ 已归档（commit `33ebc99`）
+
+**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。本次启动 G1 OpenGL ES 蓝图即开启 MVP-C 战略主线。
 
 - **归档文档：** `memory-bank/archive/archive-TASK-20260505-02.md`（~408 行 / Level 2 详细归档 / 10 段 / 度量数据汇总表）
 - **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-02.md`（~280 行 / Level 2 详细回顾 / 8 段 / 8 改进建议 P0/P1/P2 全分级）
@@ -117,21 +146,21 @@
 
 ## 下一推荐任务（基于 spec §11.2 + §6.2 推荐立项顺序）
 
-> 🎉 **MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3）+ TASK-20260505-02（B-G4）双任务连击 / 4/4 gap 全闭环 / 用户已可基于完整 MVP-B 能力进入 MVP-C 战略目标。
+> 🚀 **TASK-20260505-03 G1 OpenGL ES 蓝图任务进行中**（VAN ✅ → 待 `/plan`）— 推荐序号已下移。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
-| **1** | **G1 OpenGL ES 硬件渲染后端蓝图**（核心目标 #2 嵌入式硬件加速主线 P0 第一刚需）| MVP-C 核心 | **L4 多 Phase 蓝图** | ~30-60+ h |
-| 2 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
-| 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| 4 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
-| 5 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 6 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 7 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 8 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| **进行中** | **G1 OpenGL ES 硬件渲染后端蓝图（TASK-20260505-03）** | MVP-C 核心 | **L4 V2=a 蓝图** | ~25-40 h |
+| 1 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
+| 2 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
+| 3 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
+| 4 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
+| 5 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
+| 6 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
+| 7 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
 | **元** | **工作流元任务批量落地**（累计 8 项 P1 待处理事项 — sept-evidence 已超固化阈值）| 工作流 | L2-3 | ~1-2 h |
 
-**用户决策点：** 下一任务建议从 #1（MVP-C 核心 P0 第一刚需 / 战略长期目标 / G1 OpenGL ES 蓝图）或 **元任务**（累计 8 项 P1 改进批量沉淀 / lazy-attach quad-evidence + 反复模式 #8 triple-evidence + plan/spec 落盘即 commit P0 升级 已达固化阈值）启动 / 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
+**当前焦点：** 进入 G1 OpenGL ES 蓝图阶段（V1=gles_only / V2=pure_blueprint_a / V3=desktop_first / V4=co_design_boundary / V5=vx_renderer_flag）/ 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
 
 ---
 

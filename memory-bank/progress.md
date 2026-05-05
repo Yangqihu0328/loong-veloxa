@@ -2,9 +2,39 @@
 
 ## 当前任务
 
-**空闲** — 准备接受新任务。
+### TASK-20260505-03 — G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）
 
-**最近闭环（保留供下游任务参考）：** **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / 双任务总投入 ~65 min vs plan ×0.6 ~285-365 min = 实测 0.18-0.23× 落极速区续延档 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。
+**当前阶段：** 🟡 **初始化完成**（VAN ✅ → 待 `/plan`）/ Level 4 V2=a 蓝图 / 分支 `feature/TASK-20260505-03-gles-renderer-blueprint`
+
+#### VAN 阶段产出（2026-05-05 ~16:25）
+
+- **任务类型：** Level 4 V2=a 蓝图任务（沿用 TASK-20260430-04 + TASK-20260504-01 范式 / 跳过独立 `/build` 阶段）
+- **5 个 V 决策已锁定**（1 次 AskQuestion all_recommended / **跨决策协同度 100% 第 11 次连续命中** / dec → **endec-evidence** 候选 / 累计 105/105）：
+  - **V1-A** GLES only（OpenGL ES 3.0+ 完整蓝图 / Vulkan 仅预留接口位置）
+  - **V2-A** pure_blueprint_a（V2=a 纯蓝图 / 不含 build / 用户后续套 N 个 Level 3 子任务）
+  - **V3-A** desktop_first（桌面 SDL2+EGL/GLX 完整 + 嵌入式抽象接口预留 / DRM/KMS 详设留 G2）
+  - **V4-A** co_design_boundary（G1 定义 Renderer/Surface 抽象 / G2 独立蓝图 / 划界协同）
+  - **V5-A** vx_renderer_flag（VX_RENDERER=software\|gles CMake flag / SoftwareCanvas 作 fallback）
+- **8 项 B 决策待 plan brainstorm 阶段锁定**（B1 GL context 路径 / B2 Canvas 翻译策略 / B3 glyph 渲染 / B4 dirty rect GPU / B5 VX_RENDERER 默认 / B6 shader 资源管理 / B7 性能验收基线 / B8 G2 边界 audit）
+
+#### VAN 前置验证清单（4 维度全通过）
+
+- ✅ **依赖可获取性：** EGL + GLES3 dev headers + libgl1-mesa-dri 全部安装（Mesa 26.0.3）
+- ✅ **环境就绪：** ctest DEVTOOL=ON 1302/1302 baseline / 既有 Graphics HAL 抽象（Canvas + Surface）作为蓝图基础
+- ✅ **已有 artifact：** `docs/specs/2026-04-05-graphics-platform-hal-design.md` 既有 Canvas 纯虚 + SoftwareCanvas impl 范式可复用
+- ✅ **待处理事项关联：** spec §11.2 推荐 #5 / activeContext「下一推荐任务」#1（G1 OpenGL ES / L4 多 Phase / ~30-60+ h plan ×0.6）
+
+**估时（plan ×0.6）：** ~25-40 h（蓝图主交付：spec ~600-800 行 + plan ~800-1200 行 + creative ×3-5 ~1100-1550 行 = ~2500-3550 行总文档）
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm B1-B8 + creative ×N 内联。
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260505-02 闭环摘要（2026-05-05 ~16:15 已归档）
+
+> **🎉 MVP-B 100% 闭环里程碑达成** — TASK-20260505-01（B-G1+G2+G3 / DomBindings R2）+ TASK-20260505-02（B-G4 / vx_view_invalidate ABI）双任务连击实证 / 4/4 gap 全闭环 / 双任务总投入 ~65 min vs plan ×0.6 ~285-365 min = 实测 0.18-0.23× 落极速区续延档 / dogfood 视觉链路完整恢复 / 5 件套 dogfood smoke 100% PASS。
 
 详细产出已迁移到 [archive-TASK-20260505-02.md](archive/archive-TASK-20260505-02.md)（408 行 / Level 2 详细归档 / 10 段）+ [reflection-TASK-20260505-02.md](reflection/reflection-TASK-20260505-02.md)（280 行 / Level 2 详细回顾）。
 
