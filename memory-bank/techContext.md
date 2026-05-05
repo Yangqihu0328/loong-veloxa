@@ -481,12 +481,15 @@ cmake --build build -j
 - JPEG：libjpeg-turbo，RGB→RGBA（alpha=255）
 - ImageCache：路径去重缓存，handle-based 查找
 
-### QuickJS DOM 绑定（TASK-20260414-01 新增）
-- DomBindings::Bind(ctx, doc, em) 注册 document.getElementById + Element 类 + Style proxy
-- Element 属性：tagName（只读）、id（只读）、textContent（读写）、style（getter 返回 proxy）
+### QuickJS DOM 绑定（TASK-20260414-01 新增 / TASK-20260505-01 R2 收口扩展）
+- DomBindings::Bind(ctx, doc, em) 注册 document.getElementById + Element 类 + Style proxy + Children 类（HTMLCollection-like，TASK-20260505-01）
+- Element 属性：tagName（只读）、id（只读）、textContent（读写）、style（getter 返回 proxy）、**children（getter 返回 HTMLCollection-like array-like，TASK-20260505-01 B-G1）**、**innerHTML（setter only，TASK-20260505-01 B-G3）**
 - Element 方法：getAttribute、setAttribute、addEventListener、removeEventListener
 - Style proxy：7 个 CSS 属性的 camelCase setter，通过 CssParser::ParseDeclarationList 解析
 - addEventListener 通过 JS_DupValue 保持 callback 引用，TrackedCallbacks 在 Unbind 时释放
+- **MapJsEventName**（TASK-20260505-01 B-G2 audit）：JS event name 字符串 → vx::event::EventType 枚举映射，包含 10 直接映射（pointer*/key*/touch*/focus*）+ 4 alias（click/mouseup → kPointerUp [W3C release 语义]，mousedown → kPointerDown，mousemove → kPointerMove）。Veloxa EventType 是单一 pointer 模型（无 kClick/kMouseDown 独立枚举）
+- **innerHTML setter 实现策略：D2-C-deep-clone**（TASK-20260505-01 Phase 0 audit 锁定）— 复用 vx::html::Parser 解析 fragment 到临时 Document，再通过 `CloneNodeInto` helper 把节点深拷贝到 target Document arena。**禁止 transplant 跨 Document arena**（Document::~Document 调用所有 owned_nodes_ 析构，转移指针会导致 use-after-free）。CloneNodeInto helper 已就位，未来 cloneNode/cloneNodeDeep/Range/Fragment 等 API 可直接复用。
+- **HTMLCollection-like proxy 生命周期：** `s_children_class_id` 进程级 idempotent 注册（与 Style proxy 同模式）；`ChildrenOpaque{length}` 单字段 opaque slot；构造时 snapshot 迭代 Element 子节点 + 跳过 Text/Comment + 通过 `JS_SetPropertyUint32` 直接挂数字索引属性 + `length` getter 从 opaque 读取。**非 live**（refresh 需重读 `el.children`）
 
 ## Event System 实现经验（2026-04-05）
 
