@@ -14,10 +14,22 @@ else()
   message(STATUS "SDL2 found via CMake config (target SDL2::SDL2)")
 endif()
 
+# EGL + GLESv2 dependencies — only needed when the GLES renderer is
+# selected, since Sdl2EGLDisplay (the only consumer in this target) is
+# compiled-in unconditionally but its symbols are only linked through when
+# downstream code instantiates it. We declare the dep at sdl2/ scope so
+# software-only builds still pay the link cost (negligible) but no other
+# subdirectory pulls EGL/GLES into its compile/link line. See
+# cmake/VxRenderer.cmake for the VX_RENDERER flag plumbing.
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(VX_EGL REQUIRED IMPORTED_TARGET egl)
+pkg_check_modules(VX_GLESV2 REQUIRED IMPORTED_TARGET glesv2)
+
 add_library(vx_platform_sdl2 STATIC
   sdl2_input_translate.cc
   sdl2_window_surface.cc
   sdl2_event_loop.cc
+  sdl2_egl_display.cc
 )
 
 target_include_directories(vx_platform_sdl2 PUBLIC
@@ -26,7 +38,7 @@ target_include_directories(vx_platform_sdl2 PUBLIC
 
 target_link_libraries(vx_platform_sdl2
   PUBLIC vx_platform SDL2::SDL2
-  PRIVATE vx_foundation
+  PRIVATE vx_foundation PkgConfig::VX_EGL PkgConfig::VX_GLESV2
 )
 
 target_compile_features(vx_platform_sdl2 PUBLIC cxx_std_17)

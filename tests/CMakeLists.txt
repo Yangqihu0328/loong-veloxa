@@ -385,6 +385,18 @@ if(VX_PLATFORM_SDL2)
   gtest_discover_tests(sdl2_event_loop_test
     PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=dummy")
 
+  # Sdl2EGLDisplay (G1.2): only built when the GLES renderer backend is
+  # selected, since the underlying class depends on EGL/GLESv2. The
+  # SDL_VIDEODRIVER=offscreen driver routes GL through Mesa swrast EGL so
+  # SDL_GL_CreateContext can attach a real GLES 3.0+ context on headless CI.
+  if(VX_RENDERER STREQUAL "gles")
+    add_executable(sdl2_egl_display_test platform/sdl2_egl_display_test.cc)
+    target_link_libraries(sdl2_egl_display_test
+      PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+    gtest_discover_tests(sdl2_egl_display_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+  endif()
+
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
   # with auto-quit so it self-terminates. Exercises the full create / load /
   # run / quit / destroy path against a real SDL2 backend.
