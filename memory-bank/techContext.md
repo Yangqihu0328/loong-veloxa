@@ -1208,3 +1208,57 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - creative ×3：context / canvas / resources（详 archive 文档）
 - 归档：[`memory-bank/archive/archive-TASK-20260505-03.md`](archive/archive-TASK-20260505-03.md)
 
+---
+
+## GLES 蓝图实施落地节点（TASK-20260505-05 G1.1 + TASK-20260505-06 G1.2 archive 入库）
+
+### G1.1 CMake `VX_RENDERER` flag（已落地 / TASK-05-05 archive）
+
+- 顶层 `CMakeLists.txt` include `cmake/VxRenderer.cmake` / 编译期分流 software / gles 后端
+- `VX_RENDERER_SOFTWARE=1` / `VX_RENDERER_GLES=1` 二选一互斥编译定义
+- 无运行时分支 / 无 EGL/GLES dep 引入（D1=A YAGNI 推迟点）
+- 三 build 矩阵 ctest 全绿（DEVTOOL ×2 × VX_RENDERER ×2）
+
+### G1.2 GLESDisplay + Sdl2EGLDisplay 实施（已落地 / TASK-05-06 archive）
+
+- `veloxa/platform/gles_display.h` 11 virtual 抽象（B8 G2 桥接接口预留）
+- `veloxa/platform/sdl2/sdl2_egl_display.{h,cc}` SDL2 子类实施
+- **EGL/GLES dep 正式接入（G1.1 D1=A 推迟点正式落地）：**
+  - `pkg_check_modules(VX_EGL REQUIRED IMPORTED_TARGET egl)` — EGL 1.5（Mesa 24.x / Debian/Ubuntu libegl-dev 1.7.0+）
+  - `pkg_check_modules(VX_GLESV2 REQUIRED IMPORTED_TARGET glesv2)` — GLES 3.2（Mesa 24.x / Debian/Ubuntu libgles-dev 1.7.0+）
+  - 声明位置 `veloxa/platform/sdl2/CMakeLists.txt`（与 HARFBUZZ pattern 一致）/ PRIVATE link 限定到 `vx_platform_sdl2` / 顶层 0 修改
+
+### Mesa headless 测试环境
+
+- **SDL_VIDEODRIVER=offscreen**（SDL2 2.0.16+ 原生支持）→ Mesa swrast EGL 路径 / 0 X11/Wayland 依赖 / CI 友好
+- **Mesa drivers 实测可用**（系统 Debian/Ubuntu 标准包）：
+  - `swrast_dri.so`（CPU rasterizer / headless 主路径）
+  - `kms_swrast_dri.so`（KMS swrast / 备路径）
+  - `libEGL_mesa.so`（EGL 1.5 实施）
+- **测试 fixture 双保险**：`::testing::Environment` 全局 `SDL_setenv("SDL_VIDEODRIVER", "offscreen", 1)` + ctest `PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen"` / 0 fallback / 100% 可重现
+
+### Mesa headless 驱动严格性差异（TASK-05-06 reflect P2 沉淀）
+
+| 行为 | Mesa swrast | 真实 GPU（嵌入式 / 桌面）|
+|---|:-:|:-:|
+| `SDL_GL_CONTEXT_MAJOR_VERSION=99` 请求 | ⚠️ silent fallback 到 ES 3.0 | ✅ SDL_GL_CreateContext 失败 |
+| 非法 attribute 组合 | ⚠️ 通常 silent fallback | ✅ 通常 reject |
+| `nullptr` window | ✅ Initialize 失败 | ✅ Initialize 失败 |
+
+**反向探针分层（D4=C 范式 + 驱动严格性分层 first-evidence）：**
+- **驱动无关层**（nullptr / 非法 enum / 不变量违反）— 必选 / 100% CI 标配 / Mesa headless 可信
+- **驱动严格层**（非法版本号 / 非法 attribute）— P3 优化 / 仅 GPU CI 可信 / Mesa headless 不可信
+
+### 性能基线（实测 / TASK-05-06）
+
+- `Sdl2EGLDisplay::Initialize()`：~us-ms 级（含 SDL_GL_CreateContext + glGetString + eager ext cache 构造）
+- `HasExtension(name)` O(1) 查询：~ns 级（std::unordered_set / 不影响热路径）
+- ext_cache_ 内存常驻：~2-10 KB（Mesa swrast 实测 ~50-100 extensions）
+- 8 TEST_F 总耗时：~150ms（含 8× SDL_Init + window create + GL context create + cleanup）
+
+### 交叉引用
+
+- G1.1 归档：[`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
+- G1.2 归档：[`memory-bank/archive/archive-TASK-20260505-06.md`](archive/archive-TASK-20260505-06.md)
+- G1.2 实施计划：[`docs/plans/2026-05-05-gles-display-sdl2-egl.md`](../docs/plans/2026-05-05-gles-display-sdl2-egl.md)
+
