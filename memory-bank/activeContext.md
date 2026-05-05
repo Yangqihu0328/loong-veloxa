@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾完成** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅，待 `/archive`。
+**归档中** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive 进行中。
 
 **Reflect 阶段产出（2026-05-05 ~20:05 / 实测 ~10-15 min）：**
 
@@ -194,10 +194,13 @@
 
 - **P1 #1（来自 TASK-20260505-04 reflection §5 #1 / 新发现）`writing-plans.mdc` 「附录：LOC 估算 — 隐性附加工作类型清单」段补「表格密度系数」子条** — plan 阶段对「commit body 范本表」+「触发条件矩阵」+「实证表」+「交叉引用清单」类结构化内容的行数 underestimate（单段 4 表格 ~30-40 行 / plan 仅按段长 base 估算未计表格行数 / TASK-05-04 P2.1 段实际 75 行 vs 估 30 行 = ×2.5 偏差）；建议加表格密度系数子条：散文段 ~30-40 行 / 单表格 ~5-15 行/表 / **多表段（≥ 4 表格）×2-2.5 base 行数**。**预估**：~10 min。
 
-### 长期沉淀（P2 — 不强制 archive / 累计 2 项）
+### 长期沉淀（P2 — 不强制 archive / 累计 5 项）
 
 - **P2 #1（来自 TASK-20260505-04 reflection §5 #2 / 新发现）`git-workflow.mdc` 「commit body Source 溯源 + 实测数据格式」段补「实测数据采集协议」子条** — TASK-05-04 Phase B.6 commit body 写「+44 行」/ 实际 git 显示 +39 行 / -5 行偏差，根因 commit body 写在 add 之前 / 凭目测估算 / 未做 `git diff --cached --stat` 二次确认；建议加「实测数据采集协议」子条：commit 前必须运行 `git diff --cached --stat` 实测后再写 commit body 数据。**预估**：~10 min。
 - **P2 #2（来自 TASK-20260505-04 reflection §8.2 / 新发现）systemPatterns 「lazy-attach C ABI 容错模式 quad-evidence」段加 TASK-05-04 头部 doc 落地标注** — TASK-05-04 P1.7-half 在 `veloxa/api/veloxa_api.h` 顶部 doc 段追加「lazy-attach contract」节统一引用 4 个 quad-evidence ABI（vx_view_set_pipeline_hooks / vx_view_attach_devtool / vx_devtool_get_console_output / vx_view_invalidate）；建议在 systemPatterns quad-evidence 段加「头部 doc 已落地」标注 + 引用 commit `4765224`。**预估**：~5 min。
+- **P2 #3（来自 TASK-20260505-05 reflection §6 #10 / 新发现）`writing-plans.mdc`「ctest 守门脚本设计」段加「最小验证表面」原则 + stub probe 范式** — TASK-05 G1.1 cmake -P stub probe（`cmake_minimum_required + project(NONE) + include(<module>)` 3 行）实测 ~50ms/scenario / 全项目 configure ~30-60s/scenario / 加速比 ~600-1200×；建议 writing-plans 段加：测试 cmake module 应优先 stub probe 而非全项目 configure；stub probe 适用条件 = 待测 module 自治（无外部 module 依赖 / 仅校验 STATUS 文本）。**预估**：~15 min。
+- **P2 #4（来自 TASK-20260505-05 reflection §6 #11 / 新发现）`writing-plans.mdc`「文件结构」段加 checklist「是否需要新 cmake/ 子目录抽 module？」** — TASK-05 G1.1 plan 阶段未规划 cmake/VxRenderer.cmake / build 阶段 REFACTOR 涌现单一真相源 / 顶层 +8 行（vs plan 估 +20）；建议 writing-plans 「文件结构」段加 checklist 项：「是否有可能在 build 阶段抽出 cmake/ 子目录共享 module？（信号：≥ 20 行 cmake 逻辑 + 多处 include 候选 + 测试需独立 include）」。**预估**：~10 min。
+- **P2 #5（来自 TASK-20260505-05 reflection §6 #12 / 新发现）`writing-plans.mdc`「FetchContent 缓存命中策略」子条** — TASK-05 G1.1 build-gles 配置首次 FetchContent harfbuzz/freetype/sdl/libpng/zlib ~3.5 min 时间损耗 / plan §3 步骤 4 未提前规避；建议 writing-plans 加 plan 阶段 audit 项：「新 build 配置是否首次 FetchContent？是否可复用既有 build/_deps/ 缓存？」+ 推荐 `cmake -B build-gles --reuse-deps=build-default` （或类似 incremental reconfigure 技巧）。**预估**：~10 min。
 
 ---
 

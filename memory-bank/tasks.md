@@ -4,7 +4,8 @@
 
 ### TASK-20260505-05：G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
 
-- **当前阶段：** 🟡 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
+- **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+- **归档文档：** [`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
 - **复杂度级别：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
