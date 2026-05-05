@@ -4,7 +4,7 @@
 
 ### TASK-20260505-05：G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务）
 
-- **当前阶段：** 🟡 **规划完成**（VAN ✅ + Plan ✅ → 待 `/build`）
+- **当前阶段：** 🟡 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
 - **复杂度级别：** Level 2（多文件构建系统改动 / 需求清晰 / 1 plan 偏差待校正）
 - **创建日期：** 2026-05-05
 - **分支：** `feature/TASK-20260505-05-cmake-vx-renderer-flag`（基于 main `0a90481` ✅ 创建）
@@ -62,6 +62,19 @@
 4. P0 协议 quint-evidence 第 5 数据点（quad → quint 升级）
 
 **下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施。
+
+**Build 阶段产出（2026-05-05 ~19:50 / 实测 ~25-35 min）：**
+
+- **TDD 三阶完整 ✅**（RED 缺 include 失败 / GREEN 4/4 PASS / REFACTOR 抽 cmake/VxRenderer.cmake 单一真相源）
+- **3 commits 总计 +169 行 / 5 文件改动**（feat(build) bfe3127 主交付 / chore(plan) 41ef50a P0 / chore(workflow) 7642cae VAN）
+- **ctest 双 build 矩阵全 PASS：** Matrix A 1303/1303 / Matrix B 1110/1110 / Matrix C gles 1303 PASS / Matrix D invalid FATAL_ERROR
+- **REFACTOR 涌现：** `cmake/VxRenderer.cmake` 单一真相源（plan 未规划 / smoke 直接 include 测试生产代码 / 0 漂移风险）
+- **LOC 实测 ×1.4**（plan 120 → 实际 168 / 命中 P2.2 buffer ✅）
+- **0 lint errors** + **反复模式 0/8 抑制延续**（累计 19 模式连续 / 历史新高继续刷新）
+
+**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110
+
+**下一步：** `/reflect` — 进入回顾阶段，沉淀 4 项候选范式 + REFACTOR 涌现新模式。
 
 ---
 

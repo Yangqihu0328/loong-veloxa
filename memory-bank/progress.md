@@ -69,6 +69,31 @@
 
 **下一步：** `/build` — 进入构建阶段，按 plan §3 步骤 1-5 实施。
 
+#### Build 阶段产出（2026-05-05 ~19:50 / 实测 ~25-35 min / 极速区 ~0.6-0.8× 子档）
+
+- **TDD 三阶完整 ✅**（RED 缺 include 失败 / GREEN 4/4 PASS ~0.2s / REFACTOR 抽单一真相源）
+- **3 commits 总计 +169 行 / 5 文件改动**：
+  - `bfe3127` feat(build): introduce VX_RENDERER flag with software default — 主交付 +169 行 / 4 文件
+  - `41ef50a` chore(plan): land plan + memory bank（P0 quint-evidence）
+  - `7642cae` chore(workflow): initialize VAN
+- **ctest 双 build 矩阵全 PASS ✅：**
+  - Matrix A (DEVTOOL=ON / software default): 1302 → **1303** ✅（+1 / 0 退化）
+  - Matrix B (DEVTOOL=OFF / software default): 1109 → **1110** ✅（+1 / 0 退化）
+  - Matrix C (DEVTOOL=ON / gles): configure + build + ctest **1303 PASS** ✅（D1=A 0 GLES dep）
+  - Matrix D (invalid): **FATAL_ERROR + rc=1** ✅（D5=A 自动化反向探针）
+- **REFACTOR 涌现亮点：** 验证逻辑抽到 `cmake/VxRenderer.cmake` 单一真相源（plan 未规划 / build 涌现 / 0 漂移风险 / smoke 直接 include 测试生产代码）
+- **LOC 实测 ×1.4**（plan 120 → 实际 168 / 命中 P2.2「LOC ×1.3-1.5 buffer」上限 ✅ / **自吃狗粮第 2 次实证 / dual-evidence 候选**）
+- **0 lint errors**（4 改动文件 ReadLints 全 ✅）
+- **反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程 / 累计 19 模式连续抑制 / 历史新高继续刷新）
+
+**Build 阶段 plan ×0.6 实测系数：** ~25-35 min vs plan ×0.6 ~30-45 min = **~0.6-0.8× 极速区**（含 build-gles 一次性 FetchContent 配置 ~3.5 min）
+
+**全任务总线（VAN + Plan + Build / 3 commits）：** ~50-70 min vs plan ×0.6 ~75-120 min = **~0.42-0.93× 极速区**（任务级）
+
+**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110
+
+**下一步：** `/reflect` — 进入回顾阶段，沉淀 4 项候选范式 + REFACTOR 涌现新模式。
+
 ---
 
 ## 上次任务（已归档闭环）

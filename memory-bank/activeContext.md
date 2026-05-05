@@ -2,7 +2,44 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅ + Build 进行中，按 plan §3 步骤 1-5 实施。
+**构建完成** — TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（Level 2 / GLES 蓝图实施首步 / **MVP-C 战略主线第一个实施任务**）VAN ✅ + Plan ✅ + Build ✅，待 `/reflect`。
+
+**Build 阶段产出（2026-05-05 ~19:50 / 实测 ~25-35 min / 极速区 ~0.6-0.8× / 含 build-gles 一次性 FetchContent 配置 ~3.5 min）：**
+
+- **3 commits 总计 +169 行 / 5 文件改动 / 1 ctest baseline +1/+1：**
+  - `bfe3127` feat(build): introduce VX_RENDERER flag with software default — TDD 三阶完整 / 4 文件 +169 行
+  - `41ef50a` chore(plan): land plan + MB（P0 quint-evidence）
+  - `7642cae` chore(workflow): initialize VAN
+
+- **REFACTOR 涌现亮点：** 验证逻辑抽到 `cmake/VxRenderer.cmake` 单一真相源（plan 阶段未规划 / build 阶段 emergent design / 顶层 +8 行 vs plan 估 +20 行 / smoke 直接 include 同一模块 = 测试生产代码）
+
+- **TDD 三阶完整 ✅：**
+  - **RED**：smoke 在顶层缺 include 时报 `VX_RENDERER must be ... top-level CMakeLists.txt` ✅
+  - **GREEN**：include 后 4/4 scenarios PASS（~0.2s 单跑 / ~1-2s ctest 集成）✅
+  - **REFACTOR**：抽 `cmake/VxRenderer.cmake` 单一真相源 ✅
+
+- **ctest 双 build 矩阵全 PASS ✅：**
+  - Matrix A (DEVTOOL=ON / software default): **1302 → 1303** ✅（+1 vx_renderer_flag_check_smoke / 0 退化）
+  - Matrix B (DEVTOOL=OFF / software default): **1109 → 1110** ✅（+1 / 0 退化）
+  - Matrix C (DEVTOOL=ON / gles): configure + build + ctest **1303 PASS** ✅（D1=A 0 GLES dep / 0 link 失败）
+  - Matrix D (invalid): **FATAL_ERROR + rc=1** ✅（D5=A 自动化反向探针）
+  - compile_commands.json：software path `-DVX_RENDERER_SOFTWARE=1` / gles path `-DVX_RENDERER_GLES=1`（精确）
+
+- **LOC 实测 vs plan 对照（自吃狗粮 P2.2「LOC ×1.3-1.5 buffer」）：**
+  - 总计 plan 120 行 → 实际 168 行 = **×1.4**（命中 buffer 上限 ✅）
+  - 偏高根因：smoke 加顶层 include drift guard（+12 行）+ cmake/VxRenderer.cmake REFACTOR 抽取未计入 plan（+36 行）
+
+- **0 lint errors**（4 改动文件 ReadLints 全 ✅）
+
+- **反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程保持 / 累计 19 模式连续抑制 / 历史新高继续刷新）
+
+**新 ctest baseline（生效）：**
+- DEVTOOL=ON / VX_RENDERER=software: **1303/1303**
+- DEVTOOL=OFF / VX_RENDERER=software: **1110/1110**
+
+**当前任务：** TASK-20260505-05 — `G1.1 CMake VX_RENDERER flag` / Level 2 / 分支 `feature/TASK-20260505-05-cmake-vx-renderer-flag`
+
+**下一步：** `/reflect` — 进入回顾阶段，沉淀 4 项候选范式（CMake 依赖引入时机 YAGNI / brainstorming P1.3 dual-evidence / writing-plans P1.6 dual-evidence / P0 协议 quint-evidence）+ 跨决策协同度 100% 第 14 次连续命中 + REFACTOR 涌现单一真相源新模式。
 
 **Plan 阶段产出（2026-05-05 ~19:00 / 实测 ~15-25 min / 极速区 ~0.5-0.8× 子档）：**
 
