@@ -2,9 +2,16 @@
 
 ## 当前任务
 
+**空闲** — 等待新任务。上次任务 TASK-20260505-01 已归档闭环（详见 `memory-bank/archive/archive-TASK-20260505-01.md`）。
+
+<!-- TASK-20260505-01 详细里程碑（含 VAN/Plan/Build A.1+B.1+C.1+D.1+D.2/E.1+E.2+E.3/Reflect/Archive 全阶段时间线 + 实测耗时 + 反向探针 9/9 精准 FAIL 全谱 + 反复模式 0/7 + 1 新候选 #8 入库定型 + P0×4 reflect 全落实 + P1×2 迁移 + P2×2 长期沉淀）已迁移到 archive 文档（见 archive-TASK-20260505-01.md §3 文件变更 + §6 长期影响 + §8 度量数据汇总）
+
 ### TASK-20260505-01 — DomBindings R2 收口（B-G1 children + B-G3 innerHTML setter + B-G2 audit）
 
-**当前阶段：** 🟢 **回顾完成**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → 待 `/archive`）/ Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure`
+**当前阶段：** 🟢 **已归档闭环**（VAN ✅ → Plan ✅ → Build ✅ → Reflect ✅ → Archive ✅）/ Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure` 已合并 main `6f924fd` + 删除
+-->
+
+<!--
 
 #### Reflect 阶段产出（2026-05-05 ~14:30 / Level 3 详细回顾）
 
@@ -72,6 +79,8 @@
 
 **plan ×0.6 实测系数：** **~0.14-0.18×**（实测 ~35 min vs plan ×0.6 190-250 min）— 落「最小代码改动 + Phase 0 高度预跑极速区 0.10-0.20×」子档（systemPatterns 入库后第 4 次命中数据点）。
 
+-->
+
 <!-- TASK-20260504-01 详细里程碑（含 VAN/Plan/Creative ×3/Finalize/Reflect/Archive 全阶段时间线 + plan-fact reconcile 0 + 反复模式 0/7 + 1 新候选定型 + P0+P1+P2×4 全 archive 阶段直接落实）已迁移到 archive 文档（见 archive-TASK-20260504-01.md §3 文件变更 + §7 长期影响 + §8 度量数据）-->
 
 <!-- TASK-20260503-04 详细里程碑（含 VAN/Plan/Creative/Build D.1-D.5/CP1/CP2/finalize/Reflect 全阶段时间线 + 实测耗时 + plan-fact reconcile 双 + 反复模式 1/7 部分命中 + P0×3 落实路径）已迁移到 archive 文档（见 archive-TASK-20260503-04.md §3 文件变更 + §6 长期影响 + §7 度量数据）-->
@@ -80,6 +89,22 @@
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260505-01 闭环摘要（2026-05-05 ~14:50 已归档）
+
+- **9 commits** main `5bac6f6 → 6f924fd`（fast-forward / feature 分支已删除）
+- **12 文件 / +2820 行 / -28 行 / 净 +2792 行**（含 spec + plan + reflection + archive 4 新文档 + dom_bindings.cc/dom_bindings_test.cc + inspector_panel.js + MVP-scope spec + activeContext/tasks/progress/techContext/systemPatterns 同步更新）
+- **MVP-B 完成度 90% → 95%** ✅（B-G1+G2+G3 全 ✅ 闭环 / 仅剩 B-G4）
+- **dogfood 视觉自动恢复链路三件齐 ✅**（inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**）
+- ctest 双 config 全 PASS：DEVTOOL=ON 1284→**1298** (+14) + DEVTOOL=OFF 1091→**1105** (+14) + dogfood smoke 14/14 PASS
+- plan ×0.6 实测 **0.14-0.18×**（实测 ~35 min vs plan 190-250 min / 落极速区 0.07-0.20× 第 4-5 数据点 / **quad → quint-evidence 升级**）
+- **跨决策协同度 100% 第 9 次连续命中**（3/3 决策 1 次 AskQuestion / 累计 96/96 / **sept → nona-evidence 升级**）
+- **反向探针 9/9 精准有效 / 强度梯度三档全谱覆盖**（A.1 过高 4/4 UB 双重加固 / B.1 合适 2/7 文本路径 / C.1 平衡 3/3 alias 路径）
+- **反复模式 0/7 已知 + 1 新候选 dual-evidence 入库定型**（反复模式 #8 spec 数据回归 audit 协议）
+- **改进建议 P0 4/4 ✅ reflect 阶段直接落实**（systemPatterns 4 新段：跨 Document arena deep clone 必选范式 + Phase 0 极速区 quint-evidence + 反复模式 #8 + 反向探针强度梯度三档）+ P1 2/2 ✅ 已迁移待处理事项 + P2 2/2 ✅ 长期沉淀
+- **`CloneNodeInto` helper 就位** — 未来 cloneNode/cloneNodeDeep/Range/Fragment 等 DOM 操作 API 可直接复用（预计省 ~30-50% 实现时间）
+- **协议三件套里程碑：** Phase 0 极速区 quint-evidence + 跨决策协同度 nona-evidence + 反向探针强度梯度三档 dual-evidence
+- 详细见 `memory-bank/archive/archive-TASK-20260505-01.md`（Level 3 9 段 ~340 行）+ `memory-bank/reflection/reflection-TASK-20260505-01.md`（Level 3 8 段 ~265 行）
 
 ### TASK-20260504-01 闭环摘要（2026-05-04 ~19:55 已归档）
 
@@ -677,7 +702,9 @@ b0a87ea (B.1.2) → 5be448d (B.2.1) → 647df3b (B.2.2) → 55a8c68 (B.2.3) →
 
 ## 最近归档完成（速查）
 
-- **TASK-20260502-02：DevTool Phase B — Performance Overlay 实施 [安全相关]** — Level 3 ✅（2026-05-03）— **本批最新**
+- **TASK-20260505-01：DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit** — Level 3 ✅（2026-05-05）— **本批最新 / MVP-B 90% → 95% / dogfood 视觉自动恢复链路三件齐 ✅ / 协议三件套里程碑（Phase 0 quint + 跨决策 nona + 反向探针 dual）/ 反复模式 #8 入库**
+- **TASK-20260504-01：MVP-scope 文档蓝图（Level 4 V2=a 完整变体）** — Level 4 ✅（2026-05-04）— DevTool 4 件套主线收官 🎉
+- **TASK-20260502-02：DevTool Phase B — Performance Overlay 实施 [安全相关]** — Level 3 ✅（2026-05-03）
 - **TASK-20260502-01：DevTool Phase A — Inspector 实施 [安全相关]** — Level 4 ✅（2026-05-02）
 - **TASK-20260430-04：规划 UI 编辑器 + 调试器（DevTool 三件套蓝图设计）[安全相关]** — Level 4 V2=a ✅（2026-05-01）
 - **TASK-20260430-03：全代码库 Code Review（6 维度 × 7 子系统 + 多轮次 Build + Checkpoint）[安全相关]** — Level 4 ✅（2026-05-01）

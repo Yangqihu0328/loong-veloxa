@@ -2,95 +2,67 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260505-01 DomBindings R2 收口（二连补全 + B-G2 audit）Reflect ✅，待 `/archive`。
-
-**Reflect 阶段产出（2026-05-05 ~14:30 / Level 3 详细回顾）：**
-
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-01.md`（8 段 / 度量数据 13 项 / 改进建议 8 项 P0×4 + P1×2 + P2×2）
-- **P0 4/4 reflect 阶段直接落实** ✅（systemPatterns.md 4 新段）：
-  1. 「跨 Document arena 节点转移 — deep clone 必选范式」段（含 CloneNodeInto helper 实证 + 适用范围 5 项预留）
-  2. 「Phase 0 投入 / build phase plan ×0.6 极速区 quint-evidence」段（5 数据点矩阵 + 触发条件 5 项 SOP）
-  3. 「反复模式 #8 — spec 数据回归 audit 协议」段（dual-evidence 入库定型 + audit 协议 3 步法）
-  4. 「反向探针强度梯度三档解读」段（过高/合适/平衡 + 三 phase 实证）
-- **P1 2/2 → 已迁移到本文档「待处理事项」段**（archive 阶段考虑直接落实）
-- **P2 2/2 → 长期沉淀**（archive 阶段直接落实可选，否则随后续相关任务自然沉淀）
-
-**当前任务：** TASK-20260505-01 — MVP-B 收口推进 / B-G1 children + B-G3 innerHTML setter + B-G2 audit / Level 3 / 分支 `feature/TASK-20260505-01-dombindings-r2-closure`（基于 main `5bac6f6`）
-
-**Build 阶段闭环结果（2026-05-05 ~14:00-14:35 / 实测 ~35 min / plan ×0.6 实测 0.14-0.18×）：**
-
-- **5 commits（不含 E.2）：** `6c36dc7`（A.1 children）→ `986e978`（B.1 innerHTML deep-clone）→ `fb88288`（C.1 click/mouse* alias）→ `02d96b2`（D.1 typeof 清理）→ `2759f22`（D.2 spec 同步）→ `14f3745`（E.2 progress.md）
-- **14 新单测全 PASS：** A.1 4 / B.1 7 / C.1 3 — dom_bindings_test 31 → 45 / 反向探针每 phase 1 次（A.1 4/4 全 FAIL 超预期 / B.1 2/7 精准 FAIL 文本路径 / C.1 3/3 精准 FAIL alias 路径）
-- **双 config full ctest 全 PASS：** DEVTOOL=ON **1298/1298 PASS**（baseline 1284 → +14 / 100%）/ DEVTOOL=OFF **1105/1105 PASS**（baseline 1091 → +14 / 100%）— 与 plan 预期完全一致 ✅
-- **dogfood smoke 14/14 PASS：** DevtoolDogfoodSmokeTest + DevtoolConsoleDogfoodSmokeTest + InspectorPanelHtmlSmoke
-- **反复模式预防 7/7 全抑制：** Phase 0 grep 实证 + spec 数据回归 audit 暴露+修正 + TDD 严格序 + 反向探针 9 测精准 + 中文文档 1 次成功 + commit Source 溯源 + 双 config 验证
-- **B-G1+G2+G3 全 ✅ 闭环：** MVP-B 完成度 90% → **95%**（剩 B-G4 / 估时 ~30 min-2 h）
-
-**关键里程碑：dogfood 视觉自动恢复链路三件齐 ✅** — B-G1 children + B-G3 innerHTML + B-G2 click alias 三件齐 → inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**（manual SDL2 验证将在 reflect 阶段完成）
-
-**关键 Plan 产出回顾：**
-
-- **设计文档：** `docs/specs/2026-05-05-dombindings-r2-closure-design.md`（11 段 / D1+D2+D3 决策完整定义 + 5 风险登记）
-- **实现计划：** `docs/plans/2026-05-05-dombindings-r2-closure.md`（5 Phase / 8 任务 / Phase 0 含 11 audit 子段）
-- **跨决策协同度 100% 第 9 次连续命中** — 1 次 AskQuestion 锁定 D1-B + D2-C + D3-full 三决策（累计 96/96 跨决策一次锁定纪录）
-- **关键 Phase 0 audit 发现（设计修正 1 次）：** Document::~Document 节点生命周期 → D2-C 初版（transplant）改为 D2-C-deep-clone — 避免 use-after-free（build 阶段实证此决策正确：deep clone 实现一次成功 / 无运行时 crash）
-- **B-G2 audit 关键 bug 实证：** MapJsEventName 缺 click + mouse* alias — inspector_panel.js setupTabs silent fail 真实根因 / Phase C.1 4 alias 修复后 ClickFiresOnPointerUp 测一次成功
-
-**下一步：** `/reflect` — 进入回顾阶段，识别成就、挑战、改进项，准备归档。
+**空闲** — 等待新任务。
 
 ---
 
 ## 上次任务（已归档闭环）
 
-### TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— ✅ 已归档（commit `4e35cea`）
+### TASK-20260505-01 DomBindings R2 收口（B-G1 children + B-G3 innerHTML + B-G2 audit）— ✅ 已归档（commit `6f924fd`）
 
-**最近闭环（保留供下游任务参考）：** 三档分级 MVP-A/B/C 体系建立 ✅ + 路线图按 MVP 档分层重写 ✅ + DevTool Phase E/F/G「超 MVP plus」标识范式确立 ✅ + 核心目标 #1+#2 路径量化（C-G1 OpenGL ES ~30-60+ h + C-G2 DRM/KMS ~10-20 h）✅ + P0×1 reflect 阶段立即沉淀 + P1+P2×4 archive 阶段全部落实 ✅。
+**最近闭环（保留供下游任务参考）：** **MVP-B 完成度 90% → 95%** ✅ + dogfood 视觉自动恢复链路三件齐 ✅ + Veloxa JS API surface 显著扩张（children getter + innerHTML setter + 4 mouse alias）+ `CloneNodeInto` helper 就位（未来 cloneNode/Range/Fragment 复用基础）+ 协议三件套里程碑（Phase 0 极速区 **quint-evidence** 5 数据点 / 跨决策协同度 **nona-evidence** 第 9 次连续 100% / 反向探针强度梯度 **dual-evidence** 三档全谱）+ 反复模式 **#8 spec 数据回归 dual-evidence 入库定型** ✅。
 
-**DevTool 4 件套主线收官 🎉** — Phase A Inspector + Phase B Performance Overlay + Phase C Hot Reload + Phase D Console JS REPL 已全部完整闭环 / Phase E/F/G 标识为「超 MVP plus」由用户需求驱动决定立项时机。
+**MVP-B 即将收口** — 仅剩 B-G4 Performance Overlay 持续 invalidate 机制（~30 min-2 h plan ×0.6 / Level 1-3 任务）。
 
 ---
 
 ## 上次任务（详细归档信息）
 
-### TASK-20260504-01 MVP-scope 文档（Level 4 蓝图 V2=a 完整变体）— ✅ 已归档（commit `4e35cea`）
+### TASK-20260505-01 DomBindings R2 收口（Level 3）— ✅ 已归档（commit `6f924fd`）
 
-- **归档文档：** `memory-bank/archive/archive-TASK-20260504-01.md`（~440 行 / Level 4 全面归档）
-- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260504-01.md`（~290 行 / Level 4 全面回顾）
-- **主交付：** spec + plan + creative ×3 + 4 处文档全量同步 / 7 commits / +2798 行 / -46 行 / 净 +2752 行
-- **跨决策协同度：** 11/11 1 次 AskQuestion all_recommended 锁定 / 第 8 次连续 100% 命中 / 累计 93/93
-- **plan ×0.6 比值：** 0.25-0.38× standalone-AI 实测 / 落「蓝图任务 V2=a」子档下沿延伸第 4 数据点
-- **反复模式命中：** 0/7 已知模式 + 1 新候选定型（中文文档 StrReplace 全角/半角字符差异 — 已 reflect 阶段立即沉淀）
+- **归档文档：** `memory-bank/archive/archive-TASK-20260505-01.md`（~340 行 / Level 3 详细归档 / 9 段 / 8 度量表）
+- **回顾文档：** `memory-bank/reflection/reflection-TASK-20260505-01.md`（~265 行 / Level 3 详细回顾 / 8 段 / 13 度量数据）
+- **主交付：** 9 commits / +2820 行 / -28 行 / 净 +2792 行（含 spec + plan + reflection + archive + systemPatterns 4 新段 + techContext 同步）
+- **跨决策协同度：** 3/3 决策 1 次 AskQuestion 锁定 / 第 9 次连续 100% 命中 / 累计 96/96 / sept → **nona-evidence** 升级
+- **plan ×0.6 比值：** 0.14-0.18×（实测 ~35 min vs plan ×0.6 190-250 min）/ 落极速区 0.07-0.20× 第 4-5 数据点 / quad → **quint-evidence** 升级
+- **反向探针：** 9/9 精准有效 / 强度梯度三档全谱（A.1 过高 4/4 UB 双重加固 / B.1 合适 2/7 文本路径 / C.1 平衡 3/3 alias 路径）
+- **反复模式命中：** 0/7 已知模式 + 1 新候选 dual-evidence **入库定型为反复模式 #8（spec 数据回归 audit 协议）**
+- **ctest：** DEVTOOL=ON 1298/1298 + DEVTOOL=OFF 1105/1105（+14/+14）/ dogfood smoke 14/14 PASS
 
-**5 项 P0+P1+P2 改进建议落实情况：**
+**8 项 P0+P1+P2 改进建议落实情况：**
 
 | # | 建议 | 优先级 | 落实位置 |
 |:-:|---|:-:|---|
-| 1 | systemPatterns「中文文档编辑安全 audit」+ writing-plans.mdc 同源 audit 子条 | **P0** | ✅ reflect 阶段立即沉淀 |
-| 2 | systemPatterns「蓝图任务规模估算公式」段（实证 6 数据点）| **P1** | ✅ archive 阶段直接落实 |
-| 3 | plan ×0.6 矩阵第 4 数据点入库（蓝图任务 V2=a 子档）| **P2** | ✅ archive 阶段直接落实 |
-| 4 | systemPatterns「超 MVP plus 标识范式」段 | **P2** | ✅ archive 阶段直接落实 |
-| 5 | systemPatterns「跨决策协同度 100% sept-evidence」段（8 次实证）| **P2** | ✅ archive 阶段直接落实 |
+| 1 | systemPatterns「跨 Document arena 节点转移 — deep clone 必选范式」 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 2 | systemPatterns「Phase 0 投入 / 极速区 quint-evidence」 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 3 | systemPatterns「反复模式 #8 spec 数据回归 audit」 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 4 | systemPatterns「反向探针强度梯度三档解读」 | **P0** | ✅ reflect 阶段立即沉淀 |
+| 5 | systemPatterns「视觉链路三件齐识别协议」 | **P1** | 📋 已迁移到「待处理事项」段 |
+| 6 | `/plan` 命令固化「plan/spec docs 落盘即 commit」步骤 | **P1** | 📋 已迁移到「待处理事项」段 |
+| 7 | writing-plans.mdc Phase 0「既有 getter/setter 语义对齐」子条 | **P2** | 📋 长期沉淀 |
+| 8 | systemPatterns「跨决策协同度 100%」升级到 nona/dec-evidence | **P2** | 📋 长期沉淀 |
 
-**5/5 100% archive 阶段直接落实** ✅（沿用 [TASK-20260503-04 archive 范式](memory-bank/archive/archive-TASK-20260503-04.md) — 不留待下次工作流元任务）
+**P0 4/4 100% reflect 阶段直接落实 ✅** + **P1 2/2 已迁移待处理事项** + **P2 2/2 长期沉淀**（沿用 [TASK-20260504-01 P0+P1+P2×4 archive 全落实范式](memory-bank/archive/archive-TASK-20260504-01.md)）
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + §6.2 推荐立项顺序）
 
+> ✅ **TASK-20260505-01「DomBindings R2 三连补全」已闭环**（commit `6f924fd` / B-G1+G2+G3 全 ✅ / MVP-B 90% → 95%）— 推荐序号已下移。
+
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
-| **1** | **DomBindings R2 三连补全**（`Element.children` + `addEventListener` + `innerHTML` setter）| MVP-B 收口 | L3 | ~2-4 h |
-| 2 | Performance Overlay 持续 invalidate 机制 | MVP-B 收口 | L1-3 | ~30 min-2 h |
-| 3 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
-| 4 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| **5** | **G1 OpenGL ES 硬件渲染后端蓝图**（核心目标 #2 嵌入式硬件加速主线 P0 第一刚需）| MVP-C 核心 | **L4 多 Phase 蓝图** | ~30-60+ h |
-| 6 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
-| 7 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 8 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 9 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 10 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| **1** | **Performance Overlay 持续 invalidate 机制（B-G4）— MVP-B 收口最后一项** | MVP-B 收口 | L1-3 | ~30 min-2 h |
+| 2 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
+| 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
+| **4** | **G1 OpenGL ES 硬件渲染后端蓝图**（核心目标 #2 嵌入式硬件加速主线 P0 第一刚需）| MVP-C 核心 | **L4 多 Phase 蓝图** | ~30-60+ h |
+| 5 | G2 DRM/KMS 嵌入式后端 | MVP-C 核心 | L3-4 | ~10-20 h |
+| 6 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
+| 7 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
+| 8 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
+| 9 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
 
-**用户决策点：** 下一任务建议从 #1（MVP-B 收口）或 #5（MVP-C 核心 P0 第一刚需）启动 / 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
+**用户决策点：** 下一任务建议从 #1（MVP-B 完整收口 / 估时小）或 #4（MVP-C 核心 P0 第一刚需 / 战略长期目标）启动 / 详见 `docs/specs/2026-05-04-mvp-scope.md` §11.2
 
 ---
 
@@ -120,15 +92,15 @@
 
 详见上方「下一推荐任务」段 + `docs/specs/2026-05-04-mvp-scope.md` §11.2。
 
-### R2 P3 候选 — 来自 TASK-20260502-01 dogfood 暴露（3 项 — DomBindings R2 三连补全已是「下一推荐任务」#1）
+### R2 P3 候选 — 来自 TASK-20260502-01 dogfood 暴露（3 项 — ✅ TASK-20260505-01 已完整闭环）
 
-| # | 缺陷 | 文件位置 | 当前 panel 临时 mitigation | 优先级 |
-|:-:|---|---|---|:-:|
-| 1 | DomBindings 缺 `Element.children` 集合 getter（HTMLCollection 风格）| `veloxa/script/dom_bindings.cc` | inspector_panel.js inline `if (!tabs.children) return` 防御 | P3 |
-| 2 | DomBindings 缺 `element.addEventListener` | `veloxa/script/dom_bindings.cc` | inspector_panel.js inline `if (typeof btn.addEventListener !== "function") return` 防御 | P3 |
-| 3 | DomBindings 缺 `element.innerHTML` setter | `veloxa/script/dom_bindings.cc` | renderDomTree silent no-op；vx_devtool_get_dom_json JSON 已覆盖核心数据契约 | P3 |
+| # | 缺陷 | 文件位置 | 闭环状态 |
+|:-:|---|---|:-:|
+| 1 | DomBindings 缺 `Element.children` 集合 getter（HTMLCollection 风格）| `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `6c36dc7` |
+| 2 | DomBindings 缺 `element.addEventListener` 事件别名 | `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `fb88288`（audit + 4 alias）|
+| 3 | DomBindings 缺 `element.innerHTML` setter | `veloxa/script/dom_bindings.cc` | ✅ TASK-20260505-01 commit `986e978`（deep-clone）|
 
-**建议立项形态：** 单一 Level 3 任务 `TASK-2026MMDD-NN: DomBindings R2 三连补全`（plan ×0.6 ~3-5 h），TDD 三连实施 + 单测覆盖 + DevTool dogfood 视觉自动恢复验证。
+**闭环成果：** 单 Level 3 任务一次性闭环 ✅ / 14 单测全 PASS / dogfood smoke 14/14 PASS / inspector tab 切换 + HUD 数字 + DOM tree 渲染**视觉完整工作**。
 
 ### 8 项 P3 触发型候选（codebase review R1 已分析）
 
@@ -145,14 +117,16 @@
 
 ## 收尾清理（可选）
 
-- ✅ `feature/TASK-20260504-01-mvp-scope-doc` 分支已合并 + 删除（archive 阶段完成）
+- ✅ `feature/TASK-20260505-01-dombindings-r2-closure` 分支已合并 + 删除（archive 阶段完成）
+- ✅ `feature/TASK-20260504-01-mvp-scope-doc` 分支已合并 + 删除
 - 早期 feature 分支（TASK-20260430-* / TASK-20260502-* / TASK-20260503-*）如未删除可批量清理
 
 ---
 
 ## 最近归档（速查，详细见 archive 文档）
 
-- `archive-TASK-20260504-01.md`（**MVP-scope 文档蓝图 Level 4 V2=a 完整变体，2026-05-04**）— **本批最新 / DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 路线图按 MVP 档分层重写 / 核心目标 #1+#2 路径量化 / P0+P1+P2×4 archive 全落实 / 跨决策协同度 100% 第 8 次连续命中 / plan ×0.6 矩阵第 4 蓝图数据点 0.25-0.38× 入库**
+- `archive-TASK-20260505-01.md`（**DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit Level 3，2026-05-05**）— **本批最新 / MVP-B 完成度 90% → 95% / dogfood 视觉自动恢复链路三件齐 ✅ / 协议三件套里程碑（Phase 0 极速区 quint-evidence + 跨决策协同度 nona-evidence + 反向探针强度梯度三档 dual-evidence）/ 反复模式 #8 入库定型 / P0×4 reflect 全落实**
+- `archive-TASK-20260504-01.md`（MVP-scope 文档蓝图 Level 4 V2=a 完整变体，2026-05-04）— DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 路线图按 MVP 档分层重写 / 核心目标 #1+#2 路径量化 / P0+P1+P2×4 archive 全落实 / 跨决策协同度 100% 第 8 次连续命中 / plan ×0.6 矩阵第 4 蓝图数据点 0.25-0.38× 入库
 - `archive-TASK-20260503-04.md`（DevTool Phase D · Console JS REPL Level 3 [安全相关]，2026-05-04）— DevTool 4 件套全部完整闭环 ✅ / spec §11.1 完整闭环 ✅ / T1 5 维度首次完整暴露 ✅ / plan ×0.6 0.07-0.10× 创历史新低 / Phase 0 sept-evidence / P0×3 archive 阶段全落实
 - `archive-TASK-20260503-05.md`（QuickJS Interrupt Handler + SetEvalInterruptBudget API Level 2 [安全相关]，2026-05-03）
 - `archive-TASK-20260503-03.md`（DevTool 三件套主线收官 — 4 项 P3 候选批量清零 Level 2，2026-05-03）
