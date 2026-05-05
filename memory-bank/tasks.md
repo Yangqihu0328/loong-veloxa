@@ -2,124 +2,15 @@
 
 ## 当前任务
 
-### TASK-20260505-06：G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
-
-- **当前阶段：** 🟡 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
-- **复杂度级别：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
-- **创建日期：** 2026-05-05
-- **分支：** `feature/TASK-20260505-06-gles-display-sdl2-egl`（基于 main `ee2569d` ✅ 创建 / G1.1 已合并）
-- **来源：** [GLES 蓝图 plan §3.2](../docs/plans/2026-05-05-gles-renderer-blueprint.md#32-子任务-g12--glesdisplay-抽象--sdl2egldisplay-实施) + [GLES 蓝图 spec §3.3.2](../docs/specs/2026-05-05-gles-renderer-blueprint-design.md) + 用户 `/van G1.2 GLESDisplay + Sdl2EGLDisplay` 拍板
-- **安全相关：** ❌ 否（仅平台抽象 + GL context 创建 / 0 输入处理 / 0 网络 / 0 新威胁面）
-- **估时（plan ×0.6）：** ~4-6 h（GLES 蓝图 plan §3.2）/ 预期实测 ~1.5-3 h（实施类 Level 3 子档 / 标准极速区 0.4-0.6×）
-
-**任务范围（来自 GLES 蓝图 plan §3.2 + spec §3.3.2）：**
-
-- **目标：** 落地 `GLESDisplay` 纯虚抽象（B8 G2 桥接接口 / G2 共享）+ `Sdl2EGLDisplay` SDL2 子类实施 + ~6-8 单测 + 反向探针
-- **文件影响（plan 估）：** 4 创建 + 1 修改
-  - 创建：`veloxa/platform/gles_display.h`（~80 行 / 纯虚抽象 / Initialize / MakeCurrent / SwapBuffers / IsContextLost / RestoreContext / HasExtension / gles_major/minor_version 共 11 个 virtual）
-  - 创建：`veloxa/platform/sdl2/sdl2_egl_display.h`（~50 行 / Sdl2EGLDisplay : public GLESDisplay）
-  - 创建：`veloxa/platform/sdl2/sdl2_egl_display.cc`（~150 行 / SDL_GL_SetAttribute ×6 + SDL_GL_CreateContext + glGetString / glGetStringi）
-  - 创建：`tests/platform/sdl2_egl_display_test.cc`（~200 行 / ~6-8 单测 / **plan 偏差 #2 校正：扁平路径**）
-  - 修改：`veloxa/platform/sdl2/CMakeLists.txt`（+~10 行 / 加 sdl2_egl_display.cc + EGL/GLES dep / **plan 偏差 #1 校正：sdl2/ 而非顶层 platform/**）
-- **依赖引入（D1=A 推迟点正式落地）：** `pkg_check_modules(EGL REQUIRED egl)` + `pkg_check_modules(GLESv2 REQUIRED glesv2)`（与 HARFBUZZ pattern 一致）
-
-**Phase 0 audit 预跑（VAN 阶段 11/11 实证 + 3 plan 偏差点发现 ✅）：**
-
-详见 [activeContext.md Phase 0 audit 表](activeContext.md)。**3 偏差：**
-- 偏差 #1：plan 说改顶层 platform/CMakeLists.txt → 实际改 sdl2/CMakeLists.txt（GLESDisplay.h header-only / 0 顶层修改）
-- 偏差 #2：plan 说 tests/platform/sdl2/ 子目录 → 实际扁平 tests/platform/sdl2_egl_display_test.cc
-- 偏差 #3：plan 未明示 headless CI testing fixture（SDL_VIDEODRIVER=offscreen|dummy / EGL_PLATFORM=surfaceless）→ /plan 阶段决策
-
-**前置验证通过 ✅（4 维度）：**
-
-| 维度 | 结果 |
-|---|---|
-| 依赖可获取性 | ✅ EGL 1.5 + GLES 3.2 + SDL2 2.32.10 + Mesa swrast headless 全在 |
-| 环境就绪 | ✅ CMake 4.2.3 + GCC 14+ + ctest 1303/1110 baseline + G1.1 gles 1303 PASS |
-| 已有 artifact | ✅ G1.2 目标 4 文件全不存在 / 0 冲突 |
-| 待处理事项关联 | ✅ G1.1 D1=A 推迟点（引入 EGL/GLES dep）正式落地节点 |
-
-**反复模式 0/8 抑制延续**（VAN + Plan 阶段预审 / 第 7 任务连续保持 / 累计 19 模式连续抑制 / 历史新高继续刷新）
-
-**Plan 阶段产出（2026-05-05 ~20:25 / 实测 ~25-35 min / 标准区 ~1.0× 子档）：**
-
-- **8/8 D 决策 1 次 AskQuestion all_recommended 锁定 ✅**（跨决策协同度 100% **第 15 次连续命中** / 累计 **136/136 历史最高 streak 续刷**）：
-  - D1=A SDL_VIDEODRIVER=offscreen
-  - D2=B 含 RestoreContext 路径覆盖
-  - D3=B Initialize 后 eager std::unordered_set extension cache
-  - D4=C inline test SDL_GL_SetAttribute(MAJOR_VERSION=99) 反向探针
-  - D5=A plan §0.4 3 偏差详细校正
-  - D6=A sdl2/CMakeLists.txt 局部 EGL/GLES dep
-  - D7=A 单 feat commit
-  - D8=A plan + MB 单 commit 自吃狗粮（quint → sext-evidence 候选）
-
-- **plan §3.2 偏差校正（brainstorming P1.3 主动 push-back triple-evidence 候选）：** 3 处偏差（CMake 修改位置 / 测试路径 / headless fixture）→ plan §0.4 详细校正
-
-- **主交付：**
-  - `docs/plans/2026-05-05-gles-display-sdl2-egl.md`（~600 行 / 11 段全覆盖）
-  - Memory Bank ×3 更新
-
-**估时（plan ×0.6）：** ~110-180 min 总线 / vs GLES 蓝图 plan §3.2 估时 ~240-360 min = **预期总线极速区 0.46-0.50×**
-
-**沉淀候选（reflect 阶段 / 7 项 P1）：**
-1. systemPatterns 升级「跨决策协同度 100% 第 15 次连续命中」（136/136 历史最高 streak）
-2. systemPatterns 升级「plan ×0.6 dec-evidence 第 10 数据点」（实施类 Level 3 子档新增）
-3. systemPatterns 升级「brainstorming P1.3 主动 push-back triple-evidence」
-4. systemPatterns 升级「writing-plans P1.6 spec vs code audit triple-evidence」
-5. systemPatterns 升级「P0 协议 sext-evidence 第 6 数据点」（quint → sext / 实施类 Level 3 首次实证）
-6. systemPatterns 新段「D3=B eager extension cache 范式 first-evidence」
-7. systemPatterns 新段「D4=C inline test 反向探针范式 first-evidence」
-
-**不进入 `/creative`：** Level 3 实施类 / 8 决策已 lock / 设计 spec §3.3.2 已规格化 / 0 创意阶段需求
-
-**Build 阶段产出（2026-05-05 ~20:55 / 实测 ~25-35 min / 极速区 ~0.4-0.6×）：**
-
-- **TDD 三阶完整 ✅**（RED 缺 .h 编译失败 / GREEN 8/8 PASS ~150ms / REFACTOR T8 反向探针从 MAJOR_VERSION=99 改为 nullptr window 驱动无关）
-- **3 commits 总计 +495 行 / 6 文件改动**：
-  - `4b095c4` feat(platform): add GLESDisplay abstract + Sdl2EGLDisplay impl — 主交付 +495 行
-  - `39d2981` chore(plan): land plan + memory bank（P0 sext-evidence 候选）
-  - `545fa1f` chore(workflow): initialize VAN
-- **ctest 三 build 矩阵全 PASS ✅：**
-  - Matrix A (DEVTOOL=ON / software default): 1303 → **1303** ✅（不退化）
-  - Matrix B (DEVTOOL=OFF / software): 1110 → **1110** ✅（不退化）
-  - Matrix C (DEVTOOL=ON / gles): **1345 PASS** ✅（含 +8 sdl2_egl_display_test）
-- **LOC 实测 ×0.95**（plan 520 → 实际 495 / 反向偏低 / **命中 P2.2「LOC ×1.3-1.5 buffer」反例 → reflect 候选「单向 → 双向 ±25% buffer 子档」**）
-- **0 lint errors** + **8/8 D 决策 0 偏差实施 ✅**（实施忠实度 G1.1 first + G1.2 dual ✅）
-- **plan §3.2 偏差校正 3/3 实施成功** + **反复模式 0/8 抑制延续**（累计 19 模式连续 / 历史新高继续刷新）
-- **build 中发现 1 处反向探针不可靠**（Mesa silent fallback）→ T8 调整为驱动无关 nullptr window 路径
-
-**新 ctest baseline 生效：** DEVTOOL=ON 1303/1303 + DEVTOOL=OFF 1110/1110 + gles 1345/1345
-
-**Reflect 阶段产出（2026-05-05 ~21:10 / 实测 ~15-20 min / 标准区 ~1.0× 子档 / 预估命中 ✅）：**
-
-- **回顾文档：** [`memory-bank/reflection/reflection-TASK-20260505-06.md`](reflection/reflection-TASK-20260505-06.md)（10 段全覆盖 / 7 P1 沉淀直接落地 + 5 P2 改进建议 / 度量数据汇总详尽 / 自评 4.7/5）
-- **systemPatterns 8 段更新（P1 直接落地）：**
-  1. 跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence（streak 128 → 136）
-  2. plan ×0.6 实测系数 dec-evidence（ennea → dec / 实施类 Level 3 子档新增）
-  3. brainstorming P1.3 主动 push-back 模式 triple-evidence（dual → triple）
-  4. writing-plans P1.6 spec vs code audit triple-evidence（dual → triple）
-  5. P0 协议 sext-evidence（quint → sext / 适用性矩阵 6 类全覆盖 ✅）
-  6. **D3=B eager extension cache 范式 first-evidence**（新段 / 多 ext 查询通用）
-  7. **D4=C inline test 反向探针 + 驱动严格性分层 first-evidence**（新段 / Mesa headless 经验）
-  8. LOC 双向 ±25% buffer 子档（单向 ×1.3-1.5 → 双向 [0.85, 1.5] / 模式参数细化）
-- **writing-plans P1.5 段升级：** quint → sext-evidence 实证表 + 适用性矩阵 6 类表
-- **5 P2 改进建议沉淀到 activeContext 待处理事项**（writing-plans 双向 ±25% buffer / ctest baseline 比对 noise / Mesa headless 严格性 / techContext OpenGL ES dep / 双 100% 流程闭环）
-- **反复模式 0/8 reflect 阶段保持**（累计 19 模式连续抑制 / 历史新高继续刷新 ✅）
-
-**Reflect 关键发现：**
-1. **brainstorming P1.3 + writing-plans P1.6 双 triple-evidence 续延** — TASK-04 first + TASK-05 dual + TASK-06 triple / 3 plan §3.2 偏差 100% 校正 / 节省 ~60-90 min build 返工
-2. **跨决策协同度 + 实施忠实度双 100% first → dual-evidence** — 8/8 D 决策 0 偏差实施 / 累计 128 → 136 streak 续刷
-3. **P0 协议适用性矩阵 6 类全覆盖** — V2=a 蓝图 + 工作流元 + 实施类 Level 2 + Level 1 + Level 4 多 Phase + **实施类 Level 3** ✅
-4. **D4=C 反向探针「驱动严格性分层」** — Mesa headless silent fallback → 驱动无关层（nullptr / 非法 enum）必选 / 驱动严格层 P3 优化
-5. **LOC buffer 双向 ±25% 反向校准** — TASK-05 ×1.4 偏高 + TASK-06 ×0.95 偏低 dual-evidence / 单向 → 双向 ±25%
-
-**下一步：** `/archive` — 进入归档阶段。
-
----
+**空闲** — 等待新任务。
 
 ## 上次任务（已归档闭环）
 
-[TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务 / 9 systemPatterns 沉淀 / 7 范式里程碑 / Level 2）](archive/archive-TASK-20260505-05.md) ✅ 已归档（详见 archive-TASK-20260505-05.md）。
+[TASK-20260505-06 G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务 / 8 systemPatterns 沉淀 / 7 范式里程碑 / Level 3）](archive/archive-TASK-20260505-06.md) ✅ 已归档（详见 archive-TASK-20260505-06.md）。
+
+**最近闭环（按时间倒序）：**
+- TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay（Level 3）✅ 已归档
+- [TASK-20260505-05 G1.1 CMake `VX_RENDERER` flag（GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务 / 9 systemPatterns 沉淀 / 7 范式里程碑 / Level 2）](archive/archive-TASK-20260505-05.md) ✅ 已归档
 
 ---
 
