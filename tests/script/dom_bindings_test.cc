@@ -496,6 +496,96 @@ TEST_F(DomBindingsTest, InnerHTMLSetCleansOldChildren) {
   EXPECT_EQ(r.value(), "new:");
 }
 
+// ----- B-G2 audit (TASK-20260505-01 Phase C.1) -----
+//
+// MapJsEventName must alias common HTML legacy event names to Veloxa's
+// unified pointer model: 'click' / 'mouseup' → kPointerUp (W3C release
+// semantics), 'mousedown' → kPointerDown, 'mousemove' → kPointerMove.
+// This is the real root cause of inspector_panel.js setupTabs's silent
+// failure — the JS click registration was being dropped by addEventListener
+// returning early from MapJsEventName=false.
+
+TEST_F(DomBindingsTest, AddEventListenerClickFiresOnPointerUp) {
+  auto setup = engine_.EvalGlobal(
+      "globalThis.clickCount = 0;"
+      "document.getElementById('btn').addEventListener('click', "
+      "function(e) { globalThis.clickCount++; });"
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  // Synthesize PointerDown then PointerUp inside btn — click fires on Up.
+  static thread_local css::ComputedStyle s_style;
+  layout::LayoutBox box{};
+  box.element = btn_;
+  box.style = &s_style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  event::InputEvent down{};
+  down.type = event::EventType::kPointerDown;
+  down.x = 50;
+  down.y = 50;
+  em_.HandleInput(down, &box);
+
+  event::InputEvent up{};
+  up.type = event::EventType::kPointerUp;
+  up.x = 50;
+  up.y = 50;
+  em_.HandleInput(up, &box);
+
+  auto r = engine_.EvalGlobal("String(globalThis.clickCount)", "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "1");
+}
+
+TEST_F(DomBindingsTest, AddEventListenerMouseDownAliasesToPointerDown) {
+  auto setup = engine_.EvalGlobal(
+      "globalThis.downCount = 0;"
+      "document.getElementById('btn').addEventListener('mousedown', "
+      "function(e) { globalThis.downCount++; });"
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  DispatchPointerDown(btn_);
+
+  auto r = engine_.EvalGlobal("String(globalThis.downCount)", "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "1");
+}
+
+TEST_F(DomBindingsTest, AddEventListenerMouseMoveAliasesToPointerMove) {
+  auto setup = engine_.EvalGlobal(
+      "globalThis.moveCount = 0;"
+      "document.getElementById('btn').addEventListener('mousemove', "
+      "function(e) { globalThis.moveCount++; });"
+      "'ok'",
+      "t.js");
+  ASSERT_TRUE(setup.ok());
+
+  static thread_local css::ComputedStyle s_style;
+  layout::LayoutBox box{};
+  box.element = btn_;
+  box.style = &s_style;
+  box.x = 0;
+  box.y = 0;
+  box.content_width = 100;
+  box.content_height = 100;
+
+  event::InputEvent move{};
+  move.type = event::EventType::kPointerMove;
+  move.x = 50;
+  move.y = 50;
+  em_.HandleInput(move, &box);
+
+  auto r = engine_.EvalGlobal("String(globalThis.moveCount)", "t.js");
+  ASSERT_TRUE(r.ok());
+  EXPECT_EQ(r.value(), "1");
+}
+
 // ----- Lifecycle / multi-instance regression tests (TASK-20260418-01) -----
 
 TEST(DomBindingsLifecycleTest, JSClassIdStableAcrossBindings) {

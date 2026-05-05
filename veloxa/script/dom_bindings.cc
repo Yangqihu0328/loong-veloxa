@@ -128,6 +128,14 @@ bool MapJsEventName(const char* name, event::EventType* out) {
       {"touchmove", event::EventType::kTouchMove},
       {"focusin", event::EventType::kFocusIn},
       {"focusout", event::EventType::kFocusOut},
+      // TASK-20260505-01 B-G2 audit: legacy HTML event names aliased to the
+      // unified pointer model. 'click' maps to kPointerUp (W3C release
+      // semantics — click fires on the element where pointerup is dispatched
+      // after a matching pointerdown). The mouse* aliases are direct.
+      {"click", event::EventType::kPointerUp},
+      {"mousedown", event::EventType::kPointerDown},
+      {"mouseup", event::EventType::kPointerUp},
+      {"mousemove", event::EventType::kPointerMove},
   };
   for (const auto& m : kMappings) {
     if (std::strcmp(name, m.js_name) == 0) {
