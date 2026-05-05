@@ -2,11 +2,120 @@
 
 ## 当前任务
 
-> 🔓 **空闲** — 等待新任务启动。最近闭环 TASK-20260505-03 详细产出已迁移到 [archive-TASK-20260505-03.md](archive/archive-TASK-20260505-03.md)。
+**🟢 空闲** — 等待新任务。
+
+最近闭环：[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档。
+
+下次推荐任务：见 [activeContext.md](activeContext.md) 「下一推荐任务」段。
 
 ---
 
 ## 上次任务（已归档闭环）
+
+### TASK-20260505-04 闭环摘要（2026-05-05 ~18:38 已归档）
+
+> **🎉 工作流元任务范式 dual-evidence 已固化 + 5 个范式里程碑同时达成里程碑** — TASK-20260503-02 first + TASK-20260505-04 dual-evidence / 14.5 项 P1+P2 跨任务沉淀 100% 清零 / 跨决策协同度 100% 第 13 次连续命中（累计 121/121 历史最高 streak）/ 极致 dogfooding 三层闭环 first-evidence / plan ×0.6 oct-evidence + 双子档分化（V2=a 蓝图 0.02-0.05× + 工作流元 0.11-0.19×）/ P0 协议 quad-evidence 已固化 / 反复模式 0/8 4 阶段全程抑制（累计 17 模式连续抑制 / 历史新高）/ 总投入 ~60-85 min vs plan ×0.6 ~130-180 min = ~0.36-0.48× 极速区。
+
+详细产出已迁移到 [archive-TASK-20260505-04.md](archive/archive-TASK-20260505-04.md)（~290 行 / Level 2-3 全面归档 / 10 段 / 度量数据汇总 + 改进建议状态汇总 + 5 范式里程碑总结）+ [reflection-TASK-20260505-04.md](reflection/reflection-TASK-20260505-04.md)（407 行 / Level 2-3 详细回顾 / 10 段 / 7 关键发现 + 8 改进建议）。
+
+---
+
+<!--
+### TASK-20260505-04 — 工作流元任务批量落地（P1×10 + P2×4 跨任务沉淀批量固化）— ✅ 已归档
+
+**当前阶段：** 🟢 **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）/ Level 2-3 工作流元任务 / dual-evidence 第 2 实证 / 分支 `feature/TASK-20260505-04-workflow-meta-batch` 已合并 main + 删除
+
+#### VAN 阶段产出（2026-05-05 ~17:37）
+
+- **任务类型：** Level 2-3 工作流元任务（沿用 [TASK-20260503-02 工作流元任务批量清理范式](archive/archive-TASK-20260503-02.md)）
+- **任务范围：** 14 项 P1+P2 跨任务沉淀批量落地
+  - P1×10 项（来自 TASK-03-04 / 03-05 / 05-01 / 05-02 / 05-03 reflect 段累计）
+  - P2×4 项（来自 TASK-03-02 / 03-03 / 05-03 reflect 段累计）
+- **升级到 P0 的子项：** P1.5 `writing-plans.mdc`「plan/spec docs 落盘即 commit」P0 协议固化（**triple-evidence 已达 writing-plans.mdc 固化阈值** / TASK-20260505-01 提议 → 02 部分 → 03 完整实施）
+- **文件影响：** 6 个文件 / 14.5 子项分布
+  - `.cursor/rules/skills/writing-plans.mdc` ×7
+  - `.cursor/rules/skills/brainstorming.mdc` ×1
+  - `.cursor/rules/skills/git-workflow.mdc` ×2
+  - `.cursor/rules/main.mdc` ×1
+  - `memory-bank/systemPatterns.md` ×3
+  - `veloxa/api/veloxa_api.h` ×0.5
+
+#### VAN 前置验证清单（4 维度全通过）
+
+- ✅ 依赖可获取性：仅文档/规则改动 / 0 第三方库 / 0 模型文件
+- ✅ 环境就绪：.cursor/rules/skills/ 10 个 mdc 文件 + main.mdc + systemPatterns.md 全在位
+- ✅ 已有 artifact：6 个目标文件全部存在（待修改而非新建）
+- ✅ 待处理事项关联：activeContext「待处理事项」段 14 项明确 / 累计 P1 sept-evidence 已超固化阈值
+
+#### 反复模式预防（VAN 阶段预审 0/8 命中）
+
+- ✅ #1 前置依赖未验证：4 维度全通过
+- ✅ #8 spec 数据回归 audit：本任务无 spec 数据回归（仅规则改动）
+- ✅ 中文文档 StrReplace 字符类型 audit：编辑 6 处文档 / 已应用「重复 anchor 检测协议」（来自 TASK-05-03 P2 #7）
+
+**估时（plan ×0.6）：** ~130-180 min（14 项 / 平均 ~10-15 min/项）/ 预期实测 ~50-80 min（极速区 0.4-0.6× 系数 / 工作流元任务范式高度复用）
+
+#### Plan 阶段产出（2026-05-05 ~17:50 / 实测 ~30-40 min / 极速区 0.18-0.30× / 比预期更快 ✅）
+
+- **跨决策协同度 100% 第 13 次连续命中 ✅**（dec → endec → doudec → 第 13 次 / 累计 121/121）/ 8 D 决策 1 次 AskQuestion all_recommended 锁定
+- **D8=A P0 协议自吃狗粮**（plan + Memory Bank ×3 单 commit 落盘 / triple → **quad-evidence** 候选升级）
+- **主交付：** `docs/plans/2026-05-05-workflow-meta-batch.md` ~660 行 / 10 段全覆盖
+- **决策矩阵锁定：**
+  - D1=B 6 commit / 文件
+  - D2=A 文件聚合实施顺序
+  - D3=B P0 协议完整段 ~80-120 行
+  - D4=A 文档调整模式
+  - D5=B P1.9 + P2.2 分开
+  - D6=A 顶部 doc 段
+  - D7=B 仅 plan 无独立 spec
+  - D8=A 自吃狗粮
+- **Phase 0 audit 10/10 实证 ✅**（6 文件 + TASK-03-02 范式 + doudec / V2=a triple-evidence + commit `1555cf4` 范本源）
+- **8 commits 时间线规划：** VAN（已 ✅）+ Plan（自吃狗粮 / 待 commit）+ Build B.1-B.6（6 commits）+ Finalize（1 commit）
+- **反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持）
+
+**下一步：** `/build` — 进入构建阶段，按 Phase B.1-B.6 文件聚合顺序逐 commit 落地。
+
+#### Build 阶段产出（2026-05-05 ~18:10 / 实测 ~20-25 min / **0.11-0.19× 极致极速区**）
+
+- **6 build commits 全部落地 ✅** + Memory Bank finalize ✅ + 14.5 子项 100% 入库 ✅
+- **总改动量：** +897 行 / 6 文件 / 0 文件创建 / 0 ctest 影响
+- **6 commits 时间线：**
+  - `f109933` Phase B.1 — writing-plans.mdc 7 子项（+460 行）
+  - `2369e23` Phase B.2 — systemPatterns.md 3 子项（+154 行）
+  - `374556e` Phase B.3 — git-workflow.mdc 2 子项（+159 行）
+  - `465b0a1` Phase B.4 — brainstorming.mdc 1 子项（+59 行）
+  - `c51e668` Phase B.5 — main.mdc 1 子项（+26 行）
+  - `4765224` Phase B.6 — veloxa_api.h 1 子项（+39 行）
+- **plan ×0.6 实测系数：** ~20-25 min vs plan ×0.6 ~130-180 min = **0.11-0.19× 极致极速区**（比 Plan 阶段 0.18-0.30× 还快）
+- **隐性附加工作 ×1.30-1.76 上限自吃狗粮 ✅**（Phase B.1 P2.2 段刚加 ×1.3-1.5 buffer / 实测正好命中 / 范式有效性立即验证）
+- **反复模式 0/8 抑制延续**（累计 17 模式连续抑制）
+
+**全任务总线（VAN + Plan + Build / 8 commits）：** ~50-70 min vs plan ×0.6 ~130-180 min = **~0.30-0.40× 极速区**（任务级 / **TASK-05-04 plan + build 累计实测**）
+
+#### Reflect 阶段产出（2026-05-05 ~18:25 / 实测 ~10-15 min / 极速区 ~0.10× 子档）
+
+- **回顾文档：** [reflection-TASK-20260505-04.md](reflection/reflection-TASK-20260505-04.md)（10 段 / 5/5 关键发现 / 8 改进建议）
+- **5 个 systemPatterns 沉淀全部已落实 ✅**：
+  - 新段 1：「工作流元任务范式 dual-evidence」（TASK-03-02 + TASK-05-04 / 平均参数）
+  - 新段 2：「极致 dogfooding 范式」（三层 dogfooding 模式）
+  - 累计升级：跨决策协同度 100% 第 13 次连续命中（累计 121/121 历史最高 streak）
+  - 累计升级：plan ×0.6 oct-evidence（第 8 数据点 / 双子档分化）
+  - 既有段升级：P0 协议 quad-evidence 已固化（writing-plans P1.5 段实证表升级）
+- **改进建议：** 8 项（P0×0 + P1×5 + P2×3）/ 6 项已 reflect 阶段落实 / 2 项累积下次工作流元任务
+- **反复模式 0/8 抑制延续**（VAN + Plan + Build + Reflect 四阶段全程保持 / 累计 17 模式连续抑制 / **历史新高**）
+- **回顾质量自评：** 4.6/5
+
+**全任务总线（含 Reflect）：** ~60-85 min vs plan ×0.6 ~130-180 min = **~0.36-0.48× 极速区**（含 reflect / 工作流元任务范式高度复用）
+
+**Archive 阶段（2026-05-05 ~18:38 / 实测 ~10-15 min / 极速区 ~0.10× 子档）：**
+
+- **归档文档：** [archive-TASK-20260505-04.md](archive/archive-TASK-20260505-04.md)（~290 行 / 10 段 / 度量数据汇总 + 改进建议状态汇总 + 5 范式里程碑总结）
+- **3 项 P1+P2 已迁移待处理事项**（writing-plans LOC 表格密度系数 / git-workflow 实测数据采集 / lazy-attach 头部 doc 落地标注）— 累积下次工作流元任务批量清零（triple-evidence 候选）
+- **Memory Bank 三件套重置为空闲态 ✅**
+
+**全任务总线（含 Archive）：** ~70-100 min vs plan ×0.6 ~130-180 min = **~0.42-0.55× 极速区**
+
+-->
 
 ### TASK-20260505-03 闭环摘要（2026-05-05 ~17:30 已归档）
 

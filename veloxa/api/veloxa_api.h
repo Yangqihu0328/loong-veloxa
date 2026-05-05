@@ -4,6 +4,45 @@
  *
  * This header is the sole public interface for embedding Veloxa.
  * All types and functions use C99-compatible declarations.
+ *
+ * ─────────────────────────────────────────────────────────────────────
+ * lazy-attach contract (quad-evidence, default behavior since 2026-05)
+ * ─────────────────────────────────────────────────────────────────────
+ *
+ * All vx_* C ABI functions that depend on optional Application sub-systems
+ * (update_manager_, script_engine_, devtool_, hot_reload_manager_, etc.)
+ * follow a "lazy-attach default contract": when the dependent sub-system
+ * is not yet initialized, the function returns VX_ERROR_INVALID_STATE
+ * (or a documented warning code such as VX_WARNING_HOT_RELOAD_FAILED)
+ * rather than crashing, asserting, or aborting.
+ *
+ * Contract guarantees:
+ *   - **Behavior**: returns VX_ERROR_INVALID_STATE; never crashes/asserts/aborts
+ *   - **Side-effects**: zero observable side-effects on INVALID_STATE return
+ *     (no logs, no allocations, no callbacks); callers may safely retry
+ *   - **Order**: no required call ordering; callers may invoke in any order
+ *   - **Idempotency**: repeat invocations are safe (attach-after-attach,
+ *     detach-after-detach, set-after-set are all no-ops or idempotent)
+ *
+ * Functions with documented lazy-attach behavior (quad-evidence, 2026-05):
+ *   - vx_view_set_pipeline_hooks      → update_manager_  (TASK-20260502-02)
+ *   - vx_view_attach_devtool          → devtool_, hot_reload_manager_
+ *                                       (TASK-20260503-01; emits
+ *                                        VX_WARNING_HOT_RELOAD_FAILED on
+ *                                        partial-success path)
+ *   - vx_devtool_get_console_output   → devtool_->console_panel_
+ *                                       (TASK-20260503-04)
+ *   - vx_view_invalidate              → update_manager_  (TASK-20260505-02)
+ *
+ * Cross-references:
+ *   - memory-bank/systemPatterns.md
+ *     "lazy-attach C ABI 容错模式 quad-evidence" section
+ *   - .cursor/rules/skills/writing-plans.mdc
+ *     "C ABI 设计模式 — lazy-attach 默认契约" section (plan-time checklist)
+ *
+ * Future C ABI additions: this contract is the default for all new vx_*
+ * functions that depend on optional Application sub-systems. Document the
+ * specific dependency in the function's per-function doxygen block.
  */
 
 #ifndef VELOXA_API_VELOXA_API_H_

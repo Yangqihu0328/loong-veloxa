@@ -2986,6 +2986,45 @@ TEST_F(RegisterConsoleBindingsTest, CapabilityAllowlistReverseProbe) {
 | TASK-20260504-01 commit 5 | `README.md` 「路线图」段 | **4** | ~5-10 min | 全角 `（` vs 半角 `(` / 全角 `；` vs 半角 `;` |
 | TASK-20260504-01 commit 5 | `productContext.md` 「已实现表」 | 1 | ~30 s | 全角 `；` 中部混入 |
 
+### 重复 anchor 检测协议（VAN/archive 阶段编辑 activeContext / progress 类滚动文档时**必填** / TASK-20260505-04 入库）
+
+> **TASK-20260505-03 反思 §4 #7 实证 + TASK-20260505-04 plan 阶段实测复现** ：activeContext.md / progress.md 这类多任务滚动文档，VAN 阶段从「空闲」转「初始化」时，旧任务的 `## 上次任务` 标题如未被 archive 阶段正确清理 → VAN StrReplace 后会出现 2 个 `## 上次任务` 段 → markdown 渲染异常 + 后续 StrReplace 无法精确定位。
+
+#### 强制操作
+
+VAN / archive 阶段编辑 `activeContext.md` / `progress.md` / `tasks.md` 这类多任务滚动文档**必须**先做重复 anchor 检测：
+
+```bash
+# 对每个目标文件检测重复二级标题
+rg -n "^## 上次任务|^## 当前阶段|^## 当前任务" memory-bank/activeContext.md
+rg -n "^## 上次任务|^## 当前任务" memory-bank/progress.md
+rg -n "^## 当前任务" memory-bank/tasks.md
+```
+
+#### 判读规则
+
+| 检测结果 | 处置 |
+|---|---|
+| 0 match | 文件结构干净 / 可直接 StrReplace |
+| 1 match | 正常状态 / 可 StrReplace |
+| **≥ 2 match 同一标题** | ⚠️ **重复 anchor / 必须先清理** — 在 StrReplace 前用 Read 定位每个 match → 决定保留哪个 / 移除其余（通常保留最新 / 移除/降级旧的）|
+
+#### 反模式
+
+- ❌ VAN 阶段直接 StrReplace 不做重复 anchor 检测（导致 markdown 渲染破坏）
+- ❌ archive 阶段移动旧任务到「上次任务」段未检查是否已存在「上次任务」段
+- ❌ 发现重复后用 `replace_all` 盲目替换（可能误删保留段）
+
+#### 实证
+
+- TASK-20260505-03 VAN commit `8ba512f` 后 `activeContext.md` 出现 2 个「上次任务」段 → reflect 阶段才发现 → archive 阶段补清理（应在 VAN 阶段就 grep 检测）
+- TASK-20260505-04 plan 阶段实测：进入「构建中」前 `progress.md` 已含 1 个「上次任务」段 / `activeContext.md` 已含 1 个 / 两文件均通过检测 ✅（验证协议有效）
+
+#### 交叉引用
+
+- 本段「中文文档编辑安全 audit」(母段) 强制 4 项 mitigation 适用于本子段
+- `.cursor/rules/skills/writing-plans.mdc` 「中文文档 StrReplace 字符类型 audit」段（同源沉淀）
+
 ### 与既有 systemPatterns 协同
 
 - 与 [«StrReplace hunk 隔离 path-level isolation 范式»](#已验证的模式来自-foundation-实现) 协同 — 缩小范围本质即更小 hunk
@@ -3652,6 +3691,301 @@ base 段说明工作流路径（`/van → /plan → /reflect → /archive` / 跳
 - `memory-bank/archive/archive-TASK-20260430-04.md`（first-evidence）
 - `memory-bank/archive/archive-TASK-20260504-01.md`（second-evidence）
 - `memory-bank/reflection/reflection-TASK-20260505-03.md` §3.a #4 + §3.c #4
+
+---
+
+## 视觉链路三件齐识别协议（TASK-20260505-04 入库 / P1 沉淀 — 来源 TASK-20260505-01 反思 §5 #5）
+
+> **TASK-20260505-01 实证**：DevTool dogfood UI 行为依赖 ≥ 3 个独立缺陷修复才能完整工作（Issue#1 frame counter 未递增 + Issue#2 hot reload watcher 路径错配 + Issue#3 panel CSS 未注入），plan 阶段未识别「视觉链路三件齐」性质 → 单缺陷修复 build 后 dogfood 仍不工作 → 第 2/3 个缺陷分别在 reflect 后另立任务 → 跨任务返工 + 用户体验回归延迟。
+
+### 触发条件
+
+plan 阶段涉及 **dogfood UI 行为验收**（用户可见行为 / panel UI / 渲染输出 / 视觉反馈链路）时**必填**视觉链路三件齐识别：
+
+- DevTool / 调试器 / Inspector UI 行为
+- panel JS 注入 / panel CSS 渲染
+- hot reload / live reload 视觉反馈
+- 渲染管线 dogfood（hello / overlay / pipeline hooks 类）
+
+### 强制 3 维度识别
+
+```markdown
+## §X UI 行为验收链路（dogfood 视觉链路三件齐识别）
+
+| # | 维度 | 当前状态 | 缺陷？ | 同任务修复？ |
+|:-:|---|---|:-:|:-:|
+| 1 | **数据通路**（数据源 → 视觉表达）| 是否完整？ | ❌/✅ | Y/N |
+| 2 | **触发通路**（事件源 → 数据更新）| 是否触发？ | ❌/✅ | Y/N |
+| 3 | **样式通路**（CSS / theme / panel UI 注入）| 是否注入？ | ❌/✅ | Y/N |
+```
+
+### 判读规则
+
+| 三维度状态 | plan 处置 |
+|---|---|
+| 全 ✅（无缺陷）| 仅做单维度行为扩展 / 不必视觉链路三件齐协议 |
+| 1 个 ❌ | 单缺陷任务 / 标准 plan |
+| **≥ 2 个 ❌** | ⚠️ **视觉链路三件齐 / 必须单任务集中闭环** — 不可拆分到多任务（避免跨任务返工 + 用户体验延迟）|
+
+### plan §UI 行为验收表是识别工具
+
+`plan §UI 行为验收` 段是视觉链路三件齐识别的强制工具 / 缺该段则视觉链路缺陷会逃逸到 build 阶段。
+
+### 反模式
+
+- ❌ plan 仅写「修复 frame counter 不递增」未识别还需修 hot reload + panel CSS（导致单任务 build 后 dogfood 仍不工作）
+- ❌ 视觉链路三件齐被拆分到 ≥ 2 任务（跨任务返工 / 用户体验延迟）
+- ❌ plan 缺 §UI 行为验收 段（识别工具缺失）
+- ❌ 误以为「修复主缺陷自然顺带其他」（视觉链路三维度独立 / 必须显式识别）
+
+### 实证
+
+- **TASK-20260505-01 first-evidence**：plan §0.11「视觉恢复链路」表识别 3 缺陷 → 单任务集中闭环（frame counter + hot reload + panel CSS 同任务修复）/ build 后 dogfood 一次到位 ✅
+- 范式：plan §0.11「视觉恢复链路」表是本协议范本
+
+### 交叉引用
+
+- `memory-bank/reflection/reflection-TASK-20260505-01.md` §5 #5 实证细节
+- `memory-bank/archive/archive-TASK-20260505-01.md`（first-evidence 任务归档）
+- 本文档 「跨决策协同度 100% doudec-evidence」段（同源 plan 阶段决策识别协议）
+
+---
+
+## V2=a 蓝图任务文档密度系数 1.0-1.4×（TASK-20260505-04 入库 / P2 沉淀 — 来源 TASK-20260505-03 反思 §4 #8）
+
+> **TASK-20260505-03 实证 + 累计 3 任务对照**：既有「蓝图任务规模估算公式」段中 spec/plan/creative 行数估算公式偏低 / 实际 V2=a 蓝图任务（含详细决策矩阵 + 子任务规格化 + 跨阶段协议元数据）文档密度比 base 估算高 27%~139% / 系数应升级为 1.0-1.4×。
+
+### 触发条件
+
+V2=a 蓝图任务（V2=纯蓝图 / `/van → /plan → /reflect → /archive` / 跳过 `/build`）的文档行数估算**必填**应用本系数：
+
+- spec（蓝图主交付）
+- plan（蓝图实施计划 + 子任务规格化）
+- creative ×N（V2=a 多 creative 文档）
+- archive（V2=a 任务归档）
+
+### 系数公式
+
+| 文档类型 | base 行数公式 | V2=a 系数 | 实际行数 |
+|---|---|:-:|:-:|
+| **spec** | `N 段 × 30-50 行/段 + M 附录 × 30-100 行/附录` | × 1.0-1.4 | base × 1.0-1.4 |
+| **plan** | `K 子任务 × 50-80 行/子任务 + 80-120 行框架` | × 1.0-1.4 | base × 1.0-1.4 |
+| **creative ×N** | `S 段 × 30-50 行/段 + 50-100 行方案对比表` | × 1.0-1.4 | base × 1.0-1.4 |
+| **archive** | `参考 reflection 行数 × 1.0-1.5` | × 1.0-1.4 | base × 1.0-1.4 × 1.0-1.5 |
+
+### 系数选择依据
+
+- × 1.0：base 估算（决策数 ≤ 5 / 子任务数 ≤ 3 / 跨阶段协议 ≤ 1）
+- × 1.2：中密度（决策数 6-10 / 子任务数 4-10 / 跨阶段协议 2-3）
+- **× 1.4：高密度（决策数 ≥ 11 / 子任务数 ≥ 11 / 跨阶段协议 ≥ 4 / 含 doudec-evidence 类决策矩阵协同协议）**
+
+### 实证（3 任务对照）
+
+| # | 任务 | 决策数 | 子任务数 | 跨阶段协议 | base 估算 | 实际行数 | 系数 |
+|:-:|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| 1 | TASK-20260430-04 | 13 | 5 | 2 | ~2200 | ~2790 | **1.27** |
+| 2 | TASK-20260504-01 | 5 | 0 | 1 | ~1100 | ~1410 | **1.28** |
+| 3 | TASK-20260505-03 | 13 | 18 | 4 | ~2700 | ~3030 | **1.12**（plan §8 深浅梯度抑制后）|
+
+**平均系数：** ~1.22 / **范围：** 1.12 - 1.28 / **保守上限：** 1.4（覆盖未来更高密度 V2=a 任务）
+
+### 反模式
+
+- ❌ V2=a 蓝图任务用 base 估算（×1.0）/ 实际超出 27%-39% / plan 估时漂移
+- ❌ 系数固定 ×1.4（过度膨胀 / 适用所有 V2=a 任务 / 与「蓝图任务子任务规格化深浅梯度」协议矛盾）
+- ❌ 未与「V2=a 蓝图任务范式 triple-evidence」段协同（密度系数与范式协议解耦）
+
+### 与既有规则协同
+
+- 与本文档「蓝图任务规模估算公式」段（base 公式来源）协同 / 本系数是 V2=a 子档升级
+- 与本文档「V2=a 蓝图任务范式 triple-evidence」段协同（密度系数适用 triple-evidence 范式）
+- 与 `.cursor/rules/skills/writing-plans.mdc`「蓝图任务子任务规格化深浅梯度」段协同（深浅梯度可降低密度系数 / TASK-05-03 实证 1.12 vs 预期 1.4）
+
+### 交叉引用
+
+- 本文档「蓝图任务规模估算公式」段（base 公式）
+- 本文档「V2=a 蓝图任务范式 triple-evidence」段（V2=a 范式协议）
+- `.cursor/rules/skills/writing-plans.mdc`「蓝图任务子任务规格化深浅梯度」段（密度抑制协议）
+
+---
+
+## 工作流元任务范式 dual-evidence（TASK-20260505-04 反思入库 / P1 沉淀 — TASK-03-02 first + TASK-05-04 dual）
+
+> **2 任务实证累计**（TASK-20260503-02 first-evidence + TASK-20260505-04 dual-evidence）：工作流元任务作为新任务分类（vs 实施类任务 / 蓝图类任务）已稳定 / 范式参数已可量化 / 适用场景已明确。
+
+### 范式定义
+
+**工作流元任务**（workflow meta-task）：
+- 定位：批量清零累积的跨任务 reflection §5/§6 P1+P2 沉淀，避免反复模式累积升级到 P0 紧急轨道
+- 测试模式：[文档调整模式] / 无 ctest 验证 / 验证手段：grep audit + Read 结构 + ReadLints
+- spec 豁免：D7=B 沿用 / 无独立 spec / 仅 plan + Memory Bank
+- commit 拆分：D1=B 6 commit/文件（N ≥ 6 子项）或 1:1 子项-commit（N ≤ 6 子项）
+- 实施顺序：D2=A 文件聚合（与 commit 拆分协同）
+
+### 2 实证对照参数
+
+| # | 参数 | TASK-03-02 first-evidence | TASK-05-04 dual-evidence | 平均值 |
+|:-:|---|:-:|:-:|:-:|
+| 子项数 | — | 6 | 14.5 | **10.25** |
+| 文件改动数 | — | 4 | 6 | **5** |
+| commit/子项比 | — | 1:1（6 commit / 6 子项）| 0.41:1（6 commit / 14.5 子项）| — |
+| 总改动行数 | — | ~370 | ~897 | **~634** |
+| plan ×0.6 实测系数 | — | ~0.50× | ~0.30-0.40× | **~0.40×** |
+| 反复模式抑制率 | — | 0/8 | 0/8 | **100%** |
+| Phase 0 audit 通过率 | — | 100% | 100%（10/10）| **100%** |
+| 跨决策协同度 | — | 8/8 一致 | 8/8 1 次锁定 | **100%** |
+
+### 适用场景
+
+- ≥ 4 项跨任务 P1+P2 沉淀累积（避免反复模式升级到 P0）
+- 涉及 ≥ 3 个 `.cursor/rules/skills/*.mdc` 文件改动
+- 仅文档/规则改动 / 0 代码逻辑改动
+- 估时 ≤ 200 min（plan ×0.6）/ 实测 ~40-100 min（×0.30-0.50× 极速区）
+
+### commit 拆分决策树
+
+```
+N 子项数？
+  ≤ 6  → 1:1 子项-commit（沿用 TASK-03-02 范式）
+  ≥ 7  → 文件聚合（D1=B 6 commit/文件 / 沿用 TASK-05-04 范式）
+  ≥ 20 → 升级到 Level 3 / 拆分成 ≥ 2 工作流元任务（避免单任务过大）
+```
+
+### 反模式
+
+- ❌ 工作流元任务强制独立 spec（违反 D7=B 协议 / 浪费时间）
+- ❌ 工作流元任务做 ctest 验证（违反 D4=A 文档调整模式 / 沿用 ctest 是过度设计）
+- ❌ 工作流元任务用 14 commit/子项（N ≥ 7 时浪费 / 应文件聚合）
+- ❌ 工作流元任务跳过 plan 直接 build（违反 P0 协议 plan/spec docs 落盘即 commit）
+
+### 与既有规则协同
+
+- 与 `.cursor/rules/skills/writing-plans.mdc` 「plan/spec docs 落盘即 commit P0 协议」段协同（工作流元任务豁免 spec 子项 / D7=B 协议）
+- 与 `.cursor/rules/skills/git-workflow.mdc` 「Multi-subtask commit 拆分 git add -p」段协同（commit 拆分粒度互补）
+- 与本文档「跨决策协同度 100% doudec-evidence」段协同（决策矩阵 8 D 决策 100% 锁定）
+
+### 后续推广候选
+
+- 下次累积 ≥ 4 P1/P2 项时立项工作流元任务（清零周期 ~1-2 月）
+- 沉淀「工作流元任务 plan 范本」到 `writing-plans.mdc`（待 triple-evidence 后）
+
+### 交叉引用
+
+- `memory-bank/archive/archive-TASK-20260503-02.md`（first-evidence）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md`（dual-evidence）
+- `.cursor/rules/skills/writing-plans.mdc` 「plan/spec docs 落盘即 commit P0 协议」段
+
+---
+
+## 极致 dogfooding 范式（TASK-20260505-04 反思入库 / P2 沉淀 — 同任务规则落地 + 规则验证）
+
+> **TASK-20260505-04 三层 dogfooding 实证**：工作流元任务可设计为「规则落地 + 规则即时验证 / 同任务双重 dogfooding」 → 规则有效性验证窗口从「未来同类任务（≥ 1 周）」压缩到「同任务内（~30 min）」。
+
+### 三层 dogfooding 模式
+
+| 层 | 触发时机 | 实证 |
+|:-:|---|---|
+| **层 1：决策选择 dogfood** | plan 阶段 D 决策选择本任务即将落地的规则候选 | TASK-05-04 D8=A P0 协议自吃狗粮 / commit `02dd40c` plan + MB 单 commit / 0 collateral |
+| **层 2：VAN 阶段即时启用** | VAN/plan 阶段编辑文档时主动应用未来 phase 才落地的协议 | TASK-05-04 P2.3 重复 anchor 检测协议在 VAN 阶段编辑 activeContext / progress 时已应用（grep `^## 上次任务` 检测）|
+| **层 3：build 后即时验证** | build 阶段最后 phase 实测数据印证早期 phase 落地的规则 | TASK-05-04 Phase B.1 落地 P2.2 LOC ×1.3-1.5 buffer / Phase B.7 实测 +897 行 vs 估上限 +690 = ×1.30 / 命中下限 ✅ |
+
+### 适用前置
+
+- 工作流元任务（vs 实施类 / 蓝图类）— 规则改动密度高 / 易触发同任务 dogfooding
+- 规则改动涉及「plan 阶段产出物 commit 协议」/「LOC 估算系数」/「文档编辑 audit」/「commit body 范本」类元规则
+- 不适用：实施类任务（代码改动 vs 规则改动 / dogfooding 链路不天然存在）
+
+### 反模式
+
+- ❌ 规则改动单独立项 / 不在同任务实践（规则未经实证就固化）
+- ❌ dogfooding 仅限层 1（决策选择）/ 跳过层 2 + 层 3（错失即时验证机会）
+- ❌ 三层 dogfooding 都仅 1 个规则（应至少 2-3 个不同规则同任务多重 dogfooding）
+
+### 实证
+
+- TASK-20260505-04（first-evidence）：3 层 ×3 规则同任务多重 dogfooding：
+  - 层 1: D8=A P0 协议自吃狗粮（commit 02dd40c）
+  - 层 2: P2.3 重复 anchor 检测协议（VAN 阶段已应用）
+  - 层 3: P2.2 LOC ×1.3-1.5 buffer（Phase B.7 实测印证）
+
+### 交叉引用
+
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.5 + §4.2 三层 dogfooding 详细实证
+- 本文档「工作流元任务范式 dual-evidence」段（同源 TASK-05-04 实证基础）
+
+---
+
+## 跨决策协同度 100% 第 13 次连续命中（TASK-20260505-04 反思入库 / 第 13 次 / 累计 121/121 历史最高 streak）
+
+> **TASK-20260505-04 dec → endec → doudec → 第 13 次连续命中**：8 D 决策 1 次 AskQuestion all_recommended 锁定 / 用户跳过率 100% / reflect 重审 0 问题 = 跨决策协同度协议历史最成熟典范。
+
+### 累计统计（13 任务连续命中）
+
+| # | 任务 | 决策数 | 锁定方式 |
+|:-:|---|:-:|---|
+| 1-7 | sept-evidence 累计（TASK-20260430-04 至 TASK-20260504-01）| 累计 60+ | 多次 AskQuestion all_recommended |
+| 8 | TASK-20260504-01 sept-evidence 升级 | 5 | 1 次 AskQuestion |
+| 9 | TASK-20260505-01 oct-evidence 候选 | 8 | 1 次 AskQuestion |
+| 10 | TASK-20260505-02 dec-evidence | 12 | 1 次 AskQuestion |
+| 11 | TASK-20260505-03 VAN endec-evidence | 5 (V) | 1 次 AskQuestion |
+| 12 | TASK-20260505-03 plan doudec-evidence | 8 (B) | 1 次 AskQuestion |
+| **13** | **TASK-20260505-04 plan 第 13 次连续命中** | **8 (D)** | **1 次 AskQuestion** |
+
+**累计：121/121（13 任务全 ✅ / 0 决策返工 / 历史最高 streak）**
+
+### 推论
+
+- VAN 推荐质量已达成熟期（基于 grep 实证 + systemPatterns 既有规则 + 跨任务范式累计）
+- 用户跳过率 100% 在 reflect 阶段重审 0 问题验证 = 协议历史最有效
+- 决策矩阵设计已成熟（D 决策依赖图 + 协同度标注 + VAN 推荐 ⭐ 全成熟）
+
+### 与既有「跨决策协同度 100% doudec-evidence」段关系
+
+本段是 doudec-evidence 段（line 3538）的累计升级标注 / 不另立顶级段 / 仅追加第 13 次命中实证。
+
+### 交叉引用
+
+- 本文档「跨决策协同度 100% doudec-evidence」段（line 3538 / 累计实证基础）
+- 本文档「工作流元任务范式 dual-evidence」段（TASK-05-04 第 13 次命中所属任务）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.1（第 13 次命中详细实证）
+
+---
+
+## plan ×0.6 实测系数 oct-evidence（TASK-20260505-04 反思入库 / 第 8 数据点 — sept → oct-evidence 升级）
+
+> **TASK-20260505-04 全任务 ×0.30-0.40× / Build 阶段 ×0.11-0.19× 极致极速区**：plan ×0.6 实测系数累计第 8 数据点 / 工作流元任务子档极致极速区出现 / oct-evidence 已达 / 「极致极速区 0.02-0.05×」+「极致极速区 0.11-0.19×」双子档。
+
+### 8 数据点累计
+
+| # | 任务 | plan ×0.6 估时 | 实测 | 系数 | 子档 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1-6 | sept-evidence base 6 任务 | — | — | 平均 ~0.5× | 标准极速区 |
+| 7 | TASK-20260505-03（GLES 蓝图）| ~17-25 h | ~30-40 min | **0.02-0.04×** | **极致极速区**（V2=a 蓝图子档 / 第 7 数据点）|
+| **8** | **TASK-20260505-04（工作流元任务）** | **130-180 min** | **~50-70 min（plan + build）** | **0.30-0.40× 总线 / Build 阶段 0.11-0.19×** | **极致极速区**（工作流元任务子档 / 第 8 数据点）|
+
+### 双子档对照
+
+| 子档 | 系数范围 | 任务类型 | 实证 |
+|---|---|---|---|
+| 极致极速区 V2=a 蓝图 | 0.02-0.05× | Level 4 V2=a 蓝图任务 | TASK-05-03 |
+| **极致极速区 工作流元任务** | **0.11-0.19×（Build 阶段）** | Level 2-3 工作流元任务 | TASK-05-04 |
+| 极速区 标准 | 0.30-0.50× | 实施类任务 | sept-evidence base |
+
+### 推论
+
+- 极致极速区已分化双子档（V2=a 蓝图 vs 工作流元任务）/ 各有适用场景
+- plan 阶段决策矩阵 100% 锁定 + 文件聚合大 batch + 0 ctest 等待 = 极致极速区共同因素
+- 未来同类任务（≥ 1 个新任务）即可升级 sept → oct → nona-evidence
+
+### 与既有「跨决策协同度 100% sept-evidence」段关系
+
+本段是 sept-evidence 段（既有）的累计升级标注 / 第 8 数据点入库 / 双子档分化。
+
+### 交叉引用
+
+- 本文档「极致极速区 0.02-0.05× 子档（sept-evidence 候选）」段（line ~3500 / V2=a 蓝图子档）
+- 本文档「工作流元任务范式 dual-evidence」段（TASK-05-04 工作流元任务子档来源）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.4（极致极速区详细实证）
 
 ---
 

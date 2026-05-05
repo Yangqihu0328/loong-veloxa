@@ -42,6 +42,165 @@ alwaysApply: false
 - `test(auth): add login failure test cases`
 - `refactor(db): extract connection pool logic`
 
+### commit body Source 溯源 + 实测数据格式（quad-evidence ~39 commits / 已成默认协议）
+
+> **TASK-20260503-03 反思 §6 #4 实证 + 累计 ~39 commits 实测**：commit body 含「Source 溯源」+「实测数据」格式已成 Veloxa 默认协议 / 跨任务可追溯性 + 度量数据汇总的关键基础设施。
+
+#### 强制要求
+
+所有 Level 2+ 任务的 commit body **必填**以下两段：
+
+##### Source 溯源段（4 类）
+
+每个 commit body 末尾**必须**含 `Source:` 段，引用 4 类来源中的至少 1 类：
+
+```markdown
+Source:
+- spec：docs/specs/2026-MM-DD-feature.md §X.Y
+- plan：docs/plans/2026-MM-DD-feature.md §B.N
+- archive：memory-bank/archive/archive-TASK-XXXXXXXX-XX.md §X
+- reflection：memory-bank/reflection/reflection-TASK-XXXXXXXX-XX.md §X #N
+```
+
+**优先级：** spec > plan > reflection > archive（spec 最稳定 / archive 最具体）
+
+##### 实测数据段
+
+涉及度量类任务（性能 / 时长 / 行数 / commit 数 / 决策数）的 commit body **必填**实测数据：
+
+| 度量类型 | 格式范本 |
+|---|---|
+| **plan ×0.6 时间** | `plan ×0.6 实测系数：~N min vs plan ×0.6 M min = X.YZ× <子档名>` |
+| **commit hash** | `commit hash: a1b2c3d`（reflect/archive 阶段引用前序 commit）|
+| **行数** | `+M 行 / 既有 N 行 → N+M 行` |
+| **决策数 / 协同度** | `跨决策协同度 100% 第 N 次连续命中 / 累计 X/Y` |
+| **测试数** | `ctest 期望：DEVTOOL=ON N + DEVTOOL=OFF M` |
+
+#### commit body 完整结构（基础任务 / 非蓝图）
+
+```markdown
+<type>(<scope>): <description>
+
+[1-2 段任务概述]
+
+[实施清单 / 子项汇总]
+
+验证：
+- ✅ <验证点 1>
+- ✅ <验证点 2>
+
+Source:
+- <溯源类型>: <文件路径> §<段号>
+- ...
+
+实测数据（如适用）：
+- plan ×0.6 实测系数: ...
+- commit hash: ...
+
+[反复模式 / 跨决策协同度元数据]
+```
+
+#### 反模式
+
+- ❌ commit body 仅含 `<description>` 无 Source 溯源（破坏跨任务可追溯）
+- ❌ Source 溯源仅写 `TASK-XXXXXXXX-XX` 不指明 `§X.Y`（无法定位上下文）
+- ❌ 度量类任务无实测数据段（reflect 阶段无法汇总系数）
+- ❌ Source 引用已 archive 的旧任务但未注明 archive 路径（导致引用 broken link）
+
+#### quad-evidence 实证
+
+| # | 任务范围 | 累计 commits | 实证 |
+|:-:|---|:-:|---|
+| 1 | TASK-20260503-01 ~ 03（DevTool 系列）| ~12 | 首次实证 Source 溯源全覆盖 |
+| 2 | TASK-20260503-04 ~ 05（DOM bindings 蓝图）| ~10 | dual-evidence + 实测数据全覆盖 |
+| 3 | TASK-20260504-01（MVP-scope V2=a）| ~6 | triple-evidence + V2=a 协同 |
+| 4 | TASK-20260505-01 ~ 04（MVP-B + GLES 蓝图 + 工作流元）| ~11+ | **quad-evidence ~39 commits / 已成默认协议** |
+
+#### 交叉引用
+
+- 本规则「蓝图任务 commit body 范本」段（蓝图任务专属 8 段范本 / Source + 实测数据是其中 2 段）
+- `.cursor/rules/skills/writing-plans.mdc`「plan/spec docs 落盘即 commit P0 协议」段（plan 阶段 commit body 协议同源）
+- `memory-bank/systemPatterns.md`「跨决策协同度 100% doudec-evidence」段（决策矩阵元数据来源）
+
+## 蓝图任务 commit body 范本（V2=a 蓝图任务 / V2=完整蓝图任务**必填**）
+
+> **TASK-20260505-03 commit `1555cf4` 8 段范本首次完整实施 → TASK-20260505-04 plan commit `02dd40c` quad-evidence 候选升级**：蓝图任务 commit body 含 8 段固化范本（任务定位 / 决策矩阵 / 主交付清单 / 后续实施 / 协议元数据 / plan ×0.6 / Source / 下一步），与 P0 协议「plan/spec docs 落盘即 commit」绑定。
+
+### 触发条件
+
+以下任一蓝图任务**必填**本范本：
+
+- Level 4 V2=a 蓝图任务（`/van → /plan → /reflect → /archive` / 跳过 `/build`）
+- Level 4 V2=完整蓝图任务（含 build 阶段）的 plan commit
+- 工作流元任务的 plan commit（豁免 spec / 沿用范本结构）
+- 任何含 ≥ 5 D 决策的 plan commit
+
+### 8 段范本
+
+```markdown
+<type>(<scope>): <description> [TASK-XXXXXXXX-XX]
+
+任务定位：
+- TASK-XXXXXXXX-XX <任务名>（Level X / V2=a 蓝图 / 工作流变体标注）
+- 沿用 <既有范式 / first-evidence 任务> 范式
+- 主交付：spec ~N 行 + plan ~M 行 + creative ×K + Memory Bank 三件套同步
+- [V2=a 标注：跳过 /build / 主交付 = 文档]
+
+V/B/D 决策矩阵（N 决策 / M 次 AskQuestion all_recommended 锁定）：
+- D1=A <决策项 1>: <理由概要>
+- D2=B <决策项 2>: <理由概要>
+- ...
+
+主交付清单（N 文件 / 协议规则）：
+- docs/specs/YYYY-MM-DD-feature-design.md（新建 ~N 行 / Y 段）
+- docs/plans/YYYY-MM-DD-feature.md（新建 ~M 行 / Z 段）
+- memory-bank/creative/creative-XXX.md ×K（新建 ~K×N 行）
+- memory-bank/activeContext.md（更新 +N 行）
+- memory-bank/tasks.md（更新 +N 行）
+- memory-bank/progress.md（更新 +N 行）
+
+后续实施（Build 阶段 / V2=完整任务填 / V2=a 任务标 N/A）：
+- B.1 <子任务 1> [估时]
+- B.2 <子任务 2> [估时]
+- ...
+- 总计 N commits / +M LOC（×1.3-1.5 buffer 后）
+
+协议元数据：
+- ✅ plan/spec docs 落盘即 commit P0 协议执行（X 文件单 commit / 0 collateral）
+- ✅ 跨决策协同度 100% 第 N 次连续命中（dec → endec → doudec → ...）
+- 工作流元任务：豁免独立 spec（沿用 TASK-03-02 范式）/ V2=a 蓝图：跳过 /build
+
+plan ×0.6 实测系数：
+- 估时：plan ×0.6 N-M min
+- 实测：~K min
+- 系数：~X.YZ× <子档名 / 极速区 / 极致极速区 / 标准区>
+- 子档归属：<原因>
+
+Source:
+- spec / plan / archive / reflection 引用清单
+- commit hash 链（如有前序 commit 引用）
+
+下一步：/<reflect|build> — <说明>
+```
+
+### 反模式
+
+- ❌ 蓝图任务 commit body 仅写 1-2 段（缺决策矩阵 / 缺 plan ×0.6 实测系数）
+- ❌ V2=a 蓝图任务 commit body 不标「跳过 /build」（让 reviewer 误以为还有后续 build）
+- ❌ 决策矩阵段仅写决策结果不写「N 决策 / M 次 AskQuestion all_recommended」元数据
+- ❌ 协议元数据段缺「plan/spec docs 落盘即 commit」执行确认（破坏 P0 协议自查）
+
+### 与既有规则协同
+
+- 与 `.cursor/rules/skills/writing-plans.mdc`「plan/spec docs 落盘即 commit P0 协议」段绑定（同 8 段定义 / 双向引用）
+- 与本规则「commit body Source 溯源 + 实测数据格式」段协同（Source + 实测数据是 8 段中的 2 段）
+- 与 `memory-bank/systemPatterns.md`「跨决策协同度 100% doudec-evidence」段协同（决策矩阵元数据格式）
+
+### 实证
+
+- TASK-20260505-03 commit `1555cf4`：8 段范本首次完整实施 / triple-evidence 启动
+- TASK-20260505-04 commit `02dd40c`（plan 阶段 dogfood）：8 段范本工作流元任务变体 / quad-evidence 候选
+
 ## 工作流产出物提交
 
 工作流命令（`/build`、`/reflect`、`/archive`）产生的 Memory Bank 和文档变更也需要提交，确保 git 历史完整反映工作流全生命周期。

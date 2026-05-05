@@ -54,7 +54,9 @@ alwaysApply: true
 
 遇到 Bug 时使用 `/debug` 命令，它独立于主工作流。
 
-#### Level 4 蓝图任务 V2=a 工作流变体（来自 TASK-20260430-04）
+#### Level 4 蓝图任务 V2=a 工作流变体（**triple-evidence 稳定范式** / 升级自 TASK-20260430-04）
+
+> **2026-05-05 升级标注：triple-evidence 稳定范式**（TASK-20260505-04 P1.8 入库）— 经 3 任务实证累计（TASK-20260430-04 + TASK-20260504-01 + TASK-20260505-03），范式参数已稳定 / V2=a 蓝图任务路径可作为成熟工作流变体直接应用。
 
 当 Level 4 任务的 V2 决策 = **a 纯蓝图**（spec + plan + creative ×N，不含 build 实施）时，工作流变体为：
 
@@ -64,7 +66,30 @@ alwaysApply: true
 
 `/reflect` 命令前置条件检查「当前阶段必须是 `构建中`」对蓝图任务应灵活解读：「广义构建 = 主交付物落盘」= plan 完成。蓝图任务的「构建中」语义即「文档产出中」。
 
-详细沉淀见 `memory-bank/systemPatterns.md` 「Level 4 蓝图任务 V2=a 工作流变体」段。
+##### 3 任务实证对照表（triple-evidence 范式参数稳定）
+
+| # | 任务 | 决策数 | 实施子任务 | 总文档行数 | plan ×0.6 实测 |
+|:-:|---|:-:|:-:|:-:|:-:|
+| 1 | TASK-20260430-04（DevTool 嵌入式调试器蓝图）| 13 | 5 | ~2790 行 | ~45 min |
+| 2 | TASK-20260504-01（MVP-scope 范围蓝图）| 5 | 0 | ~1410 行 | ~30 min |
+| 3 | TASK-20260505-03（GLES 硬件渲染蓝图）| 13 | 18 | ~3030 行 | ~38 min |
+| **平均** | — | **~10.3** | **~7.7** | **~2410** | **~38 min** |
+
+##### 适用任务类型
+
+triple-evidence 已覆盖：
+
+- 嵌入式工具系统蓝图（DevTool / 调试器 / Inspector）
+- MVP 范围决策蓝图（特性矩阵 / 功能取舍）
+- 硬件加速 / 后端蓝图（GLES / DRM / 渲染管线）
+
+未来可推广：
+
+- Console / JS Debugger 详细设计蓝图（base TASK-20260430-04 蓝图）
+- DRM/KMS 嵌入式后端蓝图（base TASK-20260505-03 蓝图）
+- 资源加载策略蓝图 / 多进程架构蓝图（systemPatterns 待定项）
+
+详细沉淀见 [`memory-bank/systemPatterns.md`](../../memory-bank/systemPatterns.md) 「V2=a 蓝图任务范式 triple-evidence」段（含完整实证 + 范式参数 + 与既有规则协同）。
 
 ## 技能系统
 

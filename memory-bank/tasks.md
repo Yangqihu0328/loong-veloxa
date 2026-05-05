@@ -2,13 +2,186 @@
 
 ## 当前任务
 
-> 🔓 **空闲** — 等待新任务启动。最近闭环：TASK-20260505-03（archive commit `ecf7b87`）。详 [activeContext.md](activeContext.md) 「下一推荐任务」段。
+**🟢 空闲** — 等待新任务。
+
+最近闭环：[TASK-20260505-04 工作流元任务批量落地（dual-evidence 第 2 实证 / 14.5 项 P1+P2 清零 / 5 个范式里程碑）](archive/archive-TASK-20260505-04.md) ✅ 已归档（详见 archive-TASK-20260505-04.md）。
+
+下次推荐任务：见 [activeContext.md](activeContext.md) 「下一推荐任务」段（建议从 G1.1 CMake VX_RENDERER flag 开始 / 进入 G1 OpenGL ES 实施阶段）。
 
 ---
 
 <!--
-
 ## 已归档（保留供审计 / 不影响当前阶段）
+
+### TASK-20260505-04：工作流元任务批量落地（P1×10 + P2×4 跨任务沉淀批量固化）— ✅ 已归档
+
+- **当前阶段：** 🟢 **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+- **复杂度级别：** Level 2-3 工作流元任务（沿用 [TASK-20260503-02 工作流元任务范式](memory-bank/archive/archive-TASK-20260503-02.md)）
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-04-workflow-meta-batch`（基于 main `b085a85` ✅ 创建）
+- **来源：** [TASK-20260503-04 reflection §5](memory-bank/reflection/reflection-TASK-20260503-04.md) + [TASK-20260503-05 reflection §5](memory-bank/reflection/reflection-TASK-20260503-05.md) + [TASK-20260505-01 reflection §5](memory-bank/reflection/reflection-TASK-20260505-01.md) + [TASK-20260505-02 reflection §5](memory-bank/reflection/reflection-TASK-20260505-02.md) + [TASK-20260505-03 reflection §4](memory-bank/reflection/reflection-TASK-20260505-03.md) 累计 14 项 P1+P2 改进建议 + 用户 `/van 工作流元任务批量落地` 拍板
+- **安全相关：** ❌ 否（仅文档/规则改动 / 0 代码改动 / 0 新威胁面）
+- **估时（plan ×0.6）：** ~130-180 min（14 项 / 平均 ~10-15 min/项）/ 预期实测 ~50-80 min（极速区 0.4-0.6× 系数）
+
+#### 任务范围（14 项 P1 + P2 跨任务沉淀批量落地）
+
+**P1 子项（10 项）：**
+
+| # | 子项 | 来源 | 目标文件 | 估时 |
+|:-:|---|---|---|:-:|
+| P1.1 | writing-plans.mdc Phase 0「JS context 归属与 host binding 注册 ctx 一致性 audit」子条 | TASK-03-04 reflect §5 #1 | writing-plans.mdc | ~10 min |
+| P1.2 | writing-plans.mdc「资源类反向探针 SOP」段（限定非注释区 + comment policy）| TASK-03-04 reflect §5 #2 | writing-plans.mdc | ~10 min |
+| P1.3 | brainstorming.mdc 新段「Phase 0 grep 实证驱动的主动 push-back 模式」（D8b 实证）| TASK-03-05 reflect §5 #2 | brainstorming.mdc | ~10 min |
+| P1.4 | systemPatterns 新沉淀「视觉链路三件齐识别协议」段 | TASK-05-01 reflect §5 #5 | systemPatterns.md | ~10 min |
+| P1.5 | **writing-plans.mdc「plan/spec docs 落盘即 commit」P0 协议段（含 8 段 commit body 范本）** ⭐ **升级到 P0 / triple-evidence 已达固化阈值** | TASK-05-01 → 02 → 03 reflect | writing-plans.mdc | ~15-20 min |
+| P1.6 | writing-plans.mdc Phase 0 audit 段「spec vs code 一致性 audit」+「能力假设 audit」双子条（反复模式 #8 spec 数据回归 triple-evidence 固化）| TASK-05-02 reflect §5 #4 | writing-plans.mdc | ~15 min |
+| P1.7 | writing-plans.mdc C ABI 设计模式段「lazy-attach 默认契约」子条 + veloxa_api.h 顶部 doc「lazy-attach contract」节（quad-evidence 已成默认范式）| TASK-05-02 reflect §5 #5 | writing-plans.mdc + veloxa/api/veloxa_api.h | ~15 min |
+| P1.8 | main.mdc Level 4 蓝图任务 V2=a 工作流变体段升级为「稳定范式 / triple-evidence」标注（3 任务对照表）| TASK-05-03 reflect §4 #4 | main.mdc | ~10 min |
+| P1.9 | writing-plans.mdc 新增「蓝图任务子任务规格化深浅梯度」段（🟢 完整 / 🔵 概要 + plan §8 边界明示模板）| TASK-05-03 reflect §3.d #3 + §4 #5 | writing-plans.mdc | ~15 min |
+| P1.10 | git-workflow.mdc 新增「蓝图任务 commit body 范本」段（8 段固化 / 实例引用 commit `1555cf4`）| TASK-05-03 reflect §3.c #5 + §4 #6 | git-workflow.mdc | ~10-15 min |
+
+**P2 子项（4 项）：**
+
+| # | 子项 | 来源 | 目标文件 | 估时 |
+|:-:|---|---|---|:-:|
+| P2.1 | git-workflow.mdc commit body Source 溯源 + 实测数据格式固化（quad-evidence ~39 commits）| TASK-03-03 reflect §6 #4 | git-workflow.mdc | ~10-15 min |
+| P2.2 | writing-plans.mdc LOC 估算附录「隐性附加工作类型清单」+ ×1.3-1.5 buffer 范本（与 03-02 #4 同源合并）| TASK-03-02 reflect §6 #4 + 03-04 P2 #1 | writing-plans.mdc | ~10 min |
+| P2.3 | systemPatterns 新增「activeContext.md 重复 anchor 检测协议」子段 | TASK-05-03 reflect §4 #7 | systemPatterns.md | ~10 min |
+| P2.4 | systemPatterns 新增「V2=a 蓝图任务文档密度系数 1.0-1.4×」段（3 任务对照）| TASK-05-03 reflect §4 #8 | systemPatterns.md | ~10 min |
+
+#### 文件影响清单（按文件维度聚合）
+
+| 文件 | P1 子项 | P2 子项 | 总计 |
+|---|:-:|:-:|:-:|
+| `.cursor/rules/skills/writing-plans.mdc` | P1.1+P1.2+P1.5+P1.6+P1.7+P1.9 = **6** | P2.2 = **1** | **7** |
+| `.cursor/rules/skills/brainstorming.mdc` | P1.3 = **1** | — | **1** |
+| `.cursor/rules/skills/git-workflow.mdc` | P1.10 = **1** | P2.1 = **1** | **2** |
+| `.cursor/rules/main.mdc` | P1.8 = **1** | — | **1** |
+| `memory-bank/systemPatterns.md` | P1.4 = **1** | P2.3+P2.4 = **2** | **3** |
+| `veloxa/api/veloxa_api.h` | P1.7 = **0.5** | — | **0.5** |
+| **总计** | **10.5** | **4** | **14.5** |
+
+#### 复杂度级别评估
+
+- **Level 2-3 工作流元任务**（沿用 TASK-20260503-02 范式）
+- **决定因素：** 文档/规则改动密集（14 项 / 6 文件 / ~130-180 min plan ×0.6）/ 0 代码逻辑改动 / 0 新组件设计 / 但跨任务协议协调 + 优先级矩阵决策需要 plan 阶段细化
+- **路由：** `/plan` 进入规划阶段（多子项分组提交策略 + 优先级排序 + 是否拆分多 commit 决策）
+
+#### VAN 前置验证清单（4 维度全通过 ✅）
+
+- ✅ **依赖可获取性：** 仅文档/规则改动 / 0 第三方库 / 0 模型文件
+- ✅ **环境就绪：** `.cursor/rules/skills/` 10 个 mdc 文件 + main.mdc + memory-bank/systemPatterns.md 全在位 / Memory Bank 完整
+- ✅ **已有 artifact：** 6 个目标文件全部存在（待修改而非新建）/ Glob 验证通过
+- ✅ **待处理事项关联：** activeContext「待处理事项」段 14 项明确 / 累计 P1 sept-evidence 已超固化阈值 / 5 任务 reflect 段全部有详细引用
+
+#### 反复模式预防 audit（已知 8 种反复模式 / VAN 阶段预审）
+
+- ✅ #1 前置依赖未验证：4 维度全 ✅ 通过
+- ✅ #6 提交粒度偏离计划：plan 阶段决定分组提交策略（建议 P1 P0 升级 1 commit + P1 其他多 commit + P2 多 commit / 详 plan 阶段决定）
+- ✅ #8 spec 数据回归 audit：本任务无既有 spec 数据回归（仅工作流规则改动 / 不涉及功能 spec）
+- ✅ 中文文档 StrReplace 字符类型 audit：本任务编辑 6 处文档 / 应用 TASK-20260505-03 P2 #7 沉淀「重复 anchor 检测协议」（VAN 阶段已实践 ✅）
+
+#### 推荐工作流路径
+
+```
+/van（本阶段 ✅）→ /plan（规划 14 子项分组 + 优先级 + commit 策略）→ /build（实施 14 子项）→ /reflect → /archive
+```
+
+**下一步：** `/build` — 进入构建阶段，按 Phase B.1-B.6 文件聚合顺序逐 commit 落地（共 6 build commits + 1 finalize commit / 沿用 TASK-03-02 工作流元任务范式）。
+
+#### Plan 阶段产出（2026-05-05 ~17:50 / D8=A 自吃狗粮 / P0 协议「plan/spec docs 落盘即 commit」实践 / triple → quad-evidence 候选升级）
+
+**8/8 D 决策 1 次 AskQuestion all_recommended 锁定**（跨决策协同度 100% **第 13 次连续命中** / 累计 121/121）：
+
+| # | 决策项 | 选择 | 理由概要 |
+|:-:|---|---|---|
+| **D1** | commit 拆分粒度 | **B 6 commit / 文件** | 同文件 batch 收益 + git bisect 精度足够 + 14 项规模适配最优 |
+| **D2** | 实施顺序 | **A 文件聚合**（writing-plans 7 → systemPatterns 3 → git-workflow 2 → brainstorming 1 → main 1 → veloxa_api 1）| 与 D1=B 协同 ✅ / 沿用 TASK-03-02 范式 |
+| **D3** | P1.5 P0 协议文本形态 | **B 完整段 ~80-120 行** | 沿用既有 writing-plans 段式范本 / triple-evidence 应配完整规范 |
+| **D4** | TDD 适用性 | **A 文档调整模式** | 沿用 TASK-03-02 工作流元任务范式 / 无 ctest 验证 |
+| **D5** | P1.9 + P2.2 合并 | **B 分开** | 不同主题（粒度 vs LOC）/ DRY/单一职责 |
+| **D6** | P1.7 veloxa_api.h 位置 | **A 顶部 doc 段** | 与 P1.7 描述「头部 doc 段」一致 |
+| **D7** | 独立 spec | **B 仅 plan** | 沿用 TASK-03-02 范式 / 工作流元任务豁免 spec |
+| **D8** | P0 协议自吃狗粮 | **A 自吃狗粮** | plan + MB 单 commit / triple → quad-evidence 候选升级 |
+
+**主交付物（plan + Memory Bank ×3 / D8=A 自吃狗粮单 commit）：**
+
+- [`docs/plans/2026-05-05-workflow-meta-batch.md`](../docs/plans/2026-05-05-workflow-meta-batch.md) ~660 行 / 10 段全覆盖 / 7 phase + Phase 0 audit + ctest 矩阵 + 反复模式预防 + CP1+CP2
+
+**8 commits 时间线规划：**
+
+| # | type | 阶段 | 内容 |
+|:-:|---|---|---|
+| 0 | `chore(workflow)` | VAN（已 commit `3a1e610`）✅ | initialize TASK-20260505-04 |
+| 1 | `chore(workflow)` | **Plan 自吃狗粮（待 commit）** | plan + activeContext + tasks + progress 单 commit 落盘 |
+| 2 | `docs(writing-plans)` | Build B.1 | writing-plans.mdc 7 子项 |
+| 3 | `docs(systemPatterns)` | Build B.2 | systemPatterns.md 3 子项 |
+| 4 | `docs(git-workflow)` | Build B.3 | git-workflow.mdc 2 子项 |
+| 5 | `docs(brainstorming)` | Build B.4 | brainstorming.mdc 1 子项 |
+| 6 | `docs(main)` | Build B.5 | main.mdc 1 子项 |
+| 7 | `docs(api)` | Build B.6 | veloxa_api.h 1 子项 |
+| 8 | `chore(build)` | Build finalize | finalize MB state |
+
+**Phase 0 audit 实证（10/10 通过 ✅）：** writing-plans 1079 行 + brainstorming 161 行 + git-workflow 228 行 + main 148 行 + systemPatterns 3663 行 + veloxa_api.h 431 行 + TASK-03-02 工作流元任务范式参考 + doudec-evidence + V2=a triple-evidence + 既有完整段范本 + commit `1555cf4` 8 段范本实例源
+
+**反复模式 0/8 抑制延续**（VAN + Plan 两阶段全程保持）
+
+**估时校准：** plan ×0.6 130-180 min → 实际 plan 阶段 ~30-40 min（含 brainstorm + 决策 + plan 文档 660 行 + MB 三件套）= 极速区 0.18-0.30× 系数（**比预期更快** / 工作流元任务范式高度复用 + 14 项 P1+P2 已成熟 / 决策矩阵 1 次锁定）
+
+#### Build 阶段产出（2026-05-05 ~18:10 / 实测 ~20-25 min / 0.11-0.19× 极致极速区）
+
+**6 build commits 全部落地 ✅**（D1=B 6 commit / 文件 + D2=A 文件聚合顺序 / 100% 按 plan 执行 / 0 计划返工）：
+
+| # | commit | type | 子项数 | 行数 |
+|:-:|---|---|:-:|:-:|
+| 1 | `f109933` | docs(writing-plans) | 7 | +460 |
+| 2 | `2369e23` | docs(systemPatterns) | 3 | +154 |
+| 3 | `374556e` | docs(git-workflow) | 2 | +159 |
+| 4 | `465b0a1` | docs(brainstorming) | 1 | +59 |
+| 5 | `c51e668` | docs(main) | 1 | +26 |
+| 6 | `4765224` | docs(api) | 1 | +39 |
+| **总计** | — | — | **15** | **+897** |
+
+**14.5 / 14.5 子项 100% 关键字符串 grep 入库 ✅**（详见 [activeContext.md](activeContext.md) 验证表）
+
+**实际改动量：** +897 行 vs plan 估 +510-690 行 = **×1.30-1.76 上限**（隐性附加工作类型 1+2+6 命中：Doxygen + commit-friendly 注释 + lazy-attach contract 注释 — **正好印证 Phase B.1 P2.2 段「LOC 估算附录 ×1.3-1.5 buffer」的实证有效性 / 自吃狗粮 ✅**）
+
+**ctest baseline 0 漂移**（仅文档/规则改动 / 0 编译影响）
+
+**反复模式 0/8 抑制延续**（VAN + Plan + Build 三阶段全程保持 / 累计 17 反复模式连续抑制）
+
+#### Reflect 阶段产出（2026-05-05 ~18:25 / 实测 ~10-15 min / 极速区 ~0.10× 子档）
+
+**回顾文档：** [reflection-TASK-20260505-04.md](reflection/reflection-TASK-20260505-04.md)（10 段 / 5/5 关键发现 / 8 改进建议）
+
+**5 个 systemPatterns 沉淀（已落实 ✅）：**
+
+| # | 沉淀 | 类型 | 状态 |
+|:-:|---|---|:-:|
+| 1 | 工作流元任务范式 dual-evidence（TASK-03-02 + TASK-05-04 平均参数）| 新段 | ✅ 已入库 |
+| 2 | 极致 dogfooding 范式（三层 dogfooding 模式 / TASK-05-04 first-evidence）| 新段 | ✅ 已入库 |
+| 3 | 跨决策协同度 100% 第 13 次连续命中（累计 121/121 历史最高）| 累计升级 | ✅ 已入库 |
+| 4 | plan ×0.6 oct-evidence（第 8 数据点 / 双子档分化）| 累计升级 | ✅ 已入库 |
+| 5 | P0 协议 quad-evidence（writing-plans P1.5 段实证表升级）| 既有段升级 | ✅ 已入库 |
+
+**改进建议（8 项 / P0×0 + P1×5 + P2×3 / 6 项已落实 + 2 项 archive 阶段处理）：**
+
+| 优先级 | 数量 | 状态 |
+|---|:-:|---|
+| P0 立即 | 0 | — |
+| P1 下次 | 5 | 4 项已 reflect 阶段落实 + 1 项 archive 阶段处理（writing-plans LOC 表格密度系数）|
+| P2 长期 | 3 | 1 项已 reflect 阶段落实 + 2 项累积下次工作流元任务（git-workflow 实测数据采集 / lazy-attach quad-evidence 段升级）|
+
+**反复模式 0/8 抑制延续**（VAN + Plan + Build + Reflect 四阶段全程保持 / 累计 17 模式连续抑制 / 历史新高）
+
+**回顾质量自评：** 4.6/5（计划-实际对比详尽 + 7 关键发现 + 8 改进建议 + 4 新沉淀候选）
+
+**Archive 阶段产出（2026-05-05 ~18:38）：**
+
+- **归档文档：** [archive-TASK-20260505-04.md](archive/archive-TASK-20260505-04.md)（~290 行 / 10 段全覆盖 / 度量数据汇总 + 改进建议状态汇总 + 5 范式里程碑总结）
+- **3 项 P1+P2 已迁移待处理事项**（writing-plans LOC 表格密度系数 / git-workflow 实测数据采集 / lazy-attach 头部 doc 落地标注）— 累积下次工作流元任务批量清零（triple-evidence 候选）
+
+---
 
 ### TASK-20260505-03：G1 OpenGL ES 硬件渲染后端蓝图（MVP-C 核心 / 战略长期目标）— ✅ 已归档（commit `ecf7b87`）
 
