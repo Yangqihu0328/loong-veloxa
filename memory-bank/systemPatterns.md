@@ -3809,6 +3809,186 @@ V2=a 蓝图任务（V2=纯蓝图 / `/van → /plan → /reflect → /archive` / 
 
 ---
 
+## 工作流元任务范式 dual-evidence（TASK-20260505-04 反思入库 / P1 沉淀 — TASK-03-02 first + TASK-05-04 dual）
+
+> **2 任务实证累计**（TASK-20260503-02 first-evidence + TASK-20260505-04 dual-evidence）：工作流元任务作为新任务分类（vs 实施类任务 / 蓝图类任务）已稳定 / 范式参数已可量化 / 适用场景已明确。
+
+### 范式定义
+
+**工作流元任务**（workflow meta-task）：
+- 定位：批量清零累积的跨任务 reflection §5/§6 P1+P2 沉淀，避免反复模式累积升级到 P0 紧急轨道
+- 测试模式：[文档调整模式] / 无 ctest 验证 / 验证手段：grep audit + Read 结构 + ReadLints
+- spec 豁免：D7=B 沿用 / 无独立 spec / 仅 plan + Memory Bank
+- commit 拆分：D1=B 6 commit/文件（N ≥ 6 子项）或 1:1 子项-commit（N ≤ 6 子项）
+- 实施顺序：D2=A 文件聚合（与 commit 拆分协同）
+
+### 2 实证对照参数
+
+| # | 参数 | TASK-03-02 first-evidence | TASK-05-04 dual-evidence | 平均值 |
+|:-:|---|:-:|:-:|:-:|
+| 子项数 | — | 6 | 14.5 | **10.25** |
+| 文件改动数 | — | 4 | 6 | **5** |
+| commit/子项比 | — | 1:1（6 commit / 6 子项）| 0.41:1（6 commit / 14.5 子项）| — |
+| 总改动行数 | — | ~370 | ~897 | **~634** |
+| plan ×0.6 实测系数 | — | ~0.50× | ~0.30-0.40× | **~0.40×** |
+| 反复模式抑制率 | — | 0/8 | 0/8 | **100%** |
+| Phase 0 audit 通过率 | — | 100% | 100%（10/10）| **100%** |
+| 跨决策协同度 | — | 8/8 一致 | 8/8 1 次锁定 | **100%** |
+
+### 适用场景
+
+- ≥ 4 项跨任务 P1+P2 沉淀累积（避免反复模式升级到 P0）
+- 涉及 ≥ 3 个 `.cursor/rules/skills/*.mdc` 文件改动
+- 仅文档/规则改动 / 0 代码逻辑改动
+- 估时 ≤ 200 min（plan ×0.6）/ 实测 ~40-100 min（×0.30-0.50× 极速区）
+
+### commit 拆分决策树
+
+```
+N 子项数？
+  ≤ 6  → 1:1 子项-commit（沿用 TASK-03-02 范式）
+  ≥ 7  → 文件聚合（D1=B 6 commit/文件 / 沿用 TASK-05-04 范式）
+  ≥ 20 → 升级到 Level 3 / 拆分成 ≥ 2 工作流元任务（避免单任务过大）
+```
+
+### 反模式
+
+- ❌ 工作流元任务强制独立 spec（违反 D7=B 协议 / 浪费时间）
+- ❌ 工作流元任务做 ctest 验证（违反 D4=A 文档调整模式 / 沿用 ctest 是过度设计）
+- ❌ 工作流元任务用 14 commit/子项（N ≥ 7 时浪费 / 应文件聚合）
+- ❌ 工作流元任务跳过 plan 直接 build（违反 P0 协议 plan/spec docs 落盘即 commit）
+
+### 与既有规则协同
+
+- 与 `.cursor/rules/skills/writing-plans.mdc` 「plan/spec docs 落盘即 commit P0 协议」段协同（工作流元任务豁免 spec 子项 / D7=B 协议）
+- 与 `.cursor/rules/skills/git-workflow.mdc` 「Multi-subtask commit 拆分 git add -p」段协同（commit 拆分粒度互补）
+- 与本文档「跨决策协同度 100% doudec-evidence」段协同（决策矩阵 8 D 决策 100% 锁定）
+
+### 后续推广候选
+
+- 下次累积 ≥ 4 P1/P2 项时立项工作流元任务（清零周期 ~1-2 月）
+- 沉淀「工作流元任务 plan 范本」到 `writing-plans.mdc`（待 triple-evidence 后）
+
+### 交叉引用
+
+- `memory-bank/archive/archive-TASK-20260503-02.md`（first-evidence）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md`（dual-evidence）
+- `.cursor/rules/skills/writing-plans.mdc` 「plan/spec docs 落盘即 commit P0 协议」段
+
+---
+
+## 极致 dogfooding 范式（TASK-20260505-04 反思入库 / P2 沉淀 — 同任务规则落地 + 规则验证）
+
+> **TASK-20260505-04 三层 dogfooding 实证**：工作流元任务可设计为「规则落地 + 规则即时验证 / 同任务双重 dogfooding」 → 规则有效性验证窗口从「未来同类任务（≥ 1 周）」压缩到「同任务内（~30 min）」。
+
+### 三层 dogfooding 模式
+
+| 层 | 触发时机 | 实证 |
+|:-:|---|---|
+| **层 1：决策选择 dogfood** | plan 阶段 D 决策选择本任务即将落地的规则候选 | TASK-05-04 D8=A P0 协议自吃狗粮 / commit `02dd40c` plan + MB 单 commit / 0 collateral |
+| **层 2：VAN 阶段即时启用** | VAN/plan 阶段编辑文档时主动应用未来 phase 才落地的协议 | TASK-05-04 P2.3 重复 anchor 检测协议在 VAN 阶段编辑 activeContext / progress 时已应用（grep `^## 上次任务` 检测）|
+| **层 3：build 后即时验证** | build 阶段最后 phase 实测数据印证早期 phase 落地的规则 | TASK-05-04 Phase B.1 落地 P2.2 LOC ×1.3-1.5 buffer / Phase B.7 实测 +897 行 vs 估上限 +690 = ×1.30 / 命中下限 ✅ |
+
+### 适用前置
+
+- 工作流元任务（vs 实施类 / 蓝图类）— 规则改动密度高 / 易触发同任务 dogfooding
+- 规则改动涉及「plan 阶段产出物 commit 协议」/「LOC 估算系数」/「文档编辑 audit」/「commit body 范本」类元规则
+- 不适用：实施类任务（代码改动 vs 规则改动 / dogfooding 链路不天然存在）
+
+### 反模式
+
+- ❌ 规则改动单独立项 / 不在同任务实践（规则未经实证就固化）
+- ❌ dogfooding 仅限层 1（决策选择）/ 跳过层 2 + 层 3（错失即时验证机会）
+- ❌ 三层 dogfooding 都仅 1 个规则（应至少 2-3 个不同规则同任务多重 dogfooding）
+
+### 实证
+
+- TASK-20260505-04（first-evidence）：3 层 ×3 规则同任务多重 dogfooding：
+  - 层 1: D8=A P0 协议自吃狗粮（commit 02dd40c）
+  - 层 2: P2.3 重复 anchor 检测协议（VAN 阶段已应用）
+  - 层 3: P2.2 LOC ×1.3-1.5 buffer（Phase B.7 实测印证）
+
+### 交叉引用
+
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.5 + §4.2 三层 dogfooding 详细实证
+- 本文档「工作流元任务范式 dual-evidence」段（同源 TASK-05-04 实证基础）
+
+---
+
+## 跨决策协同度 100% 第 13 次连续命中（TASK-20260505-04 反思入库 / 第 13 次 / 累计 121/121 历史最高 streak）
+
+> **TASK-20260505-04 dec → endec → doudec → 第 13 次连续命中**：8 D 决策 1 次 AskQuestion all_recommended 锁定 / 用户跳过率 100% / reflect 重审 0 问题 = 跨决策协同度协议历史最成熟典范。
+
+### 累计统计（13 任务连续命中）
+
+| # | 任务 | 决策数 | 锁定方式 |
+|:-:|---|:-:|---|
+| 1-7 | sept-evidence 累计（TASK-20260430-04 至 TASK-20260504-01）| 累计 60+ | 多次 AskQuestion all_recommended |
+| 8 | TASK-20260504-01 sept-evidence 升级 | 5 | 1 次 AskQuestion |
+| 9 | TASK-20260505-01 oct-evidence 候选 | 8 | 1 次 AskQuestion |
+| 10 | TASK-20260505-02 dec-evidence | 12 | 1 次 AskQuestion |
+| 11 | TASK-20260505-03 VAN endec-evidence | 5 (V) | 1 次 AskQuestion |
+| 12 | TASK-20260505-03 plan doudec-evidence | 8 (B) | 1 次 AskQuestion |
+| **13** | **TASK-20260505-04 plan 第 13 次连续命中** | **8 (D)** | **1 次 AskQuestion** |
+
+**累计：121/121（13 任务全 ✅ / 0 决策返工 / 历史最高 streak）**
+
+### 推论
+
+- VAN 推荐质量已达成熟期（基于 grep 实证 + systemPatterns 既有规则 + 跨任务范式累计）
+- 用户跳过率 100% 在 reflect 阶段重审 0 问题验证 = 协议历史最有效
+- 决策矩阵设计已成熟（D 决策依赖图 + 协同度标注 + VAN 推荐 ⭐ 全成熟）
+
+### 与既有「跨决策协同度 100% doudec-evidence」段关系
+
+本段是 doudec-evidence 段（line 3538）的累计升级标注 / 不另立顶级段 / 仅追加第 13 次命中实证。
+
+### 交叉引用
+
+- 本文档「跨决策协同度 100% doudec-evidence」段（line 3538 / 累计实证基础）
+- 本文档「工作流元任务范式 dual-evidence」段（TASK-05-04 第 13 次命中所属任务）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.1（第 13 次命中详细实证）
+
+---
+
+## plan ×0.6 实测系数 oct-evidence（TASK-20260505-04 反思入库 / 第 8 数据点 — sept → oct-evidence 升级）
+
+> **TASK-20260505-04 全任务 ×0.30-0.40× / Build 阶段 ×0.11-0.19× 极致极速区**：plan ×0.6 实测系数累计第 8 数据点 / 工作流元任务子档极致极速区出现 / oct-evidence 已达 / 「极致极速区 0.02-0.05×」+「极致极速区 0.11-0.19×」双子档。
+
+### 8 数据点累计
+
+| # | 任务 | plan ×0.6 估时 | 实测 | 系数 | 子档 |
+|:-:|---|:-:|:-:|:-:|---|
+| 1-6 | sept-evidence base 6 任务 | — | — | 平均 ~0.5× | 标准极速区 |
+| 7 | TASK-20260505-03（GLES 蓝图）| ~17-25 h | ~30-40 min | **0.02-0.04×** | **极致极速区**（V2=a 蓝图子档 / 第 7 数据点）|
+| **8** | **TASK-20260505-04（工作流元任务）** | **130-180 min** | **~50-70 min（plan + build）** | **0.30-0.40× 总线 / Build 阶段 0.11-0.19×** | **极致极速区**（工作流元任务子档 / 第 8 数据点）|
+
+### 双子档对照
+
+| 子档 | 系数范围 | 任务类型 | 实证 |
+|---|---|---|---|
+| 极致极速区 V2=a 蓝图 | 0.02-0.05× | Level 4 V2=a 蓝图任务 | TASK-05-03 |
+| **极致极速区 工作流元任务** | **0.11-0.19×（Build 阶段）** | Level 2-3 工作流元任务 | TASK-05-04 |
+| 极速区 标准 | 0.30-0.50× | 实施类任务 | sept-evidence base |
+
+### 推论
+
+- 极致极速区已分化双子档（V2=a 蓝图 vs 工作流元任务）/ 各有适用场景
+- plan 阶段决策矩阵 100% 锁定 + 文件聚合大 batch + 0 ctest 等待 = 极致极速区共同因素
+- 未来同类任务（≥ 1 个新任务）即可升级 sept → oct → nona-evidence
+
+### 与既有「跨决策协同度 100% sept-evidence」段关系
+
+本段是 sept-evidence 段（既有）的累计升级标注 / 第 8 数据点入库 / 双子档分化。
+
+### 交叉引用
+
+- 本文档「极致极速区 0.02-0.05× 子档（sept-evidence 候选）」段（line ~3500 / V2=a 蓝图子档）
+- 本文档「工作流元任务范式 dual-evidence」段（TASK-05-04 工作流元任务子档来源）
+- `memory-bank/reflection/reflection-TASK-20260505-04.md` §2.4（极致极速区详细实证）
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

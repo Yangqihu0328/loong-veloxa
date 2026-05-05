@@ -63,7 +63,7 @@ alwaysApply: false
 | 1 | TASK-20260505-01 | 提议 P1 #6 改进建议 | 反思阶段提案 | 提出协议构想 |
 | 2 | TASK-20260505-02 | 部分实施（plan + spec + MB 1 commit / build 阶段 1 collateral commit `feec51b` ⚠️）| `4feda52` | 协议雏形落地 |
 | 3 | TASK-20260505-03 | **首次完整实施 ✅**（plan + spec + creative ×3 + MB ×3 = 8 files 单 commit / 0 collateral）| `1555cf4` | triple-evidence 达固化阈值 |
-| 4 | TASK-20260505-04（本任务）| **自吃狗粮**（plan + MB 单 commit / 工作流元任务豁免 spec）| `02dd40c` | **quad-evidence 候选升级** |
+| 4 | TASK-20260505-04 | **自吃狗粮 ✅ + reflect 验证**（plan + MB 单 commit / 工作流元任务豁免 spec / reflect 阶段 0 collateral / 9 commits 全部按 plan）| `02dd40c` + `7160c38` finalize | **quad-evidence 已固化 / P0 协议成熟期** |
 
 ### 与 brainstorm/decision matrix 配合
 
