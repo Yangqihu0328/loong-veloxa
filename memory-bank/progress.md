@@ -2,7 +2,67 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。
+### TASK-20260505-06 — G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
+
+**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）/ Level 3 / 分支 `feature/TASK-20260505-06-gles-display-sdl2-egl`
+
+#### VAN 阶段产出（2026-05-05 ~20:15）
+
+- **任务类型：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
+- **任务范围：** 4 创建 + 1 修改
+  - 创建：`veloxa/platform/gles_display.h`（GLESDisplay 纯虚抽象）
+  - 创建：`veloxa/platform/sdl2/sdl2_egl_display.h` + `.cc`（SDL2 子类）
+  - 创建：`tests/platform/sdl2_egl_display_test.cc`（~6-8 单测）
+  - 修改：`veloxa/platform/sdl2/CMakeLists.txt`（加 source + EGL/GLES dep）
+- **目标：** GLESDisplay 抽象（B8 G2 桥接接口 / G2 共享）+ Sdl2EGLDisplay SDL2 实施 + 反向探针（CONTEXT_MAJOR_VERSION=1 → Initialize 失败）
+- **依赖引入（G1.1 D1=A 推迟点正式落地）：** EGL/GLES via pkg_check_modules
+
+#### VAN 前置验证清单（4 维度全通过 ✅）
+
+- ✅ 依赖可获取性：EGL 1.5 + GLES 3.2 + SDL2 2.32.10 + Mesa swrast headless 全可用
+- ✅ 环境就绪：CMake 4.2.3 + GCC 14+ + ctest 1303/1110 baseline + G1.1 VX_RENDERER=gles 1303 PASS
+- ✅ 已有 artifact：G1.2 目标 4 文件全不存在 / 0 冲突
+- ✅ 待处理事项关联：G1.1 D1=A 推迟点（引入 EGL/GLES dep）正式落地节点
+
+#### Phase 0 audit 预跑（11 项实证 / 3 plan 偏差点发现 ✅）
+
+| # | 项 | 结果 |
+|:-:|---|:-:|
+| 1 | SDL2 dev 可用性（pkg-config sdl2 2.32.10）| ✅ |
+| 2 | SDL_GL_* 5 个 API（CreateContext / MakeCurrent / SwapWindow / DeleteContext / SetAttribute）| ✅ 全在 SDL_video.h |
+| 3 | EGL dev（libegl-dev 1.7.0-3 / pkg-config egl 1.5）| ✅ |
+| 4 | EGL API（eglGetCurrentDisplay / eglGetCurrentContext / EGL_NO_CONTEXT）| ✅ 全在 |
+| 5 | GLES3 dev（libgles-dev 1.7.0-3 / pkg-config glesv2 3.2）| ✅ |
+| 6 | GLES3 API（glGetString / glGetStringi / GL_VERSION）+ GL_CONTEXT_LOST_KHR | ✅ 全在 |
+| 7 | Mesa headless drivers（swrast_dri + kms_swrast_dri + libEGL_mesa）| ✅ |
+| 8 | 既有 SDL2 双轨 find_package pattern（sdl2/CMakeLists.txt L7-15）| ✅ 可复用 |
+| 9 | 既有 platform::Surface 抽象（surface.h / 24 行 header-only）| ✅ GLESDisplay 应平级 |
+| 10 | tests/platform/ 扁平结构（5 既有 _test.cc / 无 sdl2/ 子目录）| ⚠️ plan 偏差 #2 |
+| 11 | G1.2 目标 artifact 不存在（gles_display.h / sdl2_egl_display.{h,cc} / test）| ✅ 0 冲突 |
+
+#### 偏差点（来自 brainstorming P1.3 主动 push-back 模式 / TASK-05 dual-evidence 已固化）
+
+**plan §3.2 3 处偏差需校正：**
+
+- **偏差 #1：CMakeLists.txt 修改位置** — plan 说「修改顶层 `veloxa/platform/CMakeLists.txt` +~10 行」→ 实际：GLESDisplay.h 是**纯虚 header-only**（spec §3.3.2 / 0 .cc）+ 顶层用 `target_include_directories(... ${CMAKE_SOURCE_DIR})` 隐式头扫描 → **顶层 0 修改**；Sdl2EGLDisplay.cc 加到 **`veloxa/platform/sdl2/CMakeLists.txt`**（与 sdl2_window_surface.cc 平级 / +~10 行 含 EGL/GLES dep）
+- **偏差 #2：测试路径** — plan §3.2 `tests/platform/sdl2/sdl2_egl_display_test.cc` → 实际 tests/platform 是**扁平结构**（5 既有 _test.cc 直接在 tests/platform/）→ 沿用扁平 → `tests/platform/sdl2_egl_display_test.cc`
+- **偏差 #3：headless CI testing fixture** — plan §3.2 步骤 1 测试设计未明示 SDL/EGL headless setup（SDL_VIDEODRIVER=offscreen|dummy / EGL_PLATFORM=surfaceless）→ /plan 阶段决策
+
+**触发模式：brainstorming.mdc P1.3 「Phase 0 grep 实证驱动主动 push-back 模式」**：(1) 蓝图 scope 已限定到 G1.2 ✅ (2) Phase 0 grep 发现 3 处偏差 ✅ (3) 偏差中等限定范围（仅影响实施代码片段 + 测试 setup / 不动整体架构 / 0 倒退既有 build）→ **plan 阶段处理 ✅**
+
+#### 反复模式预防（VAN 阶段预审 0/8 命中）
+
+- ✅ #1 前置依赖未验证：4 维度 + Phase 0 11 项实证全通过
+- ✅ #2 既有 pattern 不复用：识别出 SDL2 双轨 find_package + HARFBUZZ pkg_check_modules + Surface 抽象 3 个 pattern 可复用
+- ✅ #3 spec/plan 信息回归：发现 plan §3.2 3 偏差 + 提前在 VAN 标注 / 不靠 build 阶段事故触发（dual-evidence 模式延续）
+- ✅ #8 spec 数据回归 audit：本任务无 spec 数据（仅设计 spec）
+- ✅ #4-#7 其他模式：N/A（不涉及 ABI/lazy-attach/反向探针强度等）
+
+#### 估时（plan ×0.6）
+
+~4-6 h（GLES 蓝图 plan §3.2 / Level 3 实施类）/ 预期实测 ~1.5-3 h（实施类 Level 3 子档 / 标准极速区 0.4-0.6× / 含 ~3 偏差校正 + headless GL 测试 setup）
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（候选议题：testing fixture 策略 / context lost 测试覆盖度 / GLES extension 查询 cache 策略 / 反向探针实施方式 / 偏差点处理 / commit 粒度 / P0 协议复用）。
 
 ---
 

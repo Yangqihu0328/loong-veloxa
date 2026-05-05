@@ -2,7 +2,46 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。
+### TASK-20260505-06：G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（GLES 蓝图实施第二步 / MVP-C 战略主线第二个实施任务）
+
+- **当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+- **复杂度级别：** Level 3（新平台抽象 + SDL2 子类实施 / 需要设计决策 / 跨 G1+G2 桥接接口预留）
+- **创建日期：** 2026-05-05
+- **分支：** `feature/TASK-20260505-06-gles-display-sdl2-egl`（基于 main `ee2569d` ✅ 创建 / G1.1 已合并）
+- **来源：** [GLES 蓝图 plan §3.2](../docs/plans/2026-05-05-gles-renderer-blueprint.md#32-子任务-g12--glesdisplay-抽象--sdl2egldisplay-实施) + [GLES 蓝图 spec §3.3.2](../docs/specs/2026-05-05-gles-renderer-blueprint-design.md) + 用户 `/van G1.2 GLESDisplay + Sdl2EGLDisplay` 拍板
+- **安全相关：** ❌ 否（仅平台抽象 + GL context 创建 / 0 输入处理 / 0 网络 / 0 新威胁面）
+- **估时（plan ×0.6）：** ~4-6 h（GLES 蓝图 plan §3.2）/ 预期实测 ~1.5-3 h（实施类 Level 3 子档 / 标准极速区 0.4-0.6×）
+
+**任务范围（来自 GLES 蓝图 plan §3.2 + spec §3.3.2）：**
+
+- **目标：** 落地 `GLESDisplay` 纯虚抽象（B8 G2 桥接接口 / G2 共享）+ `Sdl2EGLDisplay` SDL2 子类实施 + ~6-8 单测 + 反向探针
+- **文件影响（plan 估）：** 4 创建 + 1 修改
+  - 创建：`veloxa/platform/gles_display.h`（~80 行 / 纯虚抽象 / Initialize / MakeCurrent / SwapBuffers / IsContextLost / RestoreContext / HasExtension / gles_major/minor_version 共 11 个 virtual）
+  - 创建：`veloxa/platform/sdl2/sdl2_egl_display.h`（~50 行 / Sdl2EGLDisplay : public GLESDisplay）
+  - 创建：`veloxa/platform/sdl2/sdl2_egl_display.cc`（~150 行 / SDL_GL_SetAttribute ×6 + SDL_GL_CreateContext + glGetString / glGetStringi）
+  - 创建：`tests/platform/sdl2_egl_display_test.cc`（~200 行 / ~6-8 单测 / **plan 偏差 #2 校正：扁平路径**）
+  - 修改：`veloxa/platform/sdl2/CMakeLists.txt`（+~10 行 / 加 sdl2_egl_display.cc + EGL/GLES dep / **plan 偏差 #1 校正：sdl2/ 而非顶层 platform/**）
+- **依赖引入（D1=A 推迟点正式落地）：** `pkg_check_modules(EGL REQUIRED egl)` + `pkg_check_modules(GLESv2 REQUIRED glesv2)`（与 HARFBUZZ pattern 一致）
+
+**Phase 0 audit 预跑（VAN 阶段 11/11 实证 + 3 plan 偏差点发现 ✅）：**
+
+详见 [activeContext.md Phase 0 audit 表](activeContext.md)。**3 偏差：**
+- 偏差 #1：plan 说改顶层 platform/CMakeLists.txt → 实际改 sdl2/CMakeLists.txt（GLESDisplay.h header-only / 0 顶层修改）
+- 偏差 #2：plan 说 tests/platform/sdl2/ 子目录 → 实际扁平 tests/platform/sdl2_egl_display_test.cc
+- 偏差 #3：plan 未明示 headless CI testing fixture（SDL_VIDEODRIVER=offscreen|dummy / EGL_PLATFORM=surfaceless）→ /plan 阶段决策
+
+**前置验证通过 ✅（4 维度）：**
+
+| 维度 | 结果 |
+|---|---|
+| 依赖可获取性 | ✅ EGL 1.5 + GLES 3.2 + SDL2 2.32.10 + Mesa swrast headless 全在 |
+| 环境就绪 | ✅ CMake 4.2.3 + GCC 14+ + ctest 1303/1110 baseline + G1.1 gles 1303 PASS |
+| 已有 artifact | ✅ G1.2 目标 4 文件全不存在 / 0 冲突 |
+| 待处理事项关联 | ✅ G1.1 D1=A 推迟点（引入 EGL/GLES dep）正式落地节点 |
+
+**反复模式 0/8 抑制延续**（VAN 阶段预审）/ 第 7 任务连续保持反复模式 0 命中 / 累计 19 模式连续抑制 / 历史新高继续刷新
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm 决策矩阵（候选议题：testing fixture 策略 / context lost 测试覆盖度 / GLES extension 查询 cache 策略 / 反向探针实施方式 / 偏差点处理 / commit 粒度 / P0 协议复用）。
 
 ---
 
