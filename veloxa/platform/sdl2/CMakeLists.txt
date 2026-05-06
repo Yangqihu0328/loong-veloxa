@@ -30,6 +30,7 @@ add_library(vx_platform_sdl2 STATIC
   sdl2_window_surface.cc
   sdl2_event_loop.cc
   sdl2_egl_display.cc
+  sdl2_gl_window_surface.cc   # G1.3: GLES-backed SDL2 window surface
 )
 
 target_include_directories(vx_platform_sdl2 PUBLIC
