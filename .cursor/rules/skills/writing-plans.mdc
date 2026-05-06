@@ -930,6 +930,15 @@ ninja --version
 - `memory-bank/systemPatterns.md`「R12 工具链版本激进升级风险」段
 - `memory-bank/systemPatterns.md`「CMake 静态库循环依赖处理 — binutils 2.46+ 双循环依赖叠加场景覆盖性」段
 
+#### GLES 测试文件直接调用 GL 函数 — include 协议（GLES test 新增时必做）
+
+> **first-evidence**（TASK-20260506-01 G1.3 编译报错）：`sdl2_gl_window_surface_test.cc` T4 直接调用 `glClearColor` / `glClear`，但 plan includes 清单仅列 `<SDL2/SDL.h>` + `<gtest/gtest.h>`，编译报 `'glClearColor' was not declared`。根因：被测类 header 使用 forward declare 隔离 GLES header，测试文件需自行包含。
+
+**规则：** plan「Phase A 测试设计 / 测试文件 includes 审查」checklist 必须包含：
+- 「测试文件是否直接调用 `gl*()` 函数（`glClear` / `glClearColor` / `glReadPixels` / `glViewport` 等）？」
+  - **是** → includes 清单必须含 `#include <GLES3/gl3.h>`（置于 `<SDL2/SDL.h>` 之后）
+  - **否**（仅使用 display/surface API） → 不需要（如 `sdl2_egl_display_test.cc` 无此要求）
+
 #### 测试文件 include 卫生 grep（new test files / 引入新第三方 C header 时**必做**）
 
 > 反复出现（TASK-20260425-01 P5 实证）：`#include <SDL2/SDL.h>` 不慎写进 `tests/api/api_test.cc` 的 anonymous namespace，间接拉入 `<math.h>` 时把 `std::abs` 解析到 `{anonymous}::std`，编译错误 `'abs' has not been declared in '{anonymous}::std'`，~5 min 排查（错误信息隐晦）。

@@ -4585,6 +4585,90 @@ plan 阶段 LOC 估算应附 ×1.3-1.5 buffer，覆盖以下隐性附加工作�
 
 ---
 
+## 跨决策协同度 100% 第 17 次连续命中 + 实施忠实度 triple-evidence（TASK-20260506-01 反思入库 / 第 17 次 / 累计 158/158 历史最高 streak 续刷 / 实施忠实度 G1.1 first + G1.2 dual + G1.3 **triple-evidence**）
+
+**TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实证（… → 15 → 16 → 17）：**
+
+- **决策协同度：** 13/13 D 决策（D1-D13 / 4 spec 隐含 + 9 AskQuestion all_recommended）全 lock 0 调整 ✅
+- **实施忠实度：** 13/13 D 决策 0 偏差实施 ✅（唯一偏差 = plan 测试 includes 清单遗漏 1 行 `<GLES3/gl3.h>` / 属 plan 质量问题，非 build 忠实度问题）
+- **streak 累计：** 145 → **158/158 历史最高 streak 续刷**
+
+**实施忠实度 first → dual → triple-evidence 成熟：**
+
+| 维度 | G1.1（first） | G1.2（dual） | G1.3（triple） |
+|---|:-:|:-:|:-:|
+| 决策协同度 100% | ✅ 7/7 | ✅ 8/8 | ✅ 13/13 |
+| 实施忠实度 100% | ✅ 7/7 | ✅ 8/8（精神一致） | ✅ 13/13（0 偏差） |
+
+**triple-evidence 固化结论：当 plan 包含完整 C++ 代码片段时，实施忠实度接近 100%（build 阶段≈机械转化）。** 适用于 Level 2-3 实施类任务（V2=a 蓝图任务实施忠实度概念不强适用）。
+
+---
+
+## Mesa swrast default framebuffer 真实写入 first-evidence（TASK-20260506-01 G1.3 T4 SavePPM）
+
+> **背景**：G1.3 plan 将「Mesa swrast offscreen 路径是否能通过 glReadPixels 读取 default framebuffer 的真实颜色值」标注为不确定项，留 T4 `SavePPM_WritesValidFile` 做 RED 探针（GTEST_SKIP fallback）。G1.3 build 实际运行结果：T4 **非 SKIP**，确认真实写入。
+
+**实证条件：**
+- 驱动：Mesa swrast（软件光栅化 / `libEGL_mesa` + Mesa 24.x+）
+- SDL2 配置：`SDL_VIDEODRIVER=offscreen` + `SDL_CreateWindow(SDL_WINDOW_OPENGL)`
+- GLES 版本：3.0+（由 `Sdl2EGLDisplay::Initialize` 请求并协商）
+- 测试场景：`glClearColor(1,0,0,1)` + `glClear(GL_COLOR_BUFFER_BIT)` → `glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE)` → 读出第一像素 R≈255 / G≈0 / B≈0 ✅
+
+**结论（有限条件下）：**
+| 条件 | 行为 | 确认程度 |
+|---|---|---|
+| Mesa swrast + SDL_VIDEODRIVER=offscreen | glReadPixels 读取真实颜色值 ✅ | **first-evidence（G1.3 T4）** |
+| 真实 GPU driver（i915 / amdgpu 等） | 预期可行，但未验证 | 待实机 CI 数据 |
+| DRM/KMS offscreen 路径（G2 范围） | 预期可行，但依赖 EGL surface 配置 | 待 G2 实施验证 |
+
+**对后续任务的影响：**
+- G1.4 `GLESCanvas` 测试可以**更安全地使用 `glReadPixels` 做 pixel-accurate 测试**，无需预留大比例 GTEST_SKIP fallback 预算
+- GLES headless 测试最大不确定性消除，Mesa swrast 路径可作为可靠的 pixel 验证基础
+
+---
+
+## GLES test 文件直接调用 GL 函数 — include 协议 first-evidence（TASK-20260506-01 G1.3 编译报错）
+
+**背景**：`sdl2_gl_window_surface_test.cc` T4 直接调用 `glClearColor` / `glClear`，但 plan includes 清单仅列 `<SDL2/SDL.h>` + `<gtest/gtest.h>`，编译时报 `'glClearColor' was not declared`。
+
+**根因**：被测类 `sdl2_gl_window_surface.h` 使用 forward declare（将 GLES header 隔离在 `.cc` 中）；测试文件直接调 `gl*()` 函数时需自行包含 GLES3 header。
+
+**规则（first-evidence / plan checklist 新增项）：**
+
+> 测试文件 includes 审查 checklist 应显式包含：
+> - 「测试是否直接调用 `gl*()` 函数（`glClear` / `glClearColor` / `glReadPixels` / `glViewport` 等）？」
+> - 是 → `includes` 清单必须含 `#include <GLES3/gl3.h>`（置于 `<SDL2/SDL.h>` 之后）
+> - 否（仅使用 display/surface API）→ 不需要，如 `sdl2_egl_display_test.cc`
+
+**补充 P1 → writing-plans.mdc：** plan「Phase A 测试设计 / 测试文件 includes 审查」段增加此 checklist 项。
+
+---
+
+## plan ×0.6 实测系数 undec-evidence（TASK-20260506-01 反思入库 / 第 11 数据点 / G1.3 实施类 Level 3 dual-evidence）
+
+**TASK-20260506-01 G1.3 实测（dec → undec-evidence 升级）：**
+
+| 阶段 | plan ×0.6 估时 | 实测 | 系数 |
+|---|:-:|:-:|:-:|
+| VAN | ~10-15 min | ~5 min | ~0.35× |
+| Plan | ~25-40 min | ~22 min | ~0.6-0.9× |
+| **Build（代码编写）** | ~50-90 min | **~17 min** | **~0.19-0.34×** 极端极速区 |
+| Build（矩阵 A 编译）| — | ~7 min | 不计入（编译等待） |
+| **小计（代码工作）** | ~100-165 min | **~44 min** | **~0.27-0.44× 极端极速区** |
+
+**子档矩阵更新（dec → undec-evidence / 实施类 Level 3 dual-evidence 确立）：**
+
+| 子档 | 任务示例 | Build 系数 | 总线系数 | 数据点 |
+|---|---|:-:|:-:|:-:|
+| V2=a 蓝图（极致极速）| TASK-03 / TASK-04 蓝图 | — | 0.02-0.05× | 4 |
+| 工作流元任务（极速）| TASK-04 工作流元 | — | 0.11-0.19× | 2 |
+| 实施类 Level 2（标准极速）| TASK-05 G1.1 | 0.3-0.6× | 0.6-1.0× | 1 |
+| **实施类 Level 3（极速）** | **TASK-06 G1.2 + G1.3** | **0.13-0.55×** | **0.27-0.70×** | **2 ← dual-evidence** |
+
+**实施类 Level 3 dual-evidence 结论：** Build 系数大范围（0.13-0.55×）取决于蓝图完备度 — G1.3（0.13×）比 G1.2（0.30-0.55×）快 2-4×，原因是 G1.3 plan 包含完整 C++ 代码片段（机械转化）且无外部依赖集成。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

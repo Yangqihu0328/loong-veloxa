@@ -1256,9 +1256,25 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - ext_cache_ 内存常驻：~2-10 KB（Mesa swrast 实测 ~50-100 extensions）
 - 8 TEST_F 总耗时：~150ms（含 8× SDL_Init + window create + GL context create + cleanup）
 
+### G1.3 Sdl2GLWindowSurface 实施（已落地 / TASK-20260506-01 build 完成）
+
+- **`veloxa/platform/sdl2/sdl2_gl_window_surface.{h,cc}`** — Surface 子类（owns SDL_Window + Sdl2EGLDisplay）
+- **关键设计点：**
+  - `Lock()` → nullptr / `Unlock()` no-op / `stride()` = 0（GPU path / 无 CPU 像素缓冲）
+  - 析构顺序：`display_.reset()` 先（GLContext 仍持有 alive window）→ `SDL_DestroyWindow` 后
+  - `SavePPM()`：`glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE)` + Y-flip（GL bottom-left → PPM top-left）+ P6 binary RGB 写出
+  - `Resize()`：`SDL_SetWindowSize` + 内部 `width_`/`height_` 更新（GL viewport 更新交由 GLESCanvas G1.4+）
+  - `SDL_GL_ResetAttributes()` ctor 内调用（测试隔离 / 防跨测试 GL attribute 泄露）
+- **Mesa swrast default framebuffer 真实写入实证（G1.3 T4 first-evidence）：**
+  - `glClearColor(red)` + `glClear` + `glReadPixels` 在 `SDL_VIDEODRIVER=offscreen` 路径下读出真实颜色 ✅
+  - **意义：** G1.4 GLESCanvas pixel-accurate 测试可更安全使用 `glReadPixels`（不确定性消除）
+- **测试 include 协议（G1.3 新发现）：**
+  - 测试文件直接调 `gl*()` 函数时须显式 `#include <GLES3/gl3.h>`（header 使用 forward declare / 不传递 GLES3 header）
+
 ### 交叉引用
 
 - G1.1 归档：[`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
 - G1.2 归档：[`memory-bank/archive/archive-TASK-20260505-06.md`](archive/archive-TASK-20260505-06.md)
 - G1.2 实施计划：[`docs/plans/2026-05-05-gles-display-sdl2-egl.md`](../docs/plans/2026-05-05-gles-display-sdl2-egl.md)
+- G1.3 实施计划：[`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)
 

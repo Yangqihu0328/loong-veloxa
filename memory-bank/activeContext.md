@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）。
+**回顾中** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待 `/archive`）。
 
 **当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 3 文件 + 修改 2 文件 / ~490 行（×0.85-1.5 buffer ~415-735）/ 估时 plan ×0.6 ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）。
 
@@ -46,7 +46,7 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** `/reflect` — 回顾 TASK-20260506-01 构建结果 + Mesa swrast 实证 + 三 build 矩阵验证 + Memory Bank 最终更新 → `/archive`。
+**下一步：** `/archive` — 归档 TASK-20260506-01 + 分支 merge + Memory Bank 状态收尾。
 
 ---
 
