@@ -2,7 +2,35 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。
+### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（初始化中）
+
+**任务定位：** GLES 蓝图实施第三步 / Level 3 实施类 / MVP-C 战略主线第三个实施任务 / 前置 G1.2 已闭环
+
+**当前阶段：** 🟢 **初始化**（VAN ✅ — 待 `/plan` 启动规划阶段）
+
+#### VAN 阶段产出（2026-05-06 ~23:09）
+
+- **任务 ID 生成：** TASK-20260506-01（当天首个任务 / Memory Bank grep 验证无冲突）
+- **复杂度判定：** Level 3（GLES 蓝图 plan §3.3 锁定 / 创建 2 源文件 + 1 测试 + 修改 2 CMakeLists / ~390 行）
+- **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅ 创建）
+- **安全相关：** ❌ 否（沿用既有 `Surface::SavePPM` 表面 / 0 新公开 ABI / 0 用户输入路径）
+- **VAN 前置验证清单（4 维度全 ✅）：**
+  1. 依赖可获取性：EGL 1.5 + GLESv2 3.2 + SDL2 已链接到 vx_platform_sdl2（G1.2 commit `4b095c4` 落地）/ 0 新依赖
+  2. 环境就绪：build-gles/ 目录 + ctest gles baseline 1345 + SDL_VIDEODRIVER=offscreen 范式已验证
+  3. 已有 artifact：`sdl2_gl_window_surface.{h,cc}` 不存在（Glob 实证）/ Surface 抽象 + Sdl2EGLDisplay 接口已就位
+  4. 待处理事项关联：activeContext「下一推荐任务」#1 = G1.3 / spec §11.2 #5+#6 / GLES 蓝图 plan §3.3 完整规格化
+- **反复模式预审：** 8/8 全 ✅ 抑制（0/8 命中 / 累计 19+ 模式连续抑制 / VAN 阶段保持）
+- **估时（plan ×0.6）：** ~3-4 h（蓝图原估）/ 预期实测 ~110-160 min（沿用 G1.2 标准极速区 0.60-0.70× 系数 / **dec-evidence 第 11 数据点候选**）
+
+#### Phase 0 audit 候选清单（plan 阶段细化）
+
+- §0.1 ctest baseline 二次验证：DEVTOOL=ON software=1303 / DEVTOOL=OFF software=1110 / DEVTOOL=ON gles=1345
+- §0.2 `glReadPixels` GLES 3.0 限制确认（仅 `GL_RGBA + GL_UNSIGNED_BYTE` 必支持）
+- §0.3 `SDL_VIDEODRIVER=offscreen` 路径下 `SDL_CreateWindow(SDL_WINDOW_OPENGL)` 行为
+- §0.4 Mesa swrast 驱动 `glReadPixels` 性能 + framebuffer 完整性（headless）
+- §0.5 双重所有权 audit：Sdl2GLWindowSurface owns SDL_Window + Sdl2EGLDisplay / 析构序锁定
+
+**下一步：** `/plan` — 进入规划阶段。
 
 ---
 

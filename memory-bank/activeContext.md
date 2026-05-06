@@ -2,11 +2,19 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260505-06 G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（Level 3）✅ **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）/ feature 分支已合并 main + 删除 / 6 commits / +1781 -16 / 0 退化 / 0 lint / 0 反复模式命中 / **7 范式里程碑达成**。
+**初始化** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ — 待 `/plan` 启动规划阶段）。
 
-**最近闭环：** [TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay 实施](archive/archive-TASK-20260505-06.md) — Level 3 实施类 / GLES 蓝图实施第二步 / **MVP-C 战略主线第二个实施任务** / G1.1 D1=A 推迟点正式落地。
+**当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 2 文件 + 修改 2 文件 + 创建 1 测试文件 / ~390 行 / 估时 plan ×0.6 ~3-4 h / 预期实测 ~110-160 min（沿用 G1.2 标准极速区 0.60-0.70× 系数 / **dec-evidence 第 11 数据点候选**）。
 
-**TASK-06 总产出：**
+**分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
+
+**前置任务（最近闭环）：** [TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay 实施](archive/archive-TASK-20260505-06.md) — Level 3 实施类 / GLES 蓝图实施第二步 / 8 systemPatterns 沉淀 / 7 范式里程碑达成。
+
+---
+
+## 上次闭环 TASK-20260505-06 总产出（速查）
+
+**总产出：**
 
 - **8 个 systemPatterns 沉淀** ✅（reflect 阶段直接落地 / 含 7 P1 沉淀 + LOC buffer 模式参数细化）
   - 跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence（streak 128 → 136 历史最高续刷）
@@ -30,7 +38,7 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** 待用户 `/van` 启动新任务。建议候选见下方「下一推荐任务」段（建议优先 G1.3 Sdl2GLWindowSurface / 累计待处理 P1+P2 改进建议 11 项 ≥ 4 阈值，工作流元任务 triple-evidence 候选可批量清零）。
+**下一步：** TASK-20260506-01 已 VAN ✅ — 调用 `/plan` 启动规划阶段（brainstorm 决策表 + Phase 0 grep 实证 + 4-6 单测设计 + 双 build 矩阵 ctest 期望）。
 
 ---
 
