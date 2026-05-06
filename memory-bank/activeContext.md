@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN ✅ + Plan ✅ — 待 `/build`）。
+**构建完成** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）。
 
 **当前任务：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](tasks.md#当前任务) — Level 3 / 创建 5 文件 + 修改 2 文件 / ~727 行（buffer [617, 1090]）/ 估时 plan ×0.6 ~125-175 min / 预期实测 ~75-118 min（标准极速区 0.55-0.70×）。
 
@@ -50,7 +50,7 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** `/build` — Phase A RED（写 8+2 测）→ Phase B GREEN（实施 .h/.cc/shaders.h + cmake）→ Phase C REFACTOR + 三 build 矩阵 ctest（A 1337 + B 1141 + C 1352→1362）。
+**下一步：** `/reflect` — 回顾 TASK-20260507-01 构建结果 + GLESCanvas skeleton + shader injection first-evidence + 三 build 矩阵验证。
 
 ---
 

@@ -14,7 +14,7 @@
 
 **任务定位：** GLES 蓝图实施第四步 / Level 3 实施类 / MVP-C 战略主线第四个实施任务 / 前置 G1.3 已闭环
 
-**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）
 
 #### Plan 阶段产出（2026-05-07）
 
@@ -28,6 +28,18 @@
 - **反复模式 8/8 全抑制** / 累计 21+ 模式连续抑制候选
 
 **估时（plan ×0.6）：** ~125-175 min / 预期实测 ~75-118 min
+
+#### Build 阶段产出（2026-05-07）
+
+- **TDD RED：** `gles_canvas_skeleton_test` 编译失败于缺失 `veloxa/graphics/gles/gles_canvas.h` ✅
+- **GREEN：** `GLESCanvasSkeletonTest` 8/8 + `ShaderInjectionTest` 2/2 全 PASS ✅
+- **Mesa swrast 续证：** T3 `Clear_WritesPixels` 非 SKIP，G1.3 default framebuffer first-evidence 复用成功 ✅
+- **三 build 矩阵：**
+  - software DEVTOOL=ON：1337/1337 ✅
+  - software DEVTOOL=OFF：1141/1141 ✅
+  - gles DEVTOOL=ON：1362/1362 ✅（1352 → 1362 / +10 精确命中）
+- **lint：** ReadLints 7 文件无错误 ✅
+- **commit：** `670b75c` feat(graphics): add GLESCanvas skeleton — G1.4
 
 #### VAN 阶段产出（2026-05-06 ~23:09）
 

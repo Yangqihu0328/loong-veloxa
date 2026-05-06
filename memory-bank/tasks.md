@@ -4,7 +4,7 @@
 
 ### TASK-20260507-01 — G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务）
 
-**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）
 **复杂度级别：** **Level 3**（蓝图 plan §3.4 锁定）
 **创建日期：** 2026-05-07
 **分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main）
@@ -52,6 +52,15 @@ GLES 蓝图实施第四步 — 在 G1.3 已落地的 `Sdl2GLWindowSurface`（Sur
 - **ctest 期望：** +8 gles_canvas_skeleton_test + +2 shader_injection_test → gles baseline 1352 → **1362**
 
 **估时（plan ×0.6）：** ~125-175 min / 预期实测 ~75-118 min（标准极速区 0.55-0.70×）
+
+#### Build 阶段产出（2026-05-07）
+
+- **新建文件（5）：** `veloxa/graphics/gles/gles_canvas.{h,cc}`、`veloxa/graphics/gles/shaders.h`、`tests/graphics/gles/gles_canvas_skeleton_test.cc`、`tests/graphics/gles/shader_injection_test.cc`
+- **修改文件（2）：** `veloxa/graphics/CMakeLists.txt`、`tests/CMakeLists.txt`
+- **TDD 结果：** RED 缺 `gles_canvas.h` 编译失败 ✅ → GREEN 8+2 测全 PASS ✅
+- **安全测试：** `ShaderInjectionTest` 2/2 PASS（B6 raw string literal / compile-time shader source contract）
+- **三 build 矩阵：** software ON 1337/1337 ✅ / software OFF 1141/1141 ✅ / gles ON **1362/1362** ✅（+10 精确命中）
+- **feat commit：** `670b75c` — 7 files changed, 569 insertions(+)
 
 ---
 
