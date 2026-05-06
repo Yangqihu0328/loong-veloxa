@@ -4,7 +4,7 @@
 
 ### TASK-20260507-01 — G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务）
 
-**当前阶段：** 🔵 **初始化**（VAN 进行中 — 待 `/plan`）
+**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build`）
 **复杂度级别：** **Level 3**（蓝图 plan §3.4 锁定）
 **创建日期：** 2026-05-07
 **分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main）
@@ -38,6 +38,20 @@ GLES 蓝图实施第四步 — 在 G1.3 已落地的 `Sdl2GLWindowSurface`（Sur
 | 4 | **待处理事项** | ✅ activeContext P1 #1（writing-plans LOC 表格密度）与本任务无关 / shader 注入防御对应蓝图安全矩阵 §9 条目 1 |
 
 **前置验证结论：** 4 维度全 ✅ / 0 阻碍项 / 0 新依赖 / 可立即进入 `/plan`
+
+#### Plan 阶段产出（2026-05-07）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)（9 段 / 完整 cpp 代码片段 / 8+2 测设计 / Phase 0 §0.1-§0.5 全 ✅ / 反复模式 8/8 全抑制）
+- **9 决策 1 次 AskQuestion all_recommended 全锁定** + 4 蓝图隐含锁 = **13 决策全 lock**：跨决策协同度 100% **第 18 次连续命中候选** / streak 158 → 171/171 续刷
+- **新增决策维度：**
+  - D11=B passthrough shader 最小化（B6 raw string literal 编译期类型检查 first-evidence）
+  - D12=A shader_injection_test.cc 本任务建（安全 first-evidence 入库 / G1.4+G1.5 提前一步）
+  - D6=A State struct 沿用 SoftwareCanvas 模式（路径对称 / 0 设计漂移）
+- **文件清单细化：** plan 阶段从 5 文件升至 7 文件（拆出 shader_injection_test.cc + tests/CMakeLists.txt 修改）/ ~650 → ~727 行
+- **反复模式预防 8/8 全抑制** + 累计 21+ 模式连续抑制候选
+- **ctest 期望：** +8 gles_canvas_skeleton_test + +2 shader_injection_test → gles baseline 1352 → **1362**
+
+**估时（plan ×0.6）：** ~125-175 min / 预期实测 ~75-118 min（标准极速区 0.55-0.70×）
 
 ---
 

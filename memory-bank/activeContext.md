@@ -2,13 +2,21 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN 进行中 — 待 `/plan`）。
+**规划中** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN ✅ + Plan ✅ — 待 `/build`）。
 
-**当前任务：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](tasks.md#当前任务) — Level 3 / 创建 4 文件 + 修改 1 文件 / ~650 行（×0.85-1.5 buffer ~550-975）/ 估时 plan ×0.6 ~110-150 min / 预期实测 ~30-80 min（G1.3→G1.4 极速区趋势 / build 0.13-0.30×）。
+**当前任务：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](tasks.md#当前任务) — Level 3 / 创建 5 文件 + 修改 2 文件 / ~727 行（buffer [617, 1090]）/ 估时 plan ×0.6 ~125-175 min / 预期实测 ~75-118 min（标准极速区 0.55-0.70×）。
 
-**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main — 待创建）
+**plan 文档：** [`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)（9 段 / 完整 cpp 代码片段 + 8+2 测设计 + Phase 0 §0.5 全 ✅ + 反复模式 8/8 + systemPatterns 13 项协同度对照）
 
-**安全：** ⚠️ [安全相关] — shader source 注入防御（蓝图安全矩阵 §9 条目 1：用户内容永不作 shader source）
+**关键决策锁定（13 决策全 lock）：**
+- D1/D2/D3/D4 蓝图 §3.4 隐含锁（构造签名 / state stack Vector / CPU 影子 transform / shaders.h 位置）
+- D5-D13 9 决策 1 次 AskQuestion all_recommended（D5=A VAO/VBO ctor / D6=A State{transform,clip_depth} / D7=A no-op stub / D8=B 8 测 / D9=A G1.3 fixture 复用 / D10=A vx_graphics 内置 / D11=B 最小 passthrough shader / D12=A shader_injection_test 本任务建 / D13=B 三段 commit）
+- **跨决策协同度 100% 第 18 次连续命中候选** / streak 158 → 171/171（dec → endec → doudec → undec → 第 18 次）
+- **实施忠实度 quad-evidence 候选**（G1.1 first + G1.2 dual + G1.3 triple + G1.4 quad）
+
+**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main `00e7db7` ✅）
+
+**安全：** ⚠️ [安全相关] — shader source 注入防御（D11=B + D12=A first-evidence 入库）
 
 **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
 
@@ -42,7 +50,7 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** `/plan` — 头脑风暴 + 决策矩阵 + 详细实施计划（shaders.h 方案 / state stack 设计 / test fixture 策略）。
+**下一步：** `/build` — Phase A RED（写 8+2 测）→ Phase B GREEN（实施 .h/.cc/shaders.h + cmake）→ Phase C REFACTOR + 三 build 矩阵 ctest（A 1337 + B 1141 + C 1352→1362）。
 
 ---
 

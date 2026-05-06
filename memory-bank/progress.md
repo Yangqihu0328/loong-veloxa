@@ -8,6 +8,27 @@
 
 **当前阶段：** ✅ **已归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
 
+---
+
+## TASK-20260507-01 — G1.4 GLESCanvas 骨架实施（规划中）
+
+**任务定位：** GLES 蓝图实施第四步 / Level 3 实施类 / MVP-C 战略主线第四个实施任务 / 前置 G1.3 已闭环
+
+**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build`）
+
+#### Plan 阶段产出（2026-05-07）
+
+- **plan 文档：** [`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)
+- **13 决策全 lock：** 4 蓝图隐含 + 9 AskQuestion all_recommended（D5-D13）
+- **跨决策协同度第 18 次连续命中候选** / streak 158 → 171/171
+- **实施忠实度 quad-evidence 候选**（G1.1→G1.2→G1.3→G1.4）
+- **文件结构：** 5 新建 + 2 修改 / ~727 行 / buffer [617, 1090]
+- **测试设计：** 8 skeleton + 2 shader injection 安全测试（D12=A first-evidence 入库）
+- **新维度：** D11=B passthrough shader / D12=A 安全 first-evidence / D6=A State struct 沿用
+- **反复模式 8/8 全抑制** / 累计 21+ 模式连续抑制候选
+
+**估时（plan ×0.6）：** ~125-175 min / 预期实测 ~75-118 min
+
 #### VAN 阶段产出（2026-05-06 ~23:09）
 
 - **任务 ID 生成：** TASK-20260506-01（当天首个任务 / Memory Bank grep 验证无冲突）
