@@ -395,6 +395,16 @@ if(VX_PLATFORM_SDL2)
       PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
     gtest_discover_tests(sdl2_egl_display_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # Sdl2GLWindowSurface (G1.3): SDL2 window surface backed by an EGL/GLES
+    # context. Shares the offscreen driver env so Mesa swrast can bind a real
+    # GLES 3.0+ context on headless CI (same rationale as sdl2_egl_display_test).
+    add_executable(sdl2_gl_window_surface_test
+                   platform/sdl2_gl_window_surface_test.cc)
+    target_link_libraries(sdl2_gl_window_surface_test
+      PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
+    gtest_discover_tests(sdl2_gl_window_surface_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver

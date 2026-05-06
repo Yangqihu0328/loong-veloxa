@@ -2,11 +2,27 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260505-06 G1.2 `GLESDisplay` 抽象 + `Sdl2EGLDisplay` 实施（Level 3）✅ **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）/ feature 分支已合并 main + 删除 / 6 commits / +1781 -16 / 0 退化 / 0 lint / 0 反复模式命中 / **7 范式里程碑达成**。
+**回顾中** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待 `/archive`）。
 
-**最近闭环：** [TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay 实施](archive/archive-TASK-20260505-06.md) — Level 3 实施类 / GLES 蓝图实施第二步 / **MVP-C 战略主线第二个实施任务** / G1.1 D1=A 推迟点正式落地。
+**当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 3 文件 + 修改 2 文件 / ~490 行（×0.85-1.5 buffer ~415-735）/ 估时 plan ×0.6 ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）。
 
-**TASK-06 总产出：**
+**plan 文档：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 + 7 测设计 + Phase 0 §0.5 5 子段 audit + 反复模式 8/8 + systemPatterns 13 项协同度对照）
+
+**关键决策锁定（13 决策全 lock）：**
+- D1/D2/D5/D7 spec §3.3.3 隐含锁（构造签名 / 软失败 valid() / Lock=nullptr / unique_ptr<Sdl2EGLDisplay>）
+- D3-D13 9 决策 1 次 AskQuestion all_recommended（D3=A Y 翻转 / D4=A glReadPixels RGBA / D6=A SDL_SetWindowSize / D8=B 7 测 / D9=A G1.2 fixture 复用 / D10=A CMake 同段 / D11=A 测试 cmake guard 共用 / D12=B 三段 commit / D13=A 仅 plan）
+- **跨决策协同度 100% 第 16 次连续命中** / 累计 145/145 streak（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
+- Mesa swrast default framebuffer 真实性留 build 阶段 T4 RED 探针 + GTEST_SKIP fallback（驱动严格性分层 first-evidence 沿用）
+
+**分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
+
+**前置任务（最近闭环）：** [TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay 实施](archive/archive-TASK-20260505-06.md) — Level 3 实施类 / GLES 蓝图实施第二步 / 8 systemPatterns 沉淀 / 7 范式里程碑达成。
+
+---
+
+## 上次闭环 TASK-20260505-06 总产出（速查）
+
+**总产出：**
 
 - **8 个 systemPatterns 沉淀** ✅（reflect 阶段直接落地 / 含 7 P1 沉淀 + LOC buffer 模式参数细化）
   - 跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence（streak 128 → 136 历史最高续刷）
@@ -30,13 +46,13 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** 待用户 `/van` 启动新任务。建议候选见下方「下一推荐任务」段（建议优先 G1.3 Sdl2GLWindowSurface / 累计待处理 P1+P2 改进建议 11 项 ≥ 4 阈值，工作流元任务 triple-evidence 候选可批量清零）。
+**下一步：** `/archive` — 归档 TASK-20260506-01 + 分支 merge + Memory Bank 状态收尾。
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ 已实施完成 → **可立即进入 G1.3 Sdl2GLWindowSurface**（Surface 子类 + GL context 持有 / 接入 Sdl2EGLDisplay）。
+> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ + **G1.3 Sdl2GLWindowSurface（本任务 进行中）**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|

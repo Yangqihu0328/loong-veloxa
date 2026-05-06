@@ -2,7 +2,93 @@
 
 ## 当前任务
 
-**空闲** — 等待新任务。
+### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务）
+
+**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待 `/archive`）
+**复杂度级别：** **Level 3**（plan §3.3 锁定）
+**创建日期：** 2026-05-06
+**分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅ 已创建）
+**安全相关：** ❌ 否（沿用既有 `Surface::SavePPM` 表面 / 0 新公开 ABI / 0 用户输入路径）
+**估时（plan ×0.6）：** ~3-4 h（蓝图原估）/ 预期实测 ~110-160 min（沿用 G1.2 标准极速区 0.60-0.70× 系数 / **dec-evidence 第 11 数据点候选**）
+
+#### 任务定位
+
+GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed `SDL_Window` + GL context）接到 `Surface` 抽象，使得 `vx::platform::Sdl2GLWindowSurface` 同时持有 SDL_Window（owns）+ Sdl2EGLDisplay（owns）+ GL context lifecycle，并以 `glReadPixels` 实现 `SavePPM` 路径（GLES 路径首次实现 PPM；既有 software 路径 `Sdl2WindowSurface::SavePPM` 当前未实现，G1.3 不在范围内回填 software 版）。
+
+完成 G1.3 后即可在 G1.4 启动 `GLESCanvas` 骨架（首个真实可绘制画布），前置链：G1.1 ✅ → G1.2 ✅ → **G1.3 (本任务)** → G1.4。
+
+#### 任务范围（plan §3.3）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/platform/sdl2/sdl2_gl_window_surface.h` | 🆕 创建 | ~60 | `Surface` 子类 + 构造拿宽高 + `Sdl2EGLDisplay` 嵌入 |
+| 2 | `veloxa/platform/sdl2/sdl2_gl_window_surface.cc` | 🆕 创建 | ~180 | 构造 SDL_CreateWindow(SDL_WINDOW_OPENGL) + 创建 Sdl2EGLDisplay + Initialize() / SavePPM via glReadPixels + Y 翻转 / Present via SwapBuffers |
+| 3 | `veloxa/platform/sdl2/CMakeLists.txt` | 🟡 修改 | +~5 | 注册 `sdl2_gl_window_surface.cc`（与 sdl2_egl_display.cc 同段聚合） |
+| 4 | `tests/platform/sdl2/sdl2_gl_window_surface_test.cc` | 🆕 创建 | ~150 | ~4-6 单测 / 沿用 G1.2 `SDL_VIDEODRIVER=offscreen` + `VX_RENDERER STREQUAL "gles"` guard |
+| 5 | `tests/CMakeLists.txt` | 🟡 修改 | +~6 | 在 G1.2 `sdl2_egl_display_test` 段后追加 G1.3 测试目标 |
+| **合计** | — | — | **~390** | LOC ×1.0-1.4 buffer 范围 ~390-545 |
+
+#### VAN 前置验证清单（4 维度全通过 ✅）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ EGL 1.5 + GLESv2 3.2 (Mesa 26.x) + SDL2（pkg-config）— 全部已链接到 `vx_platform_sdl2`（commit `4b095c4` G1.2 落地）/ 0 新依赖 |
+| 2 | **环境就绪** | ✅ build-gles/ 目录已存在（G1.2 配置过）/ ctest gles baseline 1345 / SDL_VIDEODRIVER=offscreen 范式已验证 |
+| 3 | **已有 artifact** | ✅ Glob 实证 `sdl2_gl_window_surface.{h,cc}` 不存在 — 新建路径无冲突 / `Surface` 抽象 + `Sdl2EGLDisplay` 接口已就位 / `Sdl2WindowSurface`（software 路径）作为参考 |
+| 4 | **待处理事项关联** | ✅ activeContext「下一推荐任务」#1 = G1.3 / spec §11.2 #5+#6 / GLES 蓝图 plan §3.3 完整规格化 |
+
+#### 反复模式预审（8/8 全 ✅ 抑制 / VAN 阶段预审）
+
+| # | 反复模式 | 命中状态 | 抑制证据 |
+|:-:|---|:-:|---|
+| #1 | 前置依赖/环境/API 能力未验证 | ✅ 抑制 | 4 维度 audit 全 ✅ + grep 实证 SDL_GL_SwapWindow + glReadPixels 既有可用 |
+| #2 | spec 数据回归（实现 vs 文档不一致） | ✅ 抑制 | plan §3.3 锁定文件清单 + 接口签名 / 0 既有 spec 修改 |
+| #3 | TDD 顺序倒置 | ✅ 抑制 | plan §3.3 步骤 1 → 4 已规定 [TDD] 顺序（先测后实现）|
+| #4 | 反向探针缺失或弱 | ✅ 抑制 | plan §3.3 步骤 3 已规定反向探针（去 `SDL_WINDOW_OPENGL` flag → `Initialize` 失败）— 沿用 G1.2 D4=C inline reverse probe 范式 |
+| #5 | 中文文档 StrReplace 字符类型 audit | ✅ 抑制 | 本任务无中文文档改动 / plan / Memory Bank 同源 + 半角符号 |
+| #6 | commit body Source 溯源 | ✅ 待 build 阶段 | 沿用范式：`Source: docs/plans/2026-05-05-gles-renderer-blueprint.md §3.3` |
+| #7 | 双 config ctest 单次盲区 | ✅ 待 build 阶段 | build 阶段双 build 矩阵：build/（software）+ build-gles/（gles）|
+| #8 | spec 数据回归 audit 协议 | ✅ 抑制 | 0 既有 spec 数据修改 / G1.2 ctest baseline (1345 gles + 1303 software + 1110 OFF) 已稳定可比对 |
+
+#### Phase 0 audit 候选清单（plan 阶段细化 — 蓝图 plan §3.3 + VAN 实证补充）
+
+- §0.1 ctest baseline 二次验证：DEVTOOL=ON software=1303 / DEVTOOL=OFF software=1110 / DEVTOOL=ON gles=1345
+- §0.2 `glReadPixels` 在 GLES 3.0 中限制确认（仅 `GL_RGBA + GL_UNSIGNED_BYTE` 必支持 / 其他依赖实现）
+- §0.3 `SDL_VIDEODRIVER=offscreen` 路径下 `SDL_CreateWindow(SDL_WINDOW_OPENGL)` 行为 audit（G1.2 已验证可创建 GL context — G1.3 验证 SwapWindow 是否触发实际 buffer swap）
+- §0.4 Mesa swrast 驱动 `glReadPixels` 性能 + framebuffer 完整性确认（headless 路径）
+- §0.5 双重所有权 audit：`Sdl2GLWindowSurface` 拥有 `SDL_Window` + `Sdl2EGLDisplay`，`Sdl2EGLDisplay` 借用 `SDL_Window`（borrow contract 已锁定 G1.2）— 析构序：display 先 Shutdown → 再销毁 SDL_Window
+
+#### 推荐工作流路径
+
+```
+/van（VAN ✅）→ /plan（Plan ✅ — 本段）→ /build（3 phase TDD + reverse probe + 双 build 矩阵 + ctest +7）→ /reflect → /archive
+```
+
+#### Plan 阶段产出（2026-05-06 ~23:15 / 1 次 AskQuestion all_recommended → 9/9 决策锁定）
+
+- **plan 文档：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 + 7 测设计 + Phase 0 §0.5 audit + 反复模式 8/8 + systemPatterns 13 项协同度自我对照）
+- **D3-D13 9 决策锁定（all_recommended ✅）+ 4 spec 隐含锁（D1/D2/D5/D7）= 13 决策全 lock：**
+  - D3=A SavePPM CPU 端逐行 Y 翻转
+  - D4=A glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE) → P6 PPM RGB
+  - D6=A SDL_SetWindowSize + 内部尺寸更新（GL viewport 由 GLESCanvas G1.4+ 调用）
+  - D8=B 7 单测（5 plan 默认 + 2 反向探针 inline / 沿用 G1.2 D8 范式）
+  - D9=A 沿用 G1.2 `Sdl2EglEnvironment` 全局 env + 类自管 SDL_Window
+  - D10=A 与 sdl2_egl_display.cc 同段 CMake 注册（无 if guard / A14 守门）
+  - D11=A 与 G1.2 共用 `if(VX_RENDERER STREQUAL "gles")` guard
+  - D12=B 三段 commit（VAN ✅ + chore(plan) + feat(platform)）
+  - D13=A 仅 plan（蓝图 spec §3.3.3 已是 spec 来源）
+- **跨决策协同度 100% 第 16 次连续命中** / 累计 145/145 历史最高 streak 续刷（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
+- **Phase 0 §0.5 audit 5 子段：** ctest baseline ✅ / glReadPixels GLES 3.0 签名 ✅（gl3.h:599）/ SDL_VIDEODRIVER=offscreen + SwapWindow 行为 ✅ / Mesa swrast default FB 实证（build 阶段 T4 RED 自动 surface）/ 双重所有权析构序锁定 ✅
+- **3 处 brainstorming P1.3 偏差校正（quad-evidence 续延候选）：** 测试路径扁平化 + headless fixture 复用 + Mesa swrast framebuffer 探针策略
+- **反复模式预防 8/8 全抑制** / VAN + Plan 两阶段 0 命中（沿用 19+ 模式连续抑制纪录 / 历史新高续刷）
+- **3 commits 时间线规划：**
+  - `c0d67e2` ✅ VAN chore(workflow) initialize（已 commit）
+  - 待 commit chore(plan) plan + MB 三件套单 commit（**P0 协议自吃狗粮 / sext → sept-evidence 第 7 数据点候选**）
+  - Build 阶段 feat(platform) impl + tests 单 commit（D12=B）
+
+**下一步：** `/build` — 进入构建阶段，按 Phase A RED → Phase B GREEN → Phase C REFACTOR + 双 build 矩阵 ctest 验证。
+
+---
 
 ## 上次任务（已归档闭环）
 
