@@ -2,9 +2,17 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ — 待 `/plan` 启动规划阶段）。
+**规划中** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 / Level 3 / VAN ✅ + Plan ✅ — 待 `/build` 启动构建阶段）。
 
-**当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 2 文件 + 修改 2 文件 + 创建 1 测试文件 / ~390 行 / 估时 plan ×0.6 ~3-4 h / 预期实测 ~110-160 min（沿用 G1.2 标准极速区 0.60-0.70× 系数 / **dec-evidence 第 11 数据点候选**）。
+**当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 3 文件 + 修改 2 文件 / ~490 行（×0.85-1.5 buffer ~415-735）/ 估时 plan ×0.6 ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）。
+
+**plan 文档：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 + 7 测设计 + Phase 0 §0.5 5 子段 audit + 反复模式 8/8 + systemPatterns 13 项协同度对照）
+
+**关键决策锁定（13 决策全 lock）：**
+- D1/D2/D5/D7 spec §3.3.3 隐含锁（构造签名 / 软失败 valid() / Lock=nullptr / unique_ptr<Sdl2EGLDisplay>）
+- D3-D13 9 决策 1 次 AskQuestion all_recommended（D3=A Y 翻转 / D4=A glReadPixels RGBA / D6=A SDL_SetWindowSize / D8=B 7 测 / D9=A G1.2 fixture 复用 / D10=A CMake 同段 / D11=A 测试 cmake guard 共用 / D12=B 三段 commit / D13=A 仅 plan）
+- **跨决策协同度 100% 第 16 次连续命中** / 累计 145/145 streak（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
+- Mesa swrast default framebuffer 真实性留 build 阶段 T4 RED 探针 + GTEST_SKIP fallback（驱动严格性分层 first-evidence 沿用）
 
 **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
 
@@ -38,13 +46,13 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** TASK-20260506-01 已 VAN ✅ — 调用 `/plan` 启动规划阶段（brainstorm 决策表 + Phase 0 grep 实证 + 4-6 单测设计 + 双 build 矩阵 ctest 期望）。
+**下一步：** `/build` — Phase A RED（写 7 测）→ Phase B GREEN（实施 impl + cmake）→ Phase C REFACTOR + 三 build 矩阵 ctest 验证（A 1303 + B 1110 + C 1352）。
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ 已实施完成 → **可立即进入 G1.3 Sdl2GLWindowSurface**（Surface 子类 + GL context 持有 / 接入 Sdl2EGLDisplay）。
+> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ + **G1.3 Sdl2GLWindowSurface（本任务 进行中）**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|

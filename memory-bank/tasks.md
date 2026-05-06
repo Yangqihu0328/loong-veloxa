@@ -4,7 +4,7 @@
 
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务）
 
-**当前阶段：** 🟢 **初始化**（VAN ✅ — 待 `/plan` 启动规划阶段）
+**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build` 启动构建阶段）
 **复杂度级别：** **Level 3**（plan §3.3 锁定）
 **创建日期：** 2026-05-06
 **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅ 已创建）
@@ -61,10 +61,32 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 #### 推荐工作流路径
 
 ```
-/van（本阶段 ✅）→ /plan（brainstorm 决策表 + Phase 0 详细 audit + 4-6 单测设计）→ /build（4 phase + reverse probe + 双 build 矩阵 + ctest +4-6）→ /reflect → /archive
+/van（VAN ✅）→ /plan（Plan ✅ — 本段）→ /build（3 phase TDD + reverse probe + 双 build 矩阵 + ctest +7）→ /reflect → /archive
 ```
 
-**下一步：** `/plan` — 进入规划阶段，brainstorm 决策表 + Phase 0 grep 实证 + 单测矩阵。
+#### Plan 阶段产出（2026-05-06 ~23:15 / 1 次 AskQuestion all_recommended → 9/9 决策锁定）
+
+- **plan 文档：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 + 7 测设计 + Phase 0 §0.5 audit + 反复模式 8/8 + systemPatterns 13 项协同度自我对照）
+- **D3-D13 9 决策锁定（all_recommended ✅）+ 4 spec 隐含锁（D1/D2/D5/D7）= 13 决策全 lock：**
+  - D3=A SavePPM CPU 端逐行 Y 翻转
+  - D4=A glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE) → P6 PPM RGB
+  - D6=A SDL_SetWindowSize + 内部尺寸更新（GL viewport 由 GLESCanvas G1.4+ 调用）
+  - D8=B 7 单测（5 plan 默认 + 2 反向探针 inline / 沿用 G1.2 D8 范式）
+  - D9=A 沿用 G1.2 `Sdl2EglEnvironment` 全局 env + 类自管 SDL_Window
+  - D10=A 与 sdl2_egl_display.cc 同段 CMake 注册（无 if guard / A14 守门）
+  - D11=A 与 G1.2 共用 `if(VX_RENDERER STREQUAL "gles")` guard
+  - D12=B 三段 commit（VAN ✅ + chore(plan) + feat(platform)）
+  - D13=A 仅 plan（蓝图 spec §3.3.3 已是 spec 来源）
+- **跨决策协同度 100% 第 16 次连续命中** / 累计 145/145 历史最高 streak 续刷（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
+- **Phase 0 §0.5 audit 5 子段：** ctest baseline ✅ / glReadPixels GLES 3.0 签名 ✅（gl3.h:599）/ SDL_VIDEODRIVER=offscreen + SwapWindow 行为 ✅ / Mesa swrast default FB 实证（build 阶段 T4 RED 自动 surface）/ 双重所有权析构序锁定 ✅
+- **3 处 brainstorming P1.3 偏差校正（quad-evidence 续延候选）：** 测试路径扁平化 + headless fixture 复用 + Mesa swrast framebuffer 探针策略
+- **反复模式预防 8/8 全抑制** / VAN + Plan 两阶段 0 命中（沿用 19+ 模式连续抑制纪录 / 历史新高续刷）
+- **3 commits 时间线规划：**
+  - `c0d67e2` ✅ VAN chore(workflow) initialize（已 commit）
+  - 待 commit chore(plan) plan + MB 三件套单 commit（**P0 协议自吃狗粮 / sext → sept-evidence 第 7 数据点候选**）
+  - Build 阶段 feat(platform) impl + tests 单 commit（D12=B）
+
+**下一步：** `/build` — 进入构建阶段，按 Phase A RED → Phase B GREEN → Phase C REFACTOR + 双 build 矩阵 ctest 验证。
 
 ---
 

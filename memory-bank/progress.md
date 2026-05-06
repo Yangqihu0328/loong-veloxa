@@ -30,7 +30,26 @@
 - §0.4 Mesa swrast 驱动 `glReadPixels` 性能 + framebuffer 完整性（headless）
 - §0.5 双重所有权 audit：Sdl2GLWindowSurface owns SDL_Window + Sdl2EGLDisplay / 析构序锁定
 
-**下一步：** `/plan` — 进入规划阶段。
+#### Plan 阶段产出（2026-05-06 ~23:15）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 / 7 测设计 + 反向探针矩阵 + Phase 0 §0.5 5 子段 audit + systemPatterns 13 项协同度对照）
+- **9 决策 1 次 AskQuestion all_recommended 全锁定** + 4 spec 隐含锁 = 13 决策全 lock：跨决策协同度 100% **第 16 次连续命中** / 累计 145/145 历史最高 streak 续刷（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
+- **Phase 0 §0.5 5 子段全 ✅（build 阶段仅 §0.4 Mesa swrast framebuffer 留探针）：**
+  - §0.1 ctest baseline 二次验证：1303 / 1110 / 1345 ✅
+  - §0.2 glReadPixels GLES 3.0 签名：`<GLES3/gl3.h>:599` ✅
+  - §0.3 SDL_VIDEODRIVER=offscreen + SwapWindow 行为：G1.2 已验 ✅
+  - §0.4 Mesa swrast default framebuffer 真实性：build 阶段 T4 RED 探针 + GTEST_SKIP fallback（驱动严格性分层 first-evidence 沿用）
+  - §0.5 双重所有权析构序：display_ first → SDL_DestroyWindow / borrow contract 锁定 ✅
+- **3 处 brainstorming P1.3 偏差校正（quad-evidence 续延候选 / 第 4 次实战）：**
+  - 偏差 #1 测试路径扁平化（与 G1.2 偏差 #2 同源）
+  - 偏差 #2 headless fixture 复用（Sdl2EglEnvironment 范式）
+  - 偏差 #3 Mesa swrast framebuffer 探针策略（T4 GTEST_SKIP 分层）
+- **反复模式预防 8/8 全抑制** / VAN + Plan 两阶段 0 命中（19+ 模式连续抑制 / 历史新高续刷）
+- **ctest 期望：** +7 sdl2_gl_window_surface_test（gles config）→ gles baseline 1345 → **1352**
+
+**估时（plan ×0.6）：** ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）
+
+**下一步：** `/build` — Phase A RED → Phase B GREEN → Phase C REFACTOR + 三 build 矩阵 ctest 验证。
 
 ---
 
