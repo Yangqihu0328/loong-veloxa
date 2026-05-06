@@ -405,6 +405,27 @@ if(VX_PLATFORM_SDL2)
       PRIVATE vx_foundation vx_platform_sdl2 GTest::gtest_main)
     gtest_discover_tests(sdl2_gl_window_surface_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # GLESCanvas skeleton (G1.4): canvas-side counterpart to
+    # Sdl2GLWindowSurface. Requires vx_platform_sdl2 (for the surface) AND
+    # vx_graphics (for GLESCanvas itself, which is gles-config-only via
+    # veloxa/graphics/CMakeLists.txt's if-guard).
+    add_executable(gles_canvas_skeleton_test
+                   graphics/gles/gles_canvas_skeleton_test.cc)
+    target_link_libraries(gles_canvas_skeleton_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
+    gtest_discover_tests(gles_canvas_skeleton_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # Shader injection defense (G1.4 first-evidence security regression).
+    # Pure header-only test (compile-time literal verification), no GL
+    # context needed — but still gles-guarded because shaders.h only ships
+    # in gles builds.
+    add_executable(shader_injection_test
+                   graphics/gles/shader_injection_test.cc)
+    target_link_libraries(shader_injection_test
+      PRIVATE vx_foundation vx_graphics GTest::gtest_main)
+    gtest_discover_tests(shader_injection_test)
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
