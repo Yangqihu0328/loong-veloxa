@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（初始化中）
+### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（构建完成）
 
 **任务定位：** GLES 蓝图实施第三步 / Level 3 实施类 / MVP-C 战略主线第三个实施任务 / 前置 G1.2 已闭环
 
-**当前阶段：** 🟢 **初始化**（VAN ✅ — 待 `/plan` 启动规划阶段）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）
 
 #### VAN 阶段产出（2026-05-06 ~23:09）
 
@@ -48,6 +48,23 @@
 - **ctest 期望：** +7 sdl2_gl_window_surface_test（gles config）→ gles baseline 1345 → **1352**
 
 **估时（plan ×0.6）：** ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）
+
+#### Build 阶段产出（2026-05-06 ~23:57）
+
+- **新建文件（3）：**
+  - `veloxa/platform/sdl2/sdl2_gl_window_surface.h` — class 声明（~65 行）
+  - `veloxa/platform/sdl2/sdl2_gl_window_surface.cc` — ctor/dtor/Resize/SavePPM/Present（~140 行）
+  - `tests/platform/sdl2_gl_window_surface_test.cc` — 7 TDD 测试（~210 行）
+- **修改文件（2）：**
+  - `veloxa/platform/sdl2/CMakeLists.txt` — 注册 sdl2_gl_window_surface.cc
+  - `tests/CMakeLists.txt` — 注册 sdl2_gl_window_surface_test（gles guard）
+- **TDD 结果：** 7/7 全通过（T4 SavePPM_WritesValidFile 非 SKIP — Mesa swrast default framebuffer 实际渲染确认）
+- **三 build 矩阵全 ✅：**
+  - software DEVTOOL=ON：1337/1337（+34 vs 1303 baseline / DevTool 测试增量正常）
+  - software DEVTOOL=OFF：1141/1141（+31 vs 1110 baseline）
+  - gles DEVTOOL=ON：**1352/1352**（+7 vs 1345 baseline ✅ 精确匹配预期）
+- **feat commit：** `7746925` — 5 files changed, 424 insertions(+)
+- **关键实证：** T4 Mesa swrast 写入 PPM 文件真实 — `SavePPM` 实现完整验证（glReadPixels → Y-flip → P6 binary）
 
 **下一步：** `/build` — Phase A RED → Phase B GREEN → Phase C REFACTOR + 三 build 矩阵 ctest 验证。
 

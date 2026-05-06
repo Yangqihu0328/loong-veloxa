@@ -4,7 +4,7 @@
 
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务）
 
-**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅ — 待 `/build` 启动构建阶段）
+**当前阶段：** 🔨 **构建中**（VAN ✅ + Plan ✅ + Build ✅ — 待 `/reflect`）
 **复杂度级别：** **Level 3**（plan §3.3 锁定）
 **创建日期：** 2026-05-06
 **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅ 已创建）
