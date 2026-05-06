@@ -2,17 +2,13 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260506-01 G1.3 `Sdl2GLWindowSurface` 已归档完成 ✅。等待新任务。
+**初始化** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN 进行中 — 待 `/plan`）。
 
-**当前任务：** [TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实施](tasks.md#当前任务) — Level 3 / 创建 3 文件 + 修改 2 文件 / ~490 行（×0.85-1.5 buffer ~415-735）/ 估时 plan ×0.6 ~110-180 min / 预期实测 ~90-135 min（标准极速区 0.55-0.75×）。
+**当前任务：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](tasks.md#当前任务) — Level 3 / 创建 4 文件 + 修改 1 文件 / ~650 行（×0.85-1.5 buffer ~550-975）/ 估时 plan ×0.6 ~110-150 min / 预期实测 ~30-80 min（G1.3→G1.4 极速区趋势 / build 0.13-0.30×）。
 
-**plan 文档：** [`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)（10 段 / 完整 cpp 代码片段 + 7 测设计 + Phase 0 §0.5 5 子段 audit + 反复模式 8/8 + systemPatterns 13 项协同度对照）
+**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main — 待创建）
 
-**关键决策锁定（13 决策全 lock）：**
-- D1/D2/D5/D7 spec §3.3.3 隐含锁（构造签名 / 软失败 valid() / Lock=nullptr / unique_ptr<Sdl2EGLDisplay>）
-- D3-D13 9 决策 1 次 AskQuestion all_recommended（D3=A Y 翻转 / D4=A glReadPixels RGBA / D6=A SDL_SetWindowSize / D8=B 7 测 / D9=A G1.2 fixture 复用 / D10=A CMake 同段 / D11=A 测试 cmake guard 共用 / D12=B 三段 commit / D13=A 仅 plan）
-- **跨决策协同度 100% 第 16 次连续命中** / 累计 145/145 streak（dec → endec → doudec → 第 16 次 / 实施忠实度 triple-evidence 候选）
-- Mesa swrast default framebuffer 真实性留 build 阶段 T4 RED 探针 + GTEST_SKIP fallback（驱动严格性分层 first-evidence 沿用）
+**安全：** ⚠️ [安全相关] — shader source 注入防御（蓝图安全矩阵 §9 条目 1：用户内容永不作 shader source）
 
 **分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
 
@@ -46,7 +42,7 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** 使用 `/van` 开始下一个任务（推荐 G1.4 GLESCanvas 骨架）。
+**下一步：** `/plan` — 头脑风暴 + 决策矩阵 + 详细实施计划（shaders.h 方案 / state stack 设计 / test fixture 策略）。
 
 ---
 

@@ -2,6 +2,45 @@
 
 ## 当前任务
 
+### TASK-20260507-01 — G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务）
+
+**当前阶段：** 🔵 **初始化**（VAN 进行中 — 待 `/plan`）
+**复杂度级别：** **Level 3**（蓝图 plan §3.4 锁定）
+**创建日期：** 2026-05-07
+**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main）
+**安全相关：** ⚠️ **是**（shader source 注入防御 / 参见蓝图安全矩阵 §9 / `[安全相关]`）
+**估时（plan ×0.6）：** ~3-4 h（蓝图原估）/ 预期实测 ~90-120 min（沿用 G1.3 极速区系数 0.13-0.30× build）
+
+#### 任务定位
+
+GLES 蓝图实施第四步 — 在 G1.3 已落地的 `Sdl2GLWindowSurface`（Surface + GL context）之上，实现 `vx::gfx::GLESCanvas`：继承 `Canvas` 抽象（22 纯虚方法），骨架阶段实现 `Begin/End/Clear/SetTransform/PushState/PopState`，其余方法留 stub（G1.5+ 逐步填充）。包含 shader 静态嵌入（`shaders.h` raw string literal）和 VAO/VBO 初始化。
+
+完成 G1.4 后即可在 G1.5 实现首个真实绘制方法（`FillRect`），前置链：G1.1 ✅ → G1.2 ✅ → G1.3 ✅ → **G1.4（本任务）** → G1.5。
+
+#### 任务范围（蓝图 plan §3.4）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/graphics/gles/gles_canvas.h` | 🆕 创建 | ~120 | Canvas 子类声明 / 22 override + state stack |
+| 2 | `veloxa/graphics/gles/gles_canvas.cc` | 🆕 创建 | ~250 | 骨架实现 / Begin/End/Clear/Transform/State |
+| 3 | `veloxa/graphics/gles/shaders.h` | 🆕 创建 | ~80 | B6 raw string literal shader 静态嵌入 |
+| 4 | `veloxa/graphics/CMakeLists.txt` | 🟡 修改 | +~20 | VX_RENDERER=gles 分支注册 gles/ 子目录 |
+| 5 | `tests/graphics/gles/gles_canvas_skeleton_test.cc` | 🆕 创建 | ~180 | ~6-8 单测（TDD RED→GREEN）|
+| **合计** | — | — | **~650** | buffer [0.85, 1.5] = ~550-975 行 |
+
+#### VAN 前置验证清单（4 维度）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ EGL + GLESv2 已链接 vx_platform_sdl2（G1.2 commit `4b095c4`）/ GLES3 headers 已验（蓝图 §0.1）/ 0 新外部依赖 |
+| 2 | **环境就绪** | ✅ build-gles/ 已存在 / gles baseline 1352 / SDL_VIDEODRIVER=offscreen + Mesa swrast 全链路验证（G1.3 T4 first-evidence）|
+| 3 | **已有 artifact** | ✅ `veloxa/graphics/gles/` 不存在（新建）/ `tests/graphics/gles/` 不存在（新建）/ Canvas 接口 22 方法已稳定 / Matrix3x2 定义在 types.h |
+| 4 | **待处理事项** | ✅ activeContext P1 #1（writing-plans LOC 表格密度）与本任务无关 / shader 注入防御对应蓝图安全矩阵 §9 条目 1 |
+
+**前置验证结论：** 4 维度全 ✅ / 0 阻碍项 / 0 新依赖 / 可立即进入 `/plan`
+
+---
+
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务）
 
 **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
