@@ -1,0 +1,107 @@
+#ifndef VELOXA_GRAPHICS_GLES_GLES_CANVAS_H_
+#define VELOXA_GRAPHICS_GLES_GLES_CANVAS_H_
+
+#include <GLES3/gl3.h>
+
+#include <memory>
+
+#include "veloxa/foundation/containers/vector.h"
+#include "veloxa/graphics/canvas.h"
+
+namespace vx::platform { class Sdl2GLWindowSurface; }
+namespace vx::text {
+class FontManager;
+class GlyphCache;
+}
+
+namespace vx::gfx::gles {
+
+// GLES-backed Canvas implementation (G1.4 skeleton phase).
+//
+// Skeleton scope (TASK-20260507-01):
+//   * Begin / End / Clear / SetTransform / GetTransform / PushState /
+//     PopState — fully implemented.
+//   * The remaining 15 Canvas methods (FillRect / FillRoundedRect /
+//     FillPath / Stroke* / DrawText / DrawImage / Push*Clip / PopClip /
+//     PushLayer / PopLayer / CreatePath) are no-op stubs that get
+//     replaced by G1.5 (FillRect+FillRoundedRect), G1.6 (FillPath via
+//     libtess2), G1.7 (Stroke*), G1.8 (DrawText), G1.9 (DrawImage),
+//     G1.10 (Clip), G1.11 (Layer), G1.12 (CreatePath).
+//
+// Ownership:
+//   * surface_ — borrowed (caller retains ownership).
+//   * quad_vao_ / quad_vbo_ — owned, glDelete in dtor.
+//   * No GL context is created here — caller must have made the context
+//     current via `surface->gles_display()->MakeCurrent()` before
+//     constructing this canvas (test fixtures do this explicitly;
+//     Application G1.13 will plumb it).
+//
+// Threading:
+//   * GL is single-threaded by design; all GLESCanvas methods MUST be
+//     called from the thread that holds the GL context current. A real
+//     DCHECK arrives with G1.13/G1.14 once Application owns the
+//     lifecycle. T8 reverse probe documents the contract today.
+class GLESCanvas final : public Canvas {
+ public:
+  explicit GLESCanvas(vx::platform::Sdl2GLWindowSurface* surface,
+                      vx::text::FontManager* font_manager = nullptr,
+                      vx::text::GlyphCache* glyph_cache = nullptr);
+  ~GLESCanvas() override;
+
+  GLESCanvas(const GLESCanvas&) = delete;
+  GLESCanvas& operator=(const GLESCanvas&) = delete;
+
+  // ---- Real implementations (G1.4 skeleton scope) ----
+  void Begin() override;
+  void End() override;
+  void Clear(Color color) override;
+  void SetTransform(const Matrix3x2& m) override;
+  Matrix3x2 GetTransform() const override;
+  void PushState() override;
+  void PopState() override;
+
+  // ---- No-op stubs (G1.5+ implementation scope) ----
+  void FillRect(const Rect&, const Brush&) override {}
+  void FillRoundedRect(const Rect&, vx::f32, const Brush&) override {}
+  void FillPath(const Path&, const Brush&) override {}
+  void StrokeRect(const Rect&, const Brush&, vx::f32) override {}
+  void StrokeRoundedRect(const Rect&, vx::f32, const Brush&,
+                         vx::f32) override {}
+  void StrokePath(const Path&, const Brush&, vx::f32) override {}
+  void StrokeLine(Point, Point, const Brush&, vx::f32) override {}
+  void DrawText(vx::StringView, const Rect&, vx::f32,
+                const Brush&) override {}
+  void DrawImage(const Image&, const Rect&, const Rect&) override {}
+  void PushClipRect(const Rect&) override {}
+  void PushClipPath(const Path&) override {}
+  void PopClip() override {}
+  void PushLayer(const Rect&, vx::f32) override {}
+  void PopLayer() override {}
+  std::unique_ptr<Path> CreatePath() override;  // returns nullptr (G1.12)
+
+  // ---- GLES-specific accessors for tests / G1.5+ implementations ----
+  bool active() const { return active_; }
+  GLuint quad_vao() const { return quad_vao_; }
+  GLuint quad_vbo() const { return quad_vbo_; }
+
+ private:
+  struct State {
+    Matrix3x2 transform;
+    vx::usize clip_stack_depth;  // reserved for G1.10 PushClip*
+  };
+
+  vx::platform::Sdl2GLWindowSurface* surface_;
+  vx::u32 width_ = 0;
+  vx::u32 height_ = 0;
+  Matrix3x2 transform_;
+  vx::Vector<State> state_stack_;
+  bool active_ = false;
+  GLuint quad_vao_ = 0;
+  GLuint quad_vbo_ = 0;
+  vx::text::FontManager* font_manager_ = nullptr;
+  vx::text::GlyphCache* glyph_cache_ = nullptr;
+};
+
+}  // namespace vx::gfx::gles
+
+#endif  // VELOXA_GRAPHICS_GLES_GLES_CANVAS_H_

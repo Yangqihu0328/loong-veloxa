@@ -1265,16 +1265,37 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
   - `SavePPM()`：`glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE)` + Y-flip（GL bottom-left → PPM top-left）+ P6 binary RGB 写出
   - `Resize()`：`SDL_SetWindowSize` + 内部 `width_`/`height_` 更新（GL viewport 更新交由 GLESCanvas G1.4+）
   - `SDL_GL_ResetAttributes()` ctor 内调用（测试隔离 / 防跨测试 GL attribute 泄露）
-- **Mesa swrast default framebuffer 真实写入实证（G1.3 T4 first-evidence）：**
+- **Mesa swrast default framebuffer 真实写入实证（first-evidence）：**
   - `glClearColor(red)` + `glClear` + `glReadPixels` 在 `SDL_VIDEODRIVER=offscreen` 路径下读出真实颜色 ✅
-  - **意义：** G1.4 GLESCanvas pixel-accurate 测试可更安全使用 `glReadPixels`（不确定性消除）
 - **测试 include 协议（G1.3 新发现）：**
   - 测试文件直接调 `gl*()` 函数时须显式 `#include <GLES3/gl3.h>`（header 使用 forward declare / 不传递 GLES3 header）
+
+### G1.4 GLESCanvas 骨架实施（已落地 / TASK-20260507-01 build 完成）
+
+- **新增文件：**
+  - `veloxa/graphics/gles/shaders.h` — 编译期 GLSL raw string literal 常量（`kPassthroughVert` + `kPassthroughFrag`）/ B6=A 安全契约
+  - `veloxa/graphics/gles/gles_canvas.{h,cc}` — `Canvas` 子类骨架（Surface borrowed ptr / owns VAO+VBO / state stack）
+  - `tests/graphics/gles/gles_canvas_skeleton_test.cc` — 8 TEST_F
+  - `tests/graphics/gles/shader_injection_test.cc` — 2 安全测试（S1 + S2）
+- **关键设计点：**
+  - `GLESCanvas(Sdl2GLWindowSurface*, FontManager*, GlyphCache*)` — surface borrowed（非 owns）
+  - `Begin()` → glViewport + glEnable(GL_BLEND) + glBlendFunc / `End()` → glFlush
+  - `Clear(Color)` → glClearColor + glClear(GL_COLOR_BUFFER_BIT)
+  - `SetTransform` / `GetTransform` 管理 `Matrix3x2 transform_`（identity 初始化）
+  - `PushState` / `PopState` 管理 `Vector<State>` state_stack_（含 `clip_stack_depth` 预留）
+  - 15 个 stub 方法内联 header（`{}`/`return nullptr`），T7 批量验证无 GL 错误
+  - `MatrixEq()` 辅助函数（11 行）：`Matrix3x2` 无 `operator==` 需手写（plan 遗漏 / build 即时发现）
+- **Mesa swrast default framebuffer 真实写入实证（dual-evidence）：**
+  - G1.4 T3 `Clear_WritesPixels`：`GLESCanvas::Clear(红)` → `glReadPixels` → R≈255 ✅（继 G1.3 T4 first-evidence 后 dual-evidence 确立）
+- **shader injection 安全 first-evidence：**
+  - `shader_injection_test.cc` S1+S2 PASS — B6=A 安全契约首次有可执行测试守护
 
 ### 交叉引用
 
 - G1.1 归档：[`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
 - G1.2 归档：[`memory-bank/archive/archive-TASK-20260505-06.md`](archive/archive-TASK-20260505-06.md)
+- G1.3 归档：[`memory-bank/archive/archive-TASK-20260506-01.md`](archive/archive-TASK-20260506-01.md)
 - G1.2 实施计划：[`docs/plans/2026-05-05-gles-display-sdl2-egl.md`](../docs/plans/2026-05-05-gles-display-sdl2-egl.md)
 - G1.3 实施计划：[`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)
+- G1.4 实施计划：[`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)
 

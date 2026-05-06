@@ -4585,45 +4585,56 @@ plan 阶段 LOC 估算应附 ×1.3-1.5 buffer，覆盖以下隐性附加工作�
 
 ---
 
-## 跨决策协同度 100% 第 17 次连续命中 + 实施忠实度 triple-evidence（TASK-20260506-01 反思入库 / 第 17 次 / 累计 158/158 历史最高 streak 续刷 / 实施忠实度 G1.1 first + G1.2 dual + G1.3 **triple-evidence**）
+## 跨决策协同度 100% 第 18 次连续命中 + 实施忠实度 quad-evidence（TASK-20260507-01 反思入库 / 第 18 次 / 累计 171/171 历史最高 streak 续刷 / 实施忠实度 G1.1 first + G1.2 dual + G1.3 triple + G1.4 **quad-evidence**）
 
-**TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实证（… → 15 → 16 → 17）：**
+**TASK-20260507-01 G1.4 GLESCanvas 实证（… → 16 → 17 → 18）：**
 
 - **决策协同度：** 13/13 D 决策（D1-D13 / 4 spec 隐含 + 9 AskQuestion all_recommended）全 lock 0 调整 ✅
-- **实施忠实度：** 13/13 D 决策 0 偏差实施 ✅（唯一偏差 = plan 测试 includes 清单遗漏 1 行 `<GLES3/gl3.h>` / 属 plan 质量问题，非 build 忠实度问题）
-- **streak 累计：** 145 → **158/158 历史最高 streak 续刷**
+- **实施忠实度：** 13/13 D 决策 0 偏差实施 ✅（唯一非偏差 = plan §2.4 遗漏 `MatrixEq` 辅助函数 / `Matrix3x2` 无 `operator==` / 属 plan 质量遗漏，非 build 忠实度问题）
+- **streak 累计：** 158 → **171/171 历史最高 streak 续刷**（+13 G1.4 决策）
 
-**实施忠实度 first → dual → triple-evidence 成熟：**
+**实施忠实度 first → dual → triple → quad-evidence 成熟：**
 
-| 维度 | G1.1（first） | G1.2（dual） | G1.3（triple） |
-|---|:-:|:-:|:-:|
-| 决策协同度 100% | ✅ 7/7 | ✅ 8/8 | ✅ 13/13 |
-| 实施忠实度 100% | ✅ 7/7 | ✅ 8/8（精神一致） | ✅ 13/13（0 偏差） |
+| 维度 | G1.1（first） | G1.2（dual） | G1.3（triple） | G1.4（quad） |
+|---|:-:|:-:|:-:|:-:|
+| 决策协同度 100% | ✅ 7/7 | ✅ 8/8 | ✅ 13/13 | ✅ 13/13 |
+| 实施忠实度 100% | ✅ 7/7 | ✅ 8/8（精神一致） | ✅ 13/13（0 偏差） | ✅ 13/13（0 偏差）|
 
-**triple-evidence 固化结论：当 plan 包含完整 C++ 代码片段时，实施忠实度接近 100%（build 阶段≈机械转化）。** 适用于 Level 2-3 实施类任务（V2=a 蓝图任务实施忠实度概念不强适用）。
+**quad-evidence 固化结论：当 plan 包含完整 C++ 代码片段时，实施忠实度接近 100%（build 阶段≈机械转化）。** 适用于 Level 2-3 实施类任务（V2=a 蓝图任务实施忠实度概念不强适用）。4 任务 4 次印证，该模式已达成熟可复用状态。
 
 ---
 
-## Mesa swrast default framebuffer 真实写入 first-evidence（TASK-20260506-01 G1.3 T4 SavePPM）
+*以下保留 G1.3 triple-evidence 原始记录（供历史追溯）：*
 
-> **背景**：G1.3 plan 将「Mesa swrast offscreen 路径是否能通过 glReadPixels 读取 default framebuffer 的真实颜色值」标注为不确定项，留 T4 `SavePPM_WritesValidFile` 做 RED 探针（GTEST_SKIP fallback）。G1.3 build 实际运行结果：T4 **非 SKIP**，确认真实写入。
+**TASK-20260506-01 G1.3 Sdl2GLWindowSurface 实证（… → 15 → 16 → 17）：**
+
+- **决策协同度：** 13/13 D 决策 全 lock 0 调整 ✅
+- **实施忠实度：** 13/13 D 决策 0 偏差实施 ✅（plan 遗漏 `<GLES3/gl3.h>` include / 属 plan 质量问题）
+- **streak 累计：** 145 → 158/158
+
+---
+
+## Mesa swrast default framebuffer 真实写入 dual-evidence（G1.3 T4 first + G1.4 T3 second）
+
+> **历史**：G1.3 plan 将此行为标注为不确定项，留 T4 `SavePPM_WritesValidFile` 做 RED 探针（GTEST_SKIP fallback）。G1.3 build T4 **非 SKIP**（first-evidence）。G1.4 build `Clear_WritesPixels`（T3）在不同画布类路径下再次验证，**非 SKIP**（dual-evidence）。
 
 **实证条件：**
 - 驱动：Mesa swrast（软件光栅化 / `libEGL_mesa` + Mesa 24.x+）
 - SDL2 配置：`SDL_VIDEODRIVER=offscreen` + `SDL_CreateWindow(SDL_WINDOW_OPENGL)`
 - GLES 版本：3.0+（由 `Sdl2EGLDisplay::Initialize` 请求并协商）
-- 测试场景：`glClearColor(1,0,0,1)` + `glClear(GL_COLOR_BUFFER_BIT)` → `glReadPixels(GL_RGBA, GL_UNSIGNED_BYTE)` → 读出第一像素 R≈255 / G≈0 / B≈0 ✅
+- G1.3 T4：`glClearColor(1,0,0,1)` + `glClear` → `glReadPixels` via `Sdl2GLWindowSurface::SavePPM()` → R≈255 ✅
+- G1.4 T3：`GLESCanvas::Clear(Color{255,0,0,255})` → `glReadPixels` 直接调用 → R≈255 ✅
 
-**结论（有限条件下）：**
+**结论（dual-evidence 固化）：**
 | 条件 | 行为 | 确认程度 |
 |---|---|---|
-| Mesa swrast + SDL_VIDEODRIVER=offscreen | glReadPixels 读取真实颜色值 ✅ | **first-evidence（G1.3 T4）** |
+| Mesa swrast + SDL_VIDEODRIVER=offscreen | glReadPixels 读取真实颜色值 ✅ | **dual-evidence（G1.3 T4 + G1.4 T3）** |
 | 真实 GPU driver（i915 / amdgpu 等） | 预期可行，但未验证 | 待实机 CI 数据 |
 | DRM/KMS offscreen 路径（G2 范围） | 预期可行，但依赖 EGL surface 配置 | 待 G2 实施验证 |
 
-**对后续任务的影响：**
-- G1.4 `GLESCanvas` 测试可以**更安全地使用 `glReadPixels` 做 pixel-accurate 测试**，无需预留大比例 GTEST_SKIP fallback 预算
-- GLES headless 测试最大不确定性消除，Mesa swrast 路径可作为可靠的 pixel 验证基础
+**dual-evidence 影响：**
+- G1.5+ GLES 测试可**默认**此路径有效，**无需** `GTEST_SKIP` fallback 预算
+- Mesa swrast headless pixel 验证路径已固化为可信基础，后续 GLES 测试设计可直接使用 `glReadPixels` 作为 pixel-accurate 验证手段
 
 ---
 
@@ -4644,28 +4655,60 @@ plan 阶段 LOC 估算应附 ×1.3-1.5 buffer，覆盖以下隐性附加工作�
 
 ---
 
-## plan ×0.6 实测系数 undec-evidence（TASK-20260506-01 反思入库 / 第 11 数据点 / G1.3 实施类 Level 3 dual-evidence）
+## plan ×0.6 实测系数 undec-evidence（TASK-20260507-01 反思入库 / 第 12 数据点 / G1.4 实施类 Level 3 triple-evidence 候选）
 
-**TASK-20260506-01 G1.3 实测（dec → undec-evidence 升级）：**
+**TASK-20260507-01 G1.4 实测：**
 
 | 阶段 | plan ×0.6 估时 | 实测 | 系数 |
 |---|:-:|:-:|:-:|
-| VAN | ~10-15 min | ~5 min | ~0.35× |
-| Plan | ~25-40 min | ~22 min | ~0.6-0.9× |
-| **Build（代码编写）** | ~50-90 min | **~17 min** | **~0.19-0.34×** 极端极速区 |
-| Build（矩阵 A 编译）| — | ~7 min | 不计入（编译等待） |
-| **小计（代码工作）** | ~100-165 min | **~44 min** | **~0.27-0.44× 极端极速区** |
+| VAN | ~5-10 min | ~10 min | ~1.0-2.0× |
+| Plan | ~25-40 min | ~12 min | ~0.30-0.48× |
+| **Build（代码编写）** | ~50-90 min | **~7-8 min** | **~0.09-0.16×** 极端极速区 |
+| Build（矩阵编译等待）| — | ~5 min | 不计入（编译等待） |
+| **小计（代码工作）** | ~80-140 min | **~22 min** | **~0.16-0.28× 极端极速区** |
 
-**子档矩阵更新（dec → undec-evidence / 实施类 Level 3 dual-evidence 确立）：**
+**子档矩阵更新（undec-evidence / 实施类 Level 3 triple-evidence 候选）：**
 
 | 子档 | 任务示例 | Build 系数 | 总线系数 | 数据点 |
 |---|---|:-:|:-:|:-:|
 | V2=a 蓝图（极致极速）| TASK-03 / TASK-04 蓝图 | — | 0.02-0.05× | 4 |
 | 工作流元任务（极速）| TASK-04 工作流元 | — | 0.11-0.19× | 2 |
 | 实施类 Level 2（标准极速）| TASK-05 G1.1 | 0.3-0.6× | 0.6-1.0× | 1 |
-| **实施类 Level 3（极速）** | **TASK-06 G1.2 + G1.3** | **0.13-0.55×** | **0.27-0.70×** | **2 ← dual-evidence** |
+| **实施类 Level 3（极速）** | **G1.2 + G1.3 + G1.4** | **0.09-0.55×** | **0.16-0.70×** | **3 ← triple-evidence 候选** |
 
-**实施类 Level 3 dual-evidence 结论：** Build 系数大范围（0.13-0.55×）取决于蓝图完备度 — G1.3（0.13×）比 G1.2（0.30-0.55×）快 2-4×，原因是 G1.3 plan 包含完整 C++ 代码片段（机械转化）且无外部依赖集成。
+**实施类 Level 3 triple-evidence 候选结论：** G1.2（0.30-0.55×）→ G1.3（0.13×）→ G1.4（0.09-0.16×），3 点连续收紧，极端极速区（<0.20×）发生条件：plan 包含完整 C++ 代码片段 + stub-heavy 骨架（no-op 内联 header）+ fixture 复用。
+
+---
+
+*以下保留 G1.3 第 11 数据点记录（供历史追溯）：*
+
+**TASK-20260506-01 G1.3 实测（dec → undec-evidence 升级 / 第 11 数据点）：**
+
+| 阶段 | 实测 | 系数 |
+|---|:-:|:-:|
+| VAN | ~5 min | ~0.35× |
+| Plan | ~22 min | ~0.6-0.9× |
+| Build（代码编写）| ~17 min | ~0.19-0.34× 极端极速区 |
+| **小计** | **~44 min** | **~0.27-0.44×** |
+
+---
+
+## GLES shader 注入防御 first-evidence（TASK-20260507-01 D12=A / B6=A 安全契约）
+
+**背景：** G1.4 plan §9.1 将 shader 注入识别为安全风险（用户可控字符串 → GLSL source → GPU 端任意指令），采用 D12=A（安全测试 first-class 地位）+ B6=A（compile-time literal only）防御策略。`shader_injection_test.cc` 首次将安全回归测试引入 GLES 子测试栈。
+
+**安全契约（B6=A）：**
+- `shaders.h` 所有 GLSL 源码以 `inline constexpr const char*` 形式内联，**编译期绑定**
+- 不暴露任何接受用户字符串参数、返回 GLSL 片段或执行 runtime string concatenation 的 API
+- 违规方式（禁止）：`std::string shader = base + user_input`、`sprintf`、`fmt::format` 拼接 GLSL source
+
+**first-evidence 入库（S1 + S2）：**
+| 测试 | 验证内容 | 结果 |
+|---|---|---|
+| `ShaderSourcesAreCompileTimeLiterals` | `kPassthroughVert` / `kPassthroughFrag` 指针地址在多次调用间不变（编译期常量 / 无 runtime 构造）| ✅ PASS |
+| `NoConcatenationApiExposed` | 文档即测试：声明 `shaders.h` 不存在接受用户字符串的函数（静态分析级别）| ✅ PASS |
+
+**适用范围：** G1.5+（kSolidVert / kSolidFrag / kRoundedRectFrag 等）新增 shader 时，必须遵循同一规则并追加同类测试。
 
 ---
 

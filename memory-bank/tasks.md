@@ -2,6 +2,68 @@
 
 ## 当前任务
 
+### TASK-20260507-01 — G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务）
+
+**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待 `/archive`）
+**复杂度级别：** **Level 3**（蓝图 plan §3.4 锁定）
+**创建日期：** 2026-05-07
+**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main）
+**安全相关：** ⚠️ **是**（shader source 注入防御 / 参见蓝图安全矩阵 §9 / `[安全相关]`）
+**估时（plan ×0.6）：** ~3-4 h（蓝图原估）/ 预期实测 ~90-120 min（沿用 G1.3 极速区系数 0.13-0.30× build）
+
+#### 任务定位
+
+GLES 蓝图实施第四步 — 在 G1.3 已落地的 `Sdl2GLWindowSurface`（Surface + GL context）之上，实现 `vx::gfx::GLESCanvas`：继承 `Canvas` 抽象（22 纯虚方法），骨架阶段实现 `Begin/End/Clear/SetTransform/PushState/PopState`，其余方法留 stub（G1.5+ 逐步填充）。包含 shader 静态嵌入（`shaders.h` raw string literal）和 VAO/VBO 初始化。
+
+完成 G1.4 后即可在 G1.5 实现首个真实绘制方法（`FillRect`），前置链：G1.1 ✅ → G1.2 ✅ → G1.3 ✅ → **G1.4（本任务）** → G1.5。
+
+#### 任务范围（蓝图 plan §3.4）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/graphics/gles/gles_canvas.h` | 🆕 创建 | ~120 | Canvas 子类声明 / 22 override + state stack |
+| 2 | `veloxa/graphics/gles/gles_canvas.cc` | 🆕 创建 | ~250 | 骨架实现 / Begin/End/Clear/Transform/State |
+| 3 | `veloxa/graphics/gles/shaders.h` | 🆕 创建 | ~80 | B6 raw string literal shader 静态嵌入 |
+| 4 | `veloxa/graphics/CMakeLists.txt` | 🟡 修改 | +~20 | VX_RENDERER=gles 分支注册 gles/ 子目录 |
+| 5 | `tests/graphics/gles/gles_canvas_skeleton_test.cc` | 🆕 创建 | ~180 | ~6-8 单测（TDD RED→GREEN）|
+| **合计** | — | — | **~650** | buffer [0.85, 1.5] = ~550-975 行 |
+
+#### VAN 前置验证清单（4 维度）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ EGL + GLESv2 已链接 vx_platform_sdl2（G1.2 commit `4b095c4`）/ GLES3 headers 已验（蓝图 §0.1）/ 0 新外部依赖 |
+| 2 | **环境就绪** | ✅ build-gles/ 已存在 / gles baseline 1352 / SDL_VIDEODRIVER=offscreen + Mesa swrast 全链路验证（G1.3 T4 first-evidence）|
+| 3 | **已有 artifact** | ✅ `veloxa/graphics/gles/` 不存在（新建）/ `tests/graphics/gles/` 不存在（新建）/ Canvas 接口 22 方法已稳定 / Matrix3x2 定义在 types.h |
+| 4 | **待处理事项** | ✅ activeContext P1 #1（writing-plans LOC 表格密度）与本任务无关 / shader 注入防御对应蓝图安全矩阵 §9 条目 1 |
+
+**前置验证结论：** 4 维度全 ✅ / 0 阻碍项 / 0 新依赖 / 可立即进入 `/plan`
+
+#### Plan 阶段产出（2026-05-07）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)（9 段 / 完整 cpp 代码片段 / 8+2 测设计 / Phase 0 §0.1-§0.5 全 ✅ / 反复模式 8/8 全抑制）
+- **9 决策 1 次 AskQuestion all_recommended 全锁定** + 4 蓝图隐含锁 = **13 决策全 lock**：跨决策协同度 100% **第 18 次连续命中候选** / streak 158 → 171/171 续刷
+- **新增决策维度：**
+  - D11=B passthrough shader 最小化（B6 raw string literal 编译期类型检查 first-evidence）
+  - D12=A shader_injection_test.cc 本任务建（安全 first-evidence 入库 / G1.4+G1.5 提前一步）
+  - D6=A State struct 沿用 SoftwareCanvas 模式（路径对称 / 0 设计漂移）
+- **文件清单细化：** plan 阶段从 5 文件升至 7 文件（拆出 shader_injection_test.cc + tests/CMakeLists.txt 修改）/ ~650 → ~727 行
+- **反复模式预防 8/8 全抑制** + 累计 21+ 模式连续抑制候选
+- **ctest 期望：** +8 gles_canvas_skeleton_test + +2 shader_injection_test → gles baseline 1352 → **1362**
+
+**估时（plan ×0.6）：** ~125-175 min / 预期实测 ~75-118 min（标准极速区 0.55-0.70×）
+
+#### Build 阶段产出（2026-05-07）
+
+- **新建文件（5）：** `veloxa/graphics/gles/gles_canvas.{h,cc}`、`veloxa/graphics/gles/shaders.h`、`tests/graphics/gles/gles_canvas_skeleton_test.cc`、`tests/graphics/gles/shader_injection_test.cc`
+- **修改文件（2）：** `veloxa/graphics/CMakeLists.txt`、`tests/CMakeLists.txt`
+- **TDD 结果：** RED 缺 `gles_canvas.h` 编译失败 ✅ → GREEN 8+2 测全 PASS ✅
+- **安全测试：** `ShaderInjectionTest` 2/2 PASS（B6 raw string literal / compile-time shader source contract）
+- **三 build 矩阵：** software ON 1337/1337 ✅ / software OFF 1141/1141 ✅ / gles ON **1362/1362** ✅（+10 精确命中）
+- **feat commit：** `670b75c` — 7 files changed, 569 insertions(+)
+
+---
+
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务）
 
 **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
