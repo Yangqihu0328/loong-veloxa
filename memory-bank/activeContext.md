@@ -2,25 +2,9 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 / Level 3 / VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ — 待 `/archive`）。
+**空闲** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施已归档 ✅。等待新任务。
 
-**当前任务：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](tasks.md#当前任务) — Level 3 / 创建 5 文件 + 修改 2 文件 / 实际 569 行（×0.78 / 低于 [0.85,1.5] 下界 / stub-heavy 骨架新规律）/ 实际 ~22 min（×0.15 极端极速区）。
-
-**plan 文档：** [`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)（9 段 / 完整 cpp 代码片段 + 8+2 测设计 + Phase 0 §0.5 全 ✅ + 反复模式 8/8 + systemPatterns 13 项协同度对照）
-
-**关键决策锁定（13 决策全 lock）：**
-- D1/D2/D3/D4 蓝图 §3.4 隐含锁（构造签名 / state stack Vector / CPU 影子 transform / shaders.h 位置）
-- D5-D13 9 决策 1 次 AskQuestion all_recommended（D5=A VAO/VBO ctor / D6=A State{transform,clip_depth} / D7=A no-op stub / D8=B 8 测 / D9=A G1.3 fixture 复用 / D10=A vx_graphics 内置 / D11=B 最小 passthrough shader / D12=A shader_injection_test 本任务建 / D13=B 三段 commit）
-- **跨决策协同度 100% 第 18 次连续命中候选** / streak 158 → 171/171（dec → endec → doudec → undec → 第 18 次）
-- **实施忠实度 quad-evidence 候选**（G1.1 first + G1.2 dual + G1.3 triple + G1.4 quad）
-
-**分支：** `feature/TASK-20260507-01-gles-canvas-skeleton`（基于 main `00e7db7` ✅）
-
-**安全：** ⚠️ [安全相关] — shader source 注入防御（D11=B + D12=A first-evidence 入库）
-
-**分支：** `feature/TASK-20260506-01-sdl2-gl-window-surface`（基于 main `0dc7b40` ✅）
-
-**前置任务（最近闭环）：** [TASK-20260505-06 G1.2 GLESDisplay + Sdl2EGLDisplay 实施](archive/archive-TASK-20260505-06.md) — Level 3 实施类 / GLES 蓝图实施第二步 / 8 systemPatterns 沉淀 / 7 范式里程碑达成。
+**最近归档：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](archive/archive-TASK-20260507-01.md) — Level 3 / 569 行实际 / 实施忠实度 quad-evidence + 跨决策协同度第 18 次 / 171/171 + Mesa swrast dual-evidence + shader injection first-evidence 入库 / gles ctest 1352→1362（+10）。
 
 ---
 
@@ -50,18 +34,19 @@
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
 - DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
 
-**下一步：** `/archive` — 归档 TASK-20260507-01 + 合并分支到 main + Memory Bank 重置为空闲。
+**下一步：** 使用 `/van` 开始新任务（推荐 G1.5 FillRect），或使用工作流元任务批量落地 P1+P2 累计沉淀。
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ + G1.3 Sdl2GLWindowSurface ✅ + **G1.4 GLESCanvas 骨架（下一个推荐任务）**。
+> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ + G1.3 Sdl2GLWindowSurface ✅ + G1.4 GLESCanvas 骨架 ✅ + **G1.5 FillRect（下一个推荐任务）**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
 | ~~1~~ | ~~G1.3 Sdl2GLWindowSurface（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| **1** | **G1.4 GLESCanvas 骨架**（shader 静态嵌入 + state stack） | MVP-C 核心 | **L3** | ~2-3 h |
+| ~~1~~ | ~~G1.4 GLESCanvas 骨架（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
+| **1** | **G1.5 FillRect**（首个真实绘制方法 / solid color shader / MVP 矩阵注入）| MVP-C 核心 | **L3** | ~2-3 h |
 | 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
 | 4 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
 | 5 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
@@ -79,9 +64,9 @@
 
 ### 留下次工作流元任务批量落地（P1 / 累计 1 项 / dual → triple-evidence 候选）
 
-> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 + TASK-05-05 + TASK-05-06 reflect 阶段新发现且未在 reflect 阶段直接 P1 落地的项 — 等待下次工作流元任务批量清零（**累计 P1×1 + P2×10 = 11 项 ≥ 4 阈值 ✅✅** / 沿用工作流元任务 dual-evidence 范式 / **triple-evidence 候选**）。
+> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 + TASK-05-05 + TASK-05-06 + TASK-20260507-01 reflect 阶段新发现且未在 reflect 阶段直接 P1 落地的项 — 等待下次工作流元任务批量清零（**累计 P1×1 + P2×12 = 13 项 ≥ 4 阈值 ✅✅** / 沿用工作流元任务 dual-evidence 范式 / **triple-evidence 候选**）。
 >
-> **TASK-05-06 reflect 阶段 7/7 P1 已直接落地 ✅**（systemPatterns 7 段更新 + writing-plans P1.5 段升级）/ 不进入此累积清单。
+> **TASK-20260507-01 reflect 阶段 5/5 P1 已直接落地 ✅**（systemPatterns 3 段升级 + techContext G1.4 节点 + plan ×0.6 第 12 数据点）/ 2 项 P2 进入本累积清单。
 
 - **P1 #1（来自 TASK-20260505-04 reflection §5 #1 / 新发现）`writing-plans.mdc` 「附录：LOC 估算 — 隐性附加工作类型清单」段补「表格密度系数」子条** — plan 阶段对「commit body 范本表」+「触发条件矩阵」+「实证表」+「交叉引用清单」类结构化内容的行数 underestimate（单段 4 表格 ~30-40 行 / plan 仅按段长 base 估算未计表格行数 / TASK-05-04 P2.1 段实际 75 行 vs 估 30 行 = ×2.5 偏差）；建议加表格密度系数子条：散文段 ~30-40 行 / 单表格 ~5-15 行/表 / **多表段（≥ 4 表格）×2-2.5 base 行数**。**预估**：~10 min。
 
@@ -96,6 +81,8 @@
 - **P2 #7（来自 TASK-20260505-06 reflection §6.3 #2 / 新发现）`writing-plans.mdc`「ctest baseline 比对」段加澄清** — TASK-06 build 阶段 ctest 总数从 1303 → 1345（+42）vs plan 估 +8 / +34 是 build-gles 首次配置 gtest_discover_tests 的 incremental 注册 noise；建议加澄清：ctest baseline 比对仅看「本任务测试增量」（明确指定 Test 编号区间）/ 不依赖数据库总量 / gtest_discover_tests 增量注册可能带来 noise / 通过指定测试名前缀（如 sdl2_egl_display_test）+ Test 编号确认精确增量。**预估**：~10 min。
 - ~~**P2 #8（来自 TASK-20260505-06 reflection §6.3 #3）systemPatterns 新段「Mesa headless 驱动严格性差异 / 反向探针分层」**~~ **✅ 已 TASK-05-06 archive 阶段落地** — techContext「Mesa headless 测试环境」段 + 「Mesa headless 驱动严格性差异」对照表（Mesa swrast vs 真实 GPU / 3 行为对比）+ 反向探针分层（驱动无关层必选 + 驱动严格层 P3）。
 - ~~**P2 #9（来自 TASK-20260505-06 reflection §6.3 #4）techContext 加段「OpenGL ES + EGL 平台 dep」**~~ **✅ 已 TASK-05-06 archive 阶段落地** — techContext「GLES 蓝图实施落地节点」段加 G1.1/G1.2 落地节点 + EGL 1.5 / GLESv2 3.2 dep（Mesa 24.x / Debian/Ubuntu）+ Mesa drivers（swrast / kms_swrast / libEGL_mesa）+ SDL_VIDEODRIVER=offscreen 双保险 + 性能基线（~us-ms Initialize / ~ns HasExtension / ~150ms 8 TEST_F）。
+- **P2 #11（来自 TASK-20260507-01 reflection §5.1 / 新发现）`writing-plans.mdc` LOC buffer 新子注记：GLES stub-heavy 骨架任务 ×0.70-0.85 低端子档** — G1.4 实际 LOC ×0.78 < [0.85, 1.5] 下界 / 根因：15 stub 内联 header（1 行/stub）+ fixture 复用；建议 writing-plans LOC buffer 段加子注记：「GLES/GPU 骨架任务（stub-heavy + fixture 复用）LOC 系数参考 ×0.70-0.85，宜用 ×0.80 乘以 .cc 行数，stub 内联 header 每方法仅按 1 行计」。**预估**：~8 min。
+- **P2 #12（来自 TASK-20260507-01 reflection §5.2 / 新发现）`writing-plans.mdc` 测试辅助函数 checklist 加「`Matrix3x2` 无 `operator==` → 需 XxxEq()」** — 测试中比较 Matrix3x2 / Rect / Point 聚合体时无法直接用 `EXPECT_EQ`，plan 需预见并规划辅助函数（G1.4 build 即时发现，未影响进度但属 plan 遗漏）；建议 writing-plans 测试设计段加 checklist：「比较 Matrix3x2/Rect/Point 时？ → 需 XxxEq() 辅助（这些类无 operator==）」。**预估**：~8 min。
 - **P2 #10（来自 TASK-20260505-06 reflection §6.3 #5 / 新发现）systemPatterns 新段「实施忠实度 + 跨决策协同度 双 100% 流程闭环」** — TASK-05 G1.1 first + TASK-06 G1.2 dual / 双 100% first → dual-evidence 已固化 / 待 G1.3 G1.4 续延 triple-evidence；当前已在「跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence」段 P1 落地 ✅；P2 候选 = 进一步沉淀「双 100% 流程闭环」独立段（前置条件 + 模式参数 + 适用范围）。**预估**：~10 min。
 
 ---
