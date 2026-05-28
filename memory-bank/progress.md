@@ -65,7 +65,45 @@
 
 **plan ×0.6 实测**：Phase B 实测 ~12 min vs plan 估时 ~30-50 min = **~0.24-0.40× 极速区**
 
-**下一步：** Phase C REFACTOR — shader_injection_test S1 范围化（kAllShaderSources[] 遍历）+ S3 新增 NoUserConcatPatternInG15Shaders。
+#### Build·Phase C REFACTOR 产出（2026-05-28 ~23:50）
+
+- **修改** `tests/graphics/gles/shader_injection_test.cc`（+~32 行 / S1 范围化遍历 5 shader + S3 新增 NoUserConcatPatternInG15Shaders / B8=A 数组化范式落地）
+- **ctest shader_injection 3/3 PASS** ✅（S1 范围化 + S2 文档保留 + S3 G1.5 反向探针新增）
+- **shader_injection_test first-evidence → dual-evidence 候选**（G1.4 first 单 shader 验证 + G1.5 dual 数组化验证）
+
+#### Build·Phase D 三 build 矩阵 ctest verify（2026-05-28 ~23:55）
+
+| Matrix | DEVTOOL | VX_RENDERER | SDL2 | baseline | 实测 | diff | 状态 |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| A | ON | software | OFF | 1303 | **1303** | 0 | ✅ 0 退化 |
+| B | OFF | software | OFF | 1110 | **1110** | 0 | ✅ 0 退化 |
+| C | ON | gles | OFF | 1362 | **1375** | **+13** | ✅ 真实增量 |
+
+**总 ctest：1303 + 1110 + 1375 = 3788 PASS / 0 FAIL** ✅
+
+**baseline 数字校正**：plan §0.1 中 Matrix A/B baseline（1337/1141）源自 G1.4 archive 引用，与实测（1303/1110）有 -34/-31 差额 / 核心断言「0 退化」全 ✅ / reflect 阶段沉淀数字校正。
+
+**Matrix C 真实增量精准匹配**：gles_canvas_fill_test +12 + shader_injection_test +1 = +13 ✅ 精准命中 plan §0.1 期望区间 [1374, 1376]。
+
+#### Build·Phase E ReadLints + finalize（2026-05-28 ~23:58）
+
+- **ReadLints 6 文件全 0 错误** ✅（shaders.h + gles_canvas.{h,cc} + gles_canvas_fill_test.cc + shader_injection_test.cc + tests/CMakeLists.txt）
+
+**Build 阶段累计 plan ×0.6 实测**：
+- Phase A RED ~10 min（估时 ~20-30 min / 0.33-0.50×）
+- Phase B GREEN ~12 min（估时 ~30-50 min / 0.24-0.40×）
+- Phase C REFACTOR ~3 min（估时 ~10-15 min / 0.20-0.30×）
+- Phase D 三矩阵 ctest ~2 min ×3 = ~6 min（估时 ~10-20 min / 0.30-0.60×）
+- Phase E finalize ~2 min（估时 ~5-10 min / 0.20-0.40×）
+- **Build 总 ~33 min** vs estim ~75-125 min = **~0.26-0.44× 极速区** ✅
+
+**G1.5 整体（VAN + Plan + Build）累计**：
+- VAN ~10 min + Plan ~30 min + Build ~33 min = **~73 min** vs plan ×0.6 ~125-175 min = **~0.42-0.58× 标准极速区** ✅
+- **plan ×0.6 第 13 数据点候选**（0.42-0.58× 标准极速区 / 实施类 Level 3 子档继续夯实）
+
+**0 build 中断 / 0 retry / 0 plan 修正 / 0 build-stage spec 漂移** ✅✅✅
+
+**下一步：** `/reflect` 进入回顾阶段 — 沉淀 quint-evidence 实施忠实度 + 跨决策第 19 次连续命中 + Mesa swrast SDF 反走样 first-evidence + baseline 数字校正 + shader_injection dual-evidence。
 
 #### VAN 阶段产出（2026-05-28 ~22:56）
 

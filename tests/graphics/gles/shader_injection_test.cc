@@ -21,31 +21,36 @@ namespace vx::gfx::gles {
 namespace {
 
 // ---------------------------------------------------------------------------
-// S1: ShaderSourcesAreCompileTimeLiterals
+// S1: ShaderSourcesAreCompileTimeLiterals  (B8=A array-based registry)
 // ---------------------------------------------------------------------------
-// kPassthroughVert / kPassthroughFrag are constexpr const char* — pointing
-// at .rodata literals. Verify they are non-null, contain the expected
-// "#version 300 es" prefix, and (defensively) that the addresses are stable
-// across two reads (a user-controlled rebind would change the pointer).
+// All shader sources (G1.4 kPassthroughVert/Frag + G1.5 kSolidVert/Frag +
+// kRoundedRectFrag) are constexpr const char* pointing at .rodata literals.
+// Verify each entry is non-null, contains the expected "#version 300 es"
+// prefix, and (defensively) has stable pointer identity across reads.
+//
+// B8=A: adding a new shader requires only adding an entry to
+// kAllShaderSources[] in shaders.h; this test then auto-covers it.
 TEST(ShaderInjectionTest, ShaderSourcesAreCompileTimeLiterals) {
-  ASSERT_NE(kPassthroughVert, nullptr);
-  ASSERT_NE(kPassthroughFrag, nullptr);
-
-  std::string_view v(kPassthroughVert);
-  std::string_view f(kPassthroughFrag);
-  EXPECT_TRUE(v.find("#version 300 es") == 0)
-      << "Vertex shader must start with #version 300 es; got: "
-      << std::string(v.substr(0, 30));
-  EXPECT_TRUE(f.find("#version 300 es") == 0)
-      << "Fragment shader must start with #version 300 es; got: "
-      << std::string(f.substr(0, 30));
-
-  // Pointer stability across reads — proves they're bound at link time
-  // (not synthesized per call). A runtime-replaceable shader would break
-  // this invariant.
-  const char* v1 = kPassthroughVert;
-  const char* v2 = kPassthroughVert;
-  EXPECT_EQ(v1, v2);
+  static_assert(kAllShaderSourceCount > 0, "Empty shader list");
+  for (int i = 0; i < kAllShaderSourceCount; ++i) {
+    const char* s = kAllShaderSources[i];
+    ASSERT_NE(s, nullptr) << "Shader index " << i << " is null";
+    std::string_view v(s);
+    EXPECT_TRUE(v.find("#version 300 es") == 0)
+        << "Shader index " << i
+        << " must start with #version 300 es; got: "
+        << std::string(v.substr(0, 30));
+    // Pointer stability across reads — proves link-time binding (not
+    // runtime synthesis). A user-controlled rebind would change the
+    // pointer.
+    EXPECT_EQ(kAllShaderSources[i], s);
+  }
+  // Sanity: G1.5 adds 3 shaders on top of G1.4's 2 = 5 total. A regression
+  // that drops kSolidVert / kSolidFrag / kRoundedRectFrag from the array
+  // would trip this floor.
+  EXPECT_GE(kAllShaderSourceCount, 5)
+      << "Expected at least 5 shaders after G1.5 (kPassthroughVert/Frag + "
+         "kSolidVert/Frag + kRoundedRectFrag)";
 }
 
 // ---------------------------------------------------------------------------
@@ -65,6 +70,28 @@ TEST(ShaderInjectionTest, NoConcatenationApiExposed) {
   SUCCEED() << "Documentation: shaders.h is data-only by design (B6=A). "
                "Adding any glsl-composing function REQUIRES updating this "
                "test to verify the input sanitization path.";
+}
+
+// ---------------------------------------------------------------------------
+// S3: NoUserConcatPatternInG15Shaders (G1.5 reverse-probe extension)
+// ---------------------------------------------------------------------------
+// Structural check that the G1.5 shaders do not contain any pattern that
+// would suggest runtime string concatenation:
+//   * "%s"            — printf-style placeholder
+//   * "#define USER_" — user-prefixed macro injection point
+// These would imply either a sprintf-style synthesis API or a templated
+// shader builder, both of which are disallowed by B6=A static embedding.
+TEST(ShaderInjectionTest, NoUserConcatPatternInG15Shaders) {
+  const char* g15_shaders[] = {kSolidVert, kSolidFrag, kRoundedRectFrag};
+  for (const char* s : g15_shaders) {
+    std::string_view v(s);
+    EXPECT_EQ(v.find("%s"), std::string_view::npos)
+        << "G1.5 shader contains printf-style placeholder; first 60 chars: "
+        << std::string(v.substr(0, 60));
+    EXPECT_EQ(v.find("#define USER_"), std::string_view::npos)
+        << "G1.5 shader contains USER_ macro injection point; first 60 chars: "
+        << std::string(v.substr(0, 60));
+  }
 }
 
 }  // namespace

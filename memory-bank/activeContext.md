@@ -2,10 +2,11 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build·Phase A 进行中 / Level 3 / 8 B 决策 all_recommended 锁定 / 跨决策协同度 100% 第 19 次连续命中候选）。
+**构建完成** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环 / Level 3 / 8 B 决策一次性正确落地 / 总 ctest 3788 PASS / 0 FAIL）。
 
 **当前任务：** TASK-20260528-01
-**当前焦点：** Build·Phase A RED ✅ + Phase B GREEN ✅（**22/22 一次性 PASS** / 12 fill_test + 8 skeleton + 2 shader_injection / 0 build 中断 / Mesa swrast SDF 反走样 first-evidence T7 实证）→ 进入 Phase C REFACTOR — shader_injection_test S1 范围化（kAllShaderSources[] 遍历 / B8=A 落地）+ S3 新增 NoUserConcatPatternInG15Shaders
+**当前焦点：** Build·Phase A-E 全闭环 ✅✅✅ → 进入 `/reflect` 沉淀 quint-evidence + 跨决策第 19 次连续命中 + Mesa swrast SDF 反走样 first-evidence + shader_injection dual-evidence + baseline 数字校正
+**范式里程碑实测：** 实施忠实度 quint-evidence ✅ / 跨决策协同度 100% streak 179/179 ✅ / Mesa swrast SDF first-evidence ✅ / shader_injection dual-evidence 候选 ✅ / 反复模式 8/8 抑制 ✅ / plan ×0.6 ~0.42-0.58× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区）
 **plan 文档：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段 / 完整 cpp 代码片段）
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7`）
 **安全相关：** ⚠️ 是（shader 注入防御 / G1.4 first-evidence 范式扩展到 3 新 shader / S3 NoUserConcatPatternInG15Shaders 新增）

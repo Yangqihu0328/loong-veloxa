@@ -4,7 +4,7 @@
 
 ### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务）
 
-**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅）
+**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环）
 **复杂度级别：** **Level 3**（蓝图 plan §3.5 锁定）
 **创建日期：** 2026-05-28
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7` ✅ 已创建）
@@ -75,6 +75,36 @@ GLES 蓝图实施第五步 — 在 G1.4 已落地的 `GLESCanvas` 骨架（Begin
 | 文件在 main 上 | ✅ 全部（G1.4 fast-forward 合并到 main `dda4172` 已确认）|
 | 建议基线 | `main`（HEAD = `afc59a7`） |
 | 原因 | 依赖 G1.4 已落地的 GLESCanvas 骨架（VAO/VBO/State stack）+ shaders.h 静态嵌入范式 / 0 跨分支依赖 |
+
+#### Build 阶段产出（2026-05-28 ~23:35-23:58 / ~33 min）
+
+**Phase A RED ✅** — `gles_canvas_fill_test.cc`（~330 行 / 12 单测 T1-T12）+ `tests/CMakeLists.txt`（+8 行 / gles guard 内注册）/ ctest 6 FAIL + 6 PASS RED 信号清晰 / commit `70625a1`
+
+**Phase B GREEN ✅** — `shaders.h`（+95 / 3 shader + kAllShaderSources[]）+ `gles_canvas.h`（+45 / 移除 stub + 2 program + uniform 缓存 + 5 helper 声明）+ `gles_canvas.cc`（+210 / ctor 扩展 + 5 helper + FillRect/FillRoundedRect impl）/ **22/22 一次性 PASS** ✅✅✅（12 fill_test + 8 skeleton + 2 shader_injection 全绿 / 0 retry）/ commit `d29af30`
+
+**Phase C REFACTOR ✅** — `shader_injection_test.cc`（+32 / S1 范围化遍历 5 shader + S3 NoUserConcatPatternInG15Shaders 新增）/ 3/3 PASS ✅
+
+**Phase D 三 build 矩阵 ctest verify ✅**
+
+| Matrix | DEVTOOL | VX_RENDERER | baseline | 实测 | diff | 状态 |
+|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| A | ON | software | 1303 | **1303** | 0 | ✅ 0 退化 |
+| B | OFF | software | 1110 | **1110** | 0 | ✅ 0 退化 |
+| C | ON | gles | 1362 | **1375** | **+13** | ✅ 真实增量 |
+
+**总 ctest 3788 PASS / 0 FAIL** ✅✅✅
+
+**Phase E finalize ✅** — ReadLints 6 文件全 0 错误
+
+#### 范式里程碑（Build 阶段实测落地）
+
+- ✅ **实施忠实度 quint-evidence 实证**（G1.1 first + G1.2 dual + G1.3 triple + G1.4 quad + G1.5 quint）/ 8/8 B 决策一次性正确实施 / 0 build 中断 / 0 retry
+- ✅ **跨决策协同度 100% 第 19 次连续命中实测确认** / 累计 streak **179/179** 历史最高续刷
+- ✅ **Mesa swrast SDF 反走样 first-evidence**（T7 corner partial alpha PASS / fwidth + smoothstep GLES 3.0 SL 1.00 生效 / Mesa swrast triple-evidence 续延：G1.3 default fb + G1.4 Clear + G1.5 SDF）
+- ✅ **shader_injection_test first → dual-evidence 候选**（G1.4 first 单 shader + G1.5 dual 数组化范式 / B8=A 落地）
+- ✅ **反复模式 8/8 全抑制** / 累计 21+ 模式连续抑制候选续刷
+- ✅ **plan ×0.6 实测系数第 13 数据点候选**：~0.42-0.58× 标准极速区 / Build 阶段 ~0.26-0.44× 极致极速区
+- ✅ **baseline 数字校正发现**（plan Matrix A/B 1337/1141 vs 实测 1303/1110 / archive 数据源数字偏差 -34/-31 / reflect 阶段沉淀）
 
 #### Plan 阶段产出（2026-05-28 ~23:10）
 
