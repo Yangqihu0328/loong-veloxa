@@ -2,10 +2,10 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ / Level 3 / 8 B 决策 all_recommended 锁定 / 跨决策协同度 100% 第 19 次连续命中候选）。
+**构建中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build·Phase A 进行中 / Level 3 / 8 B 决策 all_recommended 锁定 / 跨决策协同度 100% 第 19 次连续命中候选）。
 
 **当前任务：** TASK-20260528-01
-**当前焦点：** Plan ✅ → 进入 `/build`（Phase A RED 写 12 单测 → Phase B GREEN 3 shader + uniform 缓存 + FillRect/FillRoundedRect 实现 → Phase C REFACTOR shader_injection_test S1 范围化 + S3 新增 → Phase D 三 build 矩阵 ctest verify → Phase E finalize + commit）
+**当前焦点：** Build·Phase A RED ✅（6 FAIL + 6 PASS / RED 信号清晰）→ 进入 Phase B GREEN — shaders.h 3 shader（kSolidVert/kSolidFrag/kRoundedRectFrag）+ kAllShaderSources[] 数组 + gles_canvas.{h,cc} 实现（uniform 缓存 + helper + FillRect/FillRoundedRect impl）→ 跑 ctest 验证全 12/12 PASS
 **plan 文档：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段 / 完整 cpp 代码片段）
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7`）
 **安全相关：** ⚠️ 是（shader 注入防御 / G1.4 first-evidence 范式扩展到 3 新 shader / S3 NoUserConcatPatternInG15Shaders 新增）

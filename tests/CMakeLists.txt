@@ -426,6 +426,16 @@ if(VX_PLATFORM_SDL2)
     target_link_libraries(shader_injection_test
       PRIVATE vx_foundation vx_graphics GTest::gtest_main)
     gtest_discover_tests(shader_injection_test)
+
+    # GLESCanvas FillRect + FillRoundedRect (G1.5): pixel-level verification
+    # of the first real draw methods. Same gles guard + SDL_VIDEODRIVER=offscreen
+    # env as gles_canvas_skeleton_test.
+    add_executable(gles_canvas_fill_test
+                   graphics/gles/gles_canvas_fill_test.cc)
+    target_link_libraries(gles_canvas_fill_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
+    gtest_discover_tests(gles_canvas_fill_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver

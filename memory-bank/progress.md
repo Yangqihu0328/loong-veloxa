@@ -23,7 +23,18 @@
 
 **plan/spec docs 落盘即 commit P0 协议：** 实施类 Level 3 子档 sept-evidence 候选（sext → sept / G1.3 + G1.4 + G1.5 三任务累计）/ D8=A 仅 plan 决策
 
-**下一步：** `/build` — Phase A RED → Phase B GREEN → Phase C REFACTOR → Phase D 三 build 矩阵 ctest verify → Phase E finalize 单 commit 落盘。
+#### Build·Phase A RED 产出（2026-05-28 ~23:35）
+
+- **新建** `tests/graphics/gles/gles_canvas_fill_test.cc`（~330 行 / 12 单测）
+- **修改** `tests/CMakeLists.txt`（+~8 行 / 注册 gles_canvas_fill_test on gles guard 内）
+- **cmake reconfigure 1.7s + 增量 build ~6s**（vx_graphics 重链 + test target 编译）
+- **ctest -R GLESCanvasFillTest 实测：6 FAIL + 6 PASS** ✅ RED 信号清晰
+  - FAIL（6）：T2 TopLeftPixel / T4 KSolidBrush / T5 KLinearGradient / T6 CenterIsOpaque / T8 SetTransform / T11 ZeroRadius — 核心 pixel verification
+  - PASS（6）：T1 Construct（仅 GL error 查）/ T3 FourCorner（white G=255 与 green G=255 在 > 200u false-PASS）/ T7 CornerPartialAlpha（同 false-PASS 维度）/ T9 TransparentBrush（inverse: 透明 brush 不应绘制）/ T10 EmptyRect（inverse: 0-rect 不应绘制）/ T12 PreservesQuadVao（handle 验证）
+  - GREEN 阶段预期 false-PASS 全转 true-PASS，FAIL 全 PASS / 总 12/12 PASS
+- **plan ×0.6 实测**：Phase A 实测 ~10 min vs plan 估时 ~20-30 min = **~0.33-0.50× 极速区**
+
+**下一步：** Phase B GREEN — shaders.h 3 shader + gles_canvas.{h,cc} 实现 + uniform 缓存 → 跑 ctest 验证全 12 PASS。
 
 #### VAN 阶段产出（2026-05-28 ~22:56）
 
