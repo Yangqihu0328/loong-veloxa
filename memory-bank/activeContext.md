@@ -2,11 +2,12 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环 / Level 3 / 8 B 决策一次性正确落地 / 总 ctest 3788 PASS / 0 FAIL）。
+**回顾中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build ✅ Phase A-E + Reflect ✅ / Level 3 / 8 B 决策一次性正确落地 / 总 ctest 3788 PASS / 0 FAIL / 5 项范式里程碑已沉淀 systemPatterns + techContext）。
 
 **当前任务：** TASK-20260528-01
-**当前焦点：** Build·Phase A-E 全闭环 ✅✅✅ → 进入 `/reflect` 沉淀 quint-evidence + 跨决策第 19 次连续命中 + Mesa swrast SDF 反走样 first-evidence + shader_injection dual-evidence + baseline 数字校正
-**范式里程碑实测：** 实施忠实度 quint-evidence ✅ / 跨决策协同度 100% streak 179/179 ✅ / Mesa swrast SDF first-evidence ✅ / shader_injection dual-evidence 候选 ✅ / 反复模式 8/8 抑制 ✅ / plan ×0.6 ~0.42-0.58× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区）
+**当前焦点：** Reflect ✅ 全闭环 → 进入 `/archive` 归档（5 项范式里程碑入 archive 节点 / G1.6 FillPath 立项候选触发条件已满足）
+**范式里程碑实测：** 实施忠实度 quint-evidence ✅ / 跨决策协同度 100% streak 179/179 ✅ / Mesa swrast SDF first-evidence + 能力 triple-evidence ✅ / shader_injection dual-evidence 候选 ✅ / shader 单 vert + N frag 复用范式 first-evidence ✅ / Mesa swrast 像素验证双约束范式 first-evidence ✅ / **新反复模式候选首次定型：ctest baseline 数字回归 audit 漏审** ✅ / 反复模式 8/8 抑制 ✅ / plan ×0.6 ~0.42-0.58× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区 / 第 13 数据点）
+**回顾文档：** [`memory-bank/reflection/reflection-TASK-20260528-01.md`](reflection/reflection-TASK-20260528-01.md)（~14KB / 13 段全覆盖 / 10 做得好 + 2 挑战 + 3 经验教训 + 4 改进建议）
 **plan 文档：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段 / 完整 cpp 代码片段）
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7`）
 **安全相关：** ⚠️ 是（shader 注入防御 / G1.4 first-evidence 范式扩展到 3 新 shader / S3 NoUserConcatPatternInG15Shaders 新增）
@@ -69,15 +70,18 @@
 
 ## 待处理事项 — 跨任务沉淀（按优先级）
 
-### 留下次工作流元任务批量落地（P1 / 累计 1 项 / dual → triple-evidence 候选）
+### 留下次工作流元任务批量落地（P1 / 累计 2 项 / triple → quad-evidence 候选）
 
-> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 + TASK-05-05 + TASK-05-06 + TASK-20260507-01 reflect 阶段新发现且未在 reflect 阶段直接 P1 落地的项 — 等待下次工作流元任务批量清零（**累计 P1×1 + P2×12 = 13 项 ≥ 4 阈值 ✅✅** / 沿用工作流元任务 dual-evidence 范式 / **triple-evidence 候选**）。
+> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 + TASK-05-05 + TASK-05-06 + TASK-20260507-01 + **TASK-20260528-01** reflect 阶段新发现且未在 reflect 阶段直接 P1 落地的项 — 等待下次工作流元任务批量清零（**累计 P1×2 + P2×14 = 16 项 ≥ 4 阈值 ✅✅✅** / 沿用工作流元任务 dual-evidence 范式 / **quad-evidence 候选**）。
 >
-> **TASK-20260507-01 reflect 阶段 5/5 P1 已直接落地 ✅**（systemPatterns 3 段升级 + techContext G1.4 节点 + plan ×0.6 第 12 数据点）/ 2 项 P2 进入本累积清单。
+> **TASK-20260528-01 reflect 阶段 1/4 P0 + 1/4 P1 + 2/4 P2 已直接落地 ✅**（systemPatterns 5 段新增 + techContext G1.5 节点 + plan ×0.6 第 13 数据点）/ 1 项 P1 进入本累积清单（plan baseline fingerprint 协议）。
 
 - **P1 #1（来自 TASK-20260505-04 reflection §5 #1 / 新发现）`writing-plans.mdc` 「附录：LOC 估算 — 隐性附加工作类型清单」段补「表格密度系数」子条** — plan 阶段对「commit body 范本表」+「触发条件矩阵」+「实证表」+「交叉引用清单」类结构化内容的行数 underestimate（单段 4 表格 ~30-40 行 / plan 仅按段长 base 估算未计表格行数 / TASK-05-04 P2.1 段实际 75 行 vs 估 30 行 = ×2.5 偏差）；建议加表格密度系数子条：散文段 ~30-40 行 / 单表格 ~5-15 行/表 / **多表段（≥ 4 表格）×2-2.5 base 行数**。**预估**：~10 min。
+- **P1 #2（来自 TASK-20260528-01 reflection §6 #1 / 新发现 / first-evidence）`writing-plans.mdc` 「Phase 0 audit」段增加「ctest baseline 数字 fingerprint 协议」子段** — plan §0.X 涉及 ctest baseline 数字声明时必填实证 fingerprint 步骤（跑 `ctest --test-dir <build> -N | tail -3` 获取实测数字 / 不允许凭印象 / archive / reflection 数据引用 / 引用偏差 ≥ 5% 触发主动 push-back）。详见 systemPatterns「ctest baseline 数字回归 audit 漏审」新段 first-evidence 定型。**预估**：~15 min。
 
-### 长期沉淀（P2 — 不强制 archive / 累计 10 项 / 其中 2 项已 archive 落地 ✅ / 余 8 项待批量清零）
+### 长期沉淀（P2 — 不强制 archive / 累计 12 项 / 其中 2 项已 archive 落地 ✅ / 余 10 项待批量清零）
+
+> **2026-05-28 更新**：TASK-20260528-01 reflect 阶段直接落地 2/2 P2（systemPatterns 「Mesa swrast 像素验证双约束默认范式」+ 「GLES shader 单 vert + N frag 复用范式」first-evidence 段）/ 0 新 P2 累积。
 
 - **P2 #1（来自 TASK-20260505-04 reflection §5 #2 / 新发现）`git-workflow.mdc` 「commit body Source 溯源 + 实测数据格式」段补「实测数据采集协议」子条** — TASK-05-04 Phase B.6 commit body 写「+44 行」/ 实际 git 显示 +39 行 / -5 行偏差，根因 commit body 写在 add 之前 / 凭目测估算 / 未做 `git diff --cached --stat` 二次确认；建议加「实测数据采集协议」子条：commit 前必须运行 `git diff --cached --stat` 实测后再写 commit body 数据。**预估**：~10 min。
 - **P2 #2（来自 TASK-20260505-04 reflection §8.2 / 新发现）systemPatterns 「lazy-attach C ABI 容错模式 quad-evidence」段加 TASK-05-04 头部 doc 落地标注** — TASK-05-04 P1.7-half 在 `veloxa/api/veloxa_api.h` 顶部 doc 段追加「lazy-attach contract」节统一引用 4 个 quad-evidence ABI（vx_view_set_pipeline_hooks / vx_view_attach_devtool / vx_devtool_get_console_output / vx_view_invalidate）；建议在 systemPatterns quad-evidence 段加「头部 doc 已落地」标注 + 引用 commit `4765224`。**预估**：~5 min。
@@ -130,7 +134,8 @@
 
 ## 最近归档（速查，详细见 archive 文档）
 
-- `archive-TASK-20260506-01.md`（**G1.3 Sdl2GLWindowSurface 実施 — GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 Level 3，2026-05-07**）— **本批最新 ✅** / 实施忠实度 triple-evidence / Mesa swrast 帧缓冲 first-evidence / 跨决策协同度 第 17 次连续命中 158/158 / 三 build 矩阵 1337+1141+1352 全 PASS / plan ×0.6 build 0.13× 极端极速区 / 反复模式 0/7 累计 20+ 连续抑制
+- `archive-TASK-20260507-01.md`（**G1.4 GLESCanvas 骨架实施 — GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 Level 3，2026-05-08**）— **本批最新 ✅** / 实施忠实度 quad-evidence / 跨决策协同度 100% 第 18 次连续命中 171/171 / Mesa swrast default framebuffer dual-evidence / shader_injection_test first-evidence / 三 build 矩阵全 PASS / plan ×0.6 build 0.09-0.16× 极致极速区
+- `archive-TASK-20260506-01.md`（**G1.3 Sdl2GLWindowSurface 実施 — GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 Level 3，2026-05-07**）— （前批）/ 实施忠实度 triple-evidence / Mesa swrast 帧缓冲 first-evidence / 跨决策协同度 第 17 次连续命中 158/158 / 三 build 矩阵 1337+1141+1352 全 PASS / plan ×0.6 build 0.13× 极端极速区 / 反复模式 0/7 累计 20+ 连续抑制
 - `archive-TASK-20260505-05.md`（**G1.1 CMake `VX_RENDERER` flag — GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务 Level 2，2026-05-05**）— （前批） / 9 个 systemPatterns 沉淀（reflection 史上单任务沉淀次高纪录）/ 跨决策协同度 100% 第 14 次连续命中（128/128 历史最高 streak）/ 实施忠实度新维度入库 / brainstorming P1.3 + writing-plans P1.6 双 dual-evidence 首次实战 / REFACTOR 涌现单一真相源 first-evidence（cmake/VxRenderer.cmake）/ ctest cmake -P stub probe 600-1200× 加速 first-evidence / P0 协议 quint-evidence + 适用性矩阵 5 类全覆盖 / plan ×0.6 ennea-evidence（实施类 Level 2 子档）/ LOC ×1.3-1.5 buffer dual-evidence / TDD 三阶完整 + 双 build 矩阵全 PASS（A 1303 + B 1110 + C gles 1303 + D invalid FATAL_ERROR）/ 反复模式 0/8 4 阶段全程抑制（累计 19 模式连续抑制 / 历史新高继续刷新）/ 12 改进建议（P0×0 + P1×9 全落实 + P2×3 累积）**
 - `archive-TASK-20260505-04.md`（**工作流元任务批量落地 — 14.5 项 P1+P2 跨任务沉淀清零 Level 2-3，2026-05-05**）— 工作流元任务 dual-evidence 第 2 实证 ✅ / 跨决策协同度 100% 第 13 次连续命中（累计 121/121）/ 极致 dogfooding 三层闭环 first-evidence ✅ / plan ×0.6 oct-evidence + 双子档分化 / P0 协议 quad-evidence 已固化 / 5 个范式里程碑 + 5 个 systemPatterns 沉淀 + 6/8 改进建议已落实 / 反复模式 0/8 4 阶段全程抑制（累计 17 模式连续抑制）
 - `archive-TASK-20260505-03.md`（**G1 OpenGL ES 硬件渲染后端蓝图 Level 4 V2=a，2026-05-05**）— **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图 / 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 0.02-0.05× + V2=a triple-evidence）/ 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区**

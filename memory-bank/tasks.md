@@ -4,7 +4,7 @@
 
 ### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务）
 
-**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环）
+**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环 + Reflect ✅）
 **复杂度级别：** **Level 3**（蓝图 plan §3.5 锁定）
 **创建日期：** 2026-05-28
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7` ✅ 已创建）
@@ -129,9 +129,19 @@ GLES 蓝图实施第五步 — 在 G1.4 已落地的 `GLESCanvas` 骨架（Begin
 
 **plan/spec docs 落盘即 commit P0 协议：** 实施类 Level 3 子档 **sept-evidence 候选**（G1.3 + G1.4 + G1.5 三任务实施类 Level 3 累计 / sext → sept-evidence 候选）/ D8=A 仅 plan 决策（沿用 G1.3/G1.4 范式 / 引用上游 GLES 蓝图 plan §3.5 + spec §4.1 + creative-gles-canvas）
 
+#### Reflect 阶段产出（2026-05-28 ~23:55-00:05 / ~10 min）
+
+- **回顾文档落盘：** [`memory-bank/reflection/reflection-TASK-20260528-01.md`](reflection/reflection-TASK-20260528-01.md)（~14KB / 13 段全覆盖：计划 vs 实际 / 10 做得好 / 2 挑战 / 3 经验教训 / 4 改进建议 / 反复模式 + 1 新候选首次定型 / 安全 checklist / 5 范式里程碑 / P0 协议 nov-evidence 候选 / 长期影响）
+- **5 项范式里程碑沉淀到 systemPatterns**：(1) 实施忠实度 quint-evidence + 跨决策协同度 streak 179/179 续刷 / (2) Mesa swrast SDF 反走样 first-evidence + Mesa swrast 能力 triple-evidence / (3) GLES shader 单 vert + N frag 复用范式 first-evidence / (4) **ctest baseline 数字回归 audit 漏审 — 反复模式新候选首次定型** / (5) Mesa swrast 像素验证双约束默认范式 first-evidence
+- **G1.5 实施细节沉淀到 techContext**（变更文件 + 关键设计点 + Mesa swrast SDF first-evidence + shader 注入 dual-evidence + plan ×0.6 第 13 数据点）
+- **3 改进建议落实路径**：P1 ×1（plan baseline fingerprint 协议 → 下次 writing-plans.mdc）+ P2 ×2（像素验证双约束 + shader 单 vert + N frag 复用 / 已沉淀到 systemPatterns）+ P0 ×1（5 项范式里程碑 / 已沉淀 systemPatterns + techContext）
+- **反复模式抑制 8/8 + 新候选 #N 首次定型**（ctest baseline 数字回归 audit 漏审）
+
 #### 工作流元任务累积状态（不在本任务范围 / 备注）
 
-累计 P1×1 + P2×12 = **13 项 ≥ 4 阈值 ✅✅** / triple-evidence 候选 / 待用户决策是否在 G1.5 后下次工作流元任务批量清零。
+累计 P1×2（含本次新增）+ P2×14（含本次 2 项新增）= **16 项 ≥ 4 阈值 ✅✅✅** / quad-evidence 候选 / 待用户决策是否在 G1.5 archive 后启动「工作流元任务批量清零」专项任务。
+
+**下一步：** 使用 `/archive` 归档任务 / 5 项范式里程碑入 archive 节点 / G1.6 FillPath 立项候选触发条件已满足
 
 ---
 

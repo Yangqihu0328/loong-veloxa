@@ -4712,6 +4712,223 @@ plan 阶段 LOC 估算应附 ×1.3-1.5 buffer，覆盖以下隐性附加工作�
 
 ---
 
+## 跨决策协同度 100% 第 19 次连续命中 + 实施忠实度 quint-evidence（TASK-20260528-01 反思入库 / 第 19 次 / 累计 179/179 历史最高 streak 续刷 / 实施忠实度 G1.1 first + G1.2 dual + G1.3 triple + G1.4 quad + G1.5 **quint-evidence**）
+
+**TASK-20260528-01 G1.5 GLESCanvas FillRect/FillRoundedRect 实证（… → 17 → 18 → 19）：**
+
+- **决策协同度：** 8/8 B 决策（B1-B8 / 1 次 AskQuestion all_recommended）全 lock 0 调整 ✅
+- **实施忠实度：** 8/8 B 决策 0 偏差实施 ✅（plan §3.1-§3.3 ~520 行 cpp 代码片段直接复制 + StrReplace / 0 修改 / 0 调试 / Phase B GREEN 一次性 22/22 PASS）
+- **streak 累计：** 171 → **179/179 历史最高 streak 续刷**（+8 G1.5 决策）
+
+**实施忠实度 first → dual → triple → quad → quint-evidence 成熟：**
+
+| 维度 | G1.1（first）| G1.2（dual）| G1.3（triple）| G1.4（quad）| G1.5（quint）|
+|---|:-:|:-:|:-:|:-:|:-:|
+| 决策协同度 100% | ✅ 7/7 | ✅ 8/8 | ✅ 13/13 | ✅ 13/13 | ✅ 8/8 |
+| 实施忠实度 100% | ✅ 7/7 | ✅ 8/8 | ✅ 13/13（0 偏差）| ✅ 13/13（0 偏差）| ✅ **8/8（0 偏差 / 一次性 22/22 PASS）**|
+
+**quint-evidence 固化结论增强：当 plan 包含完整 C++ 代码片段 + Phase 0 audit 8 子段全 ✅ + 8 B 决策跨决策协同度 100% 锁定时，实施忠实度 100%（build 阶段 ≈ 机械转化）+ 一次性 GREEN PASS（0 retry）= 高度可复制范式 / 不是孤例 / 不是巧合**。适用于 Level 2-3 实施类任务。5 任务 5 次连续印证，该模式已达**确立期**（quint-evidence 阈值），后续可作为 GLES 蓝图 G1.6-G1.18 + G2 18 子任务的实施基线范式。
+
+---
+
+## Mesa swrast SDF 反走样能力 first-evidence + Mesa swrast 能力 triple-evidence 续延（TASK-20260528-01 G1.5 T7 实证）
+
+**背景**：G1.3 first-evidence（default fb + Clear）+ G1.4 dual-evidence（viewport + alpha blending）已证 Mesa swrast 可读写默认帧缓冲。G1.5 进一步实证：**fragment shader 中的复杂数学函数链（fwidth + smoothstep + length + max + min）+ GLSL ES 3.0 SL 1.00 derivative 全栈 在 Mesa swrast 软件光栅化路径下正确生效**。
+
+**实证条件：**
+- 驱动：Mesa swrast（软件光栅化 / `libEGL_mesa` + Mesa 24.x+）
+- SDL2 配置：`SDL_VIDEODRIVER=offscreen` + `SDL_CreateWindow(SDL_WINDOW_OPENGL)` + 32×32 surface
+- GLES 版本：3.0 / GLSL ES 3.0 SL 1.00
+- T7 测试：`FillRoundedRect({4,4,24,24}, radius=8, Color::Red())`+ Clear(White) → glReadPixels(corner) + glReadPixels(center)
+- 实测：center R≈255 G<50 B<50（完全红）/ corner G>100（白色背景透过 SDF alpha 可见）✅
+
+**Mesa swrast 能力 triple-evidence 完整对照：**
+
+| 能力维度 | first-evidence | dual-evidence | triple-evidence |
+|---|---|---|---|
+| default framebuffer 写入 | G1.3 T4 SavePPM | G1.4 T3 Clear | G1.5 T2 FillRect ✅ |
+| glReadPixels 真实值 | G1.3 T4 | G1.4 T3 | G1.5 T2-T8 多 sample ✅ |
+| viewport + alpha blending | — | G1.4 T2 Begin_EnablesBlend | G1.5 T6/T7/T9 ✅ |
+| fragment shader 基础 | — | G1.4 T7 (no-op stub) | G1.5 T2-T8 8+ FillRect / 全 PASS ✅ |
+| **fragment shader derivative + smoothstep + length 复杂数学链** | — | — | **G1.5 T7 ✅（first-evidence）**|
+| MVP 矩阵 uniform 上传 + Y 翻转 + NDC 归一 | — | — | **G1.5 T8 ✅（first-evidence）**|
+
+**triple-evidence 固化结论：**
+- G1.6+ GLES shader 设计（FillPath + Stroke + DrawText + Gradient）可**默认** Mesa swrast 支持 GLSL ES 3.0 SL 1.00 全函数链 / **不再需要** SKIP_IF_SWRAST_BLANK fallback 预算（保留作 driver-strictness 分层范式即可）
+- Mesa swrast headless ctest 路径已成熟为 Veloxa GLES 测试基础设施基线 / G1.6-G1.18 + G2 18 子任务可统一使用
+
+---
+
+## GLES shader 单 vert + N frag 复用范式 first-evidence（TASK-20260528-01 G1.5 入库）
+
+**背景**：G1.5 设计 solid + rounded 2 个 shader program，原本可能为每个 program 独立设计 vert shader（2 vert × 2 program）。但 SDF 路径只需要在 vertex shader 中额外输出一个 `v_local_px` varying（其他 program 可忽略），即可由**单 vert + N frag 复用**实现。
+
+**实证设计：**
+
+```cpp
+// kSolidVert 同时被 solid_program_ (+kSolidFrag) 和 rounded_program_ (+kRoundedRectFrag) 复用
+inline constexpr const char* kSolidVert = R"(#version 300 es
+...
+in vec2 a_pos;
+uniform vec4 u_rect_px;
+uniform mat3 u_xform_px;
+uniform vec2 u_viewport_px;
+out vec2 v_local_px;        // solid 忽略 / rounded 用作 SDF coord
+void main() { ... v_local_px = a_pos * u_rect_px.zw; }
+)";
+
+// kSolidFrag：忽略 v_local_px，直出 u_color
+inline constexpr const char* kSolidFrag = R"(...
+in vec2 v_local_px;          // 接受但不读
+uniform vec4 u_color;
+out vec4 frag_color;
+void main() { frag_color = u_color; }
+)";
+
+// kRoundedRectFrag：用 v_local_px 计算 SDF distance
+inline constexpr const char* kRoundedRectFrag = R"(...
+in vec2 v_local_px;          // 实际使用
+uniform vec4 u_color;
+uniform vec2 u_half_px;
+uniform float u_radius_px;
+void main() {
+  vec2 d = abs(v_local_px - u_half_px) - (u_half_px - vec2(u_radius_px));
+  float dist = length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - u_radius_px;
+  ...
+}
+)";
+```
+
+**范式优势：**
+1. **代码节省**：减少 1 vert shader（~30 行）+ 编译时间
+2. **维护集中**：vertex pipeline（pixel-to-NDC + Y 翻转 + xform 矩阵）维护在一个 shader
+3. **未来零成本扩展**：G1.7 Stroke / G1.8 GlyphAtlas / G2 Gradient 等新 shader 可继续复用 `kSolidVert` + 仅新增 frag shader
+
+**范式约束：**
+- 复用的 vert shader 必须输出所有候选 frag shader **可能用到**的 varying（如 `v_local_px`）
+- 不用的 frag shader 也必须**接受**（`in vec2 v_local_px`）但可不读 — GLSL 不会因 unused input 报错（只会优化掉）
+- vertex pipeline 设计必须**通用化**（pixel space 入 + NDC 出 + 用户 transform 应用），避免 frag-specific 逻辑混入
+
+**适用范围：** GLES Canvas 全部 fill/stroke/draw 类 shader（不适用于深度差异化的 shader 如 multi-target rendering / geometry shader emulation 等）。
+
+---
+
+## ctest baseline 数字回归 audit 漏审 — 反复模式新候选首次定型（TASK-20260528-01 §4.1 入库 / first-evidence）
+
+> **背景**：TASK-20260528-01 plan §0.1 引用 G1.4 archive 中的 Matrix A/B baseline 数字（1337/1141），实测发现 cmake config drift 导致 -34/-31 差额（实测 1303/1110）。虽核心断言「0 退化」全 ✅ 不影响验收，但暴露 plan 阶段引用历史数据时**未做实证 fingerprint**。
+
+### 触发条件
+
+plan §0.X 涉及 ctest 数量声明（"baseline X / 期望 Y / 增量 +Z"），且 baseline 数字来源符合任一：
+
+- 引用历史 archive（`memory-bank/archive/archive-*.md`）
+- 引用历史 reflection（`memory-bank/reflection/reflection-*.md`）
+- 引用 systemPatterns 沉淀数据
+- 凭印象 / 凭直觉 / 凭 G1.X 经验估算
+
+### 强制实证 fingerprint 步骤
+
+plan §0 Phase 0 audit **必填** ctest baseline fingerprint 子段：
+
+```bash
+# 对每个 build 矩阵跑实证：
+ctest --test-dir build       -N 2>&1 | tail -3   # Matrix A baseline
+ctest --test-dir build-off   -N 2>&1 | tail -3   # Matrix B baseline
+ctest --test-dir build-gles  -N 2>&1 | tail -3   # Matrix C baseline
+```
+
+**写入 plan §0.X**：实证 fingerprint 子段必须含命令输出的具体数字 + 时间戳：
+
+```markdown
+### §0.X ctest baseline 实证 fingerprint（2026-MM-DD HH:MM）
+
+| Matrix | DEVTOOL | VX_RENDERER | 实证命令 | 实测 baseline |
+|---|:-:|:-:|---|:-:|
+| A | ON | software | `ctest --test-dir build -N \| tail -3` | **NNN** |
+| B | OFF | software | `ctest --test-dir build-off -N \| tail -3` | **NNN** |
+| C | ON | gles | `ctest --test-dir build-gles -N \| tail -3` | **NNN** |
+```
+
+### 判读规则
+
+- ✅ 实证数字与 archive / reflection 引用一致 → 沿用 archive 数据
+- ⚠️ 实证数字与 archive / reflection 引用有偏差 → **必填**「baseline 漂移说明」段，记录偏差量级 + 根因猜测（cmake config drift / 既有 test SKIP 变动 / 新增 ENVIRONMENT guard 等）
+- 🔴 实证数字与 archive 引用偏差 ≥ 5% → **强制** push-back（参考 brainstorming.mdc 「Phase 0 grep 实证驱动的主动 push-back 模式」）
+
+### 反模式
+
+- ❌ plan §0 直接写 baseline 数字未做实证 fingerprint
+- ❌ 引用 archive 数据时不带「实证时间戳」（archive 数据可能已老化）
+- ❌ 假设「baseline 永真」/ 跨任务跨 cmake reconfigure 数字不变（实际 +/- 5-50 测常见）
+
+### 实证（first-evidence / 待未来 1+ 次重复后正式升级反复模式 #N）
+
+- TASK-20260528-01 §4.1：plan §0.1 引用 G1.4 archive Matrix A/B baseline（1337/1141）→ 实测 1303/1110 / 偏差 -34/-31 / 不影响验收（核心断言「0 退化」成立）/ reflect 阶段沉淀 → 本段 first-evidence 首次定型
+
+### 与既有规则协同
+
+- 与 `writing-plans.mdc` 「ctest 数量预期 config 矩阵」段配套（既有规则规定 config 矩阵格式 / 本段增强 baseline 数字来源 / 实证 fingerprint 双约束）
+- 与 `brainstorming.mdc` 「Phase 0 grep 实证驱动的主动 push-back 模式」配套（偏差 ≥ 5% 触发 push-back）
+- 与本文档「ctest baseline 配置矩阵」段（待 archive 阶段补 / 跨任务跨 host 跨配置基线管理）
+
+### 改进建议（落实方式）
+
+- **P1 下次：** 增 `writing-plans.mdc` 「ctest baseline 数字 fingerprint 协议」段 / Phase 0 必填子段
+- **跨任务追踪：** 本段为 first-evidence / 未来 1+ 次重复后升级反复模式 #N（沿用反复模式渐进式抑制 / 3 次 = P0 升级原则）
+
+---
+
+## Mesa swrast 像素验证双约束默认范式（TASK-20260528-01 §4.2 入库 / first-evidence）
+
+**背景**：TASK-20260528-01 RED 阶段 T3 (FourCornerSample) + T7 (CornerHasPartialAlpha) **false-PASS**：测试期望 inner 像素是 `Color::Green()`，但用单约束 `EXPECT_GT(green_channel, 200u)` 时，白色背景（R=255 G=255 B=255）也满足 → 无法区分 stub vs impl。
+
+### 反模式（单约束 / 弱测试）
+
+```cpp
+// ❌ 单约束 — 无法区分 white 背景 vs green 目标 color
+EXPECT_GT(px[1], 200u);   // green G > 200 — white G=255 也满足
+```
+
+### 推荐范式（双约束 / 强测试）
+
+```cpp
+// ✅ 双约束 — 正向 + 反向通道
+EXPECT_GT(px[1], 200u);   // 正向：G > 200 (green present)
+EXPECT_LT(px[0], 50u);    // 反向：R < 50  (not white / not red)
+EXPECT_LT(px[2], 50u);    // 反向：B < 50  (not white / not blue)
+```
+
+### 通用模板
+
+对目标颜色 `(R_target, G_target, B_target)`：
+- 对应通道（值高的）→ 加正向 `EXPECT_GT(px[ch], 200u)`
+- 其他通道（值低的）→ 加反向 `EXPECT_LT(px[ch], 50u)`
+
+### 触发条件
+
+涉及以下任一情形时**推荐**采纳：
+- Mesa swrast 像素验证（`glReadPixels` 读取 default framebuffer 单像素）
+- 颜色不与背景色冲突的 fill 测试（如 white 背景 + 任意 R/G/B 主导色）
+- RED 测试期望 stub vs impl 强区分（避免 false-PASS）
+
+### 反模式
+
+- ❌ 仅检查 1 个 channel `> 200`（白色背景 R/G/B 全 255 同时满足）
+- ❌ 仅检查 alpha 通道（GLES 默认 alpha=1.0 时无效）
+- ❌ 期望黑色填充时仅 `EXPECT_LT(px[ch], 50u)` 不加 alpha 验证（透明也满足）
+
+### 实证
+
+- TASK-20260528-01 RED：T3/T7 false-PASS 暴露单约束欠强 / GREEN 阶段自然转 true-PASS / 不影响验收但暴露最佳实践
+- TASK-20260528-01 GREEN：T2 / T4 / T5 / T6 / T8 已用三通道（R+G+B）约束 / 强测试 / 实测 0 false-PASS
+
+### 改进建议（落实方式）
+
+- **P2 长期：** 推荐沿用（不强制 / 非阻塞）/ G1.6+ shader 测试自然采纳
+- **优先级：** 测试质量持续改进 / 不属于阻塞回归
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

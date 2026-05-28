@@ -2,11 +2,11 @@
 
 ## 当前任务
 
-### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（规划中）
+### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（回顾完成）
 
 **任务定位：** GLES 蓝图实施第五步 / Level 3 实施类 / MVP-C 战略主线第五个实施任务 / 前置 G1.4 已闭环
 
-**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅）
+**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E + Reflect ✅）
 
 #### Plan 阶段产出（2026-05-28 ~23:10）
 
@@ -103,7 +103,26 @@
 
 **0 build 中断 / 0 retry / 0 plan 修正 / 0 build-stage spec 漂移** ✅✅✅
 
-**下一步：** `/reflect` 进入回顾阶段 — 沉淀 quint-evidence 实施忠实度 + 跨决策第 19 次连续命中 + Mesa swrast SDF 反走样 first-evidence + baseline 数字校正 + shader_injection dual-evidence。
+#### Reflect 阶段产出（2026-05-28 ~23:55-00:05 / ~10 min）
+
+- **回顾文档落盘：** [`memory-bank/reflection/reflection-TASK-20260528-01.md`](reflection/reflection-TASK-20260528-01.md)（~14KB / 13 段全覆盖）
+- **systemPatterns 5 段新增** ✅（P0 立即落实 / reflect 阶段直接落地）：
+  1. 「跨决策协同度 100% 第 19 次连续命中 + 实施忠实度 quint-evidence」段 — streak 171 → 179/179 历史最高续刷 / first → quint 完整成熟曲线
+  2. 「Mesa swrast SDF 反走样能力 first-evidence + Mesa swrast 能力 triple-evidence 续延」段 — G1.5 T7 fwidth + smoothstep + length + max + min 全函数链实测
+  3. 「GLES shader 单 vert + N frag 复用范式 first-evidence」段 — kSolidVert 同时被 solid + rounded 复用 / vert pipeline 集中维护 / 未来零成本扩展
+  4. 「**ctest baseline 数字回归 audit 漏审** — 反复模式新候选首次定型」段 — plan §0.1 引用 archive 数据未做实证 fingerprint / first-evidence / 反复模式 #N 新候选
+  5. 「Mesa swrast 像素验证双约束默认范式」段 — 反 T3/T7 false-PASS 教训 / 推荐 G1.6+ 沿用
+- **techContext G1.5 节点 + plan ×0.6 第 13 数据点沉淀** ✅
+- **回顾检查清单 6 维度全 ✅**：计划精确度 (LOC ×0.95) / TDD 执行 (RED→GREEN→REFACTOR 完美) / 测试隔离 (0 flaky) / 提交粒度 (4 commit 严格 Phase 边界) / 非默认路径 (T9/T10/T11 inline reverse probe + Mesa SKIP fallback) / 安全 (shader 注入 dual-evidence)
+- **改进建议落实**：4 项（P0 ×1 已立即落实 / P1 ×1 入 activeContext 待处理 / P2 ×2 已沉淀 systemPatterns）
+- **反复模式抑制 8/8 + 新候选 #N first-evidence 首次定型**（ctest baseline 数字回归 audit 漏审 / 待未来 1+ 次重复后正式升级反复模式 #N）
+
+**Reflect 阶段累计**：~10 min / plan ×0.6 估时 ~15-30 min / 系数 ~0.33-0.67× / 极速区 ✅
+
+**G1.5 整体（VAN + Plan + Build + Reflect）累计**：
+- VAN ~10 + Plan ~30 + Build ~33 + Reflect ~10 = **~83 min** vs plan ×0.6 ~140-205 min = **~0.40-0.59× 标准极速区** ✅
+
+**下一步：** `/archive` 进入归档阶段 — 5 项范式里程碑入 archive 节点 / G1.6 FillPath 立项候选触发条件已满足。
 
 #### VAN 阶段产出（2026-05-28 ~22:56）
 

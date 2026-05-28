@@ -1290,11 +1290,45 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - **shader injection 安全 first-evidence：**
   - `shader_injection_test.cc` S1+S2 PASS — B6=A 安全契约首次有可执行测试守护
 
+### G1.5 GLESCanvas FillRect/FillRoundedRect + Solid Brush 实施（已落地 / TASK-20260528-01 build 完成）
+
+- **变更文件：**
+  - `veloxa/graphics/gles/shaders.h`：新增 3 raw string literal shader（`kSolidVert` / `kSolidFrag` / `kRoundedRectFrag`）+ `kAllShaderSources[]` 数组化范式（B8=A）
+  - `veloxa/graphics/gles/gles_canvas.{h,cc}`：移除 `FillRect`/`FillRoundedRect` 内联 stub；新增 2 GLuint program + 5 GLint uniform location ctor 缓存 + 5 helper（`CompileShader`/`LinkProgram`/`InitShaderPrograms`/`DestroyShaderPrograms`/`UploadUnitQuad`/`BrushSolidColor`/`Matrix3x2ToMat3`）+ 真实 `FillRect` 和 `FillRoundedRect` 实现
+  - `tests/graphics/gles/gles_canvas_fill_test.cc`（新建 / 12 单测）：T1-T8 像素验证 + T9-T11 inline reverse probe + T12 共享 program quad 复用确认
+  - `tests/graphics/gles/shader_injection_test.cc`：S1 范围化（遍历 `kAllShaderSources[]`）+ 新增 S3（`NoUserConcatPatternInG15Shaders` / G1.5 反向探针）
+  - `tests/CMakeLists.txt`：注册 `gles_canvas_fill_test`（Matrix C +12 测）
+- **关键设计点：**
+  - **3 raw string literal shader + 数组化**：B6=A 安全契约扩展 → `kAllShaderSources[]` 数组管理所有 shader / `kAllShaderSourceCount` 编译期常量 / 未注册 shader 自动被 S1 测试遗漏告警
+  - **shader 单 vert + N frag 复用范式 first-evidence**：`kSolidVert` 同时被 `solid_program_`（+ `kSolidFrag`）和 `rounded_program_`（+ `kRoundedRectFrag`）使用 / vert pass `v_local_px` varying / solid frag 忽略 / rounded frag 用作 SDF coord
+  - **shader program ctor 创建 + uniform location ctor 缓存**：避免 per-FillRect glGetUniformLocation 开销 / 命名空间 `gles::canvas` 内部范式
+  - **FillRect pipeline**：unit quad VBO（6 vert / triangle list / 单位 [0,1]²）→ vertex shader 用 `u_rect_px` + `u_xform_px` + `u_viewport_px` 计算 NDC（含 Y 翻转）→ fragment shader 输出 `u_color`（来自 brush.color_start / 当前 B7=A 仅 solid）
+  - **FillRoundedRect SDF pipeline**：同 pipeline + frag shader 用 `length(max(d, 0.0)) + min(max(d.x,d.y), 0.0) - u_radius_px` 计算 SDF distance + `1.0 - smoothstep(-fwidth, fwidth, dist)` 反走样 alpha → 最终输出 `vec4(rgb, a × alpha)`
+  - **Y 翻转**：vertex shader 内 `ndc.y = -ndc.y`（GL bottom-left → 屏幕 top-left）/ T8 验证
+  - **brush 类型 fallback**：Solid 直出 / Gradient/Image/Pattern fallback 到 color_start（B7=A 简化）
+- **Mesa swrast SDF 反走样 first-evidence + Mesa swrast 能力 triple-evidence：**
+  - G1.5 T7 `FillRoundedRect_CornerHasPartialAlpha` PASS — `fwidth` + `smoothstep` + `length` + `max` + `min` 全函数链在 Mesa swrast + GLSL ES 3.0 SL 1.00 下正确生效 ✅
+  - Mesa swrast 能力实证累计：G1.3 first（default fb + Clear）+ G1.4 dual（viewport + blend）+ **G1.5 triple（fragment shader complex math + derivative + smoothstep）**
+- **shader 注入防御 dual-evidence 候选：**
+  - G1.4 first（S1+S2 / kPassthroughVert/Frag）→ **G1.5 dual 候选**（S1 范围化 5 shader + S3 G1.5 反向探针 NoUserConcatPattern）
+  - 未来扩展零成本（任何新 shader 注册到 `kAllShaderSources[]` 自动被 S1 覆盖）
+- **测试设计**：12 单测在 32×32 surface 上跑 ~2.19s / 0 SKIP / 0 driver-strictness fallback / TDD RED 6 FAIL + GREEN 22/22 PASS（含 8 skeleton + 2 injection）
+
+### plan ×0.6 实测系数 — 第 13 数据点（TASK-20260528-01 G1.5）
+
+- **VAN** ~10 min / **Plan** ~30 min / **Build** ~33 min / **总** ~73 min
+- **plan 估时** ~125-175 min（plan ×0.6）/ **系数** ~0.42-0.58× / 子档「**实施类 Level 3 标准极速区**」
+- **Build 阶段细分** Phase A RED ~10 / Phase B GREEN ~12 / Phase C REFACTOR ~3 / Phase D 三矩阵 ctest ~6 / Phase E finalize ~2 / **Build 系数 ~0.26-0.44× 极致极速区**
+- **实施类 Level 3 子档累计 4 数据点**：G1.2（0.30-0.55×）+ G1.3（0.13×）+ G1.4（0.09-0.16×）+ **G1.5（0.26-0.44×）** = quad-evidence 候选
+
 ### 交叉引用
 
 - G1.1 归档：[`memory-bank/archive/archive-TASK-20260505-05.md`](archive/archive-TASK-20260505-05.md)
 - G1.2 归档：[`memory-bank/archive/archive-TASK-20260505-06.md`](archive/archive-TASK-20260505-06.md)
 - G1.3 归档：[`memory-bank/archive/archive-TASK-20260506-01.md`](archive/archive-TASK-20260506-01.md)
+- G1.4 归档：[`memory-bank/archive/archive-TASK-20260507-01.md`](archive/archive-TASK-20260507-01.md)
+- G1.5 计划：[`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)
+- G1.5 回顾：[`memory-bank/reflection/reflection-TASK-20260528-01.md`](reflection/reflection-TASK-20260528-01.md)
 - G1.2 实施计划：[`docs/plans/2026-05-05-gles-display-sdl2-egl.md`](../docs/plans/2026-05-05-gles-display-sdl2-egl.md)
 - G1.3 实施计划：[`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)
 - G1.4 实施计划：[`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)
