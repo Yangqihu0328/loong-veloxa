@@ -34,7 +34,38 @@
   - GREEN 阶段预期 false-PASS 全转 true-PASS，FAIL 全 PASS / 总 12/12 PASS
 - **plan ×0.6 实测**：Phase A 实测 ~10 min vs plan 估时 ~20-30 min = **~0.33-0.50× 极速区**
 
-**下一步：** Phase B GREEN — shaders.h 3 shader + gles_canvas.{h,cc} 实现 + uniform 缓存 → 跑 ctest 验证全 12 PASS。
+#### Build·Phase B GREEN 产出（2026-05-28 ~23:42）
+
+- **修改** `veloxa/graphics/gles/shaders.h`（+~95 行 / 3 新 shader kSolidVert/kSolidFrag/kRoundedRectFrag + kAllShaderSources[] 数组 + 完整 security contract / B6=A + B8=A 同步落地）
+- **修改** `veloxa/graphics/gles/gles_canvas.h`（+~45 行 / 移除 FillRect/FillRoundedRect stub + 2 program GLuint + uniform location 缓存 enum × 2 + 5 helper 声明 / B5=A + B7=A 同步落地）
+- **修改** `veloxa/graphics/gles/gles_canvas.cc`（+~210 行 / `<algorithm>` include + ctor UploadUnitQuad + InitShaderPrograms + dtor DestroyShaderPrograms + 5 helper impl + FillRect + FillRoundedRect impl / B1/B2/B3/B4 同步落地）
+- **增量 build ~10s**（vx_graphics 重链 + 3 test target 重编 / 0 link error / 0 warning）
+
+**ctest GREEN 实测：22/22 PASS** ✅✅✅
+- ✅ **12/12 GLESCanvasFillTest**（核心 6 pixel verification 全转 PASS / inverse semantic 6 测保持 PASS）
+  - T1 Construct_InitsShaderPrograms ✅
+  - T2 FillRect_TopLeftPixel ✅（RED FAIL → GREEN PASS）
+  - T3 FillRect_FourCornerSample ✅
+  - T4 FillRect_KSolidBrush ✅（RED FAIL → GREEN PASS）
+  - T5 FillRect_KLinearGradientFallback ✅（B7=A 验证 / RED FAIL → GREEN PASS）
+  - T6 FillRoundedRect_CenterIsOpaque ✅（SDF center / RED FAIL → GREEN PASS）
+  - T7 FillRoundedRect_CornerHasPartialAlpha ✅（**SDF 反走样 first-evidence** ✅）
+  - T8 FillRect_AfterSetTransform_Translation ✅（uXformPx mat3 路径 / RED FAIL → GREEN PASS）
+  - T9 ReverseProbe_TransparentBrush ✅（B6=A alpha=0 inline probe）
+  - T10 ReverseProbe_EmptyRect ✅（B6=A early-return）
+  - T11 ReverseProbe_ZeroRadiusRoundedRect ✅（B6=A radius=0 → FillRect / RED FAIL → GREEN PASS）
+  - T12 FillRect_PreservesQuadVao ✅（VAO handle 稳定）
+- ✅ **8/8 GLESCanvasSkeletonTest**（G1.4 first-evidence 无回归）
+- ✅ **2/2 ShaderInjectionTest**（G1.4 first-evidence 范式不退化 / Phase C 将范围化）
+- **Total Test time: 2.19s** / 0 GTEST_SKIP / 0 driver-strictness fallback 触发
+
+**Mesa swrast SDF 反走样 first-evidence ✅**（T7 corner partial alpha PASS / fwidth + smoothstep GLES 3.0 SL 1.00 实证生效 / Mesa swrast triple-evidence 续延：G1.3 default fb + G1.4 Clear + G1.5 SDF）
+
+**0 build 中断 / 0 retry / 一次性 GREEN ✅** — 实施忠实度 **quint-evidence 实证**（G1.1 first + G1.2 dual + G1.3 triple + G1.4 quad + G1.5 quint）+ 跨决策协同度 100% 第 19 次连续命中**实测确认** ✅
+
+**plan ×0.6 实测**：Phase B 实测 ~12 min vs plan 估时 ~30-50 min = **~0.24-0.40× 极速区**
+
+**下一步：** Phase C REFACTOR — shader_injection_test S1 范围化（kAllShaderSources[] 遍历）+ S3 新增 NoUserConcatPatternInG15Shaders。
 
 #### VAN 阶段产出（2026-05-28 ~22:56）
 

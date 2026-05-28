@@ -60,9 +60,12 @@ class GLESCanvas final : public Canvas {
   void PushState() override;
   void PopState() override;
 
-  // ---- No-op stubs (G1.5+ implementation scope) ----
-  void FillRect(const Rect&, const Brush&) override {}
-  void FillRoundedRect(const Rect&, vx::f32, const Brush&) override {}
+  // ---- Real implementations (G1.5 fill scope) ----
+  void FillRect(const Rect& rect, const Brush& brush) override;
+  void FillRoundedRect(const Rect& rect, vx::f32 radius,
+                       const Brush& brush) override;
+
+  // ---- No-op stubs (G1.6+ implementation scope) ----
   void FillPath(const Path&, const Brush&) override {}
   void StrokeRect(const Rect&, const Brush&, vx::f32) override {}
   void StrokeRoundedRect(const Rect&, vx::f32, const Brush&,
@@ -100,6 +103,46 @@ class GLESCanvas final : public Canvas {
   GLuint quad_vbo_ = 0;
   vx::text::FontManager* font_manager_ = nullptr;
   vx::text::GlyphCache* glyph_cache_ = nullptr;
+
+  // ---- G1.5 shader program resources (B5=A ctor init / dtor delete) ----
+  // solid_program_ + rounded_program_ are GL program handles. uniform_loc_
+  // arrays cache glGetUniformLocation results to avoid per-FillRect lookups.
+  GLuint solid_program_ = 0;
+  GLuint rounded_program_ = 0;
+
+  // Uniform indices into per-program location caches.
+  enum SolidUniform {
+    kSolidURectPx = 0,
+    kSolidUXformPx,
+    kSolidUViewportPx,
+    kSolidUColor,
+    kSolidUniformCount
+  };
+  enum RoundedUniform {
+    kRoundedURectPx = 0,
+    kRoundedUXformPx,
+    kRoundedUViewportPx,
+    kRoundedUColor,
+    kRoundedUHalfPx,
+    kRoundedURadiusPx,
+    kRoundedUniformCount
+  };
+  GLint solid_uniforms_[kSolidUniformCount] = {-1, -1, -1, -1};
+  GLint rounded_uniforms_[kRoundedUniformCount] = {-1, -1, -1, -1, -1, -1};
+
+  // ---- G1.5 helpers (private) ----
+  // CompileShader / LinkProgram return 0 on failure (with infoLog assertion
+  // in debug builds via VX_DCHECK).
+  static GLuint CompileShader(GLenum type, const char* source);
+  static GLuint LinkProgram(GLuint vert, GLuint frag);
+  void InitShaderPrograms();      // ctor helper
+  void DestroyShaderPrograms();   // dtor helper
+  void UploadUnitQuad();          // ctor helper — 6 verts to quad_vbo_
+  // Extract solid Color from a Brush. For kLinearGradient, returns
+  // brush.linear.color_start (B7=A fallback) so callers don't crash.
+  static Color BrushSolidColor(const Brush& brush);
+  // Convert Matrix3x2 (6 floats) to GLES mat3 column-major (9 floats).
+  static void Matrix3x2ToMat3(const Matrix3x2& src, GLfloat dst[9]);
 };
 
 }  // namespace vx::gfx::gles

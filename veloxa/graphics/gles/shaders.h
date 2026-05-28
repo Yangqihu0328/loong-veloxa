@@ -39,6 +39,101 @@ void main() {
 }
 )";
 
+// -----------------------------------------------------------------------------
+// G1.5: FillRect / FillRoundedRect shaders (B6=A static embedding continued).
+//
+// All three shaders take pixel-space inputs and produce NDC outputs in the
+// vertex stage (Y-flipped to match Veloxa's top-left origin convention).
+// Same security contract as kPassthroughVert/Frag: compile-time constant,
+// never composed with user data. shader_injection_test.cc verifies all
+// shader sources via kAllShaderSources[] (B8=A).
+// -----------------------------------------------------------------------------
+
+// Solid vertex shader: unit-quad [0,1]^2 -> pixel rect -> user xform -> NDC.
+//
+// Inputs:
+//   * a_pos: unit quad vertex in [0,1]^2 (6 verts = 2 triangles).
+//   * u_rect_px: target rect in pixel space (x, y, w, h).
+//   * u_xform_px: user-supplied Matrix3x2 promoted to mat3 (last row = 0,0,1).
+//   * u_viewport_px: surface size in pixels (w, h) for NDC mapping.
+//
+// Outputs:
+//   * gl_Position: NDC coordinate with Y flipped (Veloxa: top-left origin /
+//     OpenGL: bottom-left origin).
+//   * v_local_px: local coordinate within the rect (0..u_rect_px.zw),
+//     consumed by kRoundedRectFrag for SDF distance calculation.
+inline constexpr const char* kSolidVert = R"(#version 300 es
+precision highp float;
+in vec2 a_pos;
+uniform vec4 u_rect_px;
+uniform mat3 u_xform_px;
+uniform vec2 u_viewport_px;
+out vec2 v_local_px;
+void main() {
+  vec2 px = u_rect_px.xy + a_pos * u_rect_px.zw;
+  vec3 px3 = u_xform_px * vec3(px, 1.0);
+  vec2 ndc = (px3.xy / u_viewport_px) * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  v_local_px = a_pos * u_rect_px.zw;
+}
+)";
+
+// Solid fragment shader: emits u_color directly. Alpha blending is enabled
+// in GLESCanvas::Begin (SRC_ALPHA, ONE_MINUS_SRC_ALPHA).
+inline constexpr const char* kSolidFrag = R"(#version 300 es
+precision mediump float;
+in vec2 v_local_px;
+uniform vec4 u_color;
+out vec4 frag_color;
+void main() {
+  frag_color = u_color;
+}
+)";
+
+// Rounded-rect SDF fragment shader: uses fwidth() for screen-space AA edge.
+//
+// Distance function (Inigo Quilez rounded-box SDF):
+//   d = |p - center| - (half - radius)
+//   dist = length(max(d, 0)) + min(max(d.x, d.y), 0) - radius
+//
+// alpha = 1 - smoothstep(-fwidth(dist), +fwidth(dist), dist)
+// fwidth gives the per-pixel rate of change so AA stays 1px wide regardless
+// of user transform (zoom / rotation).
+inline constexpr const char* kRoundedRectFrag = R"(#version 300 es
+precision highp float;
+in vec2 v_local_px;
+uniform vec4 u_color;
+uniform vec2 u_half_px;
+uniform float u_radius_px;
+out vec4 frag_color;
+void main() {
+  vec2 d = abs(v_local_px - u_half_px) - (u_half_px - vec2(u_radius_px));
+  float dist = length(max(d, 0.0))
+             + min(max(d.x, d.y), 0.0)
+             - u_radius_px;
+  float aa = fwidth(dist);
+  float alpha = 1.0 - smoothstep(-aa, aa, dist);
+  frag_color = vec4(u_color.rgb, u_color.a * alpha);
+}
+)";
+
+// -----------------------------------------------------------------------------
+// kAllShaderSources[] — B8=A: enumerate every shader for the security
+// regression test (shader_injection_test.cc S1 ShaderSourcesAreCompileTimeLiterals).
+// Adding a new shader requires only adding an entry here + a comment in the
+// shader's docstring. Failure to register triggers no test (silent gap) — the
+// test reviewer must visually confirm new shaders are listed.
+// -----------------------------------------------------------------------------
+inline constexpr const char* kAllShaderSources[] = {
+    kPassthroughVert,
+    kPassthroughFrag,
+    kSolidVert,
+    kSolidFrag,
+    kRoundedRectFrag,
+};
+inline constexpr int kAllShaderSourceCount =
+    sizeof(kAllShaderSources) / sizeof(kAllShaderSources[0]);
+
 }  // namespace vx::gfx::gles
 
 #endif  // VELOXA_GRAPHICS_GLES_SHADERS_H_
