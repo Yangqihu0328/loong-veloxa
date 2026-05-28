@@ -2,11 +2,33 @@
 
 ## 当前任务
 
-### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（回顾完成）
+（空闲 — 等待新任务指令）
+
+---
+
+## 上次任务（已归档闭环）
+
+### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（已归档）
 
 **任务定位：** GLES 蓝图实施第五步 / Level 3 实施类 / MVP-C 战略主线第五个实施任务 / 前置 G1.4 已闭环
 
-**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E + Reflect ✅）
+**当前阶段：** ✅ **已归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260528-01.md`](archive/archive-TASK-20260528-01.md)（~21KB / 13 段全覆盖）
+
+**核心里程碑：**
+- 实施忠实度 **quint-evidence** ✅（G1.1 first → G1.5 quint / 5 任务连续印证 / 确立期）
+- 跨决策协同度 100% 第 19 次连续命中 / streak **179/179 历史最高续刷** ✅
+- **Mesa swrast SDF 反走样 first-evidence** + Mesa swrast 能力 triple-evidence ✅
+- shader_injection_test **dual-evidence** 候选 + 单 vert + N frag 复用 first-evidence + 像素验证双约束 first-evidence ✅
+- 新反复模式候选首次定型：ctest baseline 数字回归 audit 漏审 ✅
+- 三 build 矩阵 **3788/3788 PASS / 0 FAIL** ✅
+- plan ×0.6 ~0.40-0.59× 标准极速区（第 13 数据点 / Build 阶段 ~0.26-0.44× 极致极速区）
+
+**整体投入：** ~83 min（VAN ~10 + Plan ~30 + Build ~33 + Reflect ~10）
+
+<details>
+<summary>原 G1.5 临时记录 Plan 阶段产出（已归档到 archive 文档）</summary>
 
 #### Plan 阶段产出（2026-05-28 ~23:10）
 
@@ -151,11 +173,13 @@
 - §0.7 Brush 类型范围：本任务 Color brush only / Gradient/Pattern brush 留 G2+ — 与 spec §4.1 一致
 - §0.8 shader 注入安全（B6 raw string literal + G1.4 `shader_injection_test.cc` 范式扩展到 3 新 shader）
 
-**下一步：** `/plan` — 进入规划阶段，brainstorm B 决策矩阵 + creative 内联（shader uniform 设计 + MVP 矩阵注入策略 + SDF 反走样数值参数）。
+> 注：以上「**下一步：** `/plan`」「`/archive`」等阶段提示在归档时已失效，仅作历史记录保留。
+
+</details>
 
 ---
 
-## 上次任务（已归档闭环）
+## 历史归档任务（已归档闭环 / 详见 `memory-bank/archive/`）
 
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（构建完成）
 

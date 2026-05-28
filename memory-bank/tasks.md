@@ -4,7 +4,11 @@
 
 ### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务）
 
-**当前阶段：** 🟢 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ Phase A-E 全闭环 + Reflect ✅）
+**当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260528-01.md`](archive/archive-TASK-20260528-01.md)（~21KB / 13 段全覆盖）
+
+**核心里程碑速查：** 实施忠实度 **quint-evidence** + 跨决策协同度 100% 第 19 次连续命中（streak 179/179 历史最高续刷）+ Mesa swrast SDF first-evidence + 能力 triple-evidence + shader_injection dual-evidence + 单 vert + N frag 复用 first + 像素验证双约束 first + 新反复模式候选首次定型（ctest baseline 数字回归 audit 漏审）+ 三 build 矩阵 3788/3788 PASS + plan ×0.6 ~0.40-0.59× 标准极速区第 13 数据点 + fast-forward merge 到 main `ddc8647` + 分支已删除。
 **复杂度级别：** **Level 3**（蓝图 plan §3.5 锁定）
 **创建日期：** 2026-05-28
 **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7` ✅ 已创建）
@@ -781,6 +785,31 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260528-01：G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务 / Level 3）— ✅ 已归档（2026-05-29 ~00:10）
+
+> **本任务已归档闭环。详细执行记录已迁移到 [`memory-bank/archive/archive-TASK-20260528-01.md`](archive/archive-TASK-20260528-01.md)（~21KB / 13 段全覆盖）。**
+
+- **当前阶段：** ✅ **已归档闭环**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+- **复杂度级别：** Level 3
+- **完成日期：** 2026-05-29
+- **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect` → fast-forward merge 到 main `ddc8647`（6 commits）→ 分支已删除
+- **主交付：** GLESCanvas FillRect + FillRoundedRect 真实 GPU 实现 / 3 raw string literal shader（kSolidVert + kSolidFrag + kRoundedRectFrag）+ kAllShaderSources[] 数组化 / 2 program ctor 创建 + uniform location ctor 缓存 / 12 ctest 单测 + shader_injection_test S1 范围化 + S3 反向探针新增
+- **🎯 MVP-C 渲染管线里程碑：** 首次真实绘制像素到 default framebuffer ✅ / 首次 fragment shader complex 数学函数链运行 ✅ / 首次 user transform → MVP 矩阵 → NDC 完整链路 ✅
+- **6 范式里程碑同时落地：**
+  - 实施忠实度 **quint-evidence**（G1.1 first → G1.5 quint / 5 任务连续印证 / **确立期**）
+  - 跨决策协同度 100% 第 19 次连续命中 / streak **179/179 历史最高续刷**
+  - Mesa swrast **SDF 反走样 first-evidence** + 能力 triple-evidence 续延（G1.3 default fb + G1.4 Clear + **G1.5 SDF**）
+  - shader_injection_test first → **dual-evidence 候选**（B8=A 数组化范式落地）
+  - GLES shader **单 vert + N frag 复用范式 first-evidence**（kSolidVert 同时供 solid + rounded）
+  - Mesa swrast **像素验证双约束默认范式 first-evidence**（反 T3/T7 false-PASS 教训）
+- **新反复模式候选首次定型（first-evidence）：** ctest baseline 数字回归 audit 漏审（plan §0.1 引用 G1.4 archive baseline 1337/1141 vs 实测 1303/1110 偏差 -34/-31 / 不影响验收）
+- **plan ×0.6 比值：** ~0.40-0.59× 标准极速区（第 13 数据点 / Build 阶段 ~0.26-0.44× 极致极速区 / 实施类 Level 3 子档第 4 数据点 / quad-evidence 候选）
+- **ctest：** 三 build 矩阵 1303 + 1110 + 1375 = **3788 PASS / 0 FAIL** ✅✅✅
+- **反复模式：** 8/8 全程 5 阶段抑制（累计 22+ 模式连续抑制 / 历史新高续刷）+ 1 新候选 first-evidence
+- **4 项改进建议落实：** P0×1 + P2×2 reflect 阶段直接落地（systemPatterns 5 段新增 + techContext G1.5 节点）/ P1×1 迁移 activeContext 待处理事项
+
+---
 
 ### TASK-20260505-02：Performance Overlay 持续 invalidate 机制 — `vx_view_invalidate()` 公开 C ABI（B-G4 — MVP-B 收口最后一项 / Level 2）— ✅ 已归档（2026-05-05 ~16:15）
 

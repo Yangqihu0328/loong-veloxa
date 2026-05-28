@@ -2,69 +2,59 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ + Build ✅ Phase A-E + Reflect ✅ / Level 3 / 8 B 决策一次性正确落地 / 总 ctest 3788 PASS / 0 FAIL / 5 项范式里程碑已沉淀 systemPatterns + techContext）。
+**空闲** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush 已 ✅ **闭环归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅ / Level 3 / 总 ctest 3788 PASS / 0 FAIL / 5 范式里程碑沉淀 / fast-forward merge 到 main `ddc8647` + 分支已删除）。等待新任务指令。
 
-**当前任务：** TASK-20260528-01
-**当前焦点：** Reflect ✅ 全闭环 → 进入 `/archive` 归档（5 项范式里程碑入 archive 节点 / G1.6 FillPath 立项候选触发条件已满足）
-**范式里程碑实测：** 实施忠实度 quint-evidence ✅ / 跨决策协同度 100% streak 179/179 ✅ / Mesa swrast SDF first-evidence + 能力 triple-evidence ✅ / shader_injection dual-evidence 候选 ✅ / shader 单 vert + N frag 复用范式 first-evidence ✅ / Mesa swrast 像素验证双约束范式 first-evidence ✅ / **新反复模式候选首次定型：ctest baseline 数字回归 audit 漏审** ✅ / 反复模式 8/8 抑制 ✅ / plan ×0.6 ~0.42-0.58× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区 / 第 13 数据点）
-**回顾文档：** [`memory-bank/reflection/reflection-TASK-20260528-01.md`](reflection/reflection-TASK-20260528-01.md)（~14KB / 13 段全覆盖 / 10 做得好 + 2 挑战 + 3 经验教训 + 4 改进建议）
-**plan 文档：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段 / 完整 cpp 代码片段）
-**分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7`）
-**安全相关：** ⚠️ 是（shader 注入防御 / G1.4 first-evidence 范式扩展到 3 新 shader / S3 NoUserConcatPatternInG15Shaders 新增）
-
-**最近归档：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](archive/archive-TASK-20260507-01.md) — Level 3 / 569 行实际 / 实施忠实度 quad-evidence + 跨决策协同度第 18 次 / 171/171 + Mesa swrast dual-evidence + shader injection first-evidence 入库 / gles ctest 1352→1362（+10）。
-
+**最近归档：** [TASK-20260528-01 G1.5 GLESCanvas FillRect + FillRoundedRect + Solid Brush](archive/archive-TASK-20260528-01.md) — Level 3 / 6 commit / ~720 行实际 / 实施忠实度 quint-evidence + 跨决策协同度 100% 第 19 次连续命中（179/179 历史最高 streak） + Mesa swrast SDF first-evidence + 能力 triple-evidence + shader_injection dual-evidence + shader 单 vert + N frag 复用范式 first-evidence + Mesa swrast 像素验证双约束范式 first-evidence + 新反复模式候选首次定型（ctest baseline 数字回归 audit 漏审）/ 三 build 矩阵 1303+1110+1375 = 3788 全 PASS / plan ×0.6 ~0.40-0.59× 标准极速区（第 13 数据点）。
 ---
 
-## 上次闭环 TASK-20260505-06 总产出（速查）
+## 上次闭环 TASK-20260528-01 总产出（速查）
 
 **总产出：**
 
-- **8 个 systemPatterns 沉淀** ✅（reflect 阶段直接落地 / 含 7 P1 沉淀 + LOC buffer 模式参数细化）
-  - 跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence（streak 128 → 136 历史最高续刷）
-  - plan ×0.6 dec-evidence 第 10 数据点 + 实施类 Level 3 子档新增
-  - brainstorming P1.3 主动 push-back 模式 triple-evidence
-  - writing-plans P1.6 spec vs code audit triple-evidence
-  - P0 协议 sext-evidence 第 6 数据点 + 适用性矩阵 6 类全覆盖 ✅
-  - **D3=B eager extension cache 范式 first-evidence**（多 ext 查询通用）
-  - **D4=C inline test 反向探针 + 驱动严格性分层 first-evidence**（Mesa headless 经验）
-  - LOC 双向 ±25% buffer 子档（单向 ×1.3-1.5 → 双向 [0.85, 1.5] / 模式参数细化）
-- **7 范式里程碑：** sext-evidence 第 6 数据点 + 第 15 次连续命中 + 136/136 streak + dec-evidence + 双 100% 流程闭环 dual-evidence + brainstorming/writing-plans 双 triple-evidence + D3=B eager ext cache + D4=C 驱动严格性分层 双 first-evidence
-- **writing-plans.mdc P1.5 段升级 ✅** — quint → sext-evidence 实证表 + 适用性矩阵 6 类全覆盖
-- **techContext.md 加段 ✅** — GLES 蓝图实施落地节点 + EGL/GLESv2 dep 正式接入 + Mesa headless 测试环境 + 驱动严格性差异表
-- **跨决策协同度：** 8/8 D 决策 1 次 AskQuestion all_recommended 锁定 / 第 15 次连续命中 / 累计 136/136 历史最高 streak / **实施忠实度 dual-evidence**（plan→build 0 偏差实施）
-- **plan ×0.6 实测系数：** 全任务 ~0.60-0.70× 标准极速区（实施类 Level 3 子档新增 build 0.30-0.55× / 总线 0.60-0.70×）
-- **反复模式抑制：** 0/8 全程 5 阶段保持（VAN + Plan + Build + Reflect + Archive）+ 累计 19 模式连续抑制 / 历史新高继续刷新
-- **改进建议落实：** 12 项（P0×0 + P1×7 + P2×5）/ P1×7 reflect 阶段全直接落地 ✅ / P2 中 2 项 archive 阶段直接落地 + 3 项累积下次工作流元任务
+- **5 个 systemPatterns 沉淀** ✅（reflect 阶段直接落地 / P0 立即落实）
+  - 跨决策协同度 100% 第 19 次连续命中 + 实施忠实度 quint-evidence（streak 171 → 179/179 历史最高续刷 / 5 任务连续印证 / 确立期）
+  - Mesa swrast SDF 反走样能力 first-evidence + Mesa swrast 能力 triple-evidence（G1.3 default fb + G1.4 Clear + G1.5 SDF / fwidth + smoothstep + length 全函数链）
+  - GLES shader 单 vert + N frag 复用范式 first-evidence（kSolidVert 同时供 solid + rounded program）
+  - **ctest baseline 数字回归 audit 漏审 — 反复模式新候选首次定型**（plan §0.1 引用 archive 数据未做实证 fingerprint / first-evidence）
+  - Mesa swrast 像素验证双约束默认范式 first-evidence（反 T3/T7 false-PASS 教训）
+- **6 范式里程碑：** quint-evidence + 第 19 次连续命中 + 179/179 streak + Mesa swrast SDF first + shader_injection dual-evidence 候选 + 单 vert + N frag 复用 first
+- **techContext.md G1.5 节点 ✅** — 变更文件 + 关键设计点 + Mesa swrast SDF first + shader 注入 dual + plan ×0.6 第 13 数据点
+- **跨决策协同度：** 8/8 B 决策 1 次 AskQuestion all_recommended 锁定 / 第 19 次连续命中 / 累计 179/179 历史最高 streak / **实施忠实度 quint-evidence**（plan→build 0 偏差实施 / 22/22 一次性 PASS）
+- **plan ×0.6 实测系数：** ~0.40-0.59× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区 / 实施类 Level 3 子档第 4 数据点 / quad-evidence 候选）
+- **反复模式抑制：** 8/8 全程 5 阶段保持（VAN + Plan + Build + Reflect + Archive）+ 累计 22+ 模式连续抑制 / 历史新高继续刷新 + 1 新反复模式候选首次定型（ctest baseline 数字回归 audit 漏审）
+- **改进建议落实：** 4 项（P0×1 + P1×1 + P2×2）/ P0×1 + P2×2 reflect 阶段全直接落地 ✅ / P1×1 迁移 activeContext 待处理事项
 
-**ctest baseline 生效（main 分支）：**
+**ctest baseline 生效（main 分支 `ddc8647`）：**
 - DEVTOOL=ON / VX_RENDERER=software（default）：**1303/1303**
 - DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
-- DEVTOOL=ON / VX_RENDERER=gles：**1345/1345**（含 +8 sdl2_egl_display_test）
+- DEVTOOL=ON / VX_RENDERER=gles：**1375/1375**（含 +12 gles_canvas_fill_test + 1 shader_injection_test S3）
 
-**下一步：** 使用 `/van` 开始新任务（推荐 G1.5 FillRect），或使用工作流元任务批量落地 P1+P2 累计沉淀。
+**下一步：** 使用 `/van` 开始新任务（推荐 G1.6 FillPath），或使用工作流元任务批量落地累计 P1×2 + P2×10 沉淀。
 
 ---
 
 ## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 ✅ + G1.2 ✅ + G1.3 ✅ + G1.4 ✅ + **G1.5 FillRect（进行中 TASK-20260528-01 / 初始化阶段）**。
+> 🚀 **MVP-C 战略主线进行中** — G1.1 ✅ + G1.2 ✅ + G1.3 ✅ + G1.4 ✅ + **G1.5 ✅** → **G1.6 FillPath（推荐 #1）**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
 | ~~1~~ | ~~G1.3 Sdl2GLWindowSurface（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
 | ~~1~~ | ~~G1.4 GLESCanvas 骨架（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| **🚧** | **G1.5 FillRect**（进行中 TASK-20260528-01 / VAN ✅ / 首个真实绘制方法 / solid color shader + SDF FillRoundedRect / MVP 矩阵注入）| MVP-C 核心 | **L3** | ~5-7 h 蓝图 / ~90-180 min 实测预期 |
-| 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| 4 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
-| 5 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
-| 6 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 7 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 8 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 9 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
-| **元** | **下次工作流元任务批量落地**（累计 P1×1 + P2×8 = 9 项 P1/P2 待处理事项 ≥ 4 阈值 ✅✅ / triple-evidence 候选 / 沿用 dual-evidence 范式）| 工作流 | L2 | ~30-60 min |
+| ~~1~~ | ~~G1.5 FillRect + FillRoundedRect + Solid Brush（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
+| **1** | **G1.6 FillPath**（libtess2 + glDrawElements / G1.5 shader pipeline 复用 + 新增 kPathVert 或复用 kSolidVert / Path 几何曲面镶嵌）| MVP-C 核心 | **L3** | ~5-8 h 蓝图 / ~90-180 min 实测预期（沿用 G1.5 quint-evidence + 极速区系数）|
+| 2 | G1.7 Stroke*（复用 solid program / stroke = fill 转换 / spec §3.3.1）| MVP-C 核心 | L3 | ~3-5 h |
+| 3 | G1.8 GlyphAtlas + DrawText 部分（glyph shader 复用 kSolidVert + 新增 kGlyphFrag）| MVP-C 核心 | L3 | ~5-8 h |
+| 4 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
+| 5 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
+| 6 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
+| 7 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
+| 8 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
+| 9 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
+| 10 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
+| **元** | **下次工作流元任务批量落地**（累计 P1×2 + P2×10 = 12 项 P1/P2 待处理事项 ≥ 4 阈值 ✅✅✅ / quad-evidence 候选 / 沿用 triple-evidence 范式）| 工作流 | L2 | ~30-60 min |
 
-**当前焦点：** 继续 G1 OpenGL ES 实施阶段 — **G1.5 FillRect（TASK-20260528-01 / VAN ✅ / 待进入 /plan）**（首个真实绘制方法 / solid color shader + SDF FillRoundedRect / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.5）
+**当前焦点：** 继续 G1 OpenGL ES 实施阶段 — **G1.6 FillPath（推荐）**（路径几何曲面镶嵌 / libtess2 + glDrawElements / 沿用 G1.5 shader pipeline + uniform 缓存范式 / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.6）
 
 ---
 
