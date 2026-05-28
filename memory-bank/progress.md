@@ -2,6 +2,62 @@
 
 ## 当前任务
 
+### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（规划中）
+
+**任务定位：** GLES 蓝图实施第五步 / Level 3 实施类 / MVP-C 战略主线第五个实施任务 / 前置 G1.4 已闭环
+
+**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅）
+
+#### Plan 阶段产出（2026-05-28 ~23:10）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段全覆盖）
+- **8 决策 1 次 AskQuestion all_recommended 全锁定**：B1=B per-FillRect uMvp / B2=A unit quad + ctor BufferData / B3=A uRectPx+uXformPx+uViewportPx / B4=A fwidth(dist) 自动 / B5=A ctor 创建 2 programs + dtor delete / B6=A inline reverse probe / B7=A kSolid 完整 + kLinearGradient fallback color_start / B8=A kAllShaderSources[] 数组化
+- **跨决策协同度 100% 第 19 次连续命中候选** / 累计 171→179/179 历史最高 streak 续刷 / G1.4 quad → quint-evidence 候选
+- **Phase 0 audit 8 子段全 ✅**：ctest baseline 二次验证 + GLES 3.0 API 17 项 + GLSL ES SL 1.00 函数 + 既有 GLESCanvas 复用资源 + shaders.h B6=A 范式 + add_test config guard + _deps 缓存复用 + 工具链版本核对
+- **文件结构：** 5 文件 / 核心 ~616 行 + 隐性 buffer ~115 行 = ~731 行 / LOC ×[0.85, 1.5] buffer 范围 [525, 925] ✅
+- **测试设计：** 12 单测（T1-T12）+ shader_injection_test S1 范围化 + S3 新增 / 3 inline reverse probe（T9 transparent / T10 empty / T11 zero radius）/ Mesa swrast SKIP_IF_SWRAST_BLANK fallback（driver-strictness 分层）
+- **反复模式预防 8/8 全抑制** + 累计 21+ 模式连续抑制候选续刷
+- **ctest 期望：** Matrix A 1337/1337（不变）+ Matrix B 1141/1141（不变）+ Matrix C 1362 → 1374-1376（+12-14）
+
+**估时（plan ×0.6）：** ~125-175 min / 预期实测 ~90-150 min（标准极速区 0.5-0.8×）
+
+**plan/spec docs 落盘即 commit P0 协议：** 实施类 Level 3 子档 sept-evidence 候选（sext → sept / G1.3 + G1.4 + G1.5 三任务累计）/ D8=A 仅 plan 决策
+
+**下一步：** `/build` — Phase A RED → Phase B GREEN → Phase C REFACTOR → Phase D 三 build 矩阵 ctest verify → Phase E finalize 单 commit 落盘。
+
+#### VAN 阶段产出（2026-05-28 ~22:56）
+
+#### VAN 阶段产出（2026-05-28 ~22:56）
+
+- **任务 ID 生成：** TASK-20260528-01（当天首个任务 / Memory Bank grep 验证无冲突）
+- **复杂度判定：** Level 3（GLES 蓝图 plan §3.5 锁定 / 修改 3 文件 + 新建 1 测试 + 修改 1 CMakeLists / ~616 行 / shader 注入安全相关）
+- **分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7` ✅ 已创建）
+- **安全相关：** ⚠️ 是（shader source 注入防御 / G1.4 first-evidence 范式扩展 / 3 新 shader 全 raw string literal 编译期保护）
+- **VAN 前置验证清单（4 维度全 ✅）：**
+  1. 依赖可获取性：EGL + GLESv2 + GLES 3.0 SL 1.00 shader API + SDF 标准函数（smoothstep/length/max）全 GLES 3.0 必支持 / 0 新依赖
+  2. 环境就绪：`build/_deps/quickjsng-src` 离线缓存可复用 / `build-gles/` 增量配置可用 / ctest gles baseline 1362 / Mesa swrast default framebuffer dual-evidence first 已实证（G1.3 + G1.4）
+  3. 已有 artifact：`gles_canvas.{h,cc}` G1.4 骨架已就位（FillRect/FillRoundedRect = `{}` stub line 64-65）/ `shaders.h` G1.4 占位 / `quad_vao_`/`quad_vbo_` 已 init/dtor / `shader_injection_test.cc` first-evidence 范式可复用
+  4. 待处理事项关联：activeContext「下一推荐任务」#1 = G1.5 / GLES 蓝图 plan §3.5 完整规格化 / 累计 P1×1+P2×12 工作流元任务与本任务无强关联
+- **反复模式预审：** 8/8 全 ✅ 抑制（0/8 命中 / 累计 21+ 模式连续抑制候选续刷 / VAN 阶段保持）
+- **估时（plan ×0.6）：** ~5-7 h（蓝图原估）/ 预期实测 ~90-180 min（沿用 G1.4 极速区 0.13-0.30× build 子档 / **plan ×0.6 第 13 数据点候选 / 实施忠实度 quint-evidence 候选**）
+
+#### Phase 0 audit 候选清单（plan 阶段细化）
+
+- §0.1 ctest baseline 二次验证：software ON=1337 / software OFF=1141 / gles ON=1362
+- §0.2 GLES 3.0 shader API 可用性 audit（glCreateShader / glShaderSource / glCompileShader / glLinkProgram / glUseProgram / glGetUniformLocation / glUniform*）
+- §0.3 GLES SL 1.00 标准库函数 audit（smoothstep / length / max / abs — SDF 必须）+ raw string literal R"GLSL(...)GLSL" 编译期类型检查范式（G1.4 first-evidence 复用）
+- §0.4 Mesa swrast shader 编译 + uniform 上传行为验证（headless / driver 严格性分层）+ glReadPixels 像素采样可行性
+- §0.5 既有 GLESCanvas state stack 复用策略（PushState/PopState 已就位 / 0 改动 state struct）+ MVP 矩阵注入点决策（B 决策候选）
+- §0.6 vertex layout 设计：`quad_vbo_` 已存（4 顶点 unit quad 0..1） / attribute location + uniform 设计
+- §0.7 Brush 类型范围：本任务 Color brush only / Gradient/Pattern brush 留 G2+ — 与 spec §4.1 一致
+- §0.8 shader 注入安全（B6 raw string literal + G1.4 `shader_injection_test.cc` 范式扩展到 3 新 shader）
+
+**下一步：** `/plan` — 进入规划阶段，brainstorm B 决策矩阵 + creative 内联（shader uniform 设计 + MVP 矩阵注入策略 + SDF 反走样数值参数）。
+
+---
+
+## 上次任务（已归档闭环）
+
 ### TASK-20260506-01 — G1.3 `Sdl2GLWindowSurface` 实施（构建完成）
 
 **任务定位：** GLES 蓝图实施第三步 / Level 3 实施类 / MVP-C 战略主线第三个实施任务 / 前置 G1.2 已闭环

@@ -2,6 +2,109 @@
 
 ## 当前任务
 
+### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务）
+
+**当前阶段：** 🟢 **规划中**（VAN ✅ + Plan ✅）
+**复杂度级别：** **Level 3**（蓝图 plan §3.5 锁定）
+**创建日期：** 2026-05-28
+**分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7` ✅ 已创建）
+**安全相关：** ⚠️ **是**（shader source 注入防御 / G1.4 已建 `shader_injection_test.cc` first-evidence / G1.5 新增 kSolidVert/kSolidFrag/kRoundedRectFrag 三 raw string literal shader 复用同范式)
+**估时（plan ×0.6）：** ~5-7 h（蓝图 §3.5 原估）/ 预期实测 ~90-180 min（沿用 G1.4 极速区系数 0.13-0.30× build 子档 / **plan ×0.6 第 13 数据点候选 / 实施忠实度 quint-evidence 候选**）
+
+#### 任务定位
+
+GLES 蓝图实施第五步 — 在 G1.4 已落地的 `GLESCanvas` 骨架（Begin/End/Clear/Transform/PushState/PopState 真实 + 14 stub 方法）之上，将 `FillRect` + `FillRoundedRect` 由 stub 替换为真实 GPU 实现：
+
+- **FillRect**：solid color shader（kSolidVert + kSolidFrag）+ MVP 矩阵 uniform + unit quad VBO（已就位）→ glDrawArrays
+- **FillRoundedRect**：SDF shader（kRoundedRectFrag）+ smoothstep 反走样
+- **Solid Brush**：`Brush::Color` 路径在本任务首次真实落地
+
+完成 G1.5 后即可：(a) MVP-C 渲染管线**首次真实绘制像素**到 default framebuffer ✅；(b) 解锁 G1.6 FillPath（libtess2）/ G1.7 Stroke* 的 shader 基础设施。前置链：G1.1 ✅ → G1.2 ✅ → G1.3 ✅ → G1.4 ✅ → **G1.5（本任务）** → G1.6/G1.7/G1.8 解锁。
+
+#### 任务范围（蓝图 plan §3.5）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/graphics/gles/gles_canvas.cc` | 🟡 修改 | +~250 | `FillRect` + `FillRoundedRect` 真实实现 + shader program lazy init + uniform set |
+| 2 | `veloxa/graphics/gles/gles_canvas.h` | 🟡 修改 | +~30 | shader program / uniform location 私有成员 + 移除 stub 标记 |
+| 3 | `veloxa/graphics/gles/shaders.h` | 🟡 修改 | +~80 | `kSolidVert` / `kSolidFrag` / `kRoundedRectFrag` 三新 shader（raw string literal / 沿用 G1.4 B6 范式）|
+| 4 | `tests/graphics/gles/gles_canvas_fill_test.cc` | 🆕 创建 | ~250 | ~10-12 单测（FillRect 像素采样 / FillRoundedRect SDF 4 角验证 / alpha 混合 / SetTransform 变换 / 反向探针 ×3）|
+| 5 | `tests/CMakeLists.txt` | 🟡 修改 | +~6 | 注册 gles_canvas_fill_test（gles config guard）|
+| **合计** | — | — | **~616** | LOC ×[0.85, 1.5] buffer = ~525-925 行 |
+
+#### VAN 前置验证清单（4 维度全 ✅）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ EGL + GLESv2 已链接 vx_platform_sdl2（G1.2 commit `4b095c4`）/ glCreateShader/glCompileShader/glLinkProgram/glUniformMatrix3fv 全部 GLES 3.0 必支持 / SDF shader 需要 smoothstep/length/max — GLES 3.0 SL 1.00 必支持 / 0 新外部依赖 |
+| 2 | **环境就绪** | ✅ `build/_deps/quickjsng-src` 离线缓存可复用 / `build-gles/` 增量配置可用 / ctest gles baseline 1362（G1.4 实测）/ SDL_VIDEODRIVER=offscreen + Mesa swrast default framebuffer dual-evidence first 已实证（G1.3 + G1.4）/ `Color`、`Rect`、`Brush::Color`、`Matrix3x2` types.h 全部稳定 |
+| 3 | **已有 artifact** | ✅ `gles_canvas.{h,cc}` G1.4 骨架已就位（FillRect/FillRoundedRect = `{}` stub line 64-65）/ `shaders.h` G1.4 占位（kPassthroughVert/kPassthroughFrag）/ quad_vao_ + quad_vbo_ 已 init/dtor / `tests/graphics/gles/` 目录已存在（G1.4 建立）/ `shader_injection_test.cc` first-evidence 范式可复用 |
+| 4 | **待处理事项** | ✅ activeContext「下一推荐任务」#1 = G1.5 FillRect / GLES 蓝图 plan §3.5 完整规格化 / spec §11.2 隐含 / 累计待处理 P1×1 + P2×12 与本任务无直接关联（建议下次工作流元任务批量清零） |
+
+**前置验证结论：** 4 维度全 ✅ / 0 阻碍项 / 0 新依赖 / FetchContent 守卫 ⊘ 跳过（_deps 离线预置完整）/ 可立即进入 `/plan`
+
+#### 反复模式预审（8/8 全 ✅ 抑制 / VAN 阶段预审 / 累计 21+ 模式连续抑制候选续刷）
+
+| # | 反复模式 | 命中状态 | 抑制证据 |
+|:-:|---|:-:|---|
+| #1 | 前置依赖/环境/API 能力未验证 | ✅ 抑制 | 4 维度 audit 全 ✅ + GLES 3.0 SL 1.00 shader API 确认（plan 阶段 §0.2 §0.3 二次实证） |
+| #2 | spec 数据回归（实现 vs 文档不一致） | ✅ 抑制 | plan §3.5 蓝图锁定文件清单 + 接口签名 / 0 既有 spec 修改 |
+| #3 | TDD 顺序倒置 | ✅ 抑制 | plan §3.5 步骤 1 → 4 已规定 [TDD] 顺序（先测后实现）/ 沿用 G1.4 RED→GREEN→REFACTOR 范式 |
+| #4 | 反向探针缺失或弱 | ✅ 抑制 | plan §3.5 步骤 4 已规定反向探针 ×3（沿用 G1.2/G1.4 D4=C inline reverse probe + 驱动严格性分层 dual-evidence） |
+| #5 | 中文文档 StrReplace 字符类型 audit | ✅ 抑制 | 本任务无中文文档改动 / plan + Memory Bank 半角符号一致 |
+| #6 | commit body Source 溯源 | ✅ 待 build 阶段 | 沿用范式：`Source: docs/plans/2026-05-05-gles-renderer-blueprint.md §3.5` |
+| #7 | 双 config ctest 单次盲区 | ✅ 待 build 阶段 | 三 build 矩阵：software ON 1337 + software OFF 1141 + gles ON 1362 → +10-15 → ~1372-1377 expected |
+| #8 | spec 数据回归 audit 协议 | ✅ 抑制 | 0 既有 spec 数据修改 / G1.4 ctest baseline (1337/1141/1362) 已稳定可比对 |
+
+#### Phase 0 audit 候选清单（plan 阶段细化 / 蓝图 §3.5 + VAN 实证补充）
+
+- §0.1 ctest baseline 二次验证：DEVTOOL=ON software=1337 / DEVTOOL=OFF software=1141 / DEVTOOL=ON gles=1362（G1.4 闭环数据）
+- §0.2 GLES 3.0 shader API 可用性 audit（glCreateShader / glShaderSource / glCompileShader / glLinkProgram / glUseProgram / glGetUniformLocation / glUniform*）
+- §0.3 GLES SL 1.00 标准库函数 audit（smoothstep / length / max / abs — SDF 必须）+ raw string literal R"GLSL(...)GLSL" 编译期类型检查范式（G1.4 first-evidence 复用）
+- §0.4 Mesa swrast shader 编译 + uniform 上传行为验证（headless / driver 严格性分层）
+- §0.5 既有 GLESCanvas state stack 复用策略（PushState/PopState 已就位 / 0 改动 state struct）+ MVP 矩阵注入点决策（B 决策候选：Begin once / per-FillRect / SetTransform 触发 dirty bit lazy）
+- §0.6 vertex layout 设计：quad_vbo_ 已存（4 顶点 unit quad 0..1） / attribute location 决策（aPos vec2）+ uniform 设计（uMVP mat3 + uColor vec4 + uRectParams vec4 for SDF）
+- §0.7 Brush 类型范围：本任务 Color brush only / Gradient/Pattern brush 留 G2+ — 与 spec §4.1 一致
+- §0.8 shader 注入安全（B6 raw string literal 编译期 + G1.4 shader_injection_test.cc 范式扩展到 3 新 shader）
+
+#### 分支基线分析
+
+| 维度 | 实证 |
+|---|---|
+| 待修改文件 | `veloxa/graphics/gles/gles_canvas.{h,cc}` + `shaders.h` + `tests/graphics/gles/gles_canvas_fill_test.cc` + `tests/CMakeLists.txt` |
+| 文件在 main 上 | ✅ 全部（G1.4 fast-forward 合并到 main `dda4172` 已确认）|
+| 建议基线 | `main`（HEAD = `afc59a7`） |
+| 原因 | 依赖 G1.4 已落地的 GLESCanvas 骨架（VAO/VBO/State stack）+ shaders.h 静态嵌入范式 / 0 跨分支依赖 |
+
+#### Plan 阶段产出（2026-05-28 ~23:10）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段全覆盖 / 完整 cpp 代码片段 + 3 shader + 10-12 单测 + 5 Phase TDD 步骤 + commit body 8 段范本 + systemPatterns 13 项协同度对照）
+- **8 决策 1 次 AskQuestion all_recommended 全锁定**：B1=B per-FillRect uMvp / B2=A unit quad + ctor BufferData / B3=A uRectPx+uXformPx+uViewportPx / B4=A fwidth(dist) 自动 / B5=A ctor 创建 2 programs + dtor delete / B6=A inline reverse probe / B7=A kSolid 完整 + kLinearGradient fallback color_start / B8=A kAllShaderSources[] 数组化
+- **跨决策协同度 100% 第 19 次连续命中候选** / 累计 171→**179/179** 历史最高 streak 续刷 / G1.4 quad → **quint-evidence 候选**
+- **Phase 0 audit 8 子段全 ✅：**
+  - §0.1 ctest baseline 二次验证（1337/1141/1362）
+  - §0.2 GLES 3.0 shader API audit（17 API 全实证 GLES3/gl3.h 行号定位）
+  - §0.3 GLSL ES SL 1.00 函数 audit（smoothstep/length/max/min/abs/fwidth spec §8 必支持）
+  - §0.4 既有 GLESCanvas 复用资源 audit（quad_vao_/vbo_ + Begin/End viewport/blend + transform_+state_stack_）
+  - §0.5 既有 shaders.h B6=A 范式 audit（沿用 raw string literal + S1/S2 范围化）
+  - §0.6 add_test config guard 边界审计（gles guard 包围 / Matrix A/B 测数不变）
+  - §0.7 _deps 缓存复用 audit（quickjsng-src 离线预置完整 / FetchContent ⊘ 跳过）
+  - §0.8 工具链版本核对（gcc 15.2.0 + binutils 2.46 + cmake 4.2.3 + ninja 1.13.2 / 与 G1.4 一致）
+- **文件结构：** 5 文件（3 修改 + 1 新建 + 1 修改）/ 核心 ~616 行 + 隐性 buffer ~115 行 = ~731 行 / LOC ×[0.85, 1.5] buffer 范围 [525, 925] ✅
+- **测试设计：** 12 单测（T1-T12）+ shader_injection_test S1 范围化 + S3 新增 / 3 inline reverse probe（T9 transparent / T10 empty / T11 zero radius）/ Mesa swrast SKIP_IF_SWRAST_BLANK fallback（driver-strictness 分层）
+- **反复模式预防 8/8 全抑制** + 累计 21+ 模式连续抑制候选续刷
+- **ctest 期望：** Matrix A 1337/1337（不变）+ Matrix B 1141/1141（不变）+ Matrix C 1362 → **1374-1376**（+12-14 / fill_test 12 + shader_injection_test S3 新增 1 + ~1 GTEST_SKIP 容忍）
+
+**估时（plan ×0.6）：** ~125-175 min / 预期实测 ~90-150 min（标准极速区 0.5-0.8×）
+
+**plan/spec docs 落盘即 commit P0 协议：** 实施类 Level 3 子档 **sept-evidence 候选**（G1.3 + G1.4 + G1.5 三任务实施类 Level 3 累计 / sext → sept-evidence 候选）/ D8=A 仅 plan 决策（沿用 G1.3/G1.4 范式 / 引用上游 GLES 蓝图 plan §3.5 + spec §4.1 + creative-gles-canvas）
+
+#### 工作流元任务累积状态（不在本任务范围 / 备注）
+
+累计 P1×1 + P2×12 = **13 项 ≥ 4 阈值 ✅✅** / triple-evidence 候选 / 待用户决策是否在 G1.5 后下次工作流元任务批量清零。
+
+---
+
 ### TASK-20260507-01 — G1.4 `GLESCanvas` 骨架实施（GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务）
 
 **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）

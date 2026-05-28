@@ -2,7 +2,13 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260507-01 G1.4 `GLESCanvas` 骨架实施已归档 ✅。等待新任务。
+**规划中** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（VAN ✅ + Plan ✅ / Level 3 / 8 B 决策 all_recommended 锁定 / 跨决策协同度 100% 第 19 次连续命中候选）。
+
+**当前任务：** TASK-20260528-01
+**当前焦点：** Plan ✅ → 进入 `/build`（Phase A RED 写 12 单测 → Phase B GREEN 3 shader + uniform 缓存 + FillRect/FillRoundedRect 实现 → Phase C REFACTOR shader_injection_test S1 范围化 + S3 新增 → Phase D 三 build 矩阵 ctest verify → Phase E finalize + commit）
+**plan 文档：** [`docs/plans/2026-05-28-gles-canvas-fillrect.md`](../docs/plans/2026-05-28-gles-canvas-fillrect.md)（~700 行 / 11 段 / 完整 cpp 代码片段）
+**分支：** `feature/TASK-20260528-01-gles-canvas-fillrect`（基于 main `afc59a7`）
+**安全相关：** ⚠️ 是（shader 注入防御 / G1.4 first-evidence 范式扩展到 3 新 shader / S3 NoUserConcatPatternInG15Shaders 新增）
 
 **最近归档：** [TASK-20260507-01 G1.4 GLESCanvas 骨架实施](archive/archive-TASK-20260507-01.md) — Level 3 / 569 行实际 / 实施忠实度 quad-evidence + 跨决策协同度第 18 次 / 171/171 + Mesa swrast dual-evidence + shader injection first-evidence 入库 / gles ctest 1352→1362（+10）。
 
@@ -40,13 +46,13 @@
 
 ## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 CMake VX_RENDERER flag ✅ + G1.2 GLESDisplay + Sdl2EGLDisplay ✅ + G1.3 Sdl2GLWindowSurface ✅ + G1.4 GLESCanvas 骨架 ✅ + **G1.5 FillRect（下一个推荐任务）**。
+> 🚀 **MVP-C 战略主线进行中** — G1.1 ✅ + G1.2 ✅ + G1.3 ✅ + G1.4 ✅ + **G1.5 FillRect（进行中 TASK-20260528-01 / 初始化阶段）**。
 
 | 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
 |:-:|---|:-:|:-:|:-:|
 | ~~1~~ | ~~G1.3 Sdl2GLWindowSurface（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
 | ~~1~~ | ~~G1.4 GLESCanvas 骨架（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| **1** | **G1.5 FillRect**（首个真实绘制方法 / solid color shader / MVP 矩阵注入）| MVP-C 核心 | **L3** | ~2-3 h |
+| **🚧** | **G1.5 FillRect**（进行中 TASK-20260528-01 / VAN ✅ / 首个真实绘制方法 / solid color shader + SDF FillRoundedRect / MVP 矩阵注入）| MVP-C 核心 | **L3** | ~5-7 h 蓝图 / ~90-180 min 实测预期 |
 | 3 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
 | 4 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
 | 5 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
@@ -56,7 +62,7 @@
 | 9 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
 | **元** | **下次工作流元任务批量落地**（累计 P1×1 + P2×8 = 9 项 P1/P2 待处理事项 ≥ 4 阈值 ✅✅ / triple-evidence 候选 / 沿用 dual-evidence 范式）| 工作流 | L2 | ~30-60 min |
 
-**当前焦点：** 继续 G1 OpenGL ES 实施阶段（建议从 G1.3 Sdl2GLWindowSurface 开始 / 接入 G1.2 已落地的 Sdl2EGLDisplay / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.3 子任务规格化）
+**当前焦点：** 继续 G1 OpenGL ES 实施阶段 — **G1.5 FillRect（TASK-20260528-01 / VAN ✅ / 待进入 /plan）**（首个真实绘制方法 / solid color shader + SDF FillRoundedRect / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.5）
 
 ---
 
