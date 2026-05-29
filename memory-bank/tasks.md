@@ -2,7 +2,54 @@
 
 ## 当前任务
 
-> **空闲** — 无进行中的任务。使用 `/van` 启动新任务。下一推荐：G1.8 DrawText 部分（L3）或 R9 HitTest（L2-3）。
+### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（GLES 蓝图实施第八步 / MVP-C 战略主线第八个实施任务）
+
+**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+
+**复杂度级别：** **Level 4**（GPU 资源管理 + LRU 驱逐 + 多字号 + emoji edge case / 蓝图 §3.8 锁定）
+**创建日期：** 2026-05-29
+**安全相关：** ❌ **否**（字形数据来自内部 FreeType + FontManager / GL_R8 atlas 上传 / 无用户 GLSL 拼接 / 文本内容来自内部 layout 树）
+**估时（plan ×0.6）：** ~8–10 h（蓝图 §3.8）
+
+#### 任务定位
+
+GLES 蓝图实施第八步 — 在 G1.5 shader pipeline 之上，新增 **`GlyphAtlas`**（CPU FreeType 栅格化 → `GL_R8` GPU atlas / row-pack / LRU 驱逐）并将 `GLESCanvas::DrawText` 由 stub 替换为真实实现（glyph quad batch + glyph shader）。复用既有 `veloxa/text/` 基础设施（`FontManager` / `GlyphCache` / `FreetypeShaper` / `ShapeCache`）。
+
+前置链：G1.5 ✅ → **G1.8（本任务）**。完成后解锁 GLES 路径 HUD/文本渲染（蓝图验收 §「HUD 文字 GLES 路径正常」）。
+
+#### 任务范围（蓝图 §3.8）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/graphics/gles/glyph_atlas.h` | 🆕 | ~100 | GlyphAtlas 接口 |
+| 2 | `veloxa/graphics/gles/glyph_atlas.cc` | 🆕 | ~300 | GL_R8 atlas / row-pack / LRU |
+| 3 | `veloxa/graphics/gles/gles_canvas.cc` | 🟡 | +~200 | DrawText impl |
+| 4 | `veloxa/graphics/gles/shaders.h` | 🟡 | +~40 | glyph shader（采样 R8 alpha）|
+| 5 | `tests/graphics/gles/glyph_atlas_test.cc` | 🆕 | ~250 | ~8-10 单测 |
+| 6 | `tests/graphics/gles/gles_canvas_text_test.cc` | 🆕 | ~250 | ~10-12 单测 |
+| 7 | `tests/CMakeLists.txt` | 🟡 | +~16 | gles guard 注册 2 测 |
+
+#### VAN 前置验证清单（4 维度）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ 0 新 FetchContent / FreeType 已经由 `veloxa/text/` 接入 / `_deps` 已缓存（git 代理空，但无新拉取，留 plan Phase 0 复核）|
+| 2 | **环境就绪** | ✅ ctest fingerprint：gles **1399** / software **1303** / no-devtool **1141**（实测）/ Mesa swrast SDF + glDrawElements + stencil pentad-evidence |
+| 3 | **已有 artifact** | ✅ `glyph_atlas.*` 不存在（待建）/ `gles_canvas.h` DrawText = `{}` stub / text 基础设施齐备（`font_manager.h`/`glyph_cache.h`/`freetype_shaper.h`/`shape_cache.h`）/ creative 设计 `creative-gles-resources.md` §3 已就位 |
+| 4 | **待处理事项** | ⚠️ **本任务为 GLES 像素测任务 → 必须落实 P1#1（采样坐标解析推导）+ P1#2（白底双通道 `R>200 && green<50`）**；P2 RoundedRect SDF 与本任务弱关联 |
+
+**前置验证结论：** 4/4 ✅ / 0 阻碍 / 可进入 `/plan`
+
+#### 分支基线分析
+
+| 维度 | 实证 |
+|---|---|
+| 待修改文件 | `gles_canvas.{cc}` + `shaders.h` + 新建 `glyph_atlas.*` + 2 测 + `tests/CMakeLists.txt` |
+| G1.7 在 main 上 | ✅ 已 fast-forward 合并（`d9d44d0`）|
+| **建议基线** | **`main`**（G1.5-G1.7 全部已在 main）|
+| 建议新分支 | `feature/TASK-20260529-03-gles-glyph-atlas-drawtext` |
+
+**下一步：** `/plan`（Level 4 → 含 brainstorming，之后视情况 `/creative`；creative-gles-resources §3 已有 GlyphAtlas 设计可复用）
 
 ---
 

@@ -2,18 +2,21 @@
 
 ## 当前阶段
 
-**空闲** — 无进行中的任务。使用 `/van` 启动新任务。
+**初始化** — TASK-20260529-03 G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（Level 4）/ VAN ✅ / 待 `/plan`。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 
 ---
 
-## 下一推荐任务（G1.7 完成后）
+## 当前焦点：TASK-20260529-03 — G1.8 GlyphAtlas + DrawText
 
-| 优先 | 候选 | Level |
-|:-:|---|:-:|
-| 1 | G1.8 DrawText 部分 | L3 |
-| 2 | R9 HitTest | L2-3 |
+**复杂度：** Level 4（GPU 资源管理 + LRU + 多字号 + emoji edge case）
+**建议分支：** `feature/TASK-20260529-03-gles-glyph-atlas-drawtext`（基线 main）
+**ctest 基线：** gles 1399 / software 1303 / no-devtool 1141
+**creative：** `creative-gles-resources.md` §3 GlyphAtlas 设计已就位（可复用）
+**前置：** G1.5 ✅；复用 `veloxa/text/` 基础设施
+
+**下一步：** `/plan`
 
 ---
 
