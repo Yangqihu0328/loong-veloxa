@@ -1358,3 +1358,15 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - G1.8 计划：[`docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`](../docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md)
 - G1.8 回顾：[`memory-bank/reflection/reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md)
 
+### GLES G1.9 ImageTexturePool + DrawImage（TASK-20260529-04 / 图像渲染）
+
+- **交付：** `gles/image_texture_pool.{h,cc}`（GL_RGBA8 纹理缓存 / 键 `(u64)image.pixels()` + (w,h) 校验 [D2=B：`Image` 无 handle reconcile] / 指针复用到异尺寸图 glDelete 旧 tex 重传 / `GL_UNPACK_ALIGNMENT=4` / LINEAR+CLAMP_TO_EDGE / `OnContextLost/Restored` 清缓存 lazy 重传 / dtor `begin/end` glDelete）+ `gles_canvas.cc` `DrawImage`（GetOrUpload→src_rect 子区→UV [镜像 `software_canvas.cc:282-320` src→dst 映射]→dyn STREAM_DRAW quad）+ `kImageVert/kImageFrag`（RGBA 直采 / blend 由 GL_BLEND / `a_uv`→attr loc 1）+ `InitImageResources/DestroyImageResources` 对称 ctor/dtor；`image_texture_pool_test`（8）+ `gles_canvas_image_test`（8）。**0 新依赖**。
+- **⚠️ GL 状态副作用契约（dual-evidence / 主动预防成功）：** plan 提前在 spec §3.3 + R4 明示「`GetOrUpload` 后、draw 前重绑纹理」→ `DrawImage` 一次写对（`glBindTexture(tex)` 紧贴 `glDrawArrays`），**G1.8 全屏白 bug 未复发，零 debug 迭代**。详见 systemPatterns 同名段 second-evidence。
+- **HashMap API：** 1B 前读 `hash_map.h` 确认 `Find/Insert/Erase` + `begin/end` + `it->key/value`，无编译期返工（P1#B 主动预防成功）。
+- **三 build 矩阵：** gles 1416→**1432**（+16：pool 8 + image 8）/ software 1303 / no-devtool 1141 无退化；完整 build-gles **1432/1432 PASS**（~89s）。`shader_injection_test` S1 自动覆盖 2 新着色器。
+- **技术债（MVP 取舍 / G2）：** ① `ImageTexturePool` 无界缓存（无 LRU/容量上限，多图大场景显存膨胀）；② 仅 LINEAR 采样（用户 scope 提及"采样过滤选项"，MVP 锁 LINEAR，nearest 切换待加）；③ 无 opacity/tint（`kImageFrag` 纯采样，Canvas API 无 brush/opacity）；④ 无 clip 裁剪（待 G1.10，与 software DrawImage 的 CurrentClip 路径不对齐）；⑤ ABA 风险（pixels 指针释放后同址同尺寸新图，MVP 文档化接受）；⑥ 逐图 draw call（未批量化）。
+- **commit 链：** round1 RED `test(gles)` → GREEN `feat(gles)` / round2 RED `test(gles)` → GREEN `feat(gles)`（4 提交对齐 plan）。
+- G1.9 spec：[`docs/specs/2026-05-29-gles-canvas-drawimage-design.md`](../docs/specs/2026-05-29-gles-canvas-drawimage-design.md)
+- G1.9 计划：[`docs/plans/2026-05-29-gles-canvas-drawimage.md`](../docs/plans/2026-05-29-gles-canvas-drawimage.md)
+- G1.9 回顾：[`memory-bank/reflection/reflection-TASK-20260529-04.md`](reflection/reflection-TASK-20260529-04.md)
+

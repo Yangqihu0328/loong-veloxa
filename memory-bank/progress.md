@@ -4,7 +4,15 @@
 
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`
 
-**当前阶段：** 🔨 **构建完成**（轮次 1+2 ✅ / 三矩阵零退化 / 待 `/reflect`）
+**当前阶段：** 💭 **回顾完成**（Build ✅ + Reflect ✅ / 待 `/archive`）
+
+#### Reflect 阶段产出（2026-05-29）
+
+- 反思文档 [`reflection-TASK-20260529-04.md`](reflection/reflection-TASK-20260529-04.md)（Level 4 详细回顾）。
+- **核心发现：** ① P1#A（GL 状态副作用契约）+ P1#B（容器 API 名称）上轮两个 P1 建议**本次均主动预防成功**，G1.8 全屏白 bug 未复发，**零 debug 迭代**——reflection→activeContext→plan checklist 闭环有效性获正面实证；② GLES 纹理-采样资源范式（glyph/image 同形）2 次实证，可模板化。
+- **计划精度：** 文件清单 9/9 完全一致 / 测试数 16/16 / gles 1432 精确命中 / 仅测试矩阵命名轻微漂移（T3 DstScaleUp→EmptySrc/EmptyDst 拆分，覆盖等价）。
+- **建议落地：** 无 P0/P1（上轮 P1 已落地并本次验证）；P2×4 → systemPatterns（资源范式 + 闭环正面案例）+ techContext（DrawImage MVP 缺口技术债）。
+- **安全：** 0 新依赖 / 输入早退校验 / shader 编译时常量（shader_injection S1 覆盖）/ 无安全风险变更。
 
 #### 轮次 2 Build 产出（2026-05-29）
 

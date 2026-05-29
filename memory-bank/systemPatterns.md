@@ -5017,7 +5017,7 @@ target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
 
 ---
 
-## ⚠️ GLES 资源对象方法的 GL 全局状态副作用契约 first-evidence（TASK-20260529-03 G1.8）
+## ⚠️ GLES 资源对象方法的 GL 全局状态副作用契约 dual-evidence（TASK-20260529-03 G1.8 first / TASK-20260529-04 G1.9 second 正面实证）
 
 **核心约束：** OpenGL 是全局状态机。当一个「资源对象方法」在内部 mutate 全局 GL 状态时，该副作用会**穿透**调用方在外层建立的状态，破坏后续 draw。
 
@@ -5030,6 +5030,30 @@ target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
 **诊断范式（systematic-debugging 二分管线）：** 全屏白时把 `kGlyphFrag` 临时改纯红（忽略纹理采样）→ 若几何出现（nonwhite>0）则排除几何/program/blend，锁定纹理绑定/采样层；若仍空则查几何/NDC/viewport。
 
 **plan 防御（→ P1，writing-plans.mdc GLES 段）：** GLES plan 中「看似冗余」的 GL 状态调用（重绑、重设 uniform/pixelstore）必须逐条注释「不可省原因」，防实现者误优化删除引入隐蔽 bug。本任务 plan §2B.3 本含循环内重绑，但未注释必要性 → 实现时被误提到循环外。
+
+**second-evidence（G1.9 DrawImage 主动预防成功 / 正面实证）：** G1.9 plan 提前在 spec §3.3 + 风险登记 R4 明示「`ImageTexturePool::GetOrUpload` 后、draw 前必须重绑纹理（含必要性注释）」，`DrawImage` 一次写对（`glBindTexture(tex)` 紧贴 `glDrawArrays`），**G1.8 全屏白 bug 未复发，零 debug 迭代**。验证「把调试教训固化为 plan checklist 项」的高 ROI——一次全屏白调试代价 → 后续以「plan 一行注释 + 实现一行重绑」零成本规避。契约升 dual-evidence，再 1 次重复后可定型反复模式。
+
+---
+
+## GLES 纹理-采样资源对象范式 dual-evidence（TASK-20260529-03 glyph first / TASK-20260529-04 image second）
+
+**核心：** GLES 中「纹理采样型绘制」（DrawText / DrawImage / 未来 DrawX）的资源结构高度同形，可模板化：
+
+| 维度 | GlyphAtlas/DrawText（G1.8）| ImageTexturePool/DrawImage（G1.9）|
+|---|---|---|
+| 缓存池对象 | `GlyphAtlas`（GL_R8）| `ImageTexturePool`（GL_RGBA8）|
+| 缓存键 | font/glyph/size 打包 u64 | `(u64)image.pixels()` + (w,h) 校验 |
+| program | `kGlyphVert + kGlyphFrag` | `kImageVert + kImageFrag` |
+| vert shader | pos+uv → NDC + Y-flip（**完全相同**）| 同 |
+| frag shader | R8 coverage × u_color tint | RGBA 直采 |
+| VAO/VBO | interleaved pos(loc0,off0)+uv(loc1,off2f) stride4f / dyn STREAM_DRAW | **完全相同** |
+| Init/Destroy | `InitGlyphResources/DestroyGlyphResources` 对称 | `InitImageResources/DestroyImageResources` 同构 |
+| Context Lost/Restored | 清缓存 / 失效不 glDelete / lazy 重传 | 同 |
+| 副作用契约 | GetOrUpload 后重绑（见上段）| 同（plan 预防）|
+
+**复用收益（G1.9 实证）：** image 资源几乎是"填模板"，两轮 RED→GREEN 各一次过、零 debug。
+
+**未来推广：** G1.10 clip / G1.11 layer 的 FBO 资源对象可考虑沿用「资源池对象 + 对称 Init/Destroy + Context Lost/Restored + 副作用契约」骨架；若第 3 次重复（如 FBO）出现，可抽公共基类/helper。
 
 ---
 
