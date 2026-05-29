@@ -2,6 +2,46 @@
 
 ## 当前任务
 
+### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / MVP-C 战略主线第九个实施任务）
+
+**当前阶段：** 🔵 **初始化**（VAN ✅ → 待 `/plan`）
+
+**复杂度级别：** **Level 4**（GPU 图像纹理资源管理：ImageHandle→texture 缓存 + 多图管理 + Context Lost/Restored + 采样过滤）
+**创建日期：** 2026-05-29
+**安全相关：** ❌ 否（图像像素来自内部 `vx::gfx::Image`（RGBA8）/ 纹理上传无用户 GLSL 拼接 / src/dst rect 来自内部 layout）
+
+#### 任务定位
+
+为 `GLESCanvas` 补齐图像绘制能力（`DrawImage(const Image&, src_rect, dst_rect)` 当前 `gles_canvas.h:88` 为 no-op stub）。延续 G1.8 的纹理+quad+shader 范式，由 GL_R8 单通道扩展到 **RGBA8 全彩纹理**：
+
+- **新增图像纹理上传**：`Image`（RGBA8 / `u32* pixels`）→ `glTexImage2D(GL_RGBA8)`。
+- **src/dst rect 采样**：src_rect 子区（图像像素）→ UV，dst_rect（画布像素）→ quad（镜像 `software_canvas.cc:282-320` 的 ty/tx 映射）。
+- **image shader**：新增 `kImageVert/kImageFrag`（RGBA 纹理采样 × alpha 混合，复用 `u_xform_px/u_viewport_px` 约定 + `a_uv` attr loc 1）。
+- **完整版增项**：`ImageHandle→GLuint` 纹理缓存（避免每帧重传）+ 多图管理 + `OnContextLost/Restored` + 采样过滤（NEAREST/LINEAR）选项。
+
+#### VAN 前置验证（Level 2+）
+
+| 维度 | 结论 |
+|------|------|
+| 依赖可获取性 | ✅ 0 新依赖（复用 GLES / 无新 FetchContent / proxy 空但无拉取需求）|
+| 环境就绪 | ✅ build-gles 存在；ctest 基线 gles **1416** / software **1303** / no-devtool **1141** |
+| 已有 artifact | `DrawImage` stub（`gles_canvas.h:88`）/ `Image` RGBA8（`image.h`）/ software 镜像源（`software_canvas.cc:282`）均就位 |
+| 待处理事项关联 | ⚠️ **直接命中 G1.8 P1#A**（纹理上传 GL 状态副作用契约 → 上传后 draw 前须重绑）+ **P1#B**（ImageHandle→texture 缓存若用 HashMap 须 `Find/Insert`）|
+
+**前置验证通过**（无阻碍项）。
+
+#### 分支基线
+
+- 待修改文件（`gles_canvas.{h,cc}` / `shaders.h` / CMake）+ `Image` 均在 **main** 上 → 基线 = `main` ✅
+- 分支：`feature/TASK-20260529-04-gles-canvas-drawimage`（已创建，基线 main）
+
+#### 复用资产
+
+- G1.8 范式：纹理对象生命周期（CreateTexture / OnContextLost-Restored）+ 动态交错 VBO（pos+uv）+ glyph→image shader 模板 + LinkProgram `a_uv` 绑定（已存在）。
+- 蓝图 §3.9 DrawImage 设计 + creative-gles-resources（如有 image 段）。
+
+---
+
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（GLES 蓝图实施第八步 / MVP-C 战略主线第八个实施任务）
 
 **状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260529-03.md`](archive/archive-TASK-20260529-03.md)。
