@@ -65,8 +65,10 @@ class GLESCanvas final : public Canvas {
   void FillRoundedRect(const Rect& rect, vx::f32 radius,
                        const Brush& brush) override;
 
-  // ---- No-op stubs (G1.6+ implementation scope) ----
-  void FillPath(const Path&, const Brush&) override {}
+  // ---- Real implementations (G1.6 path fill scope) ----
+  void FillPath(const Path& path, const Brush& brush) override;
+
+  // ---- No-op stubs (G1.7+ implementation scope) ----
   void StrokeRect(const Rect&, const Brush&, vx::f32) override {}
   void StrokeRoundedRect(const Rect&, vx::f32, const Brush&,
                          vx::f32) override {}
@@ -86,6 +88,7 @@ class GLESCanvas final : public Canvas {
   bool active() const { return active_; }
   GLuint quad_vao() const { return quad_vao_; }
   GLuint quad_vbo() const { return quad_vbo_; }
+  GLuint path_vao() const { return path_vao_; }
 
  private:
   struct State {
@@ -101,6 +104,9 @@ class GLESCanvas final : public Canvas {
   bool active_ = false;
   GLuint quad_vao_ = 0;
   GLuint quad_vbo_ = 0;
+  GLuint path_vao_ = 0;
+  GLuint path_vbo_ = 0;
+  GLuint path_ebo_ = 0;
   vx::text::FontManager* font_manager_ = nullptr;
   vx::text::GlyphCache* glyph_cache_ = nullptr;
 
@@ -130,6 +136,16 @@ class GLESCanvas final : public Canvas {
   GLint solid_uniforms_[kSolidUniformCount] = {-1, -1, -1, -1};
   GLint rounded_uniforms_[kRoundedUniformCount] = {-1, -1, -1, -1, -1, -1};
 
+  // ---- G1.6 path fill program (kPathVert + kSolidFrag) ----
+  GLuint path_program_ = 0;
+  enum PathUniform {
+    kPathUXformPx = 0,
+    kPathUViewportPx,
+    kPathUColor,
+    kPathUniformCount
+  };
+  GLint path_uniforms_[kPathUniformCount] = {-1, -1, -1};
+
   // ---- G1.5 helpers (private) ----
   // CompileShader / LinkProgram return 0 on failure (with infoLog assertion
   // in debug builds via VX_DCHECK).
@@ -137,6 +153,7 @@ class GLESCanvas final : public Canvas {
   static GLuint LinkProgram(GLuint vert, GLuint frag);
   void InitShaderPrograms();      // ctor helper
   void DestroyShaderPrograms();   // dtor helper
+  void InitPathGeometry();        // G1.6 ctor — path VAO/VBO/EBO layout
   void UploadUnitQuad();          // ctor helper — 6 verts to quad_vbo_
   // Extract solid Color from a Brush. For kLinearGradient, returns
   // brush.linear.color_start (B7=A fallback) so callers don't crash.

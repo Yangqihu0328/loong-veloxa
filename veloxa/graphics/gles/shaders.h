@@ -78,6 +78,23 @@ void main() {
 }
 )";
 
+// Path vertex shader: tessellated mesh vertices in document pixel space.
+// a_pos comes from libtess2 output (2D pixel coordinates). Same NDC mapping
+// and Y-flip as kSolidVert but without the unit-quad → rect indirection.
+inline constexpr const char* kPathVert = R"(#version 300 es
+precision highp float;
+in vec2 a_pos;
+uniform mat3 u_xform_px;
+uniform vec2 u_viewport_px;
+out vec2 v_local_px;
+void main() {
+  vec3 px3 = u_xform_px * vec3(a_pos, 1.0);
+  vec2 ndc = (px3.xy / u_viewport_px) * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  v_local_px = px3.xy;
+}
+)";
+
 // Solid fragment shader: emits u_color directly. Alpha blending is enabled
 // in GLESCanvas::Begin (SRC_ALPHA, ONE_MINUS_SRC_ALPHA).
 inline constexpr const char* kSolidFrag = R"(#version 300 es
@@ -130,6 +147,7 @@ inline constexpr const char* kAllShaderSources[] = {
     kSolidVert,
     kSolidFrag,
     kRoundedRectFrag,
+    kPathVert,
 };
 inline constexpr int kAllShaderSourceCount =
     sizeof(kAllShaderSources) / sizeof(kAllShaderSources[0]);
