@@ -2,23 +2,18 @@
 
 ## 当前阶段
 
-**归档中** — TASK-20260529-03 G1.8 归档文档已落盘，待分支收尾 + 状态重置。
+**🟢 空闲** — 无进行中的任务。使用 `/van` 开始新任务。
 
-**上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
+**上一任务：** [TASK-20260529-03 G1.8 GlyphAtlas + DrawText](archive/archive-TASK-20260529-03.md) — ✅ 归档（2026-05-29 / 已合并 main fast-forward + 分支删除）。
 
 ---
 
-## 当前焦点：TASK-20260529-03 — G1.8 GlyphAtlas + DrawText
+## 当前焦点：无（空闲）
 
-**复杂度：** Level 4（GPU 资源管理 + LRU + 多字号 + emoji edge case）
-**建议分支：** `feature/TASK-20260529-03-gles-glyph-atlas-drawtext`（基线 main）
-**ctest 基线：** gles 1399 / software 1303 / no-devtool 1141
-**creative：** `creative-gles-resources.md` §3 GlyphAtlas 设计已就位（可复用）
-**前置：** G1.5 ✅；复用 `veloxa/text/` 基础设施
-
-**spec：** `docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md`（5 项 R1-R5 reconcile）
-**plan：** `docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`（2 轮次 Build / ~22 测 / ctest +18-22）
-**下一步：** `/build` — 轮次 1 GlyphAtlas RED → GREEN → 轮次 2 DrawText
+**ctest 基线（main，最新）：** gles **1416** / software **1303** / no-devtool **1141**
+**GLES 蓝图进度：** G1.1-G1.8 ✅（Display/Context/Canvas 骨架/FillRect/FillPath/Stroke*/DrawText）
+**候选下一任务：** G1.9 DrawImage / R9 HitTest / G2 文本优化（批量化 + LRU + emoji + FT helper 抽取）。
+**下一步：** `/van` 开始新任务。
 
 ---
 
