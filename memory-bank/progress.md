@@ -4,7 +4,15 @@
 
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`
 
-**当前阶段：** 🔨 **构建中**（轮次 1 ImageTexturePool ✅ 8/8；轮次 2 DrawImage 进行中）
+**当前阶段：** 🔨 **构建完成**（轮次 1+2 ✅ / 三矩阵零退化 / 待 `/reflect`）
+
+#### 轮次 2 Build 产出（2026-05-29）
+
+- shader：`kImageVert`（pos+uv→NDC+Y-flip，复用 glyph 约定）+ `kImageFrag`（RGBA 直采，blend 由 GL_BLEND）→ 注册入 `kAllShaderSources`（shader_injection_test 自动覆盖）。
+- `GLESCanvas`：新增 image program / `image_vao_` / `image_vbo_`（interleaved pos+uv，loc 0/1）/ `image_uniforms_`（xform/viewport/tex）/ owned `std::unique_ptr<ImageTexturePool> image_pool_`（无需字体，恒建）；`InitImageResources`/`DestroyImageResources` 对称 ctor/dtor。
+- `DrawImage`：`GetOrUpload` → src_rect 子区→UV（镜像 software src→dst 映射）→ dyn VBO quad → **bind tex AFTER GetOrUpload（P1#A 副作用契约）** → draw。invalid/empty src/dst 早退。
+- TDD RED→GREEN：8 测（RendersOpaqueColor / Invalid / EmptySrc / EmptyDst / NoGLError / AfterSetTransform / **SubRectSampling** 验 UV 正确 / RepeatDrawCacheReuse）→ RED 4/8 → GREEN **8/8 PASS**。
+- **完成验证（三矩阵零退化）：** gles **1432/1432**（1416+16 新）/ software **1303/1303** / no-devtool **1141/1141**（均 1 项 WPT 预存跳过）。0 新依赖。
 
 #### 轮次 1 Build 产出（2026-05-29）
 

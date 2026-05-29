@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260529-04 G1.9 / 轮次 1 ImageTexturePool ✅（8/8）；轮次 2 DrawImage 进行中。
+**构建完成** — TASK-20260529-04 G1.9 / 轮次 1 ImageTexturePool ✅（8/8）+ 轮次 2 DrawImage ✅（8/8）/ 三矩阵零退化（gles 1432 / sw 1303 / no-devtool 1141）/ 待 `/reflect`。
 
 **上一任务：** [TASK-20260529-03 G1.8 GlyphAtlas + DrawText](archive/archive-TASK-20260529-03.md) — ✅ 归档（2026-05-29 / 已合并 main fast-forward + 分支删除）。
 

@@ -4,7 +4,7 @@
 
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / MVP-C 战略主线第九个实施任务）
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ 2 轮 16 测 / 三矩阵零退化 gles 1432·sw 1303·no-devtool 1141 → 待 `/reflect`）
 
 **Plan 产出（2026-05-29）：** spec [`2026-05-29-gles-canvas-drawimage-design.md`](../../docs/specs/2026-05-29-gles-canvas-drawimage-design.md)（5 项 reconcile R1-R5：**R1 Image 无 handle → 缓存键=`(u64)pixels()`+w/h 校验** / R2 无 mipmap / R3 OnContextRestored 无参 / R4 frag 纯采样 / R5 RGBA32 直传）+ plan [`2026-05-29-gles-canvas-drawimage.md`](../../docs/plans/2026-05-29-gles-canvas-drawimage.md)（D1-D8 推荐锁定 / 2 轮次 Build：ImageTexturePool + DrawImage / ~16 测 / ctest gles 期望 ~1432 / 跳过独立 creative 复用 creative-gles-resources §4）。承接 G1.8 P1#A（GetOrUpload mutate 纹理绑定 → draw 前重绑）+ P1#B（HashMap Find/Insert）+ G1.7 P1#2（双通道）已折入。
 

@@ -169,6 +169,38 @@ void main() {
 )";
 
 // -----------------------------------------------------------------------------
+// G1.9: Image (DrawImage) shaders. Same pixel-space → NDC + Y-flip convention
+// as kGlyphVert, with a per-vertex UV into an RGBA8 texture. The fragment
+// shader samples the texture directly (premultiply / blending handled by the
+// fixed-function GL_BLEND state, D4=A). Same security contract: compile-time
+// constant, never composed with caller data. a_uv binds to location 1.
+// -----------------------------------------------------------------------------
+inline constexpr const char* kImageVert = R"(#version 300 es
+precision highp float;
+in vec2 a_pos;
+in vec2 a_uv;
+uniform mat3 u_xform_px;
+uniform vec2 u_viewport_px;
+out vec2 v_uv;
+void main() {
+  vec3 px3 = u_xform_px * vec3(a_pos, 1.0);
+  vec2 ndc = (px3.xy / u_viewport_px) * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  v_uv = a_uv;
+}
+)";
+
+inline constexpr const char* kImageFrag = R"(#version 300 es
+precision mediump float;
+in vec2 v_uv;
+uniform sampler2D u_tex;
+out vec4 frag_color;
+void main() {
+  frag_color = texture(u_tex, v_uv);
+}
+)";
+
+// -----------------------------------------------------------------------------
 // kAllShaderSources[] — B8=A: enumerate every shader for the security
 // regression test (shader_injection_test.cc S1 ShaderSourcesAreCompileTimeLiterals).
 // Adding a new shader requires only adding an entry here + a comment in the
@@ -184,6 +216,8 @@ inline constexpr const char* kAllShaderSources[] = {
     kPathVert,
     kGlyphVert,
     kGlyphFrag,
+    kImageVert,
+    kImageFrag,
 };
 inline constexpr int kAllShaderSourceCount =
     sizeof(kAllShaderSources) / sizeof(kAllShaderSources[0]);

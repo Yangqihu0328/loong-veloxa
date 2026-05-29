@@ -17,6 +17,7 @@ class GlyphCache;
 namespace vx::gfx::gles {
 
 class GlyphAtlas;
+class ImageTexturePool;
 
 // GLES-backed Canvas implementation (G1.4 skeleton phase).
 //
@@ -84,8 +85,11 @@ class GLESCanvas final : public Canvas {
   void DrawText(vx::StringView text, const Rect& bounds, vx::f32 font_size,
                 const Brush& brush) override;
 
-  // ---- No-op stubs (G1.9+ implementation scope) ----
-  void DrawImage(const Image&, const Rect&, const Rect&) override {}
+  // ---- Real implementation (G1.9 image scope) ----
+  void DrawImage(const Image& image, const Rect& src_rect,
+                 const Rect& dst_rect) override;
+
+  // ---- No-op stubs (G1.10+ implementation scope) ----
   void PushClipRect(const Rect&) override {}
   void PushClipPath(const Path&) override {}
   void PopClip() override {}
@@ -171,6 +175,20 @@ class GLESCanvas final : public Canvas {
   };
   GLint glyph_uniforms_[kGlyphUniformCount] = {-1, -1, -1, -1};
 
+  // ---- G1.9 image program (kImageVert + kImageFrag) ----
+  GLuint image_program_ = 0;
+  GLuint image_vao_ = 0;
+  GLuint image_vbo_ = 0;
+  enum ImageUniform {
+    kImageUXformPx = 0,
+    kImageUViewportPx,
+    kImageUTex,
+    kImageUniformCount
+  };
+  GLint image_uniforms_[kImageUniformCount] = {-1, -1, -1};
+  // Owned RGBA8 texture cache (always created — DrawImage needs no fonts).
+  std::unique_ptr<ImageTexturePool> image_pool_;
+
   // ---- G1.5 helpers (private) ----
   // CompileShader / LinkProgram return 0 on failure (with infoLog assertion
   // in debug builds via VX_DCHECK).
@@ -181,6 +199,8 @@ class GLESCanvas final : public Canvas {
   void InitPathGeometry();        // G1.6 ctor — path VAO/VBO/EBO layout
   void InitGlyphResources();      // G1.8 ctor — glyph program + VAO/VBO
   void DestroyGlyphResources();   // G1.8 dtor
+  void InitImageResources();      // G1.9 ctor — image program + VAO/VBO
+  void DestroyImageResources();   // G1.9 dtor
   void UploadUnitQuad();          // ctor helper — 6 verts to quad_vbo_
   // Extract solid Color from a Brush. For kLinearGradient, returns
   // brush.linear.color_start (B7=A fallback) so callers don't crash.

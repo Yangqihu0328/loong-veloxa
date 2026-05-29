@@ -11,7 +11,9 @@
 #include "tesselator.h"
 #include "veloxa/foundation/base/assert.h"
 #include "veloxa/graphics/gles/glyph_atlas.h"
+#include "veloxa/graphics/gles/image_texture_pool.h"
 #include "veloxa/graphics/gles/shaders.h"
+#include "veloxa/graphics/image.h"
 #include "veloxa/graphics/software/software_path.h"
 #include "veloxa/platform/sdl2/sdl2_gl_window_surface.h"
 #include "veloxa/text/font_manager.h"
@@ -194,9 +196,16 @@ GLESCanvas::GLESCanvas(vx::platform::Sdl2GLWindowSurface* surface,
     glyph_atlas_ =
         std::make_unique<GlyphAtlas>(font_manager_, glyph_cache_);
   }
+
+  // G1.9: image program + dynamic VBO + RGBA8 texture cache. Unlike the glyph
+  // atlas this needs no fonts, so it is always created.
+  InitImageResources();
+  image_pool_ = std::make_unique<ImageTexturePool>();
 }
 
 GLESCanvas::~GLESCanvas() {
+  image_pool_.reset();   // delete cached textures before context-bound teardown
+  DestroyImageResources();
   glyph_atlas_.reset();  // delete atlas texture before context-bound teardown
   DestroyGlyphResources();
   if (path_vao_ != 0) glDeleteVertexArrays(1, &path_vao_);
@@ -456,6 +465,52 @@ void GLESCanvas::DestroyGlyphResources() {
   if (glyph_program_ != 0) {
     glDeleteProgram(glyph_program_);
     glyph_program_ = 0;
+  }
+}
+
+void GLESCanvas::InitImageResources() {
+  // Program: kImageVert + kImageFrag.
+  GLuint iv = CompileShader(GL_VERTEX_SHADER, kImageVert);
+  GLuint ifrag = CompileShader(GL_FRAGMENT_SHADER, kImageFrag);
+  image_program_ = LinkProgram(iv, ifrag);
+  glDeleteShader(iv);
+  glDeleteShader(ifrag);
+  if (image_program_ != 0) {
+    image_uniforms_[kImageUXformPx] =
+        glGetUniformLocation(image_program_, "u_xform_px");
+    image_uniforms_[kImageUViewportPx] =
+        glGetUniformLocation(image_program_, "u_viewport_px");
+    image_uniforms_[kImageUTex] =
+        glGetUniformLocation(image_program_, "u_tex");
+  }
+
+  // Dynamic quad: interleaved [pos.xy, uv.xy] (4 floats / vertex), same layout
+  // as glyph_vbo_ (a_pos at loc 0, a_uv at loc 1).
+  glGenVertexArrays(1, &image_vao_);
+  glGenBuffers(1, &image_vbo_);
+  glBindVertexArray(image_vao_);
+  glBindBuffer(GL_ARRAY_BUFFER, image_vbo_);
+  glEnableVertexAttribArray(0);  // a_pos
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                        reinterpret_cast<const void*>(0));
+  glEnableVertexAttribArray(1);  // a_uv
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                        reinterpret_cast<const void*>(2 * sizeof(GLfloat)));
+  glBindVertexArray(0);
+}
+
+void GLESCanvas::DestroyImageResources() {
+  if (image_vbo_ != 0) {
+    glDeleteBuffers(1, &image_vbo_);
+    image_vbo_ = 0;
+  }
+  if (image_vao_ != 0) {
+    glDeleteVertexArrays(1, &image_vao_);
+    image_vao_ = 0;
+  }
+  if (image_program_ != 0) {
+    glDeleteProgram(image_program_);
+    image_program_ = 0;
   }
 }
 
@@ -868,6 +923,64 @@ void GLESCanvas::DrawText(vx::StringView text, const Rect& bounds,
     }
     pen_x += g.x_advance;
   }
+
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+// -----------------------------------------------------------------------------
+// G1.9: DrawImage. Uploads (or reuses) an RGBA8 texture via ImageTexturePool
+// and blits a textured quad. src_rect selects a sub-region of the image (→ UV);
+// dst_rect is the pixel-space destination. Mirrors software_canvas.cc's
+// src→dst mapping; GL_BLEND (set in Begin) does the src-over compositing.
+// -----------------------------------------------------------------------------
+void GLESCanvas::DrawImage(const Image& image, const Rect& src_rect,
+                           const Rect& dst_rect) {
+  if (image_program_ == 0 || image_pool_ == nullptr) return;
+  if (!image.valid() || src_rect.IsEmpty() || dst_rect.IsEmpty()) return;
+
+  // NB: GetOrUpload mutates the GL_TEXTURE_2D binding + GL_UNPACK_ALIGNMENT on
+  // a cache miss (P1#A side-effect contract), so the texture must be bound
+  // AFTER this call and right before the draw.
+  GLuint tex = image_pool_->GetOrUpload(image);
+  if (tex == 0) return;
+
+  // src_rect sub-region → normalized UV (D5). Image origin is top-left and the
+  // vertex shader Y-flips to the framebuffer, so v grows downward like y.
+  const vx::f32 iw = static_cast<vx::f32>(image.width());
+  const vx::f32 ih = static_cast<vx::f32>(image.height());
+  const vx::f32 u0 = src_rect.x / iw;
+  const vx::f32 v0 = src_rect.y / ih;
+  const vx::f32 u1 = src_rect.right() / iw;
+  const vx::f32 v1 = src_rect.bottom() / ih;
+  const vx::f32 x0 = dst_rect.x;
+  const vx::f32 y0 = dst_rect.y;
+  const vx::f32 x1 = dst_rect.right();
+  const vx::f32 y1 = dst_rect.bottom();
+
+  GLfloat mat[9];
+  Matrix3x2ToMat3(transform_, mat);
+
+  glUseProgram(image_program_);
+  glUniformMatrix3fv(image_uniforms_[kImageUXformPx], 1, GL_FALSE, mat);
+  glUniform2f(image_uniforms_[kImageUViewportPx],
+              static_cast<GLfloat>(width_), static_cast<GLfloat>(height_));
+  glActiveTexture(GL_TEXTURE0);
+  glUniform1i(image_uniforms_[kImageUTex], 0);
+
+  const GLfloat verts[24] = {
+      x0, y0, u0, v0,
+      x1, y0, u1, v0,
+      x0, y1, u0, v1,
+      x0, y1, u0, v1,
+      x1, y0, u1, v0,
+      x1, y1, u1, v1,
+  };
+  glBindVertexArray(image_vao_);
+  glBindBuffer(GL_ARRAY_BUFFER, image_vbo_);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+  glBindTexture(GL_TEXTURE_2D, tex);  // bind AFTER GetOrUpload (P1#A)
+  glDrawArrays(GL_TRIANGLES, 0, 6);
 
   glBindVertexArray(0);
   glBindTexture(GL_TEXTURE_2D, 0);
