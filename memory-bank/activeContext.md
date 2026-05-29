@@ -2,23 +2,9 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260529-02 G1.7 Stroke* Reflect ✅（[reflection 文档](reflection/reflection-TASK-20260529-02.md)）/ 待 `/archive`。
+**空闲** — 无进行中的任务。使用 `/van` 启动新任务。
 
-**上一任务：** [TASK-20260529-01 G1.6 FillPath](archive/archive-TASK-20260529-01.md) — ✅ 归档。
-
----
-
-## 当前焦点：TASK-20260529-02 — G1.7 Stroke*
-
-**分支：** `feature/TASK-20260529-02-gles-canvas-stroke`（基于 G1.6 分支 ✅）
-
-**plan 文档：** [`docs/plans/2026-05-29-gles-canvas-stroke.md`](../docs/plans/2026-05-29-gles-canvas-stroke.md)
-
-**B1–B8 已锁定：** 4× Fill 转换 / segment-quad StrokePath / stencil RoundedRect / 0 新 shader
-
-**ctest 期望：** Matrix C 1385 → **1397–1401**（+12–16）
-
-**下一步：** `/build` — Phase A RED
+**上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 
 ---
 
@@ -44,4 +30,5 @@
 
 ## 最近归档
 
-- [`archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md) — G1.6（2026-05-29）
+- [`archive-TASK-20260529-02.md`](archive/archive-TASK-20260529-02.md) — G1.7 Stroke*（2026-05-29）
+- [`archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md) — G1.6 FillPath（2026-05-29）

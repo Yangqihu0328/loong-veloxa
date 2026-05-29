@@ -2,74 +2,21 @@
 
 ## 当前任务
 
-### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（Stroke = Fill 转换）（GLES 蓝图实施第七步 / MVP-C 战略主线第七个实施任务）
-
-**当前阶段：** 🔵 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
-
-**构建结果（2026-05-29）：** Stroke* 4 方法全部落地，14/14 `gles_canvas_stroke_test` 通过；三 build 矩阵 gles 1385→1399（+14）、software 1303、no-devtool 1141 均无退化（完整 build-gles 1399/1399 PASS）。
-
-**回顾产出：** [`reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md) — commit 链拆分（G1.6 P1#5）已闭环；像素测采样坐标误判（T1）复现 G1.6 T4 → P1 升级固化；2 设计偏差（内描边环 / 每段 tess）记技术债。
-
-**分支：** `feature/TASK-20260529-02-gles-canvas-stroke` ✅ 已创建（基于 G1.6 `63b53ab`）
-
-**复杂度级别：** **Level 3**（蓝图 plan §3.7 锁定）
-**创建日期：** 2026-05-29
-**安全相关：** ❌ **否**（复用 G1.5/G1.6 Fill* + libtess2 / 0 新 shader frag / Stroke = Fill 转换无用户 GLSL 拼接）
-**估时（plan ×0.6）：** ~3–4 h（蓝图 §3.7）/ 预期实测 ~90–150 min
-
-#### 任务定位
-
-GLES 蓝图实施第七步 — 在 G1.5（FillRect/FillRoundedRect）+ G1.6（FillPath/libtess2）之上，将 4 个 `Stroke*` stub 替换为 **Stroke = Fill 转换** 真实 GPU 实现：
-
-- **StrokeRect** → 4× `FillRect` 边条拼接（creative §4.1）
-- **StrokeLine** → PushState + 旋转/平移 + 居中 `FillRect`（creative §4.3）
-- **StrokeRoundedRect** → outer/inner `FillRoundedRect` + **stencil 减法**（creative §4.2）
-- **StrokePath** → segment quad 或 path offset → `FillPath`（creative §4.4 / rasterizer.cc 实证可复用 segment 范式）
-
-完成 G1.7 后解锁 G1.8 DrawText 部分路径外的完整 Canvas 描边能力。前置链：G1.5 ✅ → G1.6 ✅ → **G1.7（本任务）**。
-
-#### 任务范围（蓝图 plan §3.7 初估）
-
-| # | 文件 | 操作 | 估行 | 备注 |
-|:-:|---|:-:|:-:|---|
-| 1 | `veloxa/graphics/gles/gles_canvas.{h,cc}` | 🟡 | +~180 | 4× Stroke* impl + helpers |
-| 2 | `tests/graphics/gles/gles_canvas_stroke_test.cc` | 🆕 | ~350 | ~12–16 单测 + reverse probe |
-| 3 | `tests/CMakeLists.txt` | 🟡 | +~8 | gles guard 注册 |
-| **合计** | — | — | **~538** | +30% buffer → ~700–800 |
-
-#### VAN 前置验证清单（4 维度）
-
-| # | 维度 | 实证 |
-|:-:|---|---|
-| 1 | **依赖可获取性** | ✅ 0 新 FetchContent / libtess2 `_deps` 已缓存 / FillRect+FillRoundedRect+FillPath 已就位 |
-| 2 | **环境就绪** | ✅ ctest fingerprint：1303 / 1141 / **1385**（build-gles 实测）/ Mesa swrast glDrawElements quad-evidence（G1.6）|
-| 3 | **已有 artifact** | ✅ `gles_canvas.h:72-76` Stroke* = `{}` stub / `software/rasterizer.cc` StrokePath segment-quad 范式 / creative §4 代码片段 |
-| 4 | **待处理事项** | ✅ P2 #12 winding 探针可纳入 StrokePath 测试 / P1 #3/#4 与本任务弱关联 |
-
-**前置验证结论：** 4/4 ✅ / 0 阻碍 / 可进入 `/plan`
-
-#### 分支基线分析
-
-| 维度 | 实证 |
-|---|---|
-| 待修改文件 | `gles_canvas.{h,cc}` + `gles_canvas_stroke_test.cc` + `tests/CMakeLists.txt` |
-| G1.6 在 main 上 | ❌（7 commits 仅在 `feature/TASK-20260529-01-gles-canvas-fillpath`）|
-| **建议基线** | **`feature/TASK-20260529-01-gles-canvas-fillpath` HEAD**（`63b53ab`）|
-| 建议新分支 | `feature/TASK-20260529-02-gles-canvas-stroke` |
-| 原因 | Stroke* 依赖 FillPath/FillRect/FillRoundedRect — 必须在 G1.6 分支上继续 |
-
-**下一步：** `/build` — Phase A RED → Phase B GREEN
-
-#### Plan 阶段产出（2026-05-29）
-
-- **plan 文档：** [`docs/plans/2026-05-29-gles-canvas-stroke.md`](../docs/plans/2026-05-29-gles-canvas-stroke.md)（~280 行）
-- **B1–B8 全锁定** / 2 项 plan-fact reconcile（OffsetPath / Matrix3x2 API）
-- **14 测 + 3 反向探针** / ctest +12–16 on gles
-- **0 新 shader / 0 新 FetchContent**
+> **空闲** — 无进行中的任务。使用 `/van` 启动新任务。下一推荐：G1.8 DrawText 部分（L3）或 R9 HitTest（L2-3）。
 
 ---
 
 ## 上次任务（已归档闭环）
+
+### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（Stroke = Fill 转换）（已归档）
+
+**当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）
+
+**归档：** [`archive/archive-TASK-20260529-02.md`](archive/archive-TASK-20260529-02.md) — 2026-05-29
+
+**核心里程碑：** Stroke = Fill 转换范式 first-evidence（4 方法：StrokeRect 4×FillRect / StrokeLine 旋转 FillRect / StrokeRoundedRect stencil 内描边环 / StrokePath segment-quad→FillPath）/ 0 新 shader / 0 新依赖 / 14/14 ctest / 三 build 矩阵 gles 1399（+14）·software 1303·no-devtool 1141 无退化 / commit 链拆分（G1.6 P1#5）闭环 / 像素测采样坐标误判反复模式 dual-evidence → P1 固化 / stencil+alpha-blend frag 形状遮罩约束 first-evidence / Mesa swrast stencil 能力 pentad-evidence 候选。
+
+---
 
 ### TASK-20260529-01 — G1.6 FillPath via libtess2（已归档）
 

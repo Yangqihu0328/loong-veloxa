@@ -2,40 +2,23 @@
 
 ## 当前任务
 
-### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`
-
-**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
-
-#### Plan 阶段产出（2026-05-29）
-
-- plan 文档落盘 / B1–B8 锁定 / 14 测矩阵
-- 分支 `feature/TASK-20260529-02-gles-canvas-stroke` ✅
-
-#### Build 阶段产出（2026-05-29）
-
-- **Phase A RED**：`gles_canvas_stroke_test.cc` 14 测（含 3 反向探针），9 像素测对 stub FAIL；强化纯红正向测加 `green<50` 约束（避免白底假绿）
-- **Phase B GREEN**：4 方法全落地 — StrokeRect（4 居中 FillRect 条）/ StrokeLine（`Matrix3x2.Multiply(T×R)` + 居中 FillRect）/ StrokeRoundedRect（stencil 内描边环 + 无 stencil 矩形条 fallback）/ StrokePath（segment-quad → FillPath，复用 G1.6 flatten）→ 14/14 PASS
-- **Phase C/D**：0 新 shader（shader_injection_test 无改动）；三 build 矩阵 gles **1385→1399**（+14）、software **1303**、no-devtool **1141** 无退化；完整 build-gles **1399/1399 PASS**（66s，1 无关 WPT skip）
-- **commit 链**：RED `test(gles)` → GREEN `feat(graphics)` → finalize `chore(build)`
-- **plan-fact reconcile 落实**：creative §4.4 `OffsetPath` 不存在 → 采 rasterizer segment-quad；creative §4.3 链式变换不存在 → `Matrix3x2::Multiply`
-- **待 reflect 评估**：StrokeRoundedRect 内描边环（非居中）+ 矩形内孔（角不圆）为 MVP 取舍；每段 FillPath 单独 tessellate 的性能（R2）
-
-#### Reflect 阶段产出（2026-05-29）
-
-- 回顾文档 [`reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md) 落盘（Level 3 全维度）
-- **闭环：** G1.6 P1#5 commit 链拆分 → 本次 RED/GREEN/finalize 三提交 ✅ 抑制反复模式 #6
-- **反复复现：** 像素测采样坐标几何误判（T1 `(6,6)` 落空心内角）= G1.6 T4 同类 → P1 升级固化到 plan 模板
-- **新技术债：** RoundedRect 内描边环（角不圆）/ stencil 每次全清 / 每段 FillPath 独立 tessellate（3 项均 MVP YAGNI）
-- **新硬规则候选：** GLES 白底正向像素测必须 `R>200 && green<50` 双通道
-- 长期知识库更新：systemPatterns（stencil+alpha-blend frag 形状遮罩约束 / Stroke=Fill 范式）+ techContext（GLES 像素测双约束）
-
-**下一步：** `/archive`
+> **空闲** — 无进行中的任务。使用 `/van` 启动新任务。
 
 ---
 
 ## 上次任务（已归档闭环）
 
+### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（已归档）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260529-02.md`](archive/archive-TASK-20260529-02.md)
+
+**核心里程碑：** Stroke = Fill 转换 4 方法 first-evidence / 0 新 shader / 14/14 ctest / 三 build 矩阵无退化（gles 1399）/ commit 链拆分闭环 / 像素测采样坐标反复模式 dual-evidence → P1 固化 / stencil+alpha-blend 形状遮罩约束 first-evidence。
+
+---
+
 ### TASK-20260529-01 — G1.6 `GLESCanvas::FillPath` via libtess2（已归档）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md)
 
 **归档文档：** [`memory-bank/archive/archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md)
 
