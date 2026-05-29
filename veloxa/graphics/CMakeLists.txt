@@ -17,6 +17,7 @@ target_sources(vx_graphics PRIVATE
 if(VX_RENDERER STREQUAL "gles")
   target_sources(vx_graphics PRIVATE
     gles/gles_canvas.cc
+    gles/glyph_atlas.cc
   )
   include(${CMAKE_SOURCE_DIR}/cmake/LibTess2.cmake)
   pkg_check_modules(VX_GFX_GLESV2 REQUIRED IMPORTED_TARGET glesv2)

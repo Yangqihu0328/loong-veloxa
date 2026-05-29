@@ -452,6 +452,15 @@ if(VX_PLATFORM_SDL2)
       PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
     gtest_discover_tests(gles_canvas_stroke_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # GlyphAtlas GL_R8 atlas + FT rasterization (G1.8 round 1).
+    add_executable(glyph_atlas_test
+                   graphics/gles/glyph_atlas_test.cc)
+    target_link_libraries(glyph_atlas_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics vx_text
+              GTest::gtest_main)
+    gtest_discover_tests(glyph_atlas_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
