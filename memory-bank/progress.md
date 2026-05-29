@@ -20,7 +20,16 @@
 - **plan-fact reconcile 落实**：creative §4.4 `OffsetPath` 不存在 → 采 rasterizer segment-quad；creative §4.3 链式变换不存在 → `Matrix3x2::Multiply`
 - **待 reflect 评估**：StrokeRoundedRect 内描边环（非居中）+ 矩形内孔（角不圆）为 MVP 取舍；每段 FillPath 单独 tessellate 的性能（R2）
 
-**下一步：** `/reflect`
+#### Reflect 阶段产出（2026-05-29）
+
+- 回顾文档 [`reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md) 落盘（Level 3 全维度）
+- **闭环：** G1.6 P1#5 commit 链拆分 → 本次 RED/GREEN/finalize 三提交 ✅ 抑制反复模式 #6
+- **反复复现：** 像素测采样坐标几何误判（T1 `(6,6)` 落空心内角）= G1.6 T4 同类 → P1 升级固化到 plan 模板
+- **新技术债：** RoundedRect 内描边环（角不圆）/ stencil 每次全清 / 每段 FillPath 独立 tessellate（3 项均 MVP YAGNI）
+- **新硬规则候选：** GLES 白底正向像素测必须 `R>200 && green<50` 双通道
+- 长期知识库更新：systemPatterns（stencil+alpha-blend frag 形状遮罩约束 / Stroke=Fill 范式）+ techContext（GLES 像素测双约束）
+
+**下一步：** `/archive`
 
 ---
 

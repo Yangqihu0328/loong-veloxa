@@ -4969,6 +4969,54 @@ target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
 
 ---
 
+## Stroke = Fill 转换范式 first-evidence（TASK-20260529-02 G1.7 实证）
+
+**背景：** GLES canvas 描边无需独立 stroke shader/几何管线，全部转化为既有 Fill* 调用，0 新 fragment shader。
+
+**四方法转换表（first-evidence）：**
+
+| Stroke 方法 | Fill 转换 | 关键技术 |
+|---|---|---|
+| `StrokeRect` | 4× 居中 `FillRect` 边条（top/bottom 含角 + left/right 填缝）| 几何分解 |
+| `StrokeLine` | 旋转居中 `FillRect` | `transform_.Multiply(Translation(mid).Multiply(Rotation(angle)))` |
+| `StrokeRoundedRect` | stencil 内描边环（2× `FillRoundedRect`）| stencil REPLACE 标记 + EQUAL 测试 |
+| `StrokePath` | segment-quad → `FillPath`（每段 4 点 quad）| 复用 G1.6 flatten helper + libtess2 |
+
+**StrokeLine 变换链（plan-fact）：** `Matrix3x2` 仅有 static `Translation/Rotation/Scale` + `Multiply`，无 fluent 链式；居中 rect `{-len/2,-w/2,len,w}` 经 T×R 复合 + 前置 `transform_`。
+
+**StrokePath 几何（rasterizer.cc:399-484 对齐）：** 在**局部空间**收集 segment（不预 apply transform），每段 quad 交由 `FillPath` 的 uniform 应用 `transform_`（与 G1.6 一致）。creative §4.4 `SoftwarePath::OffsetPath` 不存在 → 已 reconcile。
+
+---
+
+## ⚠️ stencil + alpha-blend fragment shader 形状遮罩约束 first-evidence（TASK-20260529-02 G1.7）
+
+**核心约束：** stencil `glStencilOp(...,GL_REPLACE)` 的写入**不受 fragment alpha 门控**（除非 frag `discard`）。因此用「alpha 混合型 SDF frag」（如 `kRoundedRectFrag`）做 stencil 标记时，标记区域 = **整个包围盒矩形**，而非 SDF 形状。
+
+**后果（G1.7 StrokeRoundedRect MVP 取舍）：** stencil 环的内孔退化为**矩形**（角不圆）；外缘圆角靠最终 color pass 的 alpha 混合保留。视觉上「内描边环 + 矩形内孔」，偏离 SoftwareCanvas 居中圆角语义。
+
+**正解（G2 / 留 creative §4.2 `kRoundedRectStrokeFrag`）：** 精确圆角形状遮罩需 frag 内 `discard`（SDF dist > 0 时丢弃），使 stencil 标记吻合形状。
+
+**韧性设计：** `glGetIntegerv(GL_STENCIL_BITS)` + 错误吞噬 + 矩形条 fallback，使无 stencil 驱动（Mesa swrast 严格态）下输出正确环、测试不 flaky。
+
+---
+
+## ⚠️ 反复模式：GLES 像素测采样坐标几何误判（TASK-20260529-01 T4 + TASK-20260529-02 T1 dual-evidence → P1 固化）
+
+**两次实证：**
+- G1.6 T4：QuadBezier 采样 y=2 落曲线**上方**（曲线中心 y≈4）→ false-negative。
+- G1.7 T1：StrokeRect 采样 `(6,6)` 落 width=4 **居中**描边的空心内角（边带 `[2,6]`，像素中心 6.5 在带外）→ 正向测误失败。
+
+**根因：** 凭直觉取整选采样点，未解析推导覆盖区边界 + 未计像素中心 +0.5 偏移。
+
+**固化规则（P1 → `writing-plans.mdc` 测试矩阵段）：**
+> GLES 像素测 plan **必须**为每个正向/反向采样点标注解析坐标：
+> - 曲线 → t=0.5 解析坐标；
+> - 居中描边带 → `[edge-hw, edge+hw]`；内描边带 → `[edge, edge+w]`；
+> - 采样取**带内中心**，并计 glReadPixels 像素中心 +0.5 偏移；
+> - 白底正向测 **双通道约束** `R>200 && green<50`（杜绝白底假绿，G1.7 RED 阶段实证 4 处假绿）。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

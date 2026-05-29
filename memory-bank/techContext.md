@@ -1333,3 +1333,15 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - G1.3 实施计划：[`docs/plans/2026-05-06-sdl2-gl-window-surface.md`](../docs/plans/2026-05-06-sdl2-gl-window-surface.md)
 - G1.4 实施计划：[`docs/plans/2026-05-07-gles-canvas-skeleton.md`](../docs/plans/2026-05-07-gles-canvas-skeleton.md)
 
+### GLES G1.7 Stroke*（TASK-20260529-02 / Stroke = Fill 转换）
+
+- **交付：** `gles_canvas.{h,cc}` 4 个 `Stroke*` stub → 真实实现（StrokeRect 4×FillRect / StrokeLine 旋转 FillRect / StrokeRoundedRect stencil 内描边环 / StrokePath segment-quad→FillPath）+ `StrokeSegmentQuad` private helper；`tests/graphics/gles/gles_canvas_stroke_test.cc`（14 测，含 3 反向探针）+ CMake 注册。**0 新 shader / 0 新依赖**。
+- **Mesa swrast 能力实证扩展（pentad-evidence 候选）：** G1.3 first（default fb）+ G1.4 dual（viewport/blend）+ G1.5 triple（SDF frag）+ G1.6 quad（glDrawElements/dynamic EBO）+ **G1.7 stencil（`GL_STENCIL_TEST` + REPLACE/EQUAL + `glClear(GL_STENCIL_BUFFER_BIT)`）在 offscreen 路径生效**。
+- **GLES 像素测硬规则（反复模式 dual-evidence 固化）：** 白底正向测必须双通道约束 `R>200 && green<50`（RED 阶段实证 4 处纯红断言在白底假绿）；采样坐标须解析推导描边边带（居中 `[edge-hw,edge+hw]` / 内描边 `[edge,edge+w]`）+ 像素中心 +0.5（详见 systemPatterns「GLES 像素测采样坐标几何误判」段）。
+- **stencil + alpha-blend frag 约束：** SDF frag 不 `discard` → stencil REPLACE 标记整个包围盒 → RoundedRect 环内孔退化为矩形（MVP 取舍 / 记技术债 / G2 `kRoundedRectStrokeFrag` 修复）。`GL_STENCIL_BITS` 探针 + 矩形条 fallback 防无 stencil 驱动 flaky。
+- **三 build 矩阵：** gles 1385→**1399**（+14）/ software 1303 / no-devtool 1141 无退化；完整 build-gles **1399/1399 PASS**（~66s）。
+- **commit 链拆分落实（G1.6 P1#5 闭环）：** plan / RED `test(gles)` / GREEN `feat(graphics)` / finalize `chore(build)` 四提交。
+- G1.6 计划：[`docs/plans/2026-05-29-gles-canvas-fillpath.md`](../docs/plans/2026-05-29-gles-canvas-fillpath.md)
+- G1.7 计划：[`docs/plans/2026-05-29-gles-canvas-stroke.md`](../docs/plans/2026-05-29-gles-canvas-stroke.md)
+- G1.7 回顾：[`memory-bank/reflection/reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md)
+

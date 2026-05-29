@@ -4,9 +4,11 @@
 
 ### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（Stroke = Fill 转换）（GLES 蓝图实施第七步 / MVP-C 战略主线第七个实施任务）
 
-**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+**当前阶段：** 🔵 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
 
 **构建结果（2026-05-29）：** Stroke* 4 方法全部落地，14/14 `gles_canvas_stroke_test` 通过；三 build 矩阵 gles 1385→1399（+14）、software 1303、no-devtool 1141 均无退化（完整 build-gles 1399/1399 PASS）。
+
+**回顾产出：** [`reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md) — commit 链拆分（G1.6 P1#5）已闭环；像素测采样坐标误判（T1）复现 G1.6 T4 → P1 升级固化；2 设计偏差（内描边环 / 每段 tess）记技术债。
 
 **分支：** `feature/TASK-20260529-02-gles-canvas-stroke` ✅ 已创建（基于 G1.6 `63b53ab`）
 
