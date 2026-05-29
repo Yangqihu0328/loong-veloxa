@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260529-03 G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（Level 4）/ Plan ✅（D1-D8=A / 跳过独立 creative）/ 待 `/build`。
+**构建中·轮次 1 完成** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）；下次进入轮次 2 DrawText（glyph shader + DrawText 像素测）。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 

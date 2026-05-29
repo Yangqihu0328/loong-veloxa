@@ -4,7 +4,13 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🟢 **构建中·轮次 1 完成**（GlyphAtlas ✅；下次进入轮次 2 DrawText）
+
+#### Build 轮次 1（GlyphAtlas）✅ 2026-05-29
+
+- **1A RED**：`glyph_atlas_test.cc` 10 测（ctor texture≠0 / Ascii valid / cache hit·miss 计数 / space zero-size / UV in-range / missing glyph invalid / many-no-GLError / OnContextLost texture=0 / OnContextRestored 重建+缓存清空）。空壳 → **8/10 FAIL**（MissingGlyph + ContextLost 2 个 stub-pass 符合预期）。commit `test(gles): G1.8 round1 RED`。
+- **1B GREEN**：`glyph_atlas.{h,cc}` — GL_R8 1024² 纹理（零初始化防 bleed）+ row-pack 分层（1px gutter）+ FT 栅格化镜像 software_canvas.cc（miss→`FT_Load_Glyph`/`FT_Render_Glyph`→`GlyphCache.Put`）+ atlas 级 cache（u64 key=font<<40|size<<24|gid）+ `OnContextLost`（texture=0/不 glDelete）/`OnContextRestored`（重建+清缓存）。**10/10 PASS**。
+- CMake：`graphics/CMakeLists.txt` 加 `gles/glyph_atlas.cc`；`tests/CMakeLists.txt` 注册 `glyph_atlas_test`（gles guard）。
 
 #### VAN + Plan 阶段产出（2026-05-29）
 
@@ -13,7 +19,7 @@
 - **5 项 reconcile（R1-R5）**：GlyphCache 不栅格化→GlyphAtlas 自栅格化；key=font|glyph_id|pixel_size；glyph shader 对齐 u_xform_px（非 creative u_proj mat4）；DrawText 复用 FindFont→SetFacePixelSize→ShapeOrLookup；DejaVu 字体实测可得
 - spec + plan 落盘（2 轮次 Build / ~22 测 / ctest +18-22）
 
-**下一步：** `/build`
+**下一步：** `/build` 轮次 2（glyph shader + DrawText）
 
 ---
 
