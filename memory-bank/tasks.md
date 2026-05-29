@@ -1,5 +1,63 @@
 # 任务跟踪
 
+## 当前任务
+
+### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（Stroke = Fill 转换）（GLES 蓝图实施第七步 / MVP-C 战略主线第七个实施任务）
+
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+**分支：** `feature/TASK-20260529-02-gles-canvas-stroke` ✅ 已创建（基于 G1.6 `63b53ab`）
+
+**复杂度级别：** **Level 3**（蓝图 plan §3.7 锁定）
+**创建日期：** 2026-05-29
+**安全相关：** ❌ **否**（复用 G1.5/G1.6 Fill* + libtess2 / 0 新 shader frag / Stroke = Fill 转换无用户 GLSL 拼接）
+**估时（plan ×0.6）：** ~3–4 h（蓝图 §3.7）/ 预期实测 ~90–150 min
+
+#### 任务定位
+
+GLES 蓝图实施第七步 — 在 G1.5（FillRect/FillRoundedRect）+ G1.6（FillPath/libtess2）之上，将 4 个 `Stroke*` stub 替换为 **Stroke = Fill 转换** 真实 GPU 实现：
+
+- **StrokeRect** → 4× `FillRect` 边条拼接（creative §4.1）
+- **StrokeLine** → PushState + 旋转/平移 + 居中 `FillRect`（creative §4.3）
+- **StrokeRoundedRect** → outer/inner `FillRoundedRect` + **stencil 减法**（creative §4.2）
+- **StrokePath** → segment quad 或 path offset → `FillPath`（creative §4.4 / rasterizer.cc 实证可复用 segment 范式）
+
+完成 G1.7 后解锁 G1.8 DrawText 部分路径外的完整 Canvas 描边能力。前置链：G1.5 ✅ → G1.6 ✅ → **G1.7（本任务）**。
+
+#### 任务范围（蓝图 plan §3.7 初估）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `veloxa/graphics/gles/gles_canvas.{h,cc}` | 🟡 | +~180 | 4× Stroke* impl + helpers |
+| 2 | `tests/graphics/gles/gles_canvas_stroke_test.cc` | 🆕 | ~350 | ~12–16 单测 + reverse probe |
+| 3 | `tests/CMakeLists.txt` | 🟡 | +~8 | gles guard 注册 |
+| **合计** | — | — | **~538** | +30% buffer → ~700–800 |
+
+#### VAN 前置验证清单（4 维度）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ✅ 0 新 FetchContent / libtess2 `_deps` 已缓存 / FillRect+FillRoundedRect+FillPath 已就位 |
+| 2 | **环境就绪** | ✅ ctest fingerprint：1303 / 1141 / **1385**（build-gles 实测）/ Mesa swrast glDrawElements quad-evidence（G1.6）|
+| 3 | **已有 artifact** | ✅ `gles_canvas.h:72-76` Stroke* = `{}` stub / `software/rasterizer.cc` StrokePath segment-quad 范式 / creative §4 代码片段 |
+| 4 | **待处理事项** | ✅ P2 #12 winding 探针可纳入 StrokePath 测试 / P1 #3/#4 与本任务弱关联 |
+
+**前置验证结论：** 4/4 ✅ / 0 阻碍 / 可进入 `/plan`
+
+#### 分支基线分析
+
+| 维度 | 实证 |
+|---|---|
+| 待修改文件 | `gles_canvas.{h,cc}` + `gles_canvas_stroke_test.cc` + `tests/CMakeLists.txt` |
+| G1.6 在 main 上 | ❌（7 commits 仅在 `feature/TASK-20260529-01-gles-canvas-fillpath`）|
+| **建议基线** | **`feature/TASK-20260529-01-gles-canvas-fillpath` HEAD**（`63b53ab`）|
+| 建议新分支 | `feature/TASK-20260529-02-gles-canvas-stroke` |
+| 原因 | Stroke* 依赖 FillPath/FillRect/FillRoundedRect — 必须在 G1.6 分支上继续 |
+
+**下一步：** 确认创建分支 → `/plan`
+
+---
+
 ## 上次任务（已归档闭环）
 
 ### TASK-20260529-01 — G1.6 FillPath via libtess2（已归档）
@@ -7,12 +65,6 @@
 **归档：** [`archive/archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md) — 2026-05-29
 
 **核心里程碑：** libtess2 v1.0.2 + `LibTess2.cmake` / FillPath GPU / 10/10 ctest / ctest +10（1385）/ hex-evidence 第 6 个 GLES 子任务
-
----
-
-## 当前任务
-
-_无。使用 `/van` 启动下一任务。_
 
 ---
 

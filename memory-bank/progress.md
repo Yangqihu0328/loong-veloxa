@@ -2,7 +2,16 @@
 
 ## 当前任务
 
-_无活跃任务。使用 `/van` 启动下一任务。_
+### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`
+
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+#### Plan 阶段产出（2026-05-29）
+
+- plan 文档落盘 / B1–B8 锁定 / 14 测矩阵
+- 分支 `feature/TASK-20260529-02-gles-canvas-stroke` ✅
+
+**下一步：** `/build`
 
 ---
 
