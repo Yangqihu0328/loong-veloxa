@@ -135,6 +135,40 @@ void main() {
 )";
 
 // -----------------------------------------------------------------------------
+// G1.8: Glyph (text) shaders. Same pixel-space → NDC + Y-flip convention as
+// kPathVert, plus a per-vertex UV into the GL_R8 coverage atlas. The fragment
+// shader samples the single red channel as coverage alpha and tints with
+// u_color. Same security contract: compile-time constant, never composed with
+// caller data. a_uv binds to attribute location 1 (see LinkProgram).
+// -----------------------------------------------------------------------------
+inline constexpr const char* kGlyphVert = R"(#version 300 es
+precision highp float;
+in vec2 a_pos;
+in vec2 a_uv;
+uniform mat3 u_xform_px;
+uniform vec2 u_viewport_px;
+out vec2 v_uv;
+void main() {
+  vec3 px3 = u_xform_px * vec3(a_pos, 1.0);
+  vec2 ndc = (px3.xy / u_viewport_px) * 2.0 - 1.0;
+  gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+  v_uv = a_uv;
+}
+)";
+
+inline constexpr const char* kGlyphFrag = R"(#version 300 es
+precision mediump float;
+in vec2 v_uv;
+uniform vec4 u_color;
+uniform sampler2D u_atlas;
+out vec4 frag_color;
+void main() {
+  float coverage = texture(u_atlas, v_uv).r;
+  frag_color = vec4(u_color.rgb, u_color.a * coverage);
+}
+)";
+
+// -----------------------------------------------------------------------------
 // kAllShaderSources[] — B8=A: enumerate every shader for the security
 // regression test (shader_injection_test.cc S1 ShaderSourcesAreCompileTimeLiterals).
 // Adding a new shader requires only adding an entry here + a comment in the
@@ -148,6 +182,8 @@ inline constexpr const char* kAllShaderSources[] = {
     kSolidFrag,
     kRoundedRectFrag,
     kPathVert,
+    kGlyphVert,
+    kGlyphFrag,
 };
 inline constexpr int kAllShaderSourceCount =
     sizeof(kAllShaderSources) / sizeof(kAllShaderSources[0]);

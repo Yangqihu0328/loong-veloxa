@@ -4,7 +4,9 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（GLES 蓝图实施第八步 / MVP-C 战略主线第八个实施任务）
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+
+**Build 产出（2026-05-29）：** 2 轮次 TDD 闭环 — 轮次 1 GlyphAtlas（`glyph_atlas.{h,cc}` / GL_R8 1024² + row-pack + FT 栅格化镜像 software / atlas 级 cache / OnContextLost+Restored / 10/10）+ 轮次 2 DrawText（`kGlyphVert`/`kGlyphFrag` + glyph program + 动态交错 VBO / DrawText 镜像 software 流程 / 7/7）。关键 bug：GetOrUpload 上传解绑纹理 → 循环内重绑修复。三矩阵无退化：gles 1416（+17）· software 1303 · no-devtool 1141。commit 链：round1 RED→GREEN / round2 RED→GREEN。
 
 **Plan 产出（2026-05-29）：** spec `docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md`（5 项 reconcile R1-R5：GlyphCache 不栅格化 / key=glyph_id+pixel_size / shader 对齐 u_xform_px / DrawText 流程镜像 / DejaVu 字体可得）+ plan `docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`（D1-D8=A 锁定 / 2 轮次 Build：GlyphAtlas + DrawText / ~22 测 / ctest gles +18-22 期望 1417-1421 / 跳过独立 creative 复用 creative-gles-resources §2.3/§3）。承接 G1.7 P1#1（解析采样）+ P1#2（双通道）已折入测试矩阵。
 

@@ -16,6 +16,8 @@ class GlyphCache;
 
 namespace vx::gfx::gles {
 
+class GlyphAtlas;
+
 // GLES-backed Canvas implementation (G1.4 skeleton phase).
 //
 // Skeleton scope (TASK-20260507-01):
@@ -78,9 +80,11 @@ class GLESCanvas final : public Canvas {
   void StrokeLine(Point a, Point b, const Brush& brush,
                   vx::f32 width) override;
 
-  // ---- No-op stubs (G1.8+ implementation scope) ----
-  void DrawText(vx::StringView, const Rect&, vx::f32,
-                const Brush&) override {}
+  // ---- Real implementation (G1.8 text scope) ----
+  void DrawText(vx::StringView text, const Rect& bounds, vx::f32 font_size,
+                const Brush& brush) override;
+
+  // ---- No-op stubs (G1.9+ implementation scope) ----
   void DrawImage(const Image&, const Rect&, const Rect&) override {}
   void PushClipRect(const Rect&) override {}
   void PushClipPath(const Path&) override {}
@@ -114,6 +118,9 @@ class GLESCanvas final : public Canvas {
   GLuint path_ebo_ = 0;
   vx::text::FontManager* font_manager_ = nullptr;
   vx::text::GlyphCache* glyph_cache_ = nullptr;
+  // G1.8: owned GL_R8 glyph atlas. Created in the ctor only when both
+  // font_manager_ and glyph_cache_ are supplied; otherwise DrawText no-ops.
+  std::unique_ptr<GlyphAtlas> glyph_atlas_;
 
   // ---- G1.5 shader program resources (B5=A ctor init / dtor delete) ----
   // solid_program_ + rounded_program_ are GL program handles. uniform_loc_
@@ -151,6 +158,19 @@ class GLESCanvas final : public Canvas {
   };
   GLint path_uniforms_[kPathUniformCount] = {-1, -1, -1};
 
+  // ---- G1.8 glyph program (kGlyphVert + kGlyphFrag) ----
+  GLuint glyph_program_ = 0;
+  GLuint glyph_vao_ = 0;
+  GLuint glyph_vbo_ = 0;
+  enum GlyphUniform {
+    kGlyphUXformPx = 0,
+    kGlyphUViewportPx,
+    kGlyphUColor,
+    kGlyphUAtlas,
+    kGlyphUniformCount
+  };
+  GLint glyph_uniforms_[kGlyphUniformCount] = {-1, -1, -1, -1};
+
   // ---- G1.5 helpers (private) ----
   // CompileShader / LinkProgram return 0 on failure (with infoLog assertion
   // in debug builds via VX_DCHECK).
@@ -159,6 +179,8 @@ class GLESCanvas final : public Canvas {
   void InitShaderPrograms();      // ctor helper
   void DestroyShaderPrograms();   // dtor helper
   void InitPathGeometry();        // G1.6 ctor — path VAO/VBO/EBO layout
+  void InitGlyphResources();      // G1.8 ctor — glyph program + VAO/VBO
+  void DestroyGlyphResources();   // G1.8 dtor
   void UploadUnitQuad();          // ctor helper — 6 verts to quad_vbo_
   // Extract solid Color from a Brush. For kLinearGradient, returns
   // brush.linear.color_start (B7=A fallback) so callers don't crash.

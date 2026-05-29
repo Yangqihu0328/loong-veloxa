@@ -4,7 +4,18 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`
 
-**当前阶段：** 🟢 **构建中·轮次 1 完成**（GlyphAtlas ✅；下次进入轮次 2 DrawText）
+**当前阶段：** 🟢 **构建完成**（GlyphAtlas ✅ + DrawText ✅；三矩阵无退化）→ 待 `/reflect`
+
+#### Build 轮次 2（DrawText）✅ 2026-05-29
+
+- **2A RED**：`gles_canvas_text_test.cc` 7 测（RendersCoverage / EmptyString / TransparentBrush / NoGLError / AfterSetTransform / MultipleDraws / ReverseProbe-NoFontManager）。no-op stub → **2/7 FAIL**（2 个覆盖测试），5 个 no-draw/error 通过符合预期。commit `test(gles): G1.8 round2 RED`。
+- **2B GREEN**：
+  - `shaders.h` 加 `kGlyphVert`/`kGlyphFrag`（GL_R8 单通道采样为 coverage，u_color tint；a_uv→location 1）+ 注册 `kAllShaderSources`。
+  - `LinkProgram` 增 `glBindAttribLocation(1,"a_uv")`（其它程序无害忽略）。
+  - `GLESCanvas`：glyph program + 动态交错 VBO（pos.xy+uv.xy）+ ctor 创建 `glyph_atlas_`（仅当 fm&&gc）；`DrawText` 镜像 software 流程（FindFont→SetFacePixelSize→ShapeOrLookup→pen walk），逐 glyph `GetOrUpload`+流式 quad 绘制。
+  - **关键 bug 修复**：`GetOrUpload` 上传时 `glBindTexture(...,0)` 解绑 → 循环外单次绑定失效 → 采样返回 0（全白）。修复为每次 `glDrawArrays` 前重绑 atlas 纹理。诊断法：把 frag 临时改纯红 → 几何正常（nonwhite=1155）排除几何/状态，定位到纹理绑定。
+  - **7/7 PASS**。
+- **三矩阵验证**：gles 1416/1416（基线 1399 +10 atlas +7 text）· software 1303/1303 · no-devtool 1141/1141。零退化。
 
 #### Build 轮次 1（GlyphAtlas）✅ 2026-05-29
 

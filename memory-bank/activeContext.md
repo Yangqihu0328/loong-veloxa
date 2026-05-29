@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中·轮次 1 完成** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）；下次进入轮次 2 DrawText（glyph shader + DrawText 像素测）。
+**构建完成** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）+ DrawText ✅（7/7）。三矩阵无退化（gles 1416 / software 1303 / no-devtool 1141）。待 `/reflect`。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 

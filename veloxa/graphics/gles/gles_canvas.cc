@@ -5,11 +5,16 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include "tesselator.h"
 #include "veloxa/foundation/base/assert.h"
+#include "veloxa/graphics/gles/glyph_atlas.h"
 #include "veloxa/graphics/gles/shaders.h"
 #include "veloxa/graphics/software/software_path.h"
 #include "veloxa/platform/sdl2/sdl2_gl_window_surface.h"
+#include "veloxa/text/font_manager.h"
 
 namespace vx::gfx::gles {
 namespace {
@@ -181,9 +186,19 @@ GLESCanvas::GLESCanvas(vx::platform::Sdl2GLWindowSurface* surface,
   UploadUnitQuad();
   InitPathGeometry();
   InitShaderPrograms();
+
+  // G1.8: glyph program + dynamic VBO, and the GL_R8 atlas (only when a
+  // FontManager + GlyphCache are available — otherwise DrawText no-ops).
+  InitGlyphResources();
+  if (font_manager_ != nullptr && glyph_cache_ != nullptr) {
+    glyph_atlas_ =
+        std::make_unique<GlyphAtlas>(font_manager_, glyph_cache_);
+  }
 }
 
 GLESCanvas::~GLESCanvas() {
+  glyph_atlas_.reset();  // delete atlas texture before context-bound teardown
+  DestroyGlyphResources();
   if (path_vao_ != 0) glDeleteVertexArrays(1, &path_vao_);
   if (path_vbo_ != 0) glDeleteBuffers(1, &path_vbo_);
   if (path_ebo_ != 0) glDeleteBuffers(1, &path_ebo_);
@@ -275,8 +290,11 @@ GLuint GLESCanvas::LinkProgram(GLuint vert, GLuint frag) {
   glAttachShader(program, vert);
   glAttachShader(program, frag);
   // a_pos at attribute location 0 — matches glVertexAttribPointer(0, ...)
-  // in UploadUnitQuad. Must be set BEFORE glLinkProgram.
+  // in UploadUnitQuad. Must be set BEFORE glLinkProgram. a_uv at location 1
+  // is used only by kGlyphVert (G1.8); binding it for programs that lack the
+  // attribute is harmless (the GL ignores unused bindings).
   glBindAttribLocation(program, 0, "a_pos");
+  glBindAttribLocation(program, 1, "a_uv");
   glLinkProgram(program);
   GLint status = 0;
   glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -392,6 +410,53 @@ void GLESCanvas::InitPathGeometry() {
                         reinterpret_cast<const void*>(0));
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, path_ebo_);
   glBindVertexArray(0);
+}
+
+void GLESCanvas::InitGlyphResources() {
+  // Program: kGlyphVert + kGlyphFrag.
+  GLuint gv = CompileShader(GL_VERTEX_SHADER, kGlyphVert);
+  GLuint gf = CompileShader(GL_FRAGMENT_SHADER, kGlyphFrag);
+  glyph_program_ = LinkProgram(gv, gf);
+  glDeleteShader(gv);
+  glDeleteShader(gf);
+  if (glyph_program_ != 0) {
+    glyph_uniforms_[kGlyphUXformPx] =
+        glGetUniformLocation(glyph_program_, "u_xform_px");
+    glyph_uniforms_[kGlyphUViewportPx] =
+        glGetUniformLocation(glyph_program_, "u_viewport_px");
+    glyph_uniforms_[kGlyphUColor] =
+        glGetUniformLocation(glyph_program_, "u_color");
+    glyph_uniforms_[kGlyphUAtlas] =
+        glGetUniformLocation(glyph_program_, "u_atlas");
+  }
+
+  // Dynamic per-glyph quad: interleaved [pos.xy, uv.xy] (4 floats / vertex).
+  glGenVertexArrays(1, &glyph_vao_);
+  glGenBuffers(1, &glyph_vbo_);
+  glBindVertexArray(glyph_vao_);
+  glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo_);
+  glEnableVertexAttribArray(0);  // a_pos
+  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                        reinterpret_cast<const void*>(0));
+  glEnableVertexAttribArray(1);  // a_uv
+  glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat),
+                        reinterpret_cast<const void*>(2 * sizeof(GLfloat)));
+  glBindVertexArray(0);
+}
+
+void GLESCanvas::DestroyGlyphResources() {
+  if (glyph_vbo_ != 0) {
+    glDeleteBuffers(1, &glyph_vbo_);
+    glyph_vbo_ = 0;
+  }
+  if (glyph_vao_ != 0) {
+    glDeleteVertexArrays(1, &glyph_vao_);
+    glyph_vao_ = 0;
+  }
+  if (glyph_program_ != 0) {
+    glDeleteProgram(glyph_program_);
+    glyph_program_ = 0;
+  }
 }
 
 Color GLESCanvas::BrushSolidColor(const Brush& brush) {
@@ -716,6 +781,96 @@ void GLESCanvas::StrokePath(const Path& path, const Brush& brush,
         break;
     }
   }
+}
+
+// -----------------------------------------------------------------------------
+// G1.8: DrawText — HarfBuzz shaping + GL_R8 glyph atlas, per-glyph quad draw.
+// Flow mirrors software_canvas.cc DrawText (font resolution → SetFacePixelSize
+// → ShapeOrLookup → pen walk) but uploads glyph coverage to the atlas and
+// draws textured quads instead of CPU blending.
+// -----------------------------------------------------------------------------
+void GLESCanvas::DrawText(vx::StringView text, const Rect& bounds,
+                          vx::f32 font_size, const Brush& brush) {
+  if (glyph_program_ == 0 || glyph_atlas_ == nullptr ||
+      font_manager_ == nullptr) {
+    return;
+  }
+  if (text.empty()) return;
+  Color c = BrushSolidColor(brush);
+  if (c.a == 0) return;
+
+  // Resolve a default font (mirrors software path's "" / handle-1 fallback).
+  vx::text::FontHandle font = vx::text::kInvalidFont;
+  if (font_manager_->font_count() > 0) {
+    font = font_manager_->FindFont(vx::StringView(""), 400);
+    if (font == vx::text::kInvalidFont) font = 1;
+  }
+  if (font == vx::text::kInvalidFont) return;
+
+  vx::u32 pixel_size = static_cast<vx::u32>(font_size);
+  if (pixel_size == 0) pixel_size = 1;
+
+  FT_FaceRec_* face = font_manager_->SetFacePixelSize(font, pixel_size);
+  if (face == nullptr) return;
+
+  const vx::text::ShapedRun* shaped =
+      font_manager_->ShapeOrLookup(font, pixel_size, text);
+  if (shaped == nullptr) return;
+
+  const vx::f32 ascender =
+      static_cast<vx::f32>(face->size->metrics.ascender >> 6);
+  vx::f32 pen_x = bounds.x;
+  const vx::f32 pen_y = bounds.y + ascender;
+
+  GLfloat mat[9];
+  Matrix3x2ToMat3(transform_, mat);
+
+  glUseProgram(glyph_program_);
+  glUniformMatrix3fv(glyph_uniforms_[kGlyphUXformPx], 1, GL_FALSE, mat);
+  glUniform2f(glyph_uniforms_[kGlyphUViewportPx],
+              static_cast<GLfloat>(width_), static_cast<GLfloat>(height_));
+  glUniform4f(glyph_uniforms_[kGlyphUColor], c.r / 255.0f, c.g / 255.0f,
+              c.b / 255.0f, c.a / 255.0f);
+  glActiveTexture(GL_TEXTURE0);
+  glUniform1i(glyph_uniforms_[kGlyphUAtlas], 0);
+
+  glBindVertexArray(glyph_vao_);
+  glBindBuffer(GL_ARRAY_BUFFER, glyph_vbo_);
+
+  const vx::usize glyph_count = shaped->glyphs.size();
+  for (vx::usize i = 0; i < glyph_count; ++i) {
+    const vx::text::ShapedGlyph& g = shaped->glyphs[i];
+    // NB: GetOrUpload may bind/unbind GL_TEXTURE_2D when uploading a glyph on
+    // a cache miss, so the atlas texture must be (re)bound AFTER this call and
+    // before the draw, not once outside the loop.
+    GlyphAtlasInfo info =
+        glyph_atlas_->GetOrUpload(font, g.glyph_id, pixel_size);
+    if (info.valid && info.width > 0 && info.height > 0) {
+      // Pixel-space glyph quad (top-left origin). bearing_y is the distance
+      // from baseline to the glyph's top edge.
+      const vx::f32 x0 = pen_x + g.x_offset + static_cast<vx::f32>(info.bearing_x);
+      const vx::f32 y0 = pen_y - g.y_offset - static_cast<vx::f32>(info.bearing_y);
+      const vx::f32 x1 = x0 + static_cast<vx::f32>(info.width);
+      const vx::f32 y1 = y0 + static_cast<vx::f32>(info.height);
+      // The atlas stores the glyph top row at v0, so the quad's top edge maps
+      // to v0 (consistent with the vertex shader's Y-flip to framebuffer).
+      const GLfloat verts[24] = {
+          x0, y0, info.u0, info.v0,
+          x1, y0, info.u1, info.v0,
+          x0, y1, info.u0, info.v1,
+          x0, y1, info.u0, info.v1,
+          x1, y0, info.u1, info.v0,
+          x1, y1, info.u1, info.v1,
+      };
+      glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
+      glBindTexture(GL_TEXTURE_2D, glyph_atlas_->texture_id());
+      glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+    pen_x += g.x_advance;
+  }
+
+  glBindVertexArray(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 }  // namespace vx::gfx::gles
