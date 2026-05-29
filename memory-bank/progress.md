@@ -2,7 +2,18 @@
 
 ## 当前任务
 
-**🟢 空闲** — 无进行中的任务。使用 `/van` 开始新任务（推荐 G1.9 DrawImage / R9 HitTest / G2 文本批量化+LRU）。
+### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`
+
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+#### VAN + Plan 阶段产出（2026-05-29）
+
+- VAN：Level 4 / 基线 gles 1416·software 1303·no-devtool 1141 / 分支 `feature/TASK-20260529-04-gles-canvas-drawimage`（基线 main）/ 前置验证通过（0 新依赖）。
+- 头脑风暴：D1-D8 推荐锁定（D2=B 指针键缓存）/ 跳过独立 creative。
+- **核心 reconcile R1**：creative §4 `ImageTexturePool` 假设 `image.handle()`，实际 `Image` 无 handle → 缓存键改 `(u64)image.pixels()` + (w,h) 校验防指针复用。
+- spec + plan 落盘（2 轮次 Build / ~16 测 / ctest gles 期望 ~1432）。承接 G1.8 P1#A（纹理绑定副作用）+ P1#B（HashMap API）+ G1.7 P1#2（双通道）。
+
+**下一步：** `/build` — 轮次 1 ImageTexturePool RED → GREEN → 轮次 2 DrawImage。
 
 ---
 
