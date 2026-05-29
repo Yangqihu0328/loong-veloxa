@@ -4929,6 +4929,46 @@ EXPECT_LT(px[2], 50u);    // 反向：B < 50  (not white / not blue)
 
 ---
 
+## libtess2 FetchContent wrapper 范式 first-evidence（TASK-20260529-01 G1.6 入库）
+
+**背景：** 上游 memononen/libtess2 **无 CMakeLists.txt**（仅 Bazel/premake）。蓝图 §3.6 原假设 `FetchContent_MakeAvailable` 会直接失败 — plan Phase 0 reconcile 为 `cmake/LibTess2.cmake` manual STATIC target。
+
+**实证设计：**
+
+```cmake
+# cmake/LibTess2.cmake
+enable_language(C)   # 根 project 仅 LANGUAGES CXX 时必填
+FetchContent_Declare(libtess2 GIT_REPOSITORY ... GIT_TAG v1.0.2)
+FetchContent_Populate(libtess2)
+add_library(tess2 STATIC ... 7× Source/*.c)
+target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
+```
+
+**集成点：** 仅 `VX_RENDERER=gles` 时 `veloxa/graphics/CMakeLists.txt` include + `target_link_libraries(... tess2)` — software 矩阵 0 链接开销。
+
+**关键 build 阻塞：** 缺 `enable_language(C)` → `CMAKE_C_COMPILE_OBJECT` 未定义（反复模式：FetchContent C 依赖 checklist 漏项）。
+
+**复用：** G1.7 Stroke* 可复用同一 tess2 target；离线场景预置 `build-gles/_deps/libtess2-src`。
+
+---
+
+## Mesa swrast glDrawElements + dynamic VBO quad-evidence（TASK-20260529-01 G1.6 T2-T10 实证）
+
+**背景：** G1.5 triple-evidence 已证 FillRect/SDF fragment shader。G1.6 进一步实证：**libtess2 CPU tess → per-draw STREAM_DRAW VBO/EBO → glDrawElements(GL_TRIANGLES, GL_UNSIGNED_INT)** 在 Mesa swrast offscreen 路径 10/10 PASS。
+
+**quad-evidence 对照（Mesa swrast 能力）：**
+
+| 能力 | G1.3 | G1.4 | G1.5 | G1.6 |
+|---|:-:|:-:|:-:|:-:|
+| default fb + glReadPixels | ✅ | ✅ | ✅ | ✅ |
+| fragment shader 复杂链 | — | — | ✅ SDF | ✅ solid frag |
+| **glDrawElements + dynamic EBO** | — | — | — | **✅ first** |
+| **CPU tess mesh upload** | — | — | — | **✅ first** |
+
+**结论：** G1.7 Stroke（offset tess）/ G1.8 glyph atlas draw 可默认 Mesa swrast 支持 indexed draw + dynamic geometry。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

@@ -2,6 +2,112 @@
 
 ## 当前任务
 
+### TASK-20260529-01 — G1.6 `GLESCanvas::FillPath` via libtess2（GLES 蓝图实施第六步 / MVP-C 战略主线第六个实施任务）
+
+**当前阶段：** 💭 **回顾中**（Build ✅ + Reflect ✅ → 待 `/archive`）
+
+**复杂度级别：** **Level 3**（蓝图 plan §3.6 锁定 / +30% buffer 边界曲折子档）
+**创建日期：** 2026-05-29
+**分支：** `feature/TASK-20260529-01-gles-canvas-fillpath` ✅ 已创建（基于 main `8fabf98`）
+**安全相关：** ❌ **否**（复用 G1.5 `kSolidVert`/`kSolidFrag` solid program / 0 新 shader source / libtess2 CPU tessellation 无用户输入路径）
+**估时（plan ×0.6）：** ~6-8 h（蓝图 §3.6 原估 +30% buffer）/ 预期实测 ~90-180 min（沿用 G1.5 quint-evidence + 标准极速区 0.40-0.59× 系数）
+
+#### 任务定位
+
+GLES 蓝图实施第六步 — 在 G1.5 已落地的 solid shader pipeline（`kSolidVert` + `kSolidFrag` + uniform 缓存 + unit quad VBO）之上，将 `FillPath` 由 stub 替换为 libtess2 CPU tessellation → dynamic VBO → `glDrawElements` 真实 GPU 实现：
+
+- **libtess2 集成**：CMake FetchContent 引入 libtess2（MPL2）/ `tessNewTess` → `tessAddContour` → `tessTesselate` → VBO upload
+- **Path 数据路径**：`SoftwarePath::commands()` → flatten（LineTo / QuadTo / CubicTo / ArcTo）→ libtess2 contours → triangles
+- **Shader 复用**：G1.5 `solid_program_` + per-vertex NDC 变换（`u_xform_px` + `u_viewport_px`）/ 0 新 frag shader
+- **dynamic VAO/VBO**：FillPath 专用（与 unit quad VAO 分离）
+
+完成 G1.6 后即可：(a) MVP-C 渲染管线**复杂路径首次 GPU 绘制** ✅；(b) 解锁 G1.7 Stroke*（stroke = fill 转换）。前置链：G1.1 ✅ → G1.2 ✅ → G1.3 ✅ → G1.4 ✅ → G1.5 ✅ → **G1.6（本任务）** → G1.7 解锁。
+
+#### 任务范围（蓝图 plan §3.6）
+
+| # | 文件 | 操作 | 估行 | 备注 |
+|:-:|---|:-:|:-:|---|
+| 1 | `CMakeLists.txt`（根） | 🟡 修改 | +~10 | FetchContent libtess2 |
+| 2 | `veloxa/graphics/CMakeLists.txt` | 🟡 修改 | +~5 | link tess2 |
+| 3 | `veloxa/graphics/gles/gles_canvas.{h,cc}` | 🟡 修改 | +~150 | FillPath impl + dynamic VAO/VBO + tess helper |
+| 4 | `tests/graphics/gles/gles_canvas_path_test.cc` | 🆕 创建 | ~300 | ~8-10 单测（triangle / star / bezier / multi-contour + 反向探针）|
+| 5 | `tests/CMakeLists.txt` | 🟡 修改 | +~8 | 注册 gles_canvas_path_test（gles guard）|
+| **合计** | — | — | **~473** | LOC ×[0.85, 1.5] buffer = ~402-710 行 / 蓝图 +30% buffer → ~520-920 行 |
+
+#### VAN 前置验证清单（4 维度）
+
+| # | 维度 | 实证 |
+|:-:|---|---|
+| 1 | **依赖可获取性** | ⚠️ **libtess2 待首次 FetchContent**（`_deps/` 无 libtess2 缓存 / GitHub memononen/libtess2 MPL2 / plan 阶段需 proxy 守卫或离线预置）/ GLES 3.0 `glDrawElements` + dynamic VBO 必支持 / G1.5 shader pipeline 已就位 ✅ |
+| 2 | **环境就绪** | ✅ `build/` software DEVTOOL=ON **1303** / OFF **1141** / `build-gles/` gles DEVTOOL=ON **1375**（VAN fingerprint 二次验证）/ Mesa swrast SDF triple-evidence 已实证 / SDL_VIDEODRIVER=offscreen 范式可用 |
+| 3 | **已有 artifact** | ✅ `gles_canvas.h:69` FillPath = `{}` stub / G1.5 solid_program_ + uniform 缓存 + CompileShader/LinkProgram helpers / `SoftwarePath::commands()` 稳定 / `software_canvas.cc` dynamic_cast 范式可复用 / `tests/graphics/gles/gles_canvas_fill_test.cc` fixture 可复用 |
+| 4 | **待处理事项** | ✅ activeContext「下一推荐任务」#1 = G1.6 / GLES 蓝图 plan §3.6 + spec §4.2 完整规格化 / 累计 P1×2 + P2×10 工作流元任务与本任务无强关联 |
+
+**前置验证结论：** 3/4 维度 ✅ / **1 项待 plan Phase 0 解决**（libtess2 FetchContent 首次拉取 / proxy 或离线预置）/ 0 代码阻碍 / 可进入 `/plan`
+
+#### 反复模式预审（8/8 全 ✅ 抑制 / VAN 阶段预审 / 累计 22+ 模式连续抑制候选续刷）
+
+| # | 反复模式 | 命中状态 | 抑制证据 |
+|:-:|---|:-:|---|
+| #1 | 前置依赖/环境/API 能力未验证 | ✅ 抑制 | libtess2 待 plan §0 audit / SoftwarePath API 已 grep 实证 / G1.5 shader pipeline 已 ctest 验证 |
+| #2 | spec 数据回归 | ✅ 抑制 | 蓝图 plan §3.6 锁定 / 0 既有 spec 修改 |
+| #3 | TDD 顺序倒置 | ✅ 抑制 | plan §3.6 步骤 1→4 已规定 [TDD] 顺序 |
+| #4 | 反向探针缺失或弱 | ✅ 抑制 | plan §3.6 步骤 3 已规定 winding rule 反向探针 |
+| #5 | 中文文档 StrReplace audit | ✅ 抑制 | 本任务无中文文档改动 |
+| #6 | commit body Source 溯源 | ✅ 待 build | `Source: docs/plans/2026-05-05-gles-renderer-blueprint.md §3.6` |
+| #7 | 双 config ctest 单次盲区 | ✅ 待 build | 三 build 矩阵 fingerprint：1303 / 1141 / 1375 |
+| #8 | ctest baseline 数字回归 audit | ✅ **强化** | VAN 阶段实测 fingerprint（非 archive 引用）/ 沿用 TASK-20260528-01 P1 改进建议 |
+
+#### Phase 0 audit 候选清单（plan 阶段细化）
+
+- §0.1 ctest baseline fingerprint：software ON=1303 / OFF=1141 / gles ON=1375（VAN 实测 ✅）
+- §0.2 libtess2 API audit（`tessNewTess` / `tessAddContour` / `tessTesselate` / `tessGetVertices` / `tessGetElements` / winding rules）
+- §0.3 libtess2 FetchContent 集成（Git tag / CMake target name / link 传播 / proxy 守卫）
+- §0.4 SoftwarePath → libtess2 contour 转换（MoveTo/LineTo/QuadTo/CubicTo/ArcTo flatten 策略）
+- §0.5 G1.5 solid_program_ 复用 vs 新增 kPathVert 决策（B 决策候选）
+- §0.6 dynamic VAO/VBO 生命周期（per-FillPath upload vs 缓存 / ctor/dtor 归属）
+- §0.7 Mesa swrast glDrawElements + dynamic VBO 像素验证可行性
+- §0.8 Bezier/Arc flatten 精度 vs 测试 tolerance 校准
+
+#### 分支基线分析
+
+| 维度 | 实证 |
+|---|---|
+| 待修改文件 | 根 `CMakeLists.txt` + `veloxa/graphics/CMakeLists.txt` + `gles_canvas.{h,cc}` + `gles_canvas_path_test.cc` + `tests/CMakeLists.txt` |
+| 文件在 main 上 | ✅ 全部（G1.5 fast-forward 合并到 main `ddc8647` / HEAD `8fabf98` workflow reset）|
+| 建议基线 | `main`（HEAD = `8fabf98`）|
+| 原因 | 依赖 G1.5 已落地的 solid shader pipeline + G1.4 骨架 / 0 跨分支依赖 |
+
+**下一步：** `/plan` — 进入规划阶段（brainstorm B 决策 + Phase 0 audit 8 子段 + plan 文档落盘）
+
+#### Plan 阶段产出（2026-05-29）
+
+- **plan 文档落盘：** [`docs/plans/2026-05-29-gles-canvas-fillpath.md`](../docs/plans/2026-05-29-gles-canvas-fillpath.md)（~380 行 / 8 段）
+- **9 决策 B1–B9 all_recommended 锁定** / 跨决策协同度 100% 第 20 次连续命中候选
+- **Phase 0 §0.1–0.8 全 audit ✅** + 2 项 plan-fact reconcile（libtess2 无 CMakeLists / SoftwarePath 无 contours()）
+- **B4=A：** 新增 `cmake/LibTess2.cmake`（FetchContent + manual STATIC tess2）
+- **B2=A：** 新增 `kPathVert` + 复用 `kSolidFrag` → `path_program_`
+- **文件结构：** 7 文件 / ~666 行 / buffer [566, 999]
+- **测试设计：** 10 单测 + 3 inline reverse probe / 像素双约束沿用 G1.5
+- **ctest 期望：** Matrix A 1303 + B 1141 + C 1375 → **1383–1387**（+8–12）
+- **反复模式 8/8 全抑制** + #8 fingerprint 实证强化
+
+**估时（plan ×0.6）：** ~110–175 min / 预期实测 ~90–150 min
+
+**下一步：** `/archive`
+
+#### Reflect 阶段产出（2026-05-29）
+
+- **回顾文档：** [`memory-bank/reflection/reflection-TASK-20260529-01.md`](../memory-bank/reflection/reflection-TASK-20260529-01.md)
+- **LOC 精度：** 0.94×（~624 代码行 vs plan ~666）
+- **ctest：** +10（1385）/ 三矩阵 0 退化
+- **P1×3 + P2×2** 改进建议已写入 activeContext 待处理事项
+- **待办：** build 代码 commit 链未拆分（0 commit → Archive 前补）
+
+---
+
+> **已归档：** TASK-20260528-01 G1.5 — 详见 [`archive/archive-TASK-20260528-01.md`](archive/archive-TASK-20260528-01.md)
+
 ### TASK-20260528-01 — G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush（GLES 蓝图实施第五步 / MVP-C 战略主线第五个实施任务）
 
 **当前阶段：** ✅ **已完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）

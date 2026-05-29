@@ -117,7 +117,7 @@ cmake --build build -j
 | 第三方头文件触发本项目 `-Werror -Wpedantic` | 第三方头通过 `INTERFACE_INCLUDE_DIRECTORIES` 传播但未标 SYSTEM | `set_target_properties(<real-tgt> PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${INTERFACE_INCLUDE_DIRECTORIES}")` 一次性把头标为 SYSTEM，下游所有 target 自动屏蔽 warning（参考 TASK-20260419-02 P1） |
 | google/benchmark 输出 `***WARNING*** Library was built as DEBUG` | `cmake -B build` 不指定 `CMAKE_BUILD_TYPE` 默认 Debug | 性能基准必须 `cmake -B build-bench -DCMAKE_BUILD_TYPE=Release -DVX_BUILD_BENCHMARKS=ON`，且独立 `build-bench/` 目录避免污染 Debug 测试 build（参考 TASK-20260419-02 反思 #1） |
 | `rm -rf build-bench` 报 `Read-only file system` / `Device or resource busy` 错误 | Cursor 沙箱把 FetchContent clone 进来的 `build-bench/_deps/<lib>-src/.git` 目录设为只读 | `chmod -R u+w build-bench/_deps && rm -rf build-bench`（需要 `all` 权限）（参考 TASK-20260419-03 P6） |
-| `cmake --build build-bench -j` 整体失败但单个 bench target 干净 | main 上某些 .cc / 测试代码隐藏了 Release `-Werror` 失败（仅 Debug 通过），fresh Release build 暴露 | (a) 临时绕行：`cmake --build build-bench --target <仅需要的目标> -j`；(b) 中长期：立 fix 任务（参考 TASK-20260419-03 P6 → TASK-20260419-07 候选）|
+| `CMAKE_C_COMPILE_OBJECT` missing / tess2 configure fail | 根 `project(... LANGUAGES CXX)` 未启用 C；manual `add_library` 含 `.c` 源 | `cmake/LibTess2.cmake` 内 `enable_language(C)` 或根 project 加 `C`（TASK-20260529-01 G1.6 实证）|
 
 ### Plan/VAN 阶段守卫（来源 TASK-20260419-13）
 
@@ -1151,8 +1151,8 @@ cd build && ctest -R MyTest # → 显示 N 个 GTest 测试点（按类名 MyTes
 | **GL Context 创建（桌面）** | SDL_GL_CreateContext + SDL2 GL attrs | G1.2 + G1.3 | 📋 蓝图 |
 | **GL Context 创建（嵌入式）** | EGL 直接接口（DRM/KMS）/ G1 仅预留 GLESDisplay 抽象 | G2 蓝图 | 📋 G1 接口预留完成 |
 | **GLES 版本** | OpenGL ES 3.0+ / 桌面通过 EGL/GLX context profile 协商 | G1.2 | 📋 蓝图 |
-| **Canvas trampolining 算法** | 混合（shader + libtess2 CPU tess + Stroke=Fill）| G1.5-G1.7 | 📋 蓝图 |
-| **CPU tessellation 库** | libtess2（MPL2 license / 与项目兼容）| G1.6 | 📋 蓝图 / 引入 |
+| **Canvas trampolining 算法** | 混合（shader + libtess2 CPU tess + Stroke=Fill）| G1.5-G1.7 | ✅ G1.6 FillPath 已落地 |
+| **CPU tessellation 库** | libtess2（MPL2 license / 与项目兼容）| G1.6 | ✅ **`cmake/LibTess2.cmake` v1.0.2** |
 | **glyph 渲染** | CPU 光栅化（FreeType 复用）+ GL_R8 texture atlas | G1.8 | 📋 蓝图 |
 | **dirty rect GPU** | glScissor + glClear（沿用既有 ComputeDirtyRect）| G1.11 | 📋 蓝图 |
 | **shader 资源管理** | 静态嵌入 .glsl raw string literal（编译期绑定）| G1.4-G1.5 | 📋 蓝图 |
@@ -1167,7 +1167,7 @@ cd build && ctest -R MyTest # → 显示 N 个 GTest 测试点（按类名 MyTes
 | GLES3 | OpenGL ES 3.0+ | 渲染 API | ✅ system 已装 |
 | Mesa | 26.0.3+ | 桌面驱动（开发环境）| ✅ 已安装 |
 | libgl1-mesa-dri | 26.0.3+ | DRI driver | ✅ 已安装 |
-| libtess2 | 1.0.2+ | CPU polygon tessellation | 📋 G1.6 引入（CMake FetchContent / 或 vendored）|
+| libtess2 | 1.0.2 | CPU polygon tessellation | ✅ G1.6 `cmake/LibTess2.cmake` FetchContent + tess2 STATIC（仅 gles build）|
 | FreeType | 2.10+ | 字体光栅化（已用于 SoftwareCanvas）| ✅ 既有依赖 |
 | SDL2 | 2.0.20+ | 桌面 GL context（既有依赖）| ✅ 既有依赖 |
 

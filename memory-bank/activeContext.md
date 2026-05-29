@@ -2,152 +2,60 @@
 
 ## 当前阶段
 
-**空闲** — TASK-20260528-01 G1.5 `GLESCanvas::FillRect` + `FillRoundedRect` + Solid Brush 已 ✅ **闭环归档**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅ / Level 3 / 总 ctest 3788 PASS / 0 FAIL / 5 范式里程碑沉淀 / fast-forward merge 到 main `ddc8647` + 分支已删除）。等待新任务指令。
+**回顾中** — TASK-20260529-01 G1.6 FillPath Reflect ✅ / 待 `/archive`。
 
-**最近归档：** [TASK-20260528-01 G1.5 GLESCanvas FillRect + FillRoundedRect + Solid Brush](archive/archive-TASK-20260528-01.md) — Level 3 / 6 commit / ~720 行实际 / 实施忠实度 quint-evidence + 跨决策协同度 100% 第 19 次连续命中（179/179 历史最高 streak） + Mesa swrast SDF first-evidence + 能力 triple-evidence + shader_injection dual-evidence + shader 单 vert + N frag 复用范式 first-evidence + Mesa swrast 像素验证双约束范式 first-evidence + 新反复模式候选首次定型（ctest baseline 数字回归 audit 漏审）/ 三 build 矩阵 1303+1110+1375 = 3788 全 PASS / plan ×0.6 ~0.40-0.59× 标准极速区（第 13 数据点）。
----
-
-## 上次闭环 TASK-20260528-01 总产出（速查）
-
-**总产出：**
-
-- **5 个 systemPatterns 沉淀** ✅（reflect 阶段直接落地 / P0 立即落实）
-  - 跨决策协同度 100% 第 19 次连续命中 + 实施忠实度 quint-evidence（streak 171 → 179/179 历史最高续刷 / 5 任务连续印证 / 确立期）
-  - Mesa swrast SDF 反走样能力 first-evidence + Mesa swrast 能力 triple-evidence（G1.3 default fb + G1.4 Clear + G1.5 SDF / fwidth + smoothstep + length 全函数链）
-  - GLES shader 单 vert + N frag 复用范式 first-evidence（kSolidVert 同时供 solid + rounded program）
-  - **ctest baseline 数字回归 audit 漏审 — 反复模式新候选首次定型**（plan §0.1 引用 archive 数据未做实证 fingerprint / first-evidence）
-  - Mesa swrast 像素验证双约束默认范式 first-evidence（反 T3/T7 false-PASS 教训）
-- **6 范式里程碑：** quint-evidence + 第 19 次连续命中 + 179/179 streak + Mesa swrast SDF first + shader_injection dual-evidence 候选 + 单 vert + N frag 复用 first
-- **techContext.md G1.5 节点 ✅** — 变更文件 + 关键设计点 + Mesa swrast SDF first + shader 注入 dual + plan ×0.6 第 13 数据点
-- **跨决策协同度：** 8/8 B 决策 1 次 AskQuestion all_recommended 锁定 / 第 19 次连续命中 / 累计 179/179 历史最高 streak / **实施忠实度 quint-evidence**（plan→build 0 偏差实施 / 22/22 一次性 PASS）
-- **plan ×0.6 实测系数：** ~0.40-0.59× 标准极速区（Build 阶段 ~0.26-0.44× 极致极速区 / 实施类 Level 3 子档第 4 数据点 / quad-evidence 候选）
-- **反复模式抑制：** 8/8 全程 5 阶段保持（VAN + Plan + Build + Reflect + Archive）+ 累计 22+ 模式连续抑制 / 历史新高继续刷新 + 1 新反复模式候选首次定型（ctest baseline 数字回归 audit 漏审）
-- **改进建议落实：** 4 项（P0×1 + P1×1 + P2×2）/ P0×1 + P2×2 reflect 阶段全直接落地 ✅ / P1×1 迁移 activeContext 待处理事项
-
-**ctest baseline 生效（main 分支 `ddc8647`）：**
-- DEVTOOL=ON / VX_RENDERER=software（default）：**1303/1303**
-- DEVTOOL=OFF / VX_RENDERER=software（default）：**1110/1110**
-- DEVTOOL=ON / VX_RENDERER=gles：**1375/1375**（含 +12 gles_canvas_fill_test + 1 shader_injection_test S3）
-
-**下一步：** 使用 `/van` 开始新任务（推荐 G1.6 FillPath），或使用工作流元任务批量落地累计 P1×2 + P2×10 沉淀。
+**上一任务：** [TASK-20260528-01 G1.5 FillRect + FillRoundedRect + Solid Brush](archive/archive-TASK-20260528-01.md) — ✅ 闭环归档。
 
 ---
 
-## 下一推荐任务（基于 spec §11.2 + GLES 蓝图 plan §3 18 子任务清单）
+## 当前焦点：TASK-20260529-01 — G1.6 FillPath
 
-> 🚀 **MVP-C 战略主线进行中** — G1.1 ✅ + G1.2 ✅ + G1.3 ✅ + G1.4 ✅ + **G1.5 ✅** → **G1.6 FillPath（推荐 #1）**。
+**任务定位：** GLES 蓝图实施第六步 / Level 3 / MVP-C 战略主线第六个实施任务
 
-| 优先 | 候选任务 | MVP 档 | Level | plan ×0.6 |
-|:-:|---|:-:|:-:|:-:|
-| ~~1~~ | ~~G1.3 Sdl2GLWindowSurface（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| ~~1~~ | ~~G1.4 GLESCanvas 骨架（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| ~~1~~ | ~~G1.5 FillRect + FillRoundedRect + Solid Brush（已完成）~~ | ~~MVP-C 核心~~ | ~~L3~~ | ✅ 已完成 |
-| **1** | **G1.6 FillPath**（libtess2 + glDrawElements / G1.5 shader pipeline 复用 + 新增 kPathVert 或复用 kSolidVert / Path 几何曲面镶嵌）| MVP-C 核心 | **L3** | ~5-8 h 蓝图 / ~90-180 min 实测预期（沿用 G1.5 quint-evidence + 极速区系数）|
-| 2 | G1.7 Stroke*（复用 solid program / stroke = fill 转换 / spec §3.3.1）| MVP-C 核心 | L3 | ~3-5 h |
-| 3 | G1.8 GlyphAtlas + DrawText 部分（glyph shader 复用 kSolidVert + 新增 kGlyphFrag）| MVP-C 核心 | L3 | ~5-8 h |
-| 4 | R9 EventManager HitTest 改造（HUD pointer-events 真支持）| MVP-C | L2-3 | ~1.5-2 h |
-| 5 | 资源加载策略蓝图（HTTP / file:// / data: URI 完整支持）| MVP-C 过渡 | L3 蓝图 + 实施 | ~5-10 h |
-| 6 | G2 DRM/KMS 嵌入式后端蓝图 | MVP-C 核心 | L3-4 V2=a | ~10-20 h |
-| 7 | DomBindings 节点动态创建删除 | MVP-C | L3 | ~3-5 h |
-| 8 | CSS 高级特性 5 项 | MVP-C | 5 × L2-3 | ~10-20 h |
-| 9 | 图像扩展 3 项（GIF / WebP / 异步加载）| MVP-C | 3 × L2 | ~6-12 h |
-| 10 | 性能优化收口（含 #35 阶段 2 / R3+ 13 项）| MVP-C | 多 L2-3 | ~10-30 h |
-| **元** | **下次工作流元任务批量落地**（累计 P1×2 + P2×10 = 12 项 P1/P2 待处理事项 ≥ 4 阈值 ✅✅✅ / quad-evidence 候选 / 沿用 triple-evidence 范式）| 工作流 | L2 | ~30-60 min |
+**构建结果：** 10/10 ctest PASS / Matrix A 1303 / B 1141 / C **1385** (+10)
 
-**当前焦点：** 继续 G1 OpenGL ES 实施阶段 — **G1.6 FillPath（推荐）**（路径几何曲面镶嵌 / libtess2 + glDrawElements / 沿用 G1.5 shader pipeline + uniform 缓存范式 / 详见 [docs/plans/2026-05-05-gles-renderer-blueprint.md](../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.6）
+**回顾文档：** [`memory-bank/reflection/reflection-TASK-20260529-01.md`](reflection/reflection-TASK-20260529-01.md)
+
+**分支：** `feature/TASK-20260529-01-gles-canvas-fillpath`
+
+**下一步：** `/archive` — 归档后解锁 G1.7 Stroke*
+
+**plan 文档：** [`docs/plans/2026-05-29-gles-canvas-fillpath.md`](../docs/plans/2026-05-29-gles-canvas-fillpath.md)
+
+---
+
+## 下一推荐任务（G1.6 归档后）
+
+| 优先 | 候选任务 | MVP 档 | Level |
+|:-:|---|:-:|:-:|
+| **1** | **G1.7 Stroke*** | MVP-C 核心 | L3 |
+| 2 | G1.8 GlyphAtlas + DrawText 部分 | MVP-C 核心 | L3 |
+| 3 | R9 EventManager HitTest 改造 | MVP-C | L2-3 |
+| **元** | 工作流元任务批量落地（P1×2 + P2×10）| 工作流 | L2 |
 
 ---
 
 ## 待处理事项 — 跨任务沉淀（按优先级）
 
-### 留下次工作流元任务批量落地（P1 / 累计 2 项 / triple → quad-evidence 候选）
+### P1 — 来自 TASK-20260529-01 Reflect
 
-> TASK-05-04 已批量清零 14.5 项 P1+P2 累计沉淀 ✅。本段只列 TASK-05-04 + TASK-05-05 + TASK-05-06 + TASK-20260507-01 + **TASK-20260528-01** reflect 阶段新发现且未在 reflect 阶段直接 P1 落地的项 — 等待下次工作流元任务批量清零（**累计 P1×2 + P2×14 = 16 项 ≥ 4 阈值 ✅✅✅** / 沿用工作流元任务 dual-evidence 范式 / **quad-evidence 候选**）。
->
-> **TASK-20260528-01 reflect 阶段 1/4 P0 + 1/4 P1 + 2/4 P2 已直接落地 ✅**（systemPatterns 5 段新增 + techContext G1.5 节点 + plan ×0.6 第 13 数据点）/ 1 项 P1 进入本累积清单（plan baseline fingerprint 协议）。
+- **P1 #3** FetchContent C 依赖 checklist 补 `enable_language(C)` — `writing-plans.mdc` / ~10 min
+- **P1 #4** GLES Bezier 像素测 plan 模板补解析采样坐标 — ~10 min
+- **P1 #5** Build 阶段 commit 链拆分（本任务 build 代码仍 uncommitted）— Archive 前落实
 
-- **P1 #1（来自 TASK-20260505-04 reflection §5 #1 / 新发现）`writing-plans.mdc` 「附录：LOC 估算 — 隐性附加工作类型清单」段补「表格密度系数」子条** — plan 阶段对「commit body 范本表」+「触发条件矩阵」+「实证表」+「交叉引用清单」类结构化内容的行数 underestimate（单段 4 表格 ~30-40 行 / plan 仅按段长 base 估算未计表格行数 / TASK-05-04 P2.1 段实际 75 行 vs 估 30 行 = ×2.5 偏差）；建议加表格密度系数子条：散文段 ~30-40 行 / 单表格 ~5-15 行/表 / **多表段（≥ 4 表格）×2-2.5 base 行数**。**预估**：~10 min。
-- **P1 #2（来自 TASK-20260528-01 reflection §6 #1 / 新发现 / first-evidence）`writing-plans.mdc` 「Phase 0 audit」段增加「ctest baseline 数字 fingerprint 协议」子段** — plan §0.X 涉及 ctest baseline 数字声明时必填实证 fingerprint 步骤（跑 `ctest --test-dir <build> -N | tail -3` 获取实测数字 / 不允许凭印象 / archive / reflection 数据引用 / 引用偏差 ≥ 5% 触发主动 push-back）。详见 systemPatterns「ctest baseline 数字回归 audit 漏审」新段 first-evidence 定型。**预估**：~15 min。
+### 留下次工作流元任务批量落地（P1 / 累计 2 项）
 
-### 长期沉淀（P2 — 不强制 archive / 累计 12 项 / 其中 2 项已 archive 落地 ✅ / 余 10 项待批量清零）
+- **P1 #1** `writing-plans.mdc` LOC 表格密度系数子条 — ~10 min
+- **P1 #2** `writing-plans.mdc` Phase 0 ctest baseline fingerprint 协议 — ~15 min
 
-> **2026-05-28 更新**：TASK-20260528-01 reflect 阶段直接落地 2/2 P2（systemPatterns 「Mesa swrast 像素验证双约束默认范式」+ 「GLES shader 单 vert + N frag 复用范式」first-evidence 段）/ 0 新 P2 累积。
+### 长期沉淀（P2 — 累计 10 项 + 2 项新增）
 
-- **P2 #1（来自 TASK-20260505-04 reflection §5 #2 / 新发现）`git-workflow.mdc` 「commit body Source 溯源 + 实测数据格式」段补「实测数据采集协议」子条** — TASK-05-04 Phase B.6 commit body 写「+44 行」/ 实际 git 显示 +39 行 / -5 行偏差，根因 commit body 写在 add 之前 / 凭目测估算 / 未做 `git diff --cached --stat` 二次确认；建议加「实测数据采集协议」子条：commit 前必须运行 `git diff --cached --stat` 实测后再写 commit body 数据。**预估**：~10 min。
-- **P2 #2（来自 TASK-20260505-04 reflection §8.2 / 新发现）systemPatterns 「lazy-attach C ABI 容错模式 quad-evidence」段加 TASK-05-04 头部 doc 落地标注** — TASK-05-04 P1.7-half 在 `veloxa/api/veloxa_api.h` 顶部 doc 段追加「lazy-attach contract」节统一引用 4 个 quad-evidence ABI（vx_view_set_pipeline_hooks / vx_view_attach_devtool / vx_devtool_get_console_output / vx_view_invalidate）；建议在 systemPatterns quad-evidence 段加「头部 doc 已落地」标注 + 引用 commit `4765224`。**预估**：~5 min。
-- **P2 #3（来自 TASK-20260505-05 reflection §6 #10 / 新发现）`writing-plans.mdc`「ctest 守门脚本设计」段加「最小验证表面」原则 + stub probe 范式** — TASK-05 G1.1 cmake -P stub probe（`cmake_minimum_required + project(NONE) + include(<module>)` 3 行）实测 ~50ms/scenario / 全项目 configure ~30-60s/scenario / 加速比 ~600-1200×；建议 writing-plans 段加：测试 cmake module 应优先 stub probe 而非全项目 configure；stub probe 适用条件 = 待测 module 自治（无外部 module 依赖 / 仅校验 STATUS 文本）。**预估**：~15 min。
-- **P2 #4（来自 TASK-20260505-05 reflection §6 #11 / 新发现）`writing-plans.mdc`「文件结构」段加 checklist「是否需要新 cmake/ 子目录抽 module？」** — TASK-05 G1.1 plan 阶段未规划 cmake/VxRenderer.cmake / build 阶段 REFACTOR 涌现单一真相源 / 顶层 +8 行（vs plan 估 +20）；建议 writing-plans 「文件结构」段加 checklist 项：「是否有可能在 build 阶段抽出 cmake/ 子目录共享 module？（信号：≥ 20 行 cmake 逻辑 + 多处 include 候选 + 测试需独立 include）」。**预估**：~10 min。
-- **P2 #5（来自 TASK-20260505-05 reflection §6 #12 / 新发现）`writing-plans.mdc`「FetchContent 缓存命中策略」子条** — TASK-05 G1.1 build-gles 配置首次 FetchContent harfbuzz/freetype/sdl/libpng/zlib ~3.5 min 时间损耗 / plan §3 步骤 4 未提前规避；建议 writing-plans 加 plan 阶段 audit 项：「新 build 配置是否首次 FetchContent？是否可复用既有 build/_deps/ 缓存？」+ 推荐 `cmake -B build-gles --reuse-deps=build-default` （或类似 incremental reconfigure 技巧）。**预估**：~10 min。
-- **P2 #6（来自 TASK-20260505-06 reflection §6.3 #1 / 新发现）`writing-plans.mdc` P2.2「LOC ×1.3-1.5 buffer」段更新为「双向 ±25% buffer 子档」** — TASK-05 G1.1 ×1.40（偏高 / 命中上限）+ TASK-06 G1.2 ×0.95（偏低 / 接近下限）/ 双向偏差 dual-evidence；建议 P2.2 段加：单向 ×1.3-1.5 buffer → 双向 [0.85, 1.5] buffer / 偏低根因（注释精简 / 测试 GTEST_SKIP）/ 偏高根因（drift guard / REFACTOR 涌现 / 多表格）/ 偏差范围 [-15%, +50%] / 平均 ×1.20。**预估**：~10 min。
-- **P2 #7（来自 TASK-20260505-06 reflection §6.3 #2 / 新发现）`writing-plans.mdc`「ctest baseline 比对」段加澄清** — TASK-06 build 阶段 ctest 总数从 1303 → 1345（+42）vs plan 估 +8 / +34 是 build-gles 首次配置 gtest_discover_tests 的 incremental 注册 noise；建议加澄清：ctest baseline 比对仅看「本任务测试增量」（明确指定 Test 编号区间）/ 不依赖数据库总量 / gtest_discover_tests 增量注册可能带来 noise / 通过指定测试名前缀（如 sdl2_egl_display_test）+ Test 编号确认精确增量。**预估**：~10 min。
-- ~~**P2 #8（来自 TASK-20260505-06 reflection §6.3 #3）systemPatterns 新段「Mesa headless 驱动严格性差异 / 反向探针分层」**~~ **✅ 已 TASK-05-06 archive 阶段落地** — techContext「Mesa headless 测试环境」段 + 「Mesa headless 驱动严格性差异」对照表（Mesa swrast vs 真实 GPU / 3 行为对比）+ 反向探针分层（驱动无关层必选 + 驱动严格层 P3）。
-- ~~**P2 #9（来自 TASK-20260505-06 reflection §6.3 #4）techContext 加段「OpenGL ES + EGL 平台 dep」**~~ **✅ 已 TASK-05-06 archive 阶段落地** — techContext「GLES 蓝图实施落地节点」段加 G1.1/G1.2 落地节点 + EGL 1.5 / GLESv2 3.2 dep（Mesa 24.x / Debian/Ubuntu）+ Mesa drivers（swrast / kms_swrast / libEGL_mesa）+ SDL_VIDEODRIVER=offscreen 双保险 + 性能基线（~us-ms Initialize / ~ns HasExtension / ~150ms 8 TEST_F）。
-- **P2 #11（来自 TASK-20260507-01 reflection §5.1 / 新发现）`writing-plans.mdc` LOC buffer 新子注记：GLES stub-heavy 骨架任务 ×0.70-0.85 低端子档** — G1.4 实际 LOC ×0.78 < [0.85, 1.5] 下界 / 根因：15 stub 内联 header（1 行/stub）+ fixture 复用；建议 writing-plans LOC buffer 段加子注记：「GLES/GPU 骨架任务（stub-heavy + fixture 复用）LOC 系数参考 ×0.70-0.85，宜用 ×0.80 乘以 .cc 行数，stub 内联 header 每方法仅按 1 行计」。**预估**：~8 min。
-- **P2 #12（来自 TASK-20260507-01 reflection §5.2 / 新发现）`writing-plans.mdc` 测试辅助函数 checklist 加「`Matrix3x2` 无 `operator==` → 需 XxxEq()」** — 测试中比较 Matrix3x2 / Rect / Point 聚合体时无法直接用 `EXPECT_EQ`，plan 需预见并规划辅助函数（G1.4 build 即时发现，未影响进度但属 plan 遗漏）；建议 writing-plans 测试设计段加 checklist：「比较 Matrix3x2/Rect/Point 时？ → 需 XxxEq() 辅助（这些类无 operator==）」。**预估**：~8 min。
-- **P2 #10（来自 TASK-20260505-06 reflection §6.3 #5 / 新发现）systemPatterns 新段「实施忠实度 + 跨决策协同度 双 100% 流程闭环」** — TASK-05 G1.1 first + TASK-06 G1.2 dual / 双 100% first → dual-evidence 已固化 / 待 G1.3 G1.4 续延 triple-evidence；当前已在「跨决策协同度 100% 第 15 次连续命中 + 实施忠实度 dual-evidence」段 P1 落地 ✅；P2 候选 = 进一步沉淀「双 100% 流程闭环」独立段（前置条件 + 模式参数 + 适用范围）。**预估**：~10 min。
+- **P2 #11** libtess2 `_deps` 离线预置文档 — `techContext.md`
+- **P2 #12** T10 winding rule 探针 deferred — G1.7 或 debug 任务
 
 ---
 
-## P3 候选清单（用户优先级排期）
+## 最近归档（速查）
 
-### 来自 TASK-20260504-01 spec §11.2 + 各历史任务 — 与上方「下一推荐任务」表对应
-
-详见上方「下一推荐任务」段 + `docs/specs/2026-05-04-mvp-scope.md` §11.2。
-
-### 8 项 P3 触发型候选（codebase review R1 已分析）
-
-- TASK-26-02-full（clearance 完整版）
-- TASK-26-03（LayoutInline IFC 递归 + bidi）
-- TASK-20260424-02（Layout 残余 super-linear ~40%）
-- CSS 4 标准逻辑属性 shorthand（`border-block` / `border-inline`）
-- `border-image` / `border-radius` 简写
-- TASK-20260419-06（HashMap Hash Mixing）
-- TASK-20260419-08（`string.h` 剩余 memcpy noinline 化）
-- TASK-20260419-12（DrawText 真路径优化，K7 隐式闭环待评估）
-
-### 来自 TASK-20260503-02 reflection（codebase guideline 候选）
-
-- **GoogleTest `ASSERT_TRUE(x.ok()) << x.status().message()` 短路评估易错模式 P3** — A-P1#6 audit CP2 扩展发现 tests/ 中 8 处该模式；建议 codebase guideline「测试中也用三元守卫显式化」。**预估**：~30 min audit + ~1 h codebase 修正。
-
----
-
-## 收尾清理（可选）
-
-- ✅ `feature/TASK-20260505-05-cmake-vx-renderer-flag` 分支已合并 + 删除（archive 阶段完成）
-- ✅ `feature/TASK-20260505-04-workflow-meta-batch` 分支已合并 + 删除
-- ✅ `feature/TASK-20260505-03-gles-renderer-blueprint` 分支已合并 + 删除
-- ✅ `feature/TASK-20260505-01-dombindings-r2-closure` 分支已合并 + 删除
-- ✅ `feature/TASK-20260504-01-mvp-scope-doc` 分支已合并 + 删除
-- 早期 feature 分支（TASK-20260430-* / TASK-20260502-* / TASK-20260503-*）如未删除可批量清理
-
----
-
-## 最近归档（速查，详细见 archive 文档）
-
-- `archive-TASK-20260507-01.md`（**G1.4 GLESCanvas 骨架实施 — GLES 蓝图实施第四步 / MVP-C 战略主线第四个实施任务 Level 3，2026-05-08**）— **本批最新 ✅** / 实施忠实度 quad-evidence / 跨决策协同度 100% 第 18 次连续命中 171/171 / Mesa swrast default framebuffer dual-evidence / shader_injection_test first-evidence / 三 build 矩阵全 PASS / plan ×0.6 build 0.09-0.16× 极致极速区
-- `archive-TASK-20260506-01.md`（**G1.3 Sdl2GLWindowSurface 実施 — GLES 蓝图实施第三步 / MVP-C 战略主线第三个实施任务 Level 3，2026-05-07**）— （前批）/ 实施忠实度 triple-evidence / Mesa swrast 帧缓冲 first-evidence / 跨决策协同度 第 17 次连续命中 158/158 / 三 build 矩阵 1337+1141+1352 全 PASS / plan ×0.6 build 0.13× 极端极速区 / 反复模式 0/7 累计 20+ 连续抑制
-- `archive-TASK-20260505-05.md`（**G1.1 CMake `VX_RENDERER` flag — GLES 蓝图实施首步 / MVP-C 战略主线第一个实施任务 Level 2，2026-05-05**）— （前批） / 9 个 systemPatterns 沉淀（reflection 史上单任务沉淀次高纪录）/ 跨决策协同度 100% 第 14 次连续命中（128/128 历史最高 streak）/ 实施忠实度新维度入库 / brainstorming P1.3 + writing-plans P1.6 双 dual-evidence 首次实战 / REFACTOR 涌现单一真相源 first-evidence（cmake/VxRenderer.cmake）/ ctest cmake -P stub probe 600-1200× 加速 first-evidence / P0 协议 quint-evidence + 适用性矩阵 5 类全覆盖 / plan ×0.6 ennea-evidence（实施类 Level 2 子档）/ LOC ×1.3-1.5 buffer dual-evidence / TDD 三阶完整 + 双 build 矩阵全 PASS（A 1303 + B 1110 + C gles 1303 + D invalid FATAL_ERROR）/ 反复模式 0/8 4 阶段全程抑制（累计 19 模式连续抑制 / 历史新高继续刷新）/ 12 改进建议（P0×0 + P1×9 全落实 + P2×3 累积）**
-- `archive-TASK-20260505-04.md`（**工作流元任务批量落地 — 14.5 项 P1+P2 跨任务沉淀清零 Level 2-3，2026-05-05**）— 工作流元任务 dual-evidence 第 2 实证 ✅ / 跨决策协同度 100% 第 13 次连续命中（累计 121/121）/ 极致 dogfooding 三层闭环 first-evidence ✅ / plan ×0.6 oct-evidence + 双子档分化 / P0 协议 quad-evidence 已固化 / 5 个范式里程碑 + 5 个 systemPatterns 沉淀 + 6/8 改进建议已落实 / 反复模式 0/8 4 阶段全程抑制（累计 17 模式连续抑制）
-- `archive-TASK-20260505-03.md`（**G1 OpenGL ES 硬件渲染后端蓝图 Level 4 V2=a，2026-05-05**）— **🚀 MVP-C 战略主线启动里程碑** — G1 OpenGL ES 硬件渲染后端蓝图 / 13 决策矩阵 + 18 实施子任务规格化 / 单 commit P0 协议首次完整实施 / 3 个范式升级同时落地（doudec-evidence + 极致极速区 0.02-0.05× + V2=a triple-evidence）/ 总投入 ~30-40 min vs plan ×0.6 ~17-25 h = **0.02-0.04× 极致极速区**
-- `archive-TASK-20260505-02.md`（Performance Overlay 持续 invalidate 机制 Level 2，2026-05-05）— 🎉 **MVP-B 100% 闭环里程碑达成** / B-G4 / 5 个范式同时升级（plan ×0.6 sext + 跨决策协同度 dec + 反向探针 triple + 反复模式 #8 triple + lazy-attach quad）
-- `archive-TASK-20260505-01.md`（**DomBindings R2 收口 — B-G1 children + B-G3 innerHTML setter + B-G2 audit Level 3，2026-05-05**）— MVP-B 完成度 90% → 95% / dogfood 视觉自动恢复链路三件齐 ✅ / 协议三件套里程碑（Phase 0 极速区 quint-evidence + 跨决策协同度 nona-evidence + 反向探针强度梯度三档 dual-evidence）/ 反复模式 #8 入库定型 / P0×4 reflect 全落实
-- `archive-TASK-20260504-01.md`（MVP-scope 文档蓝图 Level 4 V2=a 完整变体，2026-05-04）— DevTool 4 件套主线收官标识 🎉 / 三档分级 MVP-A/B/C 体系建立 / 路线图按 MVP 档分层重写 / 核心目标 #1+#2 路径量化
-- `archive-TASK-20260503-04.md`（DevTool Phase D · Console JS REPL Level 3 [安全相关]，2026-05-04）— DevTool 4 件套全部完整闭环 ✅ / spec §11.1 完整闭环 ✅ / T1 5 维度首次完整暴露 ✅ / plan ×0.6 0.07-0.10× 创历史新低
-- `archive-TASK-20260503-05.md`（QuickJS Interrupt Handler + SetEvalInterruptBudget API Level 2 [安全相关]，2026-05-03）
-- `archive-TASK-20260503-03.md`（DevTool 三件套主线收官 — 4 项 P3 候选批量清零 Level 2，2026-05-03）
-- `archive-TASK-20260503-02.md`（**工作流/规则类技术债批量清理 Level 2，2026-05-03**）— **工作流元任务范式 first-evidence**
-- `archive-TASK-20260503-01.md`（DevTool Phase C · Hot Reload Level 3，2026-05-03）
-- `archive-TASK-20260502-02.md`（DevTool Phase B · Performance Overlay Level 3，2026-05-03）
-- `archive-TASK-20260502-01.md`（DevTool Phase A · Inspector 实施 Level 4，2026-05-02）
-- `archive-TASK-20260430-04.md`（DevTool 三件套蓝图设计 Level 4 V2=a，2026-05-01）
-- `archive-TASK-20260430-03.md`（全代码库 Code Review Level 4，2026-05-01）
-- `archive-TASK-20260430-02.md`（CSS border shorthand 补全 Level 2，2026-04-30）
-- `archive-TASK-20260430-01.md`（first/last child margin collapse with parent Level 3，2026-04-30）
-- `archive-TASK-20260426-01.md`（Layout 正确性消化 Level 4，2026-04-30）
-- `archive-TASK-20260425-01.md`（SDL2 窗口后端 + 输入事件桥接 Level 3，2026-04-26）
-- `archive-TASK-20260424-04.md`（DrawText warm 残余优化 Level 2 D 纯收尾，2026-04-25）
-- `archive-TASK-20260424-03.md`（DrawText warm 优化 Level 2-3 K7 Resolved，2026-04-24）
-- `archive-TASK-20260424-01.md`（Layout super-linear knee 根因调查，2026-04-24）
-- `archive-TASK-20260419-13.md`（流程规则 P0/P1 沉淀冲刺，2026-04-19）
-- `archive-TASK-20260419-11.md`（ImageCache::Load HashMap 化，2026-04-19）
-- 更早归档见 `memory-bank/archive/` 目录与 `tasks.md §任务历史`
+- [`archive-TASK-20260528-01.md`](archive/archive-TASK-20260528-01.md) — G1.5 FillRect + FillRoundedRect（2026-05-28）
+- [`archive-TASK-20260507-01.md`](archive/archive-TASK-20260507-01.md) — G1.4 GLESCanvas 骨架（2026-05-08）

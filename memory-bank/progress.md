@@ -2,7 +2,26 @@
 
 ## 当前任务
 
-（空闲 — 等待新任务指令）
+### TASK-20260529-01 — G1.6 `GLESCanvas::FillPath` via libtess2
+
+**任务定位：** GLES 蓝图实施第六步 / Level 3 / MVP-C 战略主线第六个实施任务 / 前置 G1.5 ✅
+
+**当前阶段：** 💭 **回顾中**（Reflect ✅ → 待 `/archive`）
+
+#### Build 阶段产出（2026-05-29）
+
+- **Phase A RED：** `gles_canvas_path_test.cc` 10 测注册 → 4/10 FAIL（FillPath stub）
+- **Phase B GREEN：** `cmake/LibTess2.cmake` + `kPathVert` + `FillPath` 实现 → **10/10 PASS**
+- **Phase D 三矩阵：** A **1303** / B **1141** / C **1385**（+10，符合预期）
+- **libtess2 GIT_TAG：** v1.0.2（FetchContent populate 成功）
+
+#### Reflect 阶段产出（2026-05-29）
+
+- 回顾文档落盘 / LOC 0.94× / hex-evidence（G1.6 第 6 个 GLES 实施子任务）
+- Mesa swrast **glDrawElements + dynamic VBO** first-evidence
+- P1：`enable_language(C)` checklist / Bezier 采样坐标 / commit 链拆分
+
+**下一步：** `/archive`
 
 ---
 
