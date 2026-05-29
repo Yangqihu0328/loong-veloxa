@@ -470,6 +470,14 @@ if(VX_PLATFORM_SDL2)
               GTest::gtest_main)
     gtest_discover_tests(gles_canvas_text_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # ImageTexturePool RGBA8 texture cache (G1.9 round 1).
+    add_executable(image_texture_pool_test
+                   graphics/gles/image_texture_pool_test.cc)
+    target_link_libraries(image_texture_pool_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
+    gtest_discover_tests(image_texture_pool_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
