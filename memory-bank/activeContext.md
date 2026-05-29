@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）+ DrawText ✅（7/7）。三矩阵无退化（gles 1416 / software 1303 / no-devtool 1141）。回顾文档 [`reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md) 已落盘。待 `/archive`。
+**归档中** — TASK-20260529-03 G1.8 归档文档已落盘，待分支收尾 + 状态重置。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 

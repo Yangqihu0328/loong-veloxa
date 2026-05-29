@@ -2,46 +2,19 @@
 
 ## 当前任务
 
-### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`
-
-**当前阶段：** 🟣 **回顾完成**（GlyphAtlas ✅ + DrawText ✅ + Reflect ✅）→ 待 `/archive`
-
-#### Reflect 阶段产出（2026-05-29）
-
-- [`reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md)（Level 4 全面 / 计划vs实际 + 6 维度 + 反复模式识别 + 安全 checklist）。
-- 关键发现：① plan 文件清单 0 偏差（连续抑制反复模式 #1）；② 纹理重绑 bug = GetOrUpload GL 状态副作用未文档化 → 新 first-evidence「GL 全局状态副作用契约」入 systemPatterns；③ HashMap API 名称审计错（Find/Insert vs find/end）→ 反复模式 #3 变体 P1#B。
-- 知识库更新：systemPatterns（GL 状态副作用契约 first-evidence）+ techContext（G1.8 段 + 5 项技术债）+ activeContext（P1#A/#B 待处理 + P2）。
-
-
-#### Build 轮次 2（DrawText）✅ 2026-05-29
-
-- **2A RED**：`gles_canvas_text_test.cc` 7 测（RendersCoverage / EmptyString / TransparentBrush / NoGLError / AfterSetTransform / MultipleDraws / ReverseProbe-NoFontManager）。no-op stub → **2/7 FAIL**（2 个覆盖测试），5 个 no-draw/error 通过符合预期。commit `test(gles): G1.8 round2 RED`。
-- **2B GREEN**：
-  - `shaders.h` 加 `kGlyphVert`/`kGlyphFrag`（GL_R8 单通道采样为 coverage，u_color tint；a_uv→location 1）+ 注册 `kAllShaderSources`。
-  - `LinkProgram` 增 `glBindAttribLocation(1,"a_uv")`（其它程序无害忽略）。
-  - `GLESCanvas`：glyph program + 动态交错 VBO（pos.xy+uv.xy）+ ctor 创建 `glyph_atlas_`（仅当 fm&&gc）；`DrawText` 镜像 software 流程（FindFont→SetFacePixelSize→ShapeOrLookup→pen walk），逐 glyph `GetOrUpload`+流式 quad 绘制。
-  - **关键 bug 修复**：`GetOrUpload` 上传时 `glBindTexture(...,0)` 解绑 → 循环外单次绑定失效 → 采样返回 0（全白）。修复为每次 `glDrawArrays` 前重绑 atlas 纹理。诊断法：把 frag 临时改纯红 → 几何正常（nonwhite=1155）排除几何/状态，定位到纹理绑定。
-  - **7/7 PASS**。
-- **三矩阵验证**：gles 1416/1416（基线 1399 +10 atlas +7 text）· software 1303/1303 · no-devtool 1141/1141。零退化。
-
-#### Build 轮次 1（GlyphAtlas）✅ 2026-05-29
-
-- **1A RED**：`glyph_atlas_test.cc` 10 测（ctor texture≠0 / Ascii valid / cache hit·miss 计数 / space zero-size / UV in-range / missing glyph invalid / many-no-GLError / OnContextLost texture=0 / OnContextRestored 重建+缓存清空）。空壳 → **8/10 FAIL**（MissingGlyph + ContextLost 2 个 stub-pass 符合预期）。commit `test(gles): G1.8 round1 RED`。
-- **1B GREEN**：`glyph_atlas.{h,cc}` — GL_R8 1024² 纹理（零初始化防 bleed）+ row-pack 分层（1px gutter）+ FT 栅格化镜像 software_canvas.cc（miss→`FT_Load_Glyph`/`FT_Render_Glyph`→`GlyphCache.Put`）+ atlas 级 cache（u64 key=font<<40|size<<24|gid）+ `OnContextLost`（texture=0/不 glDelete）/`OnContextRestored`（重建+清缓存）。**10/10 PASS**。
-- CMake：`graphics/CMakeLists.txt` 加 `gles/glyph_atlas.cc`；`tests/CMakeLists.txt` 注册 `glyph_atlas_test`（gles guard）。
-
-#### VAN + Plan 阶段产出（2026-05-29）
-
-- VAN：Level 4 / 基线 gles 1399·software 1303·no-devtool 1141 / 分支 `feature/TASK-20260529-03-gles-glyph-atlas-drawtext`（基线 main）
-- 头脑风暴：D1-D8 = A（all_recommended）/ 跳过独立 creative
-- **5 项 reconcile（R1-R5）**：GlyphCache 不栅格化→GlyphAtlas 自栅格化；key=font|glyph_id|pixel_size；glyph shader 对齐 u_xform_px（非 creative u_proj mat4）；DrawText 复用 FindFont→SetFacePixelSize→ShapeOrLookup；DejaVu 字体实测可得
-- spec + plan 落盘（2 轮次 Build / ~22 测 / ctest +18-22）
-
-**下一步：** `/build` 轮次 2（glyph shader + DrawText）
+**🟢 空闲** — 无进行中的任务。使用 `/van` 开始新任务（推荐 G1.9 DrawImage / R9 HitTest / G2 文本批量化+LRU）。
 
 ---
 
 ## 上次任务（已归档闭环）
+
+### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（已归档）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260529-03.md`](archive/archive-TASK-20260529-03.md)
+
+**核心里程碑：** GL_R8 glyph atlas + row-pack + FT 栅格化镜像 / glyph shader（coverage×tint）/ DrawText 逐字形 quad / 17 测（atlas 10 + text 7）/ 三矩阵零退化（gles 1399→1416）/ 2 轮 TDD 闭环 4 commit / **新 first-evidence「GL 全局状态副作用契约」**（GetOrUpload 解绑纹理 → draw 前须重绑，全屏白 bug 经纯红 frag 二分调试定位）/ 反复模式 #3 变体（HashMap API 名称）/ 0 新依赖。技术债：LRU/emoji/批量化/FT helper 抽取/text 测回补（G2）。
+
+---
 
 ### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（已归档）
 

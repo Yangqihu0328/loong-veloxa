@@ -4,7 +4,7 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（GLES 蓝图实施第八步 / MVP-C 战略主线第八个实施任务）
 
-**当前阶段：** 🟣 **回顾完成**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ → 待 `/archive`）
+**状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260529-03.md`](archive/archive-TASK-20260529-03.md)。
 
 **Reflect 产出（2026-05-29）：** [`reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md)（Level 4 全面）。关键：plan 文件清单 0 偏差 / TDD 2 轮严格闭环 / 三矩阵零退化；最大教训「plan 循环内纹理重绑实为 GetOrUpload GL 状态副作用必要补偿，实现误优化引入全屏白」→ 新 first-evidence 模式「GL 全局状态副作用契约」入 systemPatterns（P1）。反复模式：#3 部分命中（HashMap API 名称审计错，P1#B）+ 非默认路径部分命中（text 测裁剪，P2）。安全 N/A（GLSL 注入由静态嵌入 + shader_injection_test 闭环）。5 改进建议（2 P1 迁 activeContext / 3 P2 记 techContext）。
 
