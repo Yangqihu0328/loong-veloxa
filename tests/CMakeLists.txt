@@ -461,6 +461,15 @@ if(VX_PLATFORM_SDL2)
               GTest::gtest_main)
     gtest_discover_tests(glyph_atlas_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # GLESCanvas DrawText via GlyphAtlas (G1.8 round 2).
+    add_executable(gles_canvas_text_test
+                   graphics/gles/gles_canvas_text_test.cc)
+    target_link_libraries(gles_canvas_text_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics vx_text
+              GTest::gtest_main)
+    gtest_discover_tests(gles_canvas_text_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
