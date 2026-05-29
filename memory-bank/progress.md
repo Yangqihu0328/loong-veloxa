@@ -4,7 +4,13 @@
 
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🔨 **构建中**（轮次 1 ImageTexturePool ✅ 8/8；轮次 2 DrawImage 进行中）
+
+#### 轮次 1 Build 产出（2026-05-29）
+
+- `ImageTexturePool`（`veloxa/graphics/gles/image_texture_pool.{h,cc}`）：键 = `(u64)image.pixels()` + (w,h) 校验，命中返回缓存 / 失配则 glDelete 旧 tex 重传；GL_RGBA8 上传（`GL_UNPACK_ALIGNMENT=4`）/ LINEAR + CLAMP_TO_EDGE；`OnContextLost/Restored` 清缓存（lazy 重传，丢 GL handle 不 glDelete）；dtor 遍历 `begin()/end()` glDelete。
+- TDD RED→GREEN：8 测（Ctor / ValidTexture / CacheHit / CacheMiss / InvalidZero / NoGLError / ContextLost / ContextRestored）→ RED 4/8 fail → GREEN **8/8 PASS**。
+- 承接 G1.8 P1#B：先读 `hash_map.h` 确认 `Find/Insert/Erase` PascalCase + `begin/end` + `it->key/value`，无编译期返工。
 
 #### VAN + Plan 阶段产出（2026-05-29）
 
