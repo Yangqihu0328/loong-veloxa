@@ -5017,6 +5017,22 @@ target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
 
 ---
 
+## ⚠️ GLES 资源对象方法的 GL 全局状态副作用契约 first-evidence（TASK-20260529-03 G1.8）
+
+**核心约束：** OpenGL 是全局状态机。当一个「资源对象方法」在内部 mutate 全局 GL 状态时，该副作用会**穿透**调用方在外层建立的状态，破坏后续 draw。
+
+**实证（G1.8 DrawText 全屏白 bug）：**
+- `GlyphAtlas::GetOrUpload` 在 cache-miss 上传字形时执行 `glBindTexture(GL_TEXTURE_2D, texture_)` → `glTexSubImage2D` → `glBindTexture(GL_TEXTURE_2D, 0)`（解绑）+ 改 `GL_UNPACK_ALIGNMENT`。
+- 初版 `DrawText` 在 glyph 循环**外**单次 `glBindTexture(atlas)`，循环内每次调 `GetOrUpload` → 纹理被解绑 → `glDrawArrays` 采样单元 0 无纹理 → coverage 恒 0 → 全屏白（非崩溃、非 GL error，极隐蔽）。
+
+**正解（实测修复）：** 在 `GetOrUpload` 调用**之后**、`glDrawArrays` **之前**重新 `glBindTexture(atlas->texture_id())`。即「会 mutate GL 状态的 helper 调用之后，调用方必须重建自己依赖的状态」。
+
+**诊断范式（systematic-debugging 二分管线）：** 全屏白时把 `kGlyphFrag` 临时改纯红（忽略纹理采样）→ 若几何出现（nonwhite>0）则排除几何/program/blend，锁定纹理绑定/采样层；若仍空则查几何/NDC/viewport。
+
+**plan 防御（→ P1，writing-plans.mdc GLES 段）：** GLES plan 中「看似冗余」的 GL 状态调用（重绑、重设 uniform/pixelstore）必须逐条注释「不可省原因」，防实现者误优化删除引入隐蔽 bug。本任务 plan §2B.3 本含循环内重绑，但未注释必要性 → 实现时被误提到循环外。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

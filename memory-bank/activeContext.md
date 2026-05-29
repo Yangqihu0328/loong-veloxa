@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）+ DrawText ✅（7/7）。三矩阵无退化（gles 1416 / software 1303 / no-devtool 1141）。待 `/reflect`。
+**回顾中** — TASK-20260529-03 G1.8 / GlyphAtlas ✅（10/10）+ DrawText ✅（7/7）。三矩阵无退化（gles 1416 / software 1303 / no-devtool 1141）。回顾文档 [`reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md) 已落盘。待 `/archive`。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 
@@ -23,6 +23,11 @@
 ---
 
 ## 待处理事项
+
+**来自 TASK-20260529-03（G1.8）回顾 — 下个 GLES/容器任务前落实：**
+- **P1 #A** GLES 资源对象方法的 GL 全局状态副作用契约：会 mutate GL 状态的 helper（如 `GlyphAtlas::GetOrUpload` 解绑 `GL_TEXTURE_2D` + 改 `GL_UNPACK_ALIGNMENT`）调用后、draw 前**必须重建依赖状态** → GLES plan checklist「看似冗余的 GL 状态调用逐条注释不可省原因」（已入 systemPatterns first-evidence）。
+- **P1 #B**（反复模式 #3 变体）容器 API 审计须读真实 header 方法名：本仓 `HashMap` 用 `Find/Insert`（PascalCase），非 STL `find/end/operator[]`。plan §0.4 误审导致编译期修正 → Phase 0 audit 强化。
+- **P2** text 像素测回补（plan T3/T5/T10/T11/T12 裁掉：cache 复用/色变/空格 advance/基线精度/多字 advance）+ FT 栅格化抽 helper + 逐字形 draw 批量化 + atlas LRU/emoji（见 techContext 技术债）。
 
 **来自 TASK-20260529-02（G1.7）回顾 — 下个 GLES 像素测任务前落实：**
 - **P1 #1**（反复模式·已升级）像素测采样坐标必须解析推导：扩展至矩形/线/环描边边带（`[edge-hw,edge+hw]` 居中 / `[edge,edge+w]` 内描边）+ 像素中心 +0.5 偏移 → `writing-plans.mdc` 测试矩阵 checklist。T1 `(6,6)` 落空心内角复现 G1.6 T4 同类误判。

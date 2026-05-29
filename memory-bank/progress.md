@@ -4,7 +4,14 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`
 
-**当前阶段：** 🟢 **构建完成**（GlyphAtlas ✅ + DrawText ✅；三矩阵无退化）→ 待 `/reflect`
+**当前阶段：** 🟣 **回顾完成**（GlyphAtlas ✅ + DrawText ✅ + Reflect ✅）→ 待 `/archive`
+
+#### Reflect 阶段产出（2026-05-29）
+
+- [`reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md)（Level 4 全面 / 计划vs实际 + 6 维度 + 反复模式识别 + 安全 checklist）。
+- 关键发现：① plan 文件清单 0 偏差（连续抑制反复模式 #1）；② 纹理重绑 bug = GetOrUpload GL 状态副作用未文档化 → 新 first-evidence「GL 全局状态副作用契约」入 systemPatterns；③ HashMap API 名称审计错（Find/Insert vs find/end）→ 反复模式 #3 变体 P1#B。
+- 知识库更新：systemPatterns（GL 状态副作用契约 first-evidence）+ techContext（G1.8 段 + 5 项技术债）+ activeContext（P1#A/#B 待处理 + P2）。
+
 
 #### Build 轮次 2（DrawText）✅ 2026-05-29
 

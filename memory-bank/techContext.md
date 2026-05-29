@@ -1345,3 +1345,16 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - G1.7 计划：[`docs/plans/2026-05-29-gles-canvas-stroke.md`](../docs/plans/2026-05-29-gles-canvas-stroke.md)
 - G1.7 回顾：[`memory-bank/reflection/reflection-TASK-20260529-02.md`](reflection/reflection-TASK-20260529-02.md)
 
+### GLES G1.8 GlyphAtlas + DrawText（TASK-20260529-03 / 文本渲染）
+
+- **交付：** `gles/glyph_atlas.{h,cc}`（GL_R8 1024² atlas + row-pack 分层 1px gutter + FT 栅格化镜像 `software_canvas.cc:207-230` + atlas 级 cache u64 key=`font<<40|px<<24|gid` + `OnContextLost/Restored`）+ `gles_canvas.cc` `DrawText`（FindFont→SetFacePixelSize→ShapeOrLookup→pen walk / 逐字形流式 VBO quad）+ `kGlyphVert/kGlyphFrag`（GL_R8 coverage 采样 + color tint / `a_uv`→attr loc 1）；`glyph_atlas_test`（10）+ `gles_canvas_text_test`（7）。**0 新依赖**（复用 FreeType/FontManager/GlyphCache）。
+- **Mesa swrast 能力实证扩展：** + **G1.8 GL_R8 纹理 + glTexSubImage2D 子区上传 + sampler2D 单通道采样**在 offscreen 路径生效（atlas 字形覆盖正确渲染）。
+- **⚠️ GL 状态副作用契约（new first-evidence / P1）：** `GlyphAtlas::GetOrUpload` cache-miss 上传后 `glBindTexture(GL_TEXTURE_2D,0)` 解绑 → `DrawText` 必须在该调用**后**、`glDrawArrays` **前**重绑 atlas 纹理。初版循环外单次绑定 → 全屏白（隐蔽：非崩溃非 GL error）。诊断：临时纯红 frag 二分管线。详见 systemPatterns「GL 全局状态副作用契约」段。
+- **HashMap API：** 本仓用 `Find`/`Insert`（PascalCase），非 STL `find/end`（plan §0.4 误审 → 编译期修正 / 反复模式 #3 变体）。
+- **三 build 矩阵：** gles 1399→**1416**（+17：atlas 10 + text 7）/ software 1303 / no-devtool 1141 无退化；完整 build-gles **1416/1416 PASS**（~78s）。`shader_injection_test` S1 自动覆盖 2 新着色器。
+- **技术债（MVP 取舍 / G2）：** ① FT 栅格化 GlyphAtlas vs SoftwareCanvas 重复 → 抽 `text::RasterizeGlyph` helper；② atlas 驱逐 = full→clear-all（Level 4 scope 标称 LRU 未实现）；③ GL_R8 单色，emoji/CBDT 彩色字形未处理；④ 逐字形 draw call（未批量化）；⑤ text 像素测裁剪（cache 复用/色变/空格/基线精度/多字 advance 探针待回补）。
+- **commit 链：** round1 RED `test(gles)` → GREEN `feat(gles)` / round2 RED `test(gles)` → GREEN `feat(gles)`（4 提交对齐 plan）。
+- G1.8 spec：[`docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md`](../docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md)
+- G1.8 计划：[`docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`](../docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md)
+- G1.8 回顾：[`memory-bank/reflection/reflection-TASK-20260529-03.md`](reflection/reflection-TASK-20260529-03.md)
+
