@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260529-02 G1.7 Stroke* Phase A RED 进行中。
+**构建完成** — TASK-20260529-02 G1.7 Stroke* Build ✅（14/14 PASS / 三矩阵无退化）/ 待 `/reflect`。
 
 **上一任务：** [TASK-20260529-01 G1.6 FillPath](archive/archive-TASK-20260529-01.md) — ✅ 归档。
 

@@ -4,14 +4,23 @@
 
 ### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
 
 #### Plan 阶段产出（2026-05-29）
 
 - plan 文档落盘 / B1–B8 锁定 / 14 测矩阵
 - 分支 `feature/TASK-20260529-02-gles-canvas-stroke` ✅
 
-**下一步：** `/build`
+#### Build 阶段产出（2026-05-29）
+
+- **Phase A RED**：`gles_canvas_stroke_test.cc` 14 测（含 3 反向探针），9 像素测对 stub FAIL；强化纯红正向测加 `green<50` 约束（避免白底假绿）
+- **Phase B GREEN**：4 方法全落地 — StrokeRect（4 居中 FillRect 条）/ StrokeLine（`Matrix3x2.Multiply(T×R)` + 居中 FillRect）/ StrokeRoundedRect（stencil 内描边环 + 无 stencil 矩形条 fallback）/ StrokePath（segment-quad → FillPath，复用 G1.6 flatten）→ 14/14 PASS
+- **Phase C/D**：0 新 shader（shader_injection_test 无改动）；三 build 矩阵 gles **1385→1399**（+14）、software **1303**、no-devtool **1141** 无退化；完整 build-gles **1399/1399 PASS**（66s，1 无关 WPT skip）
+- **commit 链**：RED `test(gles)` → GREEN `feat(graphics)` → finalize `chore(build)`
+- **plan-fact reconcile 落实**：creative §4.4 `OffsetPath` 不存在 → 采 rasterizer segment-quad；creative §4.3 链式变换不存在 → `Matrix3x2::Multiply`
+- **待 reflect 评估**：StrokeRoundedRect 内描边环（非居中）+ 矩形内孔（角不圆）为 MVP 取舍；每段 FillPath 单独 tessellate 的性能（R2）
+
+**下一步：** `/reflect`
 
 ---
 

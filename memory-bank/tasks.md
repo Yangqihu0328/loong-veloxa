@@ -4,7 +4,9 @@
 
 ### TASK-20260529-02 — G1.7 `GLESCanvas::Stroke*`（Stroke = Fill 转换）（GLES 蓝图实施第七步 / MVP-C 战略主线第七个实施任务）
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🟢 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ → 待 `/reflect`）
+
+**构建结果（2026-05-29）：** Stroke* 4 方法全部落地，14/14 `gles_canvas_stroke_test` 通过；三 build 矩阵 gles 1385→1399（+14）、software 1303、no-devtool 1141 均无退化（完整 build-gles 1399/1399 PASS）。
 
 **分支：** `feature/TASK-20260529-02-gles-canvas-stroke` ✅ 已创建（基于 G1.6 `63b53ab`）
 
@@ -54,7 +56,14 @@ GLES 蓝图实施第七步 — 在 G1.5（FillRect/FillRoundedRect）+ G1.6（Fi
 | 建议新分支 | `feature/TASK-20260529-02-gles-canvas-stroke` |
 | 原因 | Stroke* 依赖 FillPath/FillRect/FillRoundedRect — 必须在 G1.6 分支上继续 |
 
-**下一步：** 确认创建分支 → `/plan`
+**下一步：** `/build` — Phase A RED → Phase B GREEN
+
+#### Plan 阶段产出（2026-05-29）
+
+- **plan 文档：** [`docs/plans/2026-05-29-gles-canvas-stroke.md`](../docs/plans/2026-05-29-gles-canvas-stroke.md)（~280 行）
+- **B1–B8 全锁定** / 2 项 plan-fact reconcile（OffsetPath / Matrix3x2 API）
+- **14 测 + 3 反向探针** / ctest +12–16 on gles
+- **0 新 shader / 0 新 FetchContent**
 
 ---
 
