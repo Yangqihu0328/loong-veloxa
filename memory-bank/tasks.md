@@ -4,7 +4,13 @@
 
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / MVP-C 战略主线第九个实施任务）
 
-**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ / 反思文档 `reflection-TASK-20260529-04.md` → 待 `/archive`）
+**状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260529-04.md`](archive/archive-TASK-20260529-04.md)。
+
+**核心里程碑：** `ImageTexturePool`（GL_RGBA8 / 指针键缓存 D2=B / Context Lost·Restored）+ `GLESCanvas::DrawImage`（src_rect→UV 子区采样镜像 software / `kImageVert`·`kImageFrag`）/ 16 测（pool 8 + image 8）/ 2 轮 TDD 闭环 4 commit / 三矩阵零退化（gles 1416→1432·sw 1303·no-devtool 1141）/ **P1#A（GL 状态副作用契约）+ P1#B（容器 API）上轮建议主动预防成功 → 零 debug 迭代**（GL 副作用契约升 dual-evidence / 新增「GLES 纹理-采样资源范式」dual-evidence）/ 0 新依赖。技术债：无界缓存/仅 LINEAR/无 opacity/无 clip/ABA/未批量化（G2/G1.10）。
+
+**当前阶段（历史）：** 💭 回顾中 → 归档完成
+
+**Plan 产出（2026-05-29）：** spec [`2026-05-29-gles-canvas-drawimage-design.md`](../../docs/specs/2026-05-29-gles-canvas-drawimage-design.md)（5 项 reconcile R1-R5：**R1 Image 无 handle → 缓存键=`(u64)pixels()`+w/h 校验** / R2 无 mipmap / R3 OnContextRestored 无参 / R4 frag 纯采样 / R5 RGBA32 直传）+ plan [`2026-05-29-gles-canvas-drawimage.md`](../../docs/plans/2026-05-29-gles-canvas-drawimage.md)（D1-D8 推荐锁定 / 2 轮次 Build：ImageTexturePool + DrawImage / ~16 测 / ctest gles 期望 ~1432 / 跳过独立 creative 复用 creative-gles-resources §4）。承接 G1.8 P1#A（GetOrUpload mutate 纹理绑定 → draw 前重绑）+ P1#B（HashMap Find/Insert）+ G1.7 P1#2（双通道）已折入。
 
 **Plan 产出（2026-05-29）：** spec [`2026-05-29-gles-canvas-drawimage-design.md`](../../docs/specs/2026-05-29-gles-canvas-drawimage-design.md)（5 项 reconcile R1-R5：**R1 Image 无 handle → 缓存键=`(u64)pixels()`+w/h 校验** / R2 无 mipmap / R3 OnContextRestored 无参 / R4 frag 纯采样 / R5 RGBA32 直传）+ plan [`2026-05-29-gles-canvas-drawimage.md`](../../docs/plans/2026-05-29-gles-canvas-drawimage.md)（D1-D8 推荐锁定 / 2 轮次 Build：ImageTexturePool + DrawImage / ~16 测 / ctest gles 期望 ~1432 / 跳过独立 creative 复用 creative-gles-resources §4）。承接 G1.8 P1#A（GetOrUpload mutate 纹理绑定 → draw 前重绑）+ P1#B（HashMap Find/Insert）+ G1.7 P1#2（双通道）已折入。
 
@@ -906,6 +912,14 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260529-04：G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / Level 4）— ✅ 已归档（2026-05-29）
+
+> **本任务已归档闭环。详见 [`memory-bank/archive/archive-TASK-20260529-04.md`](archive/archive-TASK-20260529-04.md)。**
+
+- **分支：** `feature/TASK-20260529-04-gles-canvas-drawimage`（待 finalize merge 决策）
+- **主交付：** `ImageTexturePool`（GL_RGBA8 指针键缓存）+ `DrawImage`（src→UV 子区采样）+ `kImageVert`/`kImageFrag` / 16 ctest / gles 1416→1432
+- **hex-evidence：** 第 9 个 GLES 实施子任务 / P1#A+P1#B 主动预防成功 → 零 debug 迭代 / GL 副作用契约升 dual-evidence
 
 ### TASK-20260529-01：G1.6 `GLESCanvas::FillPath` via libtess2（GLES 蓝图实施第六步 / Level 3）— ✅ 已归档（2026-05-29）
 

@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260529-04 G1.9 / Build ✅（2 轮 16 测）+ Reflect ✅（`reflection-TASK-20260529-04.md`）/ 三矩阵零退化（gles 1432 / sw 1303 / no-devtool 1141）/ **P1#A + P1#B 上轮建议本次主动预防成功（零 debug 迭代）** / 待 `/archive`。
+**归档中** — TASK-20260529-04 G1.9 归档闭环（`archive-TASK-20260529-04.md`）→ 重置空闲。
 
 **上一任务：** [TASK-20260529-03 G1.8 GlyphAtlas + DrawText](archive/archive-TASK-20260529-03.md) — ✅ 归档（2026-05-29 / 已合并 main fast-forward + 分支删除）。
 

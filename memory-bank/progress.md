@@ -2,44 +2,17 @@
 
 ## 当前任务
 
-### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`
-
-**当前阶段：** 💭 **回顾完成**（Build ✅ + Reflect ✅ / 待 `/archive`）
-
-#### Reflect 阶段产出（2026-05-29）
-
-- 反思文档 [`reflection-TASK-20260529-04.md`](reflection/reflection-TASK-20260529-04.md)（Level 4 详细回顾）。
-- **核心发现：** ① P1#A（GL 状态副作用契约）+ P1#B（容器 API 名称）上轮两个 P1 建议**本次均主动预防成功**，G1.8 全屏白 bug 未复发，**零 debug 迭代**——reflection→activeContext→plan checklist 闭环有效性获正面实证；② GLES 纹理-采样资源范式（glyph/image 同形）2 次实证，可模板化。
-- **计划精度：** 文件清单 9/9 完全一致 / 测试数 16/16 / gles 1432 精确命中 / 仅测试矩阵命名轻微漂移（T3 DstScaleUp→EmptySrc/EmptyDst 拆分，覆盖等价）。
-- **建议落地：** 无 P0/P1（上轮 P1 已落地并本次验证）；P2×4 → systemPatterns（资源范式 + 闭环正面案例）+ techContext（DrawImage MVP 缺口技术债）。
-- **安全：** 0 新依赖 / 输入早退校验 / shader 编译时常量（shader_injection S1 覆盖）/ 无安全风险变更。
-
-#### 轮次 2 Build 产出（2026-05-29）
-
-- shader：`kImageVert`（pos+uv→NDC+Y-flip，复用 glyph 约定）+ `kImageFrag`（RGBA 直采，blend 由 GL_BLEND）→ 注册入 `kAllShaderSources`（shader_injection_test 自动覆盖）。
-- `GLESCanvas`：新增 image program / `image_vao_` / `image_vbo_`（interleaved pos+uv，loc 0/1）/ `image_uniforms_`（xform/viewport/tex）/ owned `std::unique_ptr<ImageTexturePool> image_pool_`（无需字体，恒建）；`InitImageResources`/`DestroyImageResources` 对称 ctor/dtor。
-- `DrawImage`：`GetOrUpload` → src_rect 子区→UV（镜像 software src→dst 映射）→ dyn VBO quad → **bind tex AFTER GetOrUpload（P1#A 副作用契约）** → draw。invalid/empty src/dst 早退。
-- TDD RED→GREEN：8 测（RendersOpaqueColor / Invalid / EmptySrc / EmptyDst / NoGLError / AfterSetTransform / **SubRectSampling** 验 UV 正确 / RepeatDrawCacheReuse）→ RED 4/8 → GREEN **8/8 PASS**。
-- **完成验证（三矩阵零退化）：** gles **1432/1432**（1416+16 新）/ software **1303/1303** / no-devtool **1141/1141**（均 1 项 WPT 预存跳过）。0 新依赖。
-
-#### 轮次 1 Build 产出（2026-05-29）
-
-- `ImageTexturePool`（`veloxa/graphics/gles/image_texture_pool.{h,cc}`）：键 = `(u64)image.pixels()` + (w,h) 校验，命中返回缓存 / 失配则 glDelete 旧 tex 重传；GL_RGBA8 上传（`GL_UNPACK_ALIGNMENT=4`）/ LINEAR + CLAMP_TO_EDGE；`OnContextLost/Restored` 清缓存（lazy 重传，丢 GL handle 不 glDelete）；dtor 遍历 `begin()/end()` glDelete。
-- TDD RED→GREEN：8 测（Ctor / ValidTexture / CacheHit / CacheMiss / InvalidZero / NoGLError / ContextLost / ContextRestored）→ RED 4/8 fail → GREEN **8/8 PASS**。
-- 承接 G1.8 P1#B：先读 `hash_map.h` 确认 `Find/Insert/Erase` PascalCase + `begin/end` + `it->key/value`，无编译期返工。
-
-#### VAN + Plan 阶段产出（2026-05-29）
-
-- VAN：Level 4 / 基线 gles 1416·software 1303·no-devtool 1141 / 分支 `feature/TASK-20260529-04-gles-canvas-drawimage`（基线 main）/ 前置验证通过（0 新依赖）。
-- 头脑风暴：D1-D8 推荐锁定（D2=B 指针键缓存）/ 跳过独立 creative。
-- **核心 reconcile R1**：creative §4 `ImageTexturePool` 假设 `image.handle()`，实际 `Image` 无 handle → 缓存键改 `(u64)image.pixels()` + (w,h) 校验防指针复用。
-- spec + plan 落盘（2 轮次 Build / ~16 测 / ctest gles 期望 ~1432）。承接 G1.8 P1#A（纹理绑定副作用）+ P1#B（HashMap API）+ G1.7 P1#2（双通道）。
-
-**下一步：** `/build` — 轮次 1 ImageTexturePool RED → GREEN → 轮次 2 DrawImage。
+_无活动任务 — 等待 `/van` 启动新任务。_
 
 ---
 
 ## 上次任务（已归档闭环）
+
+### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`（已归档）
+
+**归档文档：** [`memory-bank/archive/archive-TASK-20260529-04.md`](archive/archive-TASK-20260529-04.md)
+
+**核心里程碑：** `ImageTexturePool`（GL_RGBA8 / `(u64)pixels()`+w/h 指针键缓存 D2=B / Context Lost·Restored）+ `DrawImage`（src_rect→UV 子区采样镜像 software / `kImageVert`·`kImageFrag` RGBA 直采）/ 16 测（pool 8 + image 8）/ 2 轮 TDD 闭环 4 commit / 三矩阵零退化（gles 1416→1432·sw 1303·no-devtool 1141）/ **P1#A（GL 状态副作用契约）+ P1#B（容器 API）上轮建议主动预防成功 → 零 debug 迭代**；GL 副作用契约升 **dual-evidence**，新增「GLES 纹理-采样资源范式」**dual-evidence** / 0 新依赖。技术债：无界缓存/仅 LINEAR/无 opacity/无 clip/ABA/未批量化（G2/G1.10）。
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（已归档）
 
