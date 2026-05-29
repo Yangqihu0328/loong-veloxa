@@ -531,4 +531,191 @@ void GLESCanvas::FillPath(const Path& path, const Brush& brush) {
   tessDeleteTess(tess);
 }
 
+// -----------------------------------------------------------------------------
+// G1.7: Stroke* via Fill conversion (Stroke = Fill).
+// -----------------------------------------------------------------------------
+
+void GLESCanvas::StrokeRect(const Rect& rect, const Brush& brush,
+                            vx::f32 width) {
+  if (width <= 0.0f || rect.IsEmpty()) return;
+  if (BrushSolidColor(brush).a == 0) return;
+  // B1=A: four FillRect bars centered on the rect's edges (matches the
+  // SoftwareCanvas StrokePath-of-rect convention). Top/bottom bars span the
+  // corners so the ring is seam-free; left/right fill only the gap between.
+  const vx::f32 hw = width * 0.5f;
+  FillRect({rect.x - hw, rect.y - hw, rect.w + width, width}, brush);
+  FillRect({rect.x - hw, rect.y + rect.h - hw, rect.w + width, width}, brush);
+  FillRect({rect.x - hw, rect.y + hw, width, rect.h - width}, brush);
+  FillRect({rect.x + rect.w - hw, rect.y + hw, width, rect.h - width}, brush);
+}
+
+void GLESCanvas::StrokeLine(Point a, Point b, const Brush& brush,
+                            vx::f32 width) {
+  if (width <= 0.0f) return;
+  if (BrushSolidColor(brush).a == 0) return;
+  const vx::f32 dx = b.x - a.x;
+  const vx::f32 dy = b.y - a.y;
+  const vx::f32 len = std::sqrt(dx * dx + dy * dy);
+  if (len < 1e-6f) return;  // B5=A: zero-length line is a no-op.
+
+  // B2=A: build a length×width rect centered at the origin, rotate to the
+  // line's angle, translate to the midpoint, then prepend the active
+  // transform. Matrix3x2 exposes only static Translation/Rotation + Multiply
+  // (no fluent chaining), so compose explicitly.
+  const vx::f32 angle = std::atan2(dy, dx);
+  const Point mid = {(a.x + b.x) * 0.5f, (a.y + b.y) * 0.5f};
+  const Matrix3x2 line_xform = transform_.Multiply(
+      Matrix3x2::Translation(mid.x, mid.y).Multiply(Matrix3x2::Rotation(angle)));
+
+  PushState();
+  SetTransform(line_xform);
+  FillRect({-len * 0.5f, -width * 0.5f, len, width}, brush);
+  PopState();
+}
+
+void GLESCanvas::StrokeRoundedRect(const Rect& rect, vx::f32 radius,
+                                   const Brush& brush, vx::f32 width) {
+  if (rounded_program_ == 0 || width <= 0.0f || rect.IsEmpty()) return;
+  if (BrushSolidColor(brush).a == 0) return;
+
+  const Rect inner = {rect.x + width, rect.y + width, rect.w - 2.0f * width,
+                      rect.h - 2.0f * width};
+  const vx::f32 inner_r = std::max(0.0f, radius - width);
+
+  // B3=A: carve an inside-stroke ring with the stencil buffer. SDL requests an
+  // 8-bit stencil (sdl2_egl_display.cc), but Mesa swrast / strict drivers may
+  // not honor it — query and fall back to a rectangular bar ring if absent.
+  GLint stencil_bits = 0;
+  glGetIntegerv(GL_STENCIL_BITS, &stencil_bits);
+  while (glGetError() != GL_NO_ERROR) {
+  }  // tolerate strict GLES3 drivers that reject GL_STENCIL_BITS.
+
+  if (stencil_bits <= 0 || inner.IsEmpty()) {
+    // Fallback: inside-stroke rectangular ring (rounded corners degrade to
+    // square). Four FillRect bars hugging the inner edge of the rect.
+    FillRect({rect.x, rect.y, rect.w, width}, brush);
+    FillRect({rect.x, rect.y + rect.h - width, rect.w, width}, brush);
+    FillRect({rect.x, rect.y + width, width, rect.h - 2.0f * width}, brush);
+    FillRect({rect.x + rect.w - width, rect.y + width, width,
+              rect.h - 2.0f * width},
+             brush);
+    return;
+  }
+
+  glEnable(GL_STENCIL_TEST);
+  glStencilMask(0xFF);
+  glClearStencil(0);
+  glClear(GL_STENCIL_BUFFER_BIT);
+  glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+  // Mark outer region = 1.
+  glStencilFunc(GL_ALWAYS, 1, 0xFF);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+  FillRoundedRect(rect, radius, brush);
+
+  // Punch inner region back to 0 (the hole).
+  glStencilFunc(GL_ALWAYS, 0, 0xFF);
+  FillRoundedRect(inner, inner_r, brush);
+
+  // Draw color only where stencil == 1 (the ring).
+  glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+  glStencilFunc(GL_EQUAL, 1, 0xFF);
+  glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+  FillRoundedRect(rect, radius, brush);
+
+  glDisable(GL_STENCIL_TEST);
+  glStencilMask(0xFF);
+}
+
+void GLESCanvas::StrokeSegmentQuad(Point a, Point b, vx::f32 half_width,
+                                   const Brush& brush) {
+  const vx::f32 dx = b.x - a.x;
+  const vx::f32 dy = b.y - a.y;
+  const vx::f32 len = std::sqrt(dx * dx + dy * dy);
+  if (len < 1e-6f) return;
+  const vx::f32 nx = -dy / len * half_width;
+  const vx::f32 ny = dx / len * half_width;
+
+  sw::SoftwarePath quad;
+  quad.MoveTo({a.x + nx, a.y + ny});
+  quad.LineTo({b.x + nx, b.y + ny});
+  quad.LineTo({b.x - nx, b.y - ny});
+  quad.LineTo({a.x - nx, a.y - ny});
+  quad.Close();
+  // FillPath applies transform_ via its uniform, so quads are built in
+  // document (local) space — mirroring rasterizer.cc's StrokePath.
+  FillPath(quad, brush);
+}
+
+void GLESCanvas::StrokePath(const Path& path, const Brush& brush,
+                            vx::f32 width) {
+  if (path_program_ == 0 || width <= 0.0f) return;
+  const auto* sw_path = dynamic_cast<const sw::SoftwarePath*>(&path);
+  VX_DCHECK(sw_path != nullptr);
+  if (sw_path == nullptr || sw_path->IsEmpty()) return;
+  if (BrushSolidColor(brush).a == 0) return;
+
+  // B4=A: segment-quad stroke (rasterizer.cc algorithm). Flatten curves to a
+  // polyline in local space and stroke each segment as a quad via FillPath.
+  const vx::f32 hw = width * 0.5f;
+  Point current = {0.0f, 0.0f};
+  Point sub_start = {0.0f, 0.0f};
+  vx::Vector<Point> poly;
+
+  for (const auto& cmd : sw_path->commands()) {
+    switch (cmd.type) {
+      case sw::SoftwarePath::CommandType::kMoveTo:
+        current = cmd.p[0];
+        sub_start = current;
+        break;
+      case sw::SoftwarePath::CommandType::kLineTo:
+        StrokeSegmentQuad(current, cmd.p[0], hw, brush);
+        current = cmd.p[0];
+        break;
+      case sw::SoftwarePath::CommandType::kQuadTo: {
+        poly.clear();
+        poly.push_back(current);
+        FlattenQuadToContour(poly, current, cmd.p[0], cmd.p[1], 0);
+        for (vx::usize i = 1; i < poly.size(); ++i)
+          StrokeSegmentQuad(poly[i - 1], poly[i], hw, brush);
+        current = cmd.p[1];
+        break;
+      }
+      case sw::SoftwarePath::CommandType::kCubicTo: {
+        poly.clear();
+        poly.push_back(current);
+        FlattenCubicToContour(poly, current, cmd.p[0], cmd.p[1], cmd.p[2], 0);
+        for (vx::usize i = 1; i < poly.size(); ++i)
+          StrokeSegmentQuad(poly[i - 1], poly[i], hw, brush);
+        current = cmd.p[2];
+        break;
+      }
+      case sw::SoftwarePath::CommandType::kArcTo: {
+        Point center = cmd.p[0];
+        vx::f32 radius = cmd.f[0];
+        vx::f32 start_angle = cmd.f[1];
+        vx::f32 sweep = cmd.f[2];
+        if (std::abs(sweep) < 1e-6f) break;
+        int n_segs = std::max(8, static_cast<int>(std::abs(sweep) * 4.0f));
+        Point prev = current;
+        for (int j = 1; j <= n_segs; ++j) {
+          vx::f32 angle =
+              start_angle +
+              sweep * static_cast<vx::f32>(j) / static_cast<vx::f32>(n_segs);
+          Point next = {center.x + radius * std::cos(angle),
+                        center.y + radius * std::sin(angle)};
+          StrokeSegmentQuad(prev, next, hw, brush);
+          prev = next;
+        }
+        current = prev;
+        break;
+      }
+      case sw::SoftwarePath::CommandType::kClose:
+        StrokeSegmentQuad(current, sub_start, hw, brush);
+        current = sub_start;
+        break;
+    }
+  }
+}
+
 }  // namespace vx::gfx::gles

@@ -83,7 +83,7 @@ TEST(GLESCanvasStrokeTest, StrokeRect_BorderPixel) {
   canvas.Clear(Color::White());
   canvas.StrokeRect({4, 4, 24, 24}, Brush::Solid(Color::Red()), 4.0f);
   uint8_t border[4], inside[4];
-  ReadPixel(6, GlY(32, 6.0f), border);   // on top border
+  ReadPixel(4, GlY(32, 16.0f), border);  // on left border (centered band)
   ReadPixel(16, GlY(32, 16.0f), inside); // hollow center
   SKIP_IF_SWRAST_BLANK(border);
   EXPECT_GT(border[0], 200u);

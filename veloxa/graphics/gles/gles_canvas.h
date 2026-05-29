@@ -68,12 +68,17 @@ class GLESCanvas final : public Canvas {
   // ---- Real implementations (G1.6 path fill scope) ----
   void FillPath(const Path& path, const Brush& brush) override;
 
-  // ---- No-op stubs (G1.7+ implementation scope) ----
-  void StrokeRect(const Rect&, const Brush&, vx::f32) override {}
-  void StrokeRoundedRect(const Rect&, vx::f32, const Brush&,
-                         vx::f32) override {}
-  void StrokePath(const Path&, const Brush&, vx::f32) override {}
-  void StrokeLine(Point, Point, const Brush&, vx::f32) override {}
+  // ---- Real implementations (G1.7 stroke scope, Stroke = Fill) ----
+  void StrokeRect(const Rect& rect, const Brush& brush,
+                  vx::f32 width) override;
+  void StrokeRoundedRect(const Rect& rect, vx::f32 radius, const Brush& brush,
+                         vx::f32 width) override;
+  void StrokePath(const Path& path, const Brush& brush,
+                  vx::f32 width) override;
+  void StrokeLine(Point a, Point b, const Brush& brush,
+                  vx::f32 width) override;
+
+  // ---- No-op stubs (G1.8+ implementation scope) ----
   void DrawText(vx::StringView, const Rect&, vx::f32,
                 const Brush&) override {}
   void DrawImage(const Image&, const Rect&, const Rect&) override {}
@@ -160,6 +165,12 @@ class GLESCanvas final : public Canvas {
   static Color BrushSolidColor(const Brush& brush);
   // Convert Matrix3x2 (6 floats) to GLES mat3 column-major (9 floats).
   static void Matrix3x2ToMat3(const Matrix3x2& src, GLfloat dst[9]);
+
+  // ---- G1.7 stroke helpers (private) ----
+  // StrokePath flattens to local-space segments (transform applied by the
+  // inner FillPath uniform, mirroring rasterizer.cc's segment-quad approach).
+  void StrokeSegmentQuad(Point a, Point b, vx::f32 half_width,
+                         const Brush& brush);
 };
 
 }  // namespace vx::gfx::gles
