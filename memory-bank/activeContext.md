@@ -2,20 +2,11 @@
 
 ## 当前阶段
 
-**归档中** — TASK-20260529-04 G1.9 归档闭环（`archive-TASK-20260529-04.md`）→ 重置空闲。
+**空闲** — 无活动任务，等待 `/van` 启动新任务。
 
-**上一任务：** [TASK-20260529-03 G1.8 GlyphAtlas + DrawText](archive/archive-TASK-20260529-03.md) — ✅ 归档（2026-05-29 / 已合并 main fast-forward + 分支删除）。
+**上一任务：** [TASK-20260529-04 G1.9 GLESCanvas::DrawImage](archive/archive-TASK-20260529-04.md) — ✅ 归档（2026-05-29 / 合并 main fast-forward + 分支删除）。
 
----
-
-## 当前焦点：TASK-20260529-04 — G1.9 GLESCanvas::DrawImage
-
-**复杂度：** Level 4（GPU 图像纹理资源管理 + ImageHandle 缓存 + 多图 + Context Lost/Restored + 采样过滤）
-**分支：** `feature/TASK-20260529-04-gles-canvas-drawimage`（基线 main）
-**ctest 基线：** gles 1416 / software 1303 / no-devtool 1141
-**前置：** G1.8 ✅；复用纹理/quad/shader 范式；`Image` RGBA8 + software DrawImage（`software_canvas.cc:282`）镜像源就位
-**关联待处理：** G1.8 P1#A（纹理上传 GL 状态副作用契约）+ P1#B（HashMap Find/Insert）直接适用本任务
-**下一步：** `/plan` — 设计 RGBA8 纹理上传 + image shader + ImageHandle 缓存 + src/dst rect 采样
+**候选下一任务：** R9 HitTest / G1.10 Clip（PushClipRect/Path + PopClip）/ G1.11 Layer / G2 文本&图像优化（LRU/批量化/采样过滤/clip 对齐）。
 
 ---
 
