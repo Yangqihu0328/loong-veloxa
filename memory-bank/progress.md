@@ -2,7 +2,18 @@
 
 ## 当前任务
 
-> **空闲** — 无进行中的任务。使用 `/van` 启动新任务。
+### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`
+
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+#### VAN + Plan 阶段产出（2026-05-29）
+
+- VAN：Level 4 / 基线 gles 1399·software 1303·no-devtool 1141 / 分支 `feature/TASK-20260529-03-gles-glyph-atlas-drawtext`（基线 main）
+- 头脑风暴：D1-D8 = A（all_recommended）/ 跳过独立 creative
+- **5 项 reconcile（R1-R5）**：GlyphCache 不栅格化→GlyphAtlas 自栅格化；key=font|glyph_id|pixel_size；glyph shader 对齐 u_xform_px（非 creative u_proj mat4）；DrawText 复用 FindFont→SetFacePixelSize→ShapeOrLookup；DejaVu 字体实测可得
+- spec + plan 落盘（2 轮次 Build / ~22 测 / ctest +18-22）
+
+**下一步：** `/build`
 
 ---
 

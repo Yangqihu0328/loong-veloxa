@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260529-03 G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（Level 4）/ VAN ✅ / 待 `/plan`。
+**规划中** — TASK-20260529-03 G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（Level 4）/ Plan ✅（D1-D8=A / 跳过独立 creative）/ 待 `/build`。
 
 **上一任务：** [TASK-20260529-02 G1.7 Stroke*](archive/archive-TASK-20260529-02.md) — ✅ 归档（2026-05-29）。
 
@@ -16,7 +16,9 @@
 **creative：** `creative-gles-resources.md` §3 GlyphAtlas 设计已就位（可复用）
 **前置：** G1.5 ✅；复用 `veloxa/text/` 基础设施
 
-**下一步：** `/plan`
+**spec：** `docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md`（5 项 R1-R5 reconcile）
+**plan：** `docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`（2 轮次 Build / ~22 测 / ctest +18-22）
+**下一步：** `/build` — 轮次 1 GlyphAtlas RED → GREEN → 轮次 2 DrawText
 
 ---
 

@@ -4,7 +4,9 @@
 
 ### TASK-20260529-03 — G1.8 `GlyphAtlas` + `GLESCanvas::DrawText`（GLES 蓝图实施第八步 / MVP-C 战略主线第八个实施任务）
 
-**当前阶段：** 🟡 **初始化**（VAN ✅ → 待 `/plan`）
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+**Plan 产出（2026-05-29）：** spec `docs/specs/2026-05-29-gles-glyph-atlas-drawtext-design.md`（5 项 reconcile R1-R5：GlyphCache 不栅格化 / key=glyph_id+pixel_size / shader 对齐 u_xform_px / DrawText 流程镜像 / DejaVu 字体可得）+ plan `docs/plans/2026-05-29-gles-glyph-atlas-drawtext.md`（D1-D8=A 锁定 / 2 轮次 Build：GlyphAtlas + DrawText / ~22 测 / ctest gles +18-22 期望 1417-1421 / 跳过独立 creative 复用 creative-gles-resources §2.3/§3）。承接 G1.7 P1#1（解析采样）+ P1#2（双通道）已折入测试矩阵。
 
 **复杂度级别：** **Level 4**（GPU 资源管理 + LRU 驱逐 + 多字号 + emoji edge case / 蓝图 §3.8 锁定）
 **创建日期：** 2026-05-29
