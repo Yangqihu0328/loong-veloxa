@@ -436,6 +436,14 @@ if(VX_PLATFORM_SDL2)
       PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
     gtest_discover_tests(gles_canvas_fill_test
       PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+
+    # GLESCanvas FillPath via libtess2 (G1.6).
+    add_executable(gles_canvas_path_test
+                   graphics/gles/gles_canvas_path_test.cc)
+    target_link_libraries(gles_canvas_path_test
+      PRIVATE vx_foundation vx_platform_sdl2 vx_graphics GTest::gtest_main)
+    gtest_discover_tests(gles_canvas_path_test
+      PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
   endif()
 
   # Smoke test: drive the hello_sdl2 example end-to-end under dummy driver
