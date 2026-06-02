@@ -958,7 +958,7 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 
 > **本任务已归档闭环。详见 [`memory-bank/archive/archive-TASK-20260602-01.md`](archive/archive-TASK-20260602-01.md)。**
 
-- **分支：** `feature/TASK-20260602-01-gles-image-sampling-filter`（待 finalize merge 决策）
+- **分支：** `feature/TASK-20260602-01-gles-image-sampling-filter`（已 fast-forward 合并 main + 删除）
 - **主交付：** `SamplingFilter` enum + `GLESCanvas::SetImageSamplingFilter`（GLES 局部 D1=①）+ DrawImage 每 draw `glTexParameteri` / 5 测 / gles 1432→1437
 - **要点：** 最小侵入（pool+CMake+software 零改动）/ 单轮 TDD 计划精度满分 / 零 debug
 
