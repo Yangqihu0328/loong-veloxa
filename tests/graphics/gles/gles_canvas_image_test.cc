@@ -71,6 +71,20 @@ int CountBlue(int x0, int y0, int x1, int y1) {
   return n;
 }
 
+// "Purple" = both red and blue channels at moderate intensity, i.e. evidence
+// that a red and a blue texel were blended (only happens under LINEAR
+// filtering at the red|blue seam). NEAREST gives a hard edge → zero purple.
+int CountPurple(int x0, int y0, int x1, int y1) {
+  int n = 0;
+  for (int y = y0; y < y1; ++y)
+    for (int x = x0; x < x1; ++x) {
+      uint8_t p[4];
+      ReadPixel(x, y, p);
+      if (p[0] >= 60u && p[0] <= 200u && p[2] >= 60u && p[2] <= 200u) ++n;
+    }
+  return n;
+}
+
 class GlesImageTest : public ::testing::Test {
  protected:
   void SetUp() override {
@@ -84,6 +98,16 @@ class GlesImageTest : public ::testing::Test {
     Image img(w, h);
     vx::u32* px = img.pixels();
     for (vx::u32 i = 0; i < w * h; ++i) px[i] = rgba;
+    return img;
+  }
+
+  // 2x1 image: texel0 = red, texel1 = blue. Drawn scaled up, the red|blue seam
+  // blends to purple under LINEAR but stays a hard edge under NEAREST.
+  static Image SeamImage() {
+    Image img(2, 1);
+    vx::u32* px = img.pixels();
+    px[0] = Rgba(255, 0, 0, 255);
+    px[1] = Rgba(0, 0, 255, 255);
     return img;
   }
 
@@ -183,6 +207,65 @@ TEST_F(GlesImageTest, DrawImage_RepeatDrawCacheReuse_NoGLError) {
   canvas.End();
   EXPECT_EQ(glGetError(), static_cast<GLenum>(GL_NO_ERROR));
   EXPECT_GT(CountRed(24, 24, 56, 56), 100);
+}
+
+// ---- TASK-20260602-01: image sampling filter (NEAREST / LINEAR) ----
+
+TEST_F(GlesImageTest, SetGetSamplingFilter) {
+  GLESCanvas canvas(surface_.get());
+  EXPECT_EQ(canvas.image_sampling_filter(), SamplingFilter::kLinear);  // D4
+  canvas.SetImageSamplingFilter(SamplingFilter::kNearest);
+  EXPECT_EQ(canvas.image_sampling_filter(), SamplingFilter::kNearest);
+}
+
+TEST_F(GlesImageTest, DrawImage_DefaultLinear_BlendsAtSeam) {
+  Image img = SeamImage();
+  GLESCanvas canvas(surface_.get());
+  canvas.Begin();
+  canvas.Clear(Color{255, 255, 255, 255});
+  canvas.DrawImage(img, Rect{0, 0, 2, 1}, Rect{0, 0, 64, 64});
+  canvas.End();
+  // Default (no setter) must blend → purple present at the seam row.
+  EXPECT_GT(CountPurple(0, 32, 64, 33), 0);
+}
+
+TEST_F(GlesImageTest, DrawImage_Nearest_HardSeam) {
+  Image img = SeamImage();
+  GLESCanvas canvas(surface_.get());
+  canvas.SetImageSamplingFilter(SamplingFilter::kNearest);
+  canvas.Begin();
+  canvas.Clear(Color{255, 255, 255, 255});
+  canvas.DrawImage(img, Rect{0, 0, 2, 1}, Rect{0, 0, 64, 64});
+  canvas.End();
+  EXPECT_EQ(CountPurple(0, 32, 64, 33), 0);   // hard edge, no blend
+  EXPECT_GT(CountRed(0, 32, 32, 33), 0);
+  EXPECT_GT(CountBlue(32, 32, 64, 33), 0);
+}
+
+TEST_F(GlesImageTest, DrawImage_Linear_SoftSeam) {
+  Image img = SeamImage();
+  GLESCanvas canvas(surface_.get());
+  canvas.SetImageSamplingFilter(SamplingFilter::kLinear);
+  canvas.Begin();
+  canvas.Clear(Color{255, 255, 255, 255});
+  canvas.DrawImage(img, Rect{0, 0, 2, 1}, Rect{0, 0, 64, 64});
+  canvas.End();
+  EXPECT_GT(CountPurple(0, 32, 64, 33), 0);
+}
+
+TEST_F(GlesImageTest, DrawImage_FilterSwitch_NoGLError) {
+  Image img = SeamImage();
+  GLESCanvas canvas(surface_.get());
+  canvas.Begin();
+  canvas.Clear(Color{255, 255, 255, 255});
+  while (glGetError() != GL_NO_ERROR) {}
+  for (int i = 0; i < 4; ++i) {
+    canvas.SetImageSamplingFilter(i % 2 == 0 ? SamplingFilter::kNearest
+                                             : SamplingFilter::kLinear);
+    canvas.DrawImage(img, Rect{0, 0, 2, 1}, Rect{0, 0, 64, 64});
+  }
+  canvas.End();
+  EXPECT_EQ(glGetError(), static_cast<GLenum>(GL_NO_ERROR));
 }
 
 }  // namespace
