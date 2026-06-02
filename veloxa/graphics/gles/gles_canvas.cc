@@ -980,6 +980,13 @@ void GLESCanvas::DrawImage(const Image& image, const Rect& src_rect,
   glBindBuffer(GL_ARRAY_BUFFER, image_vbo_);
   glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STREAM_DRAW);
   glBindTexture(GL_TEXTURE_2D, tex);  // bind AFTER GetOrUpload (P1#A)
+  // Authoritatively set the sampling filter each draw (overrides the pool's
+  // upload-time LINEAR default), so one cached texture switches correctly
+  // between NEAREST/LINEAR (D2: filter is sampler state, not a cache key).
+  const GLint gl_filter =
+      (image_filter_ == SamplingFilter::kNearest) ? GL_NEAREST : GL_LINEAR;
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter);
   glDrawArrays(GL_TRIANGLES, 0, 6);
 
   glBindVertexArray(0);

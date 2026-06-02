@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**规划中** — TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2 清理）/ Level 2 / VAN ✅ + Plan ✅（D1-D5 锁定 / 4 文件改 / pool+CMake 零改动 / 单轮 TDD）→ 待 `/build`。
+**构建完成** — TASK-20260602-01 GLES 图像采样过滤选项 / Build ✅（13/13，新增 F1-F5）/ 三矩阵零退化（gles 1437 / sw 1303 / no-devtool 1141）/ 待 `/reflect`。
 
 **上一任务：** [TASK-20260529-04 G1.9 GLESCanvas::DrawImage](archive/archive-TASK-20260529-04.md) — ✅ 归档（2026-05-29 / 合并 main fast-forward + 分支删除）。
 

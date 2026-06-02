@@ -140,6 +140,13 @@ struct Matrix3x2 {
   }
 };
 
+// Image sampling filter. kLinear = bilinear smoothing (the scaling default);
+// kNearest = nearest-neighbour (pixel art / exact pixel mapping). Currently
+// only consumed by GLESCanvas::DrawImage; the software backend is fixed at
+// nearest (integer truncation) and does not read this enum (D3 cross-backend
+// divergence, tracked as tech debt).
+enum class SamplingFilter { kLinear, kNearest };
+
 }  // namespace vx::gfx
 
 #endif  // VELOXA_GRAPHICS_TYPES_H_

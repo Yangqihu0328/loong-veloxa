@@ -89,6 +89,12 @@ class GLESCanvas final : public Canvas {
   void DrawImage(const Image& image, const Rect& src_rect,
                  const Rect& dst_rect) override;
 
+  // Sets the texture sampling filter for subsequent DrawImage calls (GLES-only
+  // API, not on the abstract Canvas). Defaults to kLinear (G1.9-compatible).
+  // Not affected by PushState/PopState (D5). TASK-20260602-01.
+  void SetImageSamplingFilter(SamplingFilter filter) { image_filter_ = filter; }
+  SamplingFilter image_sampling_filter() const { return image_filter_; }
+
   // ---- No-op stubs (G1.10+ implementation scope) ----
   void PushClipRect(const Rect&) override {}
   void PushClipPath(const Path&) override {}
@@ -188,6 +194,8 @@ class GLESCanvas final : public Canvas {
   GLint image_uniforms_[kImageUniformCount] = {-1, -1, -1};
   // Owned RGBA8 texture cache (always created — DrawImage needs no fonts).
   std::unique_ptr<ImageTexturePool> image_pool_;
+  // Sampling filter applied per DrawImage (G1.9 tech debt #2). Default kLinear.
+  SamplingFilter image_filter_ = SamplingFilter::kLinear;
 
   // ---- G1.5 helpers (private) ----
   // CompileShader / LinkProgram return 0 on failure (with infoLog assertion

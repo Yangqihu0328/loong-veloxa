@@ -4,7 +4,16 @@
 
 ### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2）
 
-**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ / 三矩阵零退化 / 待 `/reflect`）
+
+#### Build 阶段产出（2026-06-02）
+
+- `types.h`：新增 `enum class SamplingFilter{kLinear,kNearest}`（共享，纯新增不破坏既有消费者）。
+- `gles_canvas.h`：`SetImageSamplingFilter(filter)`/`image_sampling_filter()`（GLES 专属公有，非抽象 Canvas）+ `image_filter_=kLinear` 成员。
+- `gles_canvas.cc` `DrawImage`：`glBindTexture(tex)`（P1#A 重绑）后按 `image_filter_` 设 `glTexParameteri(MIN/MAG)`，draw 前权威覆盖（D2：filter 不入缓存键，`ImageTexturePool` 零改动）。
+- TDD：RED 编译失败（API 未声明）→ GREEN 13/13（既有 8 + 新 F1-F5）。区分手法 2×1 红蓝图放大 64×：LINEAR 接缝有紫 / NEAREST 整行无紫 + 红蓝各有。
+- **完成验证（三矩阵零退化）：** gles **1437/1437**（1432+5，精确命中）/ software **1303/1303** / no-devtool **1141/1141**。CMake + pool 零改动 / 0 新依赖。
+- 承接 P1#1（接缝 x≈32 解析）+ P1#2（红/蓝/紫双通道）+ P1#A（draw 前重绑后设 filter）。
 
 #### VAN + Plan 阶段产出（2026-06-02）
 
@@ -13,7 +22,7 @@
 - spec + plan 落盘：4 文件改（`types.h`+enum / `gles_canvas.{h,cc}` / 测试 +5 F1-F5）/ CMake + pool 零改动 / 单轮 TDD / 期望 gles ~1437。
 - 区分手法：2×1 红蓝图放大 64× → LINEAR 接缝有紫（`R∈[60,200]&&B∈[60,200]`）/ NEAREST 无紫。承接 P1#1 解析采样 + P1#2 双通道 + P1#A draw 前重绑后设 filter。
 
-**下一步：** `/build` — Phase A RED → B GREEN → C 三矩阵 finalize。
+**下一步：** `/reflect` — 回顾本任务。
 
 ---
 
