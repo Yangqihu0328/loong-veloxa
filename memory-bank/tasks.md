@@ -4,9 +4,11 @@
 
 ### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债清理 #2）
 
-**当前阶段：** 🔵 **初始化**（VAN ✅ → 待 `/plan`）
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
 
 **任务定位：** 清理 G1.9（TASK-20260529-04）遗留技术债 #2——`ImageTexturePool::GetOrUpload` 硬编码 `GL_TEXTURE_MIN/MAG_FILTER = GL_LINEAR`，无法按调用方意图选择 NEAREST（像素艺术 / 精确像素映射）或 LINEAR（平滑缩放）。补齐采样过滤选项。
+
+**Plan 产出（2026-06-02）：** spec [`2026-06-02-gles-image-sampling-filter-design.md`](../../docs/specs/2026-06-02-gles-image-sampling-filter-design.md) + plan [`2026-06-02-gles-image-sampling-filter.md`](../../docs/plans/2026-06-02-gles-image-sampling-filter.md)。**D1-D5 锁定：** D1=① GLES 局部 setter（`GLESCanvas::SetImageSamplingFilter`，不上抽象 Canvas）/ D2 filter 不入缓存键、DrawImage 每 draw 设 `glTexParameteri`（`ImageTexturePool` 零改动）/ D3 仅 GLES（software 维持 NEAREST-only，差异记 techContext）/ D4 默认 kLinear 向后兼容 / D5 不入 PushState。**4 文件改**（`types.h` +enum / `gles_canvas.{h,cc}` / 测试 +5），CMake + pool 零改动。单轮 TDD。区分手法：2×1 红蓝图放大 → LINEAR 接缝有紫 / NEAREST 无紫。承接 P1#1 解析采样 + P1#2 双通道 + P1#A（draw 前重绑后设 filter）。跳过独立 creative。
 
 **复杂度级别：** **Level 2**（多文件、需求清晰，但含一个接口设计决策：过滤旋钮归属）
 **创建日期：** 2026-06-02

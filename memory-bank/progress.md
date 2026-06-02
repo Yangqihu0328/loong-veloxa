@@ -2,7 +2,18 @@
 
 ## 当前任务
 
-_无活动任务 — 等待 `/van` 启动新任务。_
+### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2）
+
+**当前阶段：** 🟡 **规划中**（VAN ✅ + Plan ✅ → 待 `/build`）
+
+#### VAN + Plan 阶段产出（2026-06-02）
+
+- VAN：Level 2 / 基线 gles 1432·sw 1303·no-devtool 1141 / 分支 `feature/TASK-20260602-01-gles-image-sampling-filter`（基线 main）/ 前置验证通过（0 新依赖）。
+- 头脑风暴 D1-D5 锁定：**D1=① GLES 局部 setter**（`GLESCanvas::SetImageSamplingFilter`，不上抽象 Canvas，enum 入 `types.h` 留提升门）/ D2 filter 不入缓存键、DrawImage 每 draw `glTexParameteri`（`ImageTexturePool` 零改动）/ D3 仅 GLES（software NEAREST-only 差异记 techContext）/ D4 默认 kLinear / D5 不入 PushState。
+- spec + plan 落盘：4 文件改（`types.h`+enum / `gles_canvas.{h,cc}` / 测试 +5 F1-F5）/ CMake + pool 零改动 / 单轮 TDD / 期望 gles ~1437。
+- 区分手法：2×1 红蓝图放大 64× → LINEAR 接缝有紫（`R∈[60,200]&&B∈[60,200]`）/ NEAREST 无紫。承接 P1#1 解析采样 + P1#2 双通道 + P1#A draw 前重绑后设 filter。
+
+**下一步：** `/build` — Phase A RED → B GREEN → C 三矩阵 finalize。
 
 ---
 
