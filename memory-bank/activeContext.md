@@ -2,11 +2,20 @@
 
 ## 当前阶段
 
-**空闲** — 无活动任务，等待 `/van` 启动新任务。
+**初始化** — TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2 清理）/ Level 2 / VAN ✅ → 待 `/plan`。
 
 **上一任务：** [TASK-20260529-04 G1.9 GLESCanvas::DrawImage](archive/archive-TASK-20260529-04.md) — ✅ 归档（2026-05-29 / 合并 main fast-forward + 分支删除）。
 
-**候选下一任务：** R9 HitTest / G1.10 Clip（PushClipRect/Path + PopClip）/ G1.11 Layer / G2 文本&图像优化（LRU/批量化/采样过滤/clip 对齐）。
+---
+
+## 当前焦点：TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR
+
+**复杂度：** Level 2（含接口设计决策 D1 过滤旋钮归属）
+**分支：** `feature/TASK-20260602-01-gles-image-sampling-filter`（基线 main）
+**ctest 基线：** gles 1432 / software 1303 / no-devtool 1141
+**前置：** G1.9 ✅；`ImageTexturePool` 硬编码 LINEAR / `Canvas::DrawImage` 无 filter 参数 / software 当前 NEAREST 整数截断
+**待 `/plan` 决策：** D1 旋钮归属（Canvas 签名 / Canvas 状态 setter / GLES 局部）+ D2 缓存键 filter 影响 + D3 跨后端语义 + D4 默认 LINEAR
+**下一步：** `/plan` — 含内联头脑风暴消化 D1-D4
 
 ---
 

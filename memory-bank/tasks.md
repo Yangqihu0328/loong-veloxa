@@ -2,6 +2,41 @@
 
 ## 当前任务
 
+### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债清理 #2）
+
+**当前阶段：** 🔵 **初始化**（VAN ✅ → 待 `/plan`）
+
+**任务定位：** 清理 G1.9（TASK-20260529-04）遗留技术债 #2——`ImageTexturePool::GetOrUpload` 硬编码 `GL_TEXTURE_MIN/MAG_FILTER = GL_LINEAR`，无法按调用方意图选择 NEAREST（像素艺术 / 精确像素映射）或 LINEAR（平滑缩放）。补齐采样过滤选项。
+
+**复杂度级别：** **Level 2**（多文件、需求清晰，但含一个接口设计决策：过滤旋钮归属）
+**创建日期：** 2026-06-02
+**安全相关：** ❌ 否（纯 GL 采样状态 / 无外部输入 / 无 GLSL 拼接）
+
+#### 待 `/plan` 消化的设计决策
+
+- **D1 过滤旋钮归属（核心）：** ① 扩展抽象 `Canvas::DrawImage` 签名加 `Filter` 入参（跨后端，blast radius 大，软件后端需配套）/ ② Canvas 状态 setter `SetImageSamplingFilter`（类 transform 的画布状态）/ ③ GLES 局部 API（仅 GLESCanvas，最小侵入）。
+- **D2 缓存键影响：** 同一 `Image` 以不同 filter 绘制时——per-texture filter 设一次 vs 每次 draw 设 `glTexParameteri` vs 缓存键纳入 filter。需定。
+- **D3 跨后端语义一致性：** software `DrawImage` 当前整数截断 = NEAREST-only；是否同步给 software 加 LINEAR，或本任务仅 GLES + 文档化差异。
+- **D4 默认值：** 保持 LINEAR 默认（向后兼容 G1.9 行为）。
+
+#### VAN 前置验证（Level 2+）
+
+| 维度 | 结论 |
+|------|------|
+| 依赖可获取性 | ✅ 0 新依赖（纯 GL filter state）|
+| 环境就绪 | ✅ build-gles 存在；ctest 基线 gles **1432** / software **1303** / no-devtool **1141** |
+| 已有 artifact | `ImageTexturePool`（`image_texture_pool.{h,cc}` 硬编码 LINEAR）/ `DrawImage`（`gles_canvas.cc` 无 filter 参数）/ software DrawImage（`software_canvas.cc:282` NEAREST 整数截断）均就位 |
+| 待处理事项关联 | ✅ 直接命中 G1.9 技术债 #2「仅 LINEAR 采样」|
+
+**前置验证通过**（无阻碍项）。
+
+#### 分支基线
+
+- 待修改文件（`image_texture_pool.{h,cc}` / `gles_canvas.{h,cc}` / 可能 `canvas.h`）均在 **main**（G1.9 已 fast-forward 合并）→ 基线 = `main` ✅
+- 分支：`feature/TASK-20260602-01-gles-image-sampling-filter`（待创建，基线 main）
+
+---
+
 ### TASK-20260529-04 — G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / MVP-C 战略主线第九个实施任务）
 
 **状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260529-04.md`](archive/archive-TASK-20260529-04.md)。
