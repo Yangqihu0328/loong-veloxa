@@ -1364,9 +1364,16 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - **⚠️ GL 状态副作用契约（dual-evidence / 主动预防成功）：** plan 提前在 spec §3.3 + R4 明示「`GetOrUpload` 后、draw 前重绑纹理」→ `DrawImage` 一次写对（`glBindTexture(tex)` 紧贴 `glDrawArrays`），**G1.8 全屏白 bug 未复发，零 debug 迭代**。详见 systemPatterns 同名段 second-evidence。
 - **HashMap API：** 1B 前读 `hash_map.h` 确认 `Find/Insert/Erase` + `begin/end` + `it->key/value`，无编译期返工（P1#B 主动预防成功）。
 - **三 build 矩阵：** gles 1416→**1432**（+16：pool 8 + image 8）/ software 1303 / no-devtool 1141 无退化；完整 build-gles **1432/1432 PASS**（~89s）。`shader_injection_test` S1 自动覆盖 2 新着色器。
-- **技术债（MVP 取舍 / G2）：** ① `ImageTexturePool` 无界缓存（无 LRU/容量上限，多图大场景显存膨胀）；② 仅 LINEAR 采样（用户 scope 提及"采样过滤选项"，MVP 锁 LINEAR，nearest 切换待加）；③ 无 opacity/tint（`kImageFrag` 纯采样，Canvas API 无 brush/opacity）；④ 无 clip 裁剪（待 G1.10，与 software DrawImage 的 CurrentClip 路径不对齐）；⑤ ABA 风险（pixels 指针释放后同址同尺寸新图，MVP 文档化接受）；⑥ 逐图 draw call（未批量化）。
+- **技术债（MVP 取舍 / G2）：** ① `ImageTexturePool` 无界缓存（无 LRU/容量上限，多图大场景显存膨胀）；② ~~仅 LINEAR 采样~~ ✅ **已清（TASK-20260602-01）** NEAREST/LINEAR 可选；③ 无 opacity/tint（`kImageFrag` 纯采样，Canvas API 无 brush/opacity）；④ 无 clip 裁剪（待 G1.10，与 software DrawImage 的 CurrentClip 路径不对齐）；⑤ ABA 风险（pixels 指针释放后同址同尺寸新图，MVP 文档化接受）；⑥ 逐图 draw call（未批量化）。
 - **commit 链：** round1 RED `test(gles)` → GREEN `feat(gles)` / round2 RED `test(gles)` → GREEN `feat(gles)`（4 提交对齐 plan）。
 - G1.9 spec：[`docs/specs/2026-05-29-gles-canvas-drawimage-design.md`](../docs/specs/2026-05-29-gles-canvas-drawimage-design.md)
 - G1.9 计划：[`docs/plans/2026-05-29-gles-canvas-drawimage.md`](../docs/plans/2026-05-29-gles-canvas-drawimage.md)
 - G1.9 回顾：[`memory-bank/reflection/reflection-TASK-20260529-04.md`](reflection/reflection-TASK-20260529-04.md)
+
+### GLES 图像采样过滤 NEAREST/LINEAR（TASK-20260602-01 / G1.9 技术债 #2 清理）
+
+- **交付：** `types.h` `enum class SamplingFilter{kLinear,kNearest}`（共享）+ `GLESCanvas::SetImageSamplingFilter()`/`image_sampling_filter()`（GLES 专属公有，**非**抽象 Canvas API / D1=① 最小侵入）+ `DrawImage` 绑定纹理后按 filter 设 `glTexParameteri(MIN/MAG)`（D2 filter 不入缓存键 / `ImageTexturePool` 零改动）；`gles_canvas_image_test` +5 测（F1-F5）。单轮 TDD（RED 编译失败 → GREEN 13/13）。**0 新依赖 / CMake + pool 零改动。**
+- **⚠️ 跨后端采样语义分歧（D3 / 新技术债）：** software `DrawImage`（`software_canvas.cc:312`）= 整数截断 NEAREST-only，不读 `SamplingFilter`；GLES 默认 LINEAR 且可选。两后端默认渲染质量本就不一致。统一方案（给 software 加双线性 / 高层「后端渲染质量差异矩阵」文档）= 独立 Level 3 任务（G2 候选）。
+- **三 build 矩阵：** gles 1432→**1437**（+5）/ software 1303 / no-devtool 1141 无退化（`SamplingFilter` enum 纯新增，未破坏既有 `types.h` 消费者）。
+- TASK-20260602-01 spec：[`docs/specs/2026-06-02-gles-image-sampling-filter-design.md`](../docs/specs/2026-06-02-gles-image-sampling-filter-design.md) / plan：[`docs/plans/2026-06-02-gles-image-sampling-filter.md`](../docs/plans/2026-06-02-gles-image-sampling-filter.md) / 回顾：[`memory-bank/reflection/reflection-TASK-20260602-01.md`](reflection/reflection-TASK-20260602-01.md)
 

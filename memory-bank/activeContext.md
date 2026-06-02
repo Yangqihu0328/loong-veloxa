@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260602-01 GLES 图像采样过滤选项 / Build ✅（13/13，新增 F1-F5）/ 三矩阵零退化（gles 1437 / sw 1303 / no-devtool 1141）/ 待 `/reflect`。
+**回顾中** — TASK-20260602-01 GLES 图像采样过滤选项 / Build ✅ + Reflect ✅（`reflection-TASK-20260602-01.md`）/ 三矩阵零退化 / 计划精度满分（4/4 文件 + 5/5 测 + gles 1437）/ 零 debug 迭代 / 待 `/archive`。
 
 **上一任务：** [TASK-20260529-04 G1.9 GLESCanvas::DrawImage](archive/archive-TASK-20260529-04.md) — ✅ 归档（2026-05-29 / 合并 main fast-forward + 分支删除）。
 

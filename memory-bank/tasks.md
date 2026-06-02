@@ -4,7 +4,7 @@
 
 ### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债清理 #2）
 
-**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ / 单轮 TDD 13/13 / 三矩阵零退化 gles 1437·sw 1303·no-devtool 1141 → 待 `/reflect`）
+**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ / 反思文档 `reflection-TASK-20260602-01.md` → 待 `/archive`）
 
 **任务定位：** 清理 G1.9（TASK-20260529-04）遗留技术债 #2——`ImageTexturePool::GetOrUpload` 硬编码 `GL_TEXTURE_MIN/MAG_FILTER = GL_LINEAR`，无法按调用方意图选择 NEAREST（像素艺术 / 精确像素映射）或 LINEAR（平滑缩放）。补齐采样过滤选项。
 

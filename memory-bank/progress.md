@@ -22,7 +22,14 @@
 - spec + plan 落盘：4 文件改（`types.h`+enum / `gles_canvas.{h,cc}` / 测试 +5 F1-F5）/ CMake + pool 零改动 / 单轮 TDD / 期望 gles ~1437。
 - 区分手法：2×1 红蓝图放大 64× → LINEAR 接缝有紫（`R∈[60,200]&&B∈[60,200]`）/ NEAREST 无紫。承接 P1#1 解析采样 + P1#2 双通道 + P1#A draw 前重绑后设 filter。
 
-**下一步：** `/reflect` — 回顾本任务。
+#### Reflect 阶段产出（2026-06-02）
+
+- 反思文档 [`reflection-TASK-20260602-01.md`](reflection/reflection-TASK-20260602-01.md)（Level 2 基础回顾）。
+- **核心发现：** ① 计划精度满分（4/4 文件 + 5/5 测 + gles 1437 全精确命中 + 零 debug 迭代）；② 技术债清理「最小侵入」优先有效——D1 选 GLES 局部 setter 而非提升抽象 Canvas API，pool+CMake+software+renderer 全零改动；③ 小任务也值得完整 `/plan` 头脑风暴（旋钮归属 + 跨后端语义是真实设计决策）。
+- **建议落地：** 无 P0/P1；P2×2 → techContext（跨后端采样语义分歧记技术债）+ 个人习惯（编辑大 MB 文件先 Read 确认）。
+- **安全：** 不涉及安全变更（纯 GL 采样状态 / 0 新依赖）。
+
+**下一步：** `/archive` — 归档本任务。
 
 ---
 
