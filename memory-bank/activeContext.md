@@ -2,20 +2,9 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260602-01 GLES 图像采样过滤选项 / Build ✅ + Reflect ✅（`reflection-TASK-20260602-01.md`）/ 三矩阵零退化 / 计划精度满分（4/4 文件 + 5/5 测 + gles 1437）/ 零 debug 迭代 / 待 `/archive`。
+**空闲** — 等待 `/van` 开始新任务。
 
-**上一任务：** [TASK-20260529-04 G1.9 GLESCanvas::DrawImage](archive/archive-TASK-20260529-04.md) — ✅ 归档（2026-05-29 / 合并 main fast-forward + 分支删除）。
-
----
-
-## 当前焦点：TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR
-
-**复杂度：** Level 2（含接口设计决策 D1 过滤旋钮归属）
-**分支：** `feature/TASK-20260602-01-gles-image-sampling-filter`（基线 main）
-**ctest 基线：** gles 1432 / software 1303 / no-devtool 1141
-**前置：** G1.9 ✅；`ImageTexturePool` 硬编码 LINEAR / `Canvas::DrawImage` 无 filter 参数 / software 当前 NEAREST 整数截断
-**决策（已锁定）：** D1=① GLES 局部 setter / D2 不入缓存键每 draw 设 / D3 仅 GLES / D4 默认 LINEAR / D5 不入 PushState
-**下一步：** `/build` — 单轮 A RED → B GREEN → C 三矩阵 finalize
+**上一任务：** [TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR](archive/archive-TASK-20260602-01.md) — ✅ 归档（2026-06-02 / G1.9 技术债 #2 清理 / Level 2 / 三矩阵零退化 gles 1432→1437 / 单轮 TDD 计划精度满分 + 零 debug）。
 
 ---
 
@@ -37,5 +26,7 @@
 
 ## 最近归档
 
+- [`archive-TASK-20260602-01.md`](archive/archive-TASK-20260602-01.md) — GLES 图像采样过滤 NEAREST/LINEAR（2026-06-02）
+- [`archive-TASK-20260529-04.md`](archive/archive-TASK-20260529-04.md) — G1.9 DrawImage（2026-05-29）
 - [`archive-TASK-20260529-02.md`](archive/archive-TASK-20260529-02.md) — G1.7 Stroke*（2026-05-29）
 - [`archive-TASK-20260529-01.md`](archive/archive-TASK-20260529-01.md) — G1.6 FillPath（2026-05-29）

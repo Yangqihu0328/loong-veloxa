@@ -4,7 +4,11 @@
 
 ### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债清理 #2）
 
-**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ / 反思文档 `reflection-TASK-20260602-01.md` → 待 `/archive`）
+**状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260602-01.md`](archive/archive-TASK-20260602-01.md)。
+
+**核心里程碑：** `SamplingFilter` enum（`types.h`）+ `GLESCanvas::SetImageSamplingFilter`（GLES 局部 / D1=① 最小侵入，不上抽象 Canvas）+ DrawImage 每 draw `glTexParameteri`（D2 不入缓存键 / pool 零改动）/ 默认 LINEAR 向后兼容 / 5 测（F1-F5）/ 单轮 TDD 13/13 / 三矩阵零退化（gles 1432→1437·sw 1303·no-devtool 1141）/ 计划精度满分 + 零 debug 迭代 / 0 新依赖 / CMake+pool 零改动。新技术债：跨后端采样语义分歧（software NEAREST-only，G2 Level 3）。
+
+**当前阶段（历史）：** 💭 回顾中 → 归档完成
 
 **任务定位：** 清理 G1.9（TASK-20260529-04）遗留技术债 #2——`ImageTexturePool::GetOrUpload` 硬编码 `GL_TEXTURE_MIN/MAG_FILTER = GL_LINEAR`，无法按调用方意图选择 NEAREST（像素艺术 / 精确像素映射）或 LINEAR（平滑缩放）。补齐采样过滤选项。
 
@@ -949,6 +953,14 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260602-01：GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2 清理 / Level 2）— ✅ 已归档（2026-06-02）
+
+> **本任务已归档闭环。详见 [`memory-bank/archive/archive-TASK-20260602-01.md`](archive/archive-TASK-20260602-01.md)。**
+
+- **分支：** `feature/TASK-20260602-01-gles-image-sampling-filter`（待 finalize merge 决策）
+- **主交付：** `SamplingFilter` enum + `GLESCanvas::SetImageSamplingFilter`（GLES 局部 D1=①）+ DrawImage 每 draw `glTexParameteri` / 5 测 / gles 1432→1437
+- **要点：** 最小侵入（pool+CMake+software 零改动）/ 单轮 TDD 计划精度满分 / 零 debug
 
 ### TASK-20260529-04：G1.9 `GLESCanvas::DrawImage`（GLES 蓝图实施第九步 / Level 4）— ✅ 已归档（2026-05-29）
 
