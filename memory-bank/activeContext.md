@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建完成** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅ + Build ✅（单轮 TDD 8/8 + 三矩阵零退化 gles 1445 · sw-devtool 1337 · no-devtool 1141）/ 待 `/reflect`。
+**回顾中** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅（回顾文档 [`reflection-TASK-20260606-01.md`](reflection/reflection-TASK-20260606-01.md)）/ 待 `/archive`。
 
 **上一任务：** [TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR](archive/archive-TASK-20260602-01.md) — ✅ 归档（2026-06-02 / G1.9 技术债 #2 清理 / Level 2 / 三矩阵零退化 gles 1432→1437 / 单轮 TDD 计划精度满分 + 零 debug）。
 
@@ -21,6 +21,9 @@
 ---
 
 ## 待处理事项
+
+**来自 TASK-20260606-01（G1.10 Clip）回顾：**
+- **P1 #B**（⚠️ 反复轻度重复 / 与 G1.9「容器 API 名称」同源）plan 阶段 CMake / 容器 / 几何类型 API 片段必须 **Grep 既有最近邻块逐字镜像**，不凭记忆写宏或字段名。本次 plan A.2 写了不存在的 `vx_add_test` 宏、初版代码误用 `Rect.width/height`（实为 `w/h`），均靠 build 前 Grep/自查兜住。下次 `/plan` 写基础设施伪代码时自律执行。
 
 **来自 TASK-20260529-03（G1.8）回顾 — ✅ 已在 TASK-20260529-04（G1.9）主动预防成功：**
 - **P1 #A** ✅（已验证）GLES 资源对象 GL 状态副作用契约：G1.9 `DrawImage` 在 `GetOrUpload` 后、draw 前重绑纹理，**G1.8 全屏白 bug 未复发，零 debug 迭代**。已升级为 systemPatterns first-evidence → second-evidence（见 systemPatterns「GL 全局状态副作用契约」段）。

@@ -1377,3 +1377,13 @@ ctest baseline 当前：DEVTOOL=ON 1302 / DEVTOOL=OFF 1109 (TASK-20260505-02 完
 - **三 build 矩阵：** gles 1432→**1437**（+5）/ software 1303 / no-devtool 1141 无退化（`SamplingFilter` enum 纯新增，未破坏既有 `types.h` 消费者）。
 - TASK-20260602-01 spec：[`docs/specs/2026-06-02-gles-image-sampling-filter-design.md`](../docs/specs/2026-06-02-gles-image-sampling-filter-design.md) / plan：[`docs/plans/2026-06-02-gles-image-sampling-filter.md`](../docs/plans/2026-06-02-gles-image-sampling-filter.md) / 回顾：[`memory-bank/reflection/reflection-TASK-20260602-01.md`](reflection/reflection-TASK-20260602-01.md)
 
+### GLES Clip 矩形裁剪栈 via glScissor（TASK-20260606-01 / G1.10）
+
+- **交付：** `GLESCanvas` 三 clip stub → 实现：新增 `vx::Vector<Rect> clip_stack_` 成员（设备空间交集 rect / 镜像 `SoftwareCanvas`）+ `CurrentClipDevice()`/`ApplyScissor()` 私有辅助。`PushClipRect`→`CurrentClipDevice().Intersect(rect)` 入栈 + ApplyScissor；`PushClipPath`→`path.Bounds()` AABB（D4）；`PopClip`→弹栈 reapply。`Begin()` 清栈 + `glDisable(GL_SCISSOR_TEST)` 帧复位；`PushState` 存 `clip_stack_.size()`、`PopState` 弹栈至深度 + reapply。`gles_canvas_clip_test` +8 测（C1-C8）。单轮 TDD（RED 5/8 FAIL → GREEN 8/8）。**0 新依赖（glScissor GLES 3.0 core）/ 0 新 shader / 0 链接改动 / 0 debug 迭代。**
+- **glScissor Y 翻转契约：** glScissor 原点 bottom-left，doc 空间 top-left → `gl_y = height_ - (rect.y + rect.h)`；空交集（`Rect::Intersect` 返回 `{0,0,0,0}`，`IsEmpty()` 真）→ `glScissor(0,0,0,0)` 渲染零像素。
+- **⚠️ glClear 受 scissor 影响：** 当前契约依赖「Clear 在 Push clip 前调用」（测试均如此）→ 全屏清除。若未来需「clip 激活时局部 Clear」须显式文档化（行为=clip 内清除）。
+- **⚠️ 已知陷阱（写 GL 坐标代码前先 Grep 确认）：** `struct Rect { f32 x,y,w,h; }` 字段为 **`w/h` 非 `width/height`**；初版 ApplyScissor 误用 `width/height`，编译前自查 `types.h` 修正。
+- **新技术债（→ G2 / G1.11）：** PushClipPath 仅 bounds AABB 近似（真路径裁剪需 stencil/SDF，G2）/ clip 不随 transform 旋转（D2 轴对齐设备空间，真变换裁剪需 stencil）/ 未与脏矩形 glScissor 整合（G1.11 脏区优化复用 scissor 时需协调内容裁剪 vs 脏区裁剪栈关系）。
+- **三 build 矩阵：** gles 1437→**1445**（+8 / 命中预测上界）/ build-sw-devtool 1337 / no-devtool 1141 无退化（clip_test 仅 gles guard 内编译）。
+- TASK-20260606-01 spec：[`docs/specs/2026-06-06-gles-canvas-clip-design.md`](../docs/specs/2026-06-06-gles-canvas-clip-design.md) / plan：[`docs/plans/2026-06-06-gles-canvas-clip.md`](../docs/plans/2026-06-06-gles-canvas-clip.md) / 回顾：[`memory-bank/reflection/reflection-TASK-20260606-01.md`](reflection/reflection-TASK-20260606-01.md)
+

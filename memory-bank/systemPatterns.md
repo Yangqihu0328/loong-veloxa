@@ -5057,6 +5057,28 @@ target_include_directories(tess2 PUBLIC ${libtess2_SOURCE_DIR}/Include)
 
 ---
 
+## 已验证的模式（来自 TASK-20260606-01 G1.10 GLES Clip via glScissor）
+
+### 内联 stub → 正式实现的「test-only RED」范式（new first-evidence / P2）
+
+当目标方法当前是**内联 no-op stub `{}`**（已可链接），实现类任务的 RED 阶段无需触碰生产代码：
+
+- **RED 提交 = 纯测试**：仅新建测试 + 注册 CMake，对既有内联 stub 跑出断言 FAIL（stub 不产生预期效果 → 正向像素/行为断言失败）。无需加空实现占位、无需迁移声明。
+- **GREEN 提交 = 纯实现**：再把 header stub 改 out-of-line 声明 + .cc 填 body。
+- **收益**：RED/GREEN 提交语义彻底分离（test-only vs impl-only），提交链可读性最优；且 RED 信号可在 plan 阶段精确预测哪些用例 FAIL / 哪些「无效果时恰好 PASS」（本任务预测 5 FAIL / 3 PASS，实测完全一致）。
+- **适用前提**：目标方法为内联 stub（可链接）+ 测试能区分「stub 行为」与「正确行为」（如裁剪：无裁剪时全屏 fill → clip 外断言 IsWhite 失败）。
+- **未来推广**：GLES 蓝图后续 stub-填充任务（PushLayer/PopLayer、CreatePath、其余 Canvas stub）默认采用。优于通用「先写空骨架再 RED」两步法。
+
+### Clip 栈镜像 software 后端（设备空间交集 rect）
+
+`GLESCanvas::clip_stack_` 直接照搬 `SoftwareCanvas` 语义：存**设备空间交集 rect**（PushClipRect 不应用 transform_，仅存 `CurrentClip().Intersect(new)`），PushState 存 `clip_stack_.size()`、PopState 弹栈至深度。跨后端一致性天然保证，glScissor 直接消费设备空间窗口坐标（Y 翻转 `height-(y+h)`）。与「GL 全局状态副作用契约」协同：Begin 帧复位（清栈 + glDisable scissor）、PopState reapply 防状态泄露。
+
+### ⚠️ 反复模式轻度复现：基础设施 API 凭记忆（与 G1.9「容器 API 名称」同源 / 升 P1）
+
+plan 阶段写 CMake / 容器 / 几何类型片段时凭记忆 → 本次 plan A.2 写了仓库不存在的 `vx_add_test` 宏（实际为 `add_executable`+`target_link_libraries`+`gtest_discover_tests` 三段式）、初版代码误用 `Rect.width/height`（实为 `w/h`）。两处均靠 build 前 Grep 既有最近邻块 / 自查 types.h 兜住，未致返工。**固化建议**：`/plan` 写基础设施伪代码必须 Grep 既有最近邻块逐字镜像，不凭记忆。已登记 activeContext 待处理事项 P1 #B。
+
+---
+
 ## 待定架构决策
 - [x] CSS 支持的具体子集范围 → 已确定：~45 属性（布局/Flex/视觉/文本）+ 4 transition 属性
 - [ ] 是否内置 SVG 支持

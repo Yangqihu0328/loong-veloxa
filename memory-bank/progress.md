@@ -16,7 +16,17 @@
 - **计划精度：** 4/4 文件 + 8/8 测 + gles 1445 命中规划区间（~1444-1445）/ 0 新依赖 / 0 新 shader / 0 链接改动。
 - **新技术债（→ reflect/techContext）：** PushClipPath 仅 bounds AABB 近似（真路径裁剪需 stencil/SDF，G2）/ clip 不随旋转变换（D2 轴对齐设备空间）/ 未与脏矩形 glScissor 整合（G1.11 独立任务）。
 
-**下一步：** `/reflect` — 回顾 clip 栈镜像 software 设计 / 三矩阵证据 / 计划精度 / 新技术债。
+#### Reflect 阶段产出（2026-06-06）
+
+- 回顾文档 [`reflection-TASK-20260606-01.md`](reflection/reflection-TASK-20260606-01.md)（Level 3 详细回顾）。
+- **计划精度满分：** 4/4 文件 + 8/8 测 + gles 1445 命中预测上界（1444-1445）/ 0 debug 迭代 / 实测 ~13min（落极速区下沿）。
+- **亮点 3 项：** ①RED 路径优于 plan 两选项——保留内联 stub 仅加测试 = test-only RED 提交（已升 systemPatterns first-evidence）；②RED 信号精确命中（5 FAIL/3 PASS 与预测一致）；③镜像 software clip 设计零认知负担 + GL 副作用契约延续（Begin 帧复位 / PopState reapply）。
+- **轻度反复模式（升 P1）：** plan CMake 写不存在的 `vx_add_test` 宏 + 初版误用 `Rect.width/height`（实为 `w/h`），与 G1.9「容器 API 名称」同源 → activeContext P1 #B「plan 基础设施片段须 Grep 既有块逐字镜像」。
+- **知识库反馈：** systemPatterns 新增「test-only RED 范式」+「clip 栈镜像 software」+「基础设施 API 凭记忆反复模式」；techContext 新增「GLES Clip via glScissor」段（Y 翻转契约 / glClear 受 scissor 影响 / Rect w-h 陷阱 / 新技术债）。
+- **新技术债：** PushClipPath 仅 bounds AABB（G2）/ clip 不随旋转（G2）/ 未与脏矩形 glScissor 整合（G1.11）。
+- 安全：本任务不涉及安全变更。
+
+**下一步：** `/archive` — 归档闭环。
 
 #### VAN + Plan 阶段产出（2026-06-06）
 
