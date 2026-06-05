@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**构建中** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅ / 单轮 TDD A RED→B GREEN→C 三矩阵。
+**构建完成** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅ + Build ✅（单轮 TDD 8/8 + 三矩阵零退化 gles 1445 · sw-devtool 1337 · no-devtool 1141）/ 待 `/reflect`。
 
 **上一任务：** [TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR](archive/archive-TASK-20260602-01.md) — ✅ 归档（2026-06-02 / G1.9 技术债 #2 清理 / Level 2 / 三矩阵零退化 gles 1432→1437 / 单轮 TDD 计划精度满分 + 零 debug）。
 

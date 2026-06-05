@@ -4,7 +4,19 @@
 
 ### TASK-20260606-01 — GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
 
-**当前阶段：** 📐 **规划中**（VAN ✅ + Plan ✅ / 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ / 待 `/reflect`）
+
+#### Build 阶段产出（2026-06-06）
+
+- **单轮 TDD A RED → B GREEN → C 三矩阵 finalize**，零 debug 迭代。
+- **Phase A RED：** 新建 `gles_canvas_clip_test.cc`（kW=kH=32 / C1-C8）+ CMake 注册；对 no-op stub 跑出 5/8 FAIL（C1/C2/C4/C6/C7）、3/8 PASS（C3/C5/C8 因无裁剪本就全填红）= 预期 RED 信号精确命中。
+- **Phase B GREEN：** gles_canvas.h 三 clip 从 inline stub 改为 out-of-line 声明 + 新增 `vx::Vector<Rect> clip_stack_` 成员 + `CurrentClipDevice()`/`ApplyScissor()` 私有辅助；gles_canvas.cc 实现 clip 三法 + Begin 复位清栈 disable scissor + PushState 存 `clip_stack_.size()` + PopState 弹栈至深度 reapply。`Rect` 字段为 `w/h`（非 width/height）一次性修正。8/8 PASS。
+- **Phase C：** 代码已简洁无需重构；三矩阵零退化 — **gles 1437→1445**（+8）· **sw-devtool 1337** · **no-devtool 1141**（software 矩阵 clip_test 不编译故计数不变，符合预期）。
+- **关键设计落地：** ApplyScissor 空栈 `glDisable`、非空 `glEnable`+Y 翻转 `height_-(y+h)`、空交集（Intersect 返回 `{0,0,0,0}`）`glScissor(0,0,0,0)`。glClear 受 scissor 影响但测试均在 Push 前 Clear，契约安全。
+- **计划精度：** 4/4 文件 + 8/8 测 + gles 1445 命中规划区间（~1444-1445）/ 0 新依赖 / 0 新 shader / 0 链接改动。
+- **新技术债（→ reflect/techContext）：** PushClipPath 仅 bounds AABB 近似（真路径裁剪需 stencil/SDF，G2）/ clip 不随旋转变换（D2 轴对齐设备空间）/ 未与脏矩形 glScissor 整合（G1.11 独立任务）。
+
+**下一步：** `/reflect` — 回顾 clip 栈镜像 software 设计 / 三矩阵证据 / 计划精度 / 新技术债。
 
 #### VAN + Plan 阶段产出（2026-06-06）
 
@@ -14,8 +26,6 @@
 - spec + plan 落盘：4 文件（gles_canvas.{h,cc} 改 / clip_test.cc 新建 C1-C8 / CMake 注册），0 新 shader / 0 链接改动 / 单轮 TDD。承接 P1#1 解析采样（clip 中心 / clip 外 </> 边界 / 交集中心）+ P1#2 双通道 `R>200&&green<50`。
 - 测试矩阵 C1-C8：裁剪+嵌套交集+PopClip 恢复+ClipPath 近似+PushState 还原+Y 翻转双向+空交集反探针+Begin 复位反探针。
 - **ctest 预期：** gles 1437→~1444-1445（+7-8）/ software 1303 不变 / no-devtool 1141 不变。
-
-**下一步：** `/build` — 单轮 A RED → B GREEN → C 三矩阵 finalize。
 
 ---
 

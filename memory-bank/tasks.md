@@ -4,7 +4,11 @@
 
 ### TASK-20260606-01 — GLES `GLESCanvas::PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
 
-**当前阶段：** 📐 **规划中**（VAN ✅ + Plan ✅ / 待 `/build`）
+**当前阶段：** 🔨 **构建完成**（VAN ✅ + Plan ✅ + Build ✅ / 待 `/reflect`）
+
+**核心里程碑（2026-06-06 Build）：** `GLESCanvas` 三 clip stub 实现为 `glScissor` 矩形裁剪栈：新增 `vx::Vector<Rect> clip_stack_` 成员 + `CurrentClipDevice()`/`ApplyScissor()` 私有辅助。`PushClipRect`→`CurrentClipDevice().Intersect(rect)` 入栈 + ApplyScissor；`PushClipPath`→`path.Bounds()` AABB（D4）；`PopClip`→弹栈 reapply；`ApplyScissor` 空栈 disable / 非空 enable + Y 翻转 `height_-(y+h)` / 空交集 `glScissor(0,0,0,0)`。`Begin()` 清栈 + disable scissor（复位）；`PushState` 存 `clip_stack_.size()`、`PopState` 弹栈至深度 + reapply。**单轮 TDD 8/8 像素测**（C1-C8：基础裁剪 / 嵌套交集 / Pop 复原 / Path bounds / PushState-PopState / Y 翻转 / 空交集反探针 / Begin 复位反探针，RED 5/8 FAIL→GREEN 8/8 PASS）。**三矩阵零退化：** gles 1437→1445 · sw-devtool 1337 · no-devtool 1141。0 新依赖 / 0 新 shader / 0 链接改动 / 0 debug 迭代。
+
+**提交链：** `test(gles) RED`（clip_test C1-C8 + CMake）→ `feat(gles) GREEN`（gles_canvas.{h,cc}）→ finalize。
 
 **任务定位：** GLES 蓝图实施第十步（G1.10 Clip 部分 / 见 [`docs/plans/2026-05-05-gles-renderer-blueprint.md`](../../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.10）。将 `GLESCanvas` 三个 clip stub（`PushClipRect`/`PushClipPath`/`PopClip`，gles_canvas.h:99-101）实现为基于 `glScissor` 的矩形裁剪栈。镜像 software `clip_stack_` + `CurrentClip()`（`software_canvas.cc:322-407`）的交集语义。**PushLayer/PopLayer（FBO）拆出后续独立任务，本次仅 Clip。**
 
@@ -22,7 +26,7 @@
 
 **安全相关：** ❌ 否（纯 GL 状态裁剪 / 0 用户输入 / 0 GLSL 拼接 / 0 新 ABI 表面）
 
-**下一步：** `/plan` — brainstorm 坐标空间 + clip 栈语义 + PushClipPath 近似 + 反向探针决策。
+**下一步：** `/reflect` — 回顾 clip 栈设计 / 三矩阵证据 / 计划精度 / 新技术债（PushClipPath bounds 近似、clip 不随旋转、未与脏矩形 glScissor 整合 G1.11）。
 
 ---
 
