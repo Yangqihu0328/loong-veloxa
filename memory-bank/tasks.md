@@ -2,6 +2,28 @@
 
 ## 当前任务
 
+### TASK-20260606-01 — GLES `GLESCanvas::PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
+
+**当前阶段：** 🔍 **初始化**（VAN ✅ / 待 `/plan`）
+
+**任务定位：** GLES 蓝图实施第十步（G1.10 Clip 部分 / 见 [`docs/plans/2026-05-05-gles-renderer-blueprint.md`](../../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.10）。将 `GLESCanvas` 三个 clip stub（`PushClipRect`/`PushClipPath`/`PopClip`，gles_canvas.h:99-101）实现为基于 `glScissor` 的矩形裁剪栈。镜像 software `clip_stack_` + `CurrentClip()`（`software_canvas.cc:322-407`）的交集语义。**PushLayer/PopLayer（FBO）拆出后续独立任务，本次仅 Clip。**
+
+**复杂度：** Level 3（含坐标空间设计决策：glScissor 窗口坐标 bottom-left + Y 翻转 / 旋转变换下 axis-aligned 裁剪取舍 / PushClipPath bounds 近似 / clip 栈交集 / `glEnable(GL_SCISSOR_TEST)` 生命周期 / PushState·PopState clip_stack_depth 联动）
+
+**前置（VAN 验证）：**
+- ✅ 依赖可获取性：`glScissor`/`glEnable(GL_SCISSOR_TEST)` 均 GLES 3.0 core，0 新依赖
+- ✅ 环境就绪：`build-gles/` 增量可用 / ctest 基线 gles 1437 · software 1303 · no-devtool 1141
+- ✅ 已有 artifact：gles_canvas.h 3 clip stub（L99-101）+ State.clip_stack_depth 已预留（L115）/ 尚无 `clip_stack_` 成员 / `gles_canvas_clip_test.cc` 不存在（待建）
+- ✅ 待处理事项关联（强）：G1.7 P1#1 像素测采样坐标解析推导 + P1#2 白底双通道硬规则 `R>200 && green<50` 直接适用本像素测任务
+
+**分支：** `feature/TASK-20260606-01-gles-canvas-clip`（基线 main）
+
+**安全相关：** ❌ 否（纯 GL 状态裁剪 / 0 用户输入 / 0 GLSL 拼接 / 0 新 ABI 表面）
+
+**下一步：** `/plan` — brainstorm 坐标空间 + clip 栈语义 + PushClipPath 近似 + 反向探针决策。
+
+---
+
 ### TASK-20260602-01 — GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债清理 #2）
 
 **状态：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260602-01.md`](archive/archive-TASK-20260602-01.md)。
