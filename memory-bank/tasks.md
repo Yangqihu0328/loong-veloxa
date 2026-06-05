@@ -4,7 +4,7 @@
 
 ### TASK-20260606-01 — GLES `GLESCanvas::PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
 
-**当前阶段：** 💭 **回顾中**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ / 待 `/archive`）— 回顾文档 [`reflection-TASK-20260606-01.md`](reflection/reflection-TASK-20260606-01.md)
+**当前阶段：** ✅ **已完成（已归档闭环）**（VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅ + Archive ✅）— 归档文档 [`archive-TASK-20260606-01.md`](archive/archive-TASK-20260606-01.md)
 
 **核心里程碑（2026-06-06 Build）：** `GLESCanvas` 三 clip stub 实现为 `glScissor` 矩形裁剪栈：新增 `vx::Vector<Rect> clip_stack_` 成员 + `CurrentClipDevice()`/`ApplyScissor()` 私有辅助。`PushClipRect`→`CurrentClipDevice().Intersect(rect)` 入栈 + ApplyScissor；`PushClipPath`→`path.Bounds()` AABB（D4）；`PopClip`→弹栈 reapply；`ApplyScissor` 空栈 disable / 非空 enable + Y 翻转 `height_-(y+h)` / 空交集 `glScissor(0,0,0,0)`。`Begin()` 清栈 + disable scissor（复位）；`PushState` 存 `clip_stack_.size()`、`PopState` 弹栈至深度 + reapply。**单轮 TDD 8/8 像素测**（C1-C8：基础裁剪 / 嵌套交集 / Pop 复原 / Path bounds / PushState-PopState / Y 翻转 / 空交集反探针 / Begin 复位反探针，RED 5/8 FAIL→GREEN 8/8 PASS）。**三矩阵零退化：** gles 1437→1445 · sw-devtool 1337 · no-devtool 1141。0 新依赖 / 0 新 shader / 0 链接改动 / 0 debug 迭代。
 
@@ -983,6 +983,15 @@ GLES 蓝图实施第三步 — 把 G1.2 已落地的 `Sdl2EGLDisplay`（borrowed
 ---
 
 ## 任务历史（最近完成）
+
+### TASK-20260606-01：GLES `GLESCanvas::PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor / Level 3）— ✅ 已归档（2026-06-06）
+
+> **本任务已归档闭环。详见 [`memory-bank/archive/archive-TASK-20260606-01.md`](archive/archive-TASK-20260606-01.md)。**
+
+- **分支：** `feature/TASK-20260606-01-gles-canvas-clip`（基线 main）
+- **主交付：** `GLESCanvas` 三 clip stub → `glScissor` 矩形裁剪栈：`vx::Vector<Rect> clip_stack_`（镜像 SoftwareCanvas 设备空间交集）+ `CurrentClipDevice()`/`ApplyScissor()`；Begin 帧复位 + PushState/PopState 联动 / 8 测（C1-C8）/ gles 1437→1445
+- **要点：** 计划精度满分（4/4 文件 + 8/8 测 + gles 命中预测上界）/ 0 debug 迭代 / 镜像 software 零认知负担 / RED 路径优化（test-only RED 提交 → systemPatterns first-evidence）
+- **技术债：** PushClipPath 仅 bounds AABB（G2）/ clip 不随旋转（G2）/ 未与脏矩形 glScissor 整合（G1.11）
 
 ### TASK-20260602-01：GLES 图像采样过滤选项 NEAREST/LINEAR（G1.9 技术债 #2 清理 / Level 2）— ✅ 已归档（2026-06-02）
 

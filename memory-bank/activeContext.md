@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**回顾中** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅ + Build ✅ + Reflect ✅（回顾文档 [`reflection-TASK-20260606-01.md`](reflection/reflection-TASK-20260606-01.md)）/ 待 `/archive`。
+**空闲** — 上个任务 TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）已归档闭环（归档文档 [`archive-TASK-20260606-01.md`](archive/archive-TASK-20260606-01.md)）。等待 `/van` 启动新任务（GLES 蓝图候选：G1.11 脏矩形 glScissor 优化 / PushLayer/PopLayer FBO 层 / R9 HitTest）。
 
 **上一任务：** [TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR](archive/archive-TASK-20260602-01.md) — ✅ 归档（2026-06-02 / G1.9 技术债 #2 清理 / Level 2 / 三矩阵零退化 gles 1432→1437 / 单轮 TDD 计划精度满分 + 零 debug）。
 
