@@ -2,7 +2,20 @@
 
 ## 当前任务
 
-**无活跃任务** — 等待 `/van` 开始新任务。
+### TASK-20260606-01 — GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
+
+**当前阶段：** 📐 **规划中**（VAN ✅ + Plan ✅ / 待 `/build`）
+
+#### VAN + Plan 阶段产出（2026-06-06）
+
+- VAN：Level 3 / 基线 gles 1437·sw 1303·no-devtool 1141 / 分支 `feature/TASK-20260606-01-gles-canvas-clip`（基线 main）/ 前置验证通过（0 新依赖 / glScissor GLES 3.0 core）/ 状态一致性检查通过（空闲→初始化）。
+- **关键发现：** software `clip_stack_` 存**设备空间原始 rect**（PushClipRect 不应用 transform_，仅 rasterizer 把 draw rect 变换后 Intersect(clip)）→ 与 glScissor（设备空间窗口坐标）天然契合，镜像 software = 最简 + 跨后端一致。
+- 头脑风暴 D1-D6 全锁 = a：D1 镜像 software `Vector<Rect> clip_stack_` 交集栈 / D2 clip 直接设备空间不应用 transform_ / D3 Push/Pop 立即 glScissor(Y 翻转) + enable/disable + Begin 复位清栈 / D4 PushClipPath→path.Bounds() / D5 PushState 存 size、PopState 弹栈 reapply / D6 单轮 TDD ~8 像素测跳过独立 creative。
+- spec + plan 落盘：4 文件（gles_canvas.{h,cc} 改 / clip_test.cc 新建 C1-C8 / CMake 注册），0 新 shader / 0 链接改动 / 单轮 TDD。承接 P1#1 解析采样（clip 中心 / clip 外 </> 边界 / 交集中心）+ P1#2 双通道 `R>200&&green<50`。
+- 测试矩阵 C1-C8：裁剪+嵌套交集+PopClip 恢复+ClipPath 近似+PushState 还原+Y 翻转双向+空交集反探针+Begin 复位反探针。
+- **ctest 预期：** gles 1437→~1444-1445（+7-8）/ software 1303 不变 / no-devtool 1141 不变。
+
+**下一步：** `/build` — 单轮 A RED → B GREEN → C 三矩阵 finalize。
 
 ---
 

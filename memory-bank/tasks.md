@@ -4,9 +4,11 @@
 
 ### TASK-20260606-01 — GLES `GLESCanvas::PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）
 
-**当前阶段：** 🔍 **初始化**（VAN ✅ / 待 `/plan`）
+**当前阶段：** 📐 **规划中**（VAN ✅ + Plan ✅ / 待 `/build`）
 
 **任务定位：** GLES 蓝图实施第十步（G1.10 Clip 部分 / 见 [`docs/plans/2026-05-05-gles-renderer-blueprint.md`](../../docs/plans/2026-05-05-gles-renderer-blueprint.md) §3.10）。将 `GLESCanvas` 三个 clip stub（`PushClipRect`/`PushClipPath`/`PopClip`，gles_canvas.h:99-101）实现为基于 `glScissor` 的矩形裁剪栈。镜像 software `clip_stack_` + `CurrentClip()`（`software_canvas.cc:322-407`）的交集语义。**PushLayer/PopLayer（FBO）拆出后续独立任务，本次仅 Clip。**
+
+**Plan 产出（2026-06-06）：** spec [`2026-06-06-gles-canvas-clip-design.md`](../../docs/specs/2026-06-06-gles-canvas-clip-design.md) + plan [`2026-06-06-gles-canvas-clip.md`](../../docs/plans/2026-06-06-gles-canvas-clip.md)。**D1-D6 全锁 = a：** D1 镜像 software `Vector<Rect> clip_stack_` 交集栈 / D2 clip rect 直接视为设备空间不应用 transform_（与 software 一致 / glScissor 直接消费）/ D3 Push/Pop 立即 glScissor(Y 翻转 height-(y+h)) + enable/disable + Begin() 复位清栈 / D4 PushClipPath→path.Bounds() AABB 近似 / D5 PushState 存 clip_stack_.size()、PopState 弹栈 reapply / D6 单轮 TDD ~8 像素测（C1-C8）跳过独立 creative。**4 文件**（gles_canvas.{h,cc} 改 / clip_test.cc 新建 / CMake 注册），0 新依赖 / 0 新 shader / 0 链接改动。承接 P1#1 解析采样 + P1#2 双通道 `R>200&&green<50`。ctest 预期 gles 1437→~1444-1445。
 
 **复杂度：** Level 3（含坐标空间设计决策：glScissor 窗口坐标 bottom-left + Y 翻转 / 旋转变换下 axis-aligned 裁剪取舍 / PushClipPath bounds 近似 / clip 栈交集 / `glEnable(GL_SCISSOR_TEST)` 生命周期 / PushState·PopState clip_stack_depth 联动）
 

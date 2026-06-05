@@ -2,7 +2,7 @@
 
 ## 当前阶段
 
-**初始化** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ / 待 `/plan`。
+**规划中** — TASK-20260606-01 GLES `PushClipRect/PushClipPath/PopClip`（G1.10 Clip / glScissor）/ VAN ✅ + Plan ✅（D1-D6 全锁 = a / spec + plan 落盘）/ 待 `/build`。
 
 **上一任务：** [TASK-20260602-01 GLES 图像采样过滤选项 NEAREST/LINEAR](archive/archive-TASK-20260602-01.md) — ✅ 归档（2026-06-02 / G1.9 技术债 #2 清理 / Level 2 / 三矩阵零退化 gles 1432→1437 / 单轮 TDD 计划精度满分 + 零 debug）。
 
@@ -16,7 +16,7 @@
 **前置：** G1.5 FillRect ✅（clip 测试用 FillRect 验证 r 内有 fill / r 外无 fill）；gles_canvas.h 3 clip stub + State.clip_stack_depth 预留
 **镜像参考：** software `clip_stack_`（`Vector<Rect>` 交集栈）+ `CurrentClip()`（`software_canvas.cc:322-407`）+ PushState/PopState clip_stack_depth 联动（L385-394）
 **关键设计点（待 plan brainstorm）：** ① glScissor 窗口坐标 bottom-left → Y 翻转；② clip rect 经 transform_ 变换后取 AABB（旋转下 axis-aligned 近似）；③ 嵌套 clip = 交集（current.Intersect(rect)）；④ PushClipPath → path.Bounds() 近似（镜像 software）；⑤ glEnable/glDisable(GL_SCISSOR_TEST) 生命周期 + Begin/End 复位；⑥ PushState/PopState 还原 clip 栈深度
-**下一步：** `/plan` — 单轮 A RED → B GREEN → C 三矩阵 finalize（沿用 G1.7/G1.9 commit 链拆分范式）
+**下一步：** `/build` — 单轮 A RED → B GREEN → C 三矩阵 finalize（沿用 G1.7/G1.9 commit 链拆分范式）
 
 ---
 
