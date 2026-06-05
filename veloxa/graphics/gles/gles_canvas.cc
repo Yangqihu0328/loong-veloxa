@@ -226,6 +226,11 @@ void GLESCanvas::Begin() {
              static_cast<GLsizei>(height_));
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // G1.10: a fresh frame starts unclipped. Drop any clip rects left over from
+  // a previous frame and turn the scissor test off so the whole surface (and
+  // glClear) is writable.
+  clip_stack_.clear();
+  glDisable(GL_SCISSOR_TEST);
   active_ = true;
 }
 
@@ -252,8 +257,7 @@ void GLESCanvas::SetTransform(const Matrix3x2& m) { transform_ = m; }
 Matrix3x2 GLESCanvas::GetTransform() const { return transform_; }
 
 void GLESCanvas::PushState() {
-  // D6=A: clip_stack_depth reserved for G1.10 — currently 0.
-  state_stack_.push_back({transform_, 0});
+  state_stack_.push_back({transform_, clip_stack_.size()});
 }
 
 void GLESCanvas::PopState() {
@@ -261,7 +265,58 @@ void GLESCanvas::PopState() {
   State s = state_stack_.back();
   state_stack_.pop_back();
   transform_ = s.transform;
-  // G1.10 will pop clip_stack_ down to s.clip_stack_depth here.
+  // Restore the clip stack to the depth captured at the matching PushState,
+  // then re-sync the scissor to the (possibly shallower) top rect.
+  while (clip_stack_.size() > s.clip_stack_depth) clip_stack_.pop_back();
+  ApplyScissor();
+}
+
+// -----------------------------------------------------------------------------
+// G1.10: clip stack via glScissor (mirrors SoftwareCanvas clip semantics).
+// -----------------------------------------------------------------------------
+
+Rect GLESCanvas::CurrentClipDevice() const {
+  if (clip_stack_.empty()) {
+    return Rect{0, 0, static_cast<vx::f32>(width_),
+                static_cast<vx::f32>(height_)};
+  }
+  return clip_stack_.back();
+}
+
+void GLESCanvas::ApplyScissor() {
+  if (clip_stack_.empty()) {
+    glDisable(GL_SCISSOR_TEST);
+    return;
+  }
+  glEnable(GL_SCISSOR_TEST);
+  const Rect& c = clip_stack_.back();
+  if (c.IsEmpty()) {
+    // Degenerate clip — scissor a zero-area box so nothing is drawn.
+    glScissor(0, 0, 0, 0);
+    return;
+  }
+  // glScissor origin is bottom-left; flip the top-left doc-space Y.
+  const GLint x = static_cast<GLint>(c.x);
+  const GLint w = static_cast<GLint>(c.w);
+  const GLint h = static_cast<GLint>(c.h);
+  const GLint y = static_cast<GLint>(height_) - (static_cast<GLint>(c.y) + h);
+  glScissor(x, y, w, h);
+}
+
+void GLESCanvas::PushClipRect(const Rect& rect) {
+  clip_stack_.push_back(CurrentClipDevice().Intersect(rect));
+  ApplyScissor();
+}
+
+void GLESCanvas::PushClipPath(const Path& path) {
+  // D4: approximate the path by its axis-aligned bounding box (mirrors
+  // SoftwareCanvas). True path clipping (stencil/SDF) is deferred to G2.
+  PushClipRect(path.Bounds());
+}
+
+void GLESCanvas::PopClip() {
+  if (!clip_stack_.empty()) clip_stack_.pop_back();
+  ApplyScissor();
 }
 
 std::unique_ptr<Path> GLESCanvas::CreatePath() {

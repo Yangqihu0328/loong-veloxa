@@ -95,10 +95,12 @@ class GLESCanvas final : public Canvas {
   void SetImageSamplingFilter(SamplingFilter filter) { image_filter_ = filter; }
   SamplingFilter image_sampling_filter() const { return image_filter_; }
 
-  // ---- No-op stubs (G1.10+ implementation scope) ----
-  void PushClipRect(const Rect&) override {}
-  void PushClipPath(const Path&) override {}
-  void PopClip() override {}
+  // ---- Real implementations (G1.10 clip scope, via glScissor) ----
+  void PushClipRect(const Rect& rect) override;
+  void PushClipPath(const Path& path) override;
+  void PopClip() override;
+
+  // ---- No-op stubs (G1.11+ implementation scope) ----
   void PushLayer(const Rect&, vx::f32) override {}
   void PopLayer() override {}
   std::unique_ptr<Path> CreatePath() override;  // returns nullptr (G1.12)
@@ -112,14 +114,20 @@ class GLESCanvas final : public Canvas {
  private:
   struct State {
     Matrix3x2 transform;
-    vx::usize clip_stack_depth;  // reserved for G1.10 PushClip*
+    vx::usize clip_stack_depth;  // clip_stack_.size() at PushState time
   };
+
+  // G1.10: device-space intersected clip rectangles (mirrors SoftwareCanvas).
+  // Each push stores CurrentClipDevice().Intersect(new). Empty stack = no clip.
+  Rect CurrentClipDevice() const;
+  void ApplyScissor();  // sync GL_SCISSOR_TEST + glScissor to top of stack
 
   vx::platform::Sdl2GLWindowSurface* surface_;
   vx::u32 width_ = 0;
   vx::u32 height_ = 0;
   Matrix3x2 transform_;
   vx::Vector<State> state_stack_;
+  vx::Vector<Rect> clip_stack_;
   bool active_ = false;
   GLuint quad_vao_ = 0;
   GLuint quad_vbo_ = 0;
